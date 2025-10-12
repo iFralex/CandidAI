@@ -4,25 +4,13 @@
 import { useEffect, useState } from 'react';
 import { signInWithRedirect, GoogleAuthProvider, createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile, getRedirectResult, useDeviceLanguage } from 'firebase/auth';
 import app, { auth, db } from '@/lib/firebase';
-import { loginUser, registerUser } from '@/lib/auth-utils';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AuthWrapper } from './authWrapper';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { doc, setDoc } from 'firebase/firestore';
-
-export function AuthSection() {
-  const router = useRouter();
-  return (
-    <AuthWrapper
-      onAuthSuccess={() => router.push('/dashboard')}
-      defaultView="login"
-    />
-  )
-}
 
 export function LoginForm({
   className,
@@ -308,8 +296,7 @@ export function RegisterForm({
       const result = await signInWithPopup(auth, provider);
 
       // Gestisci il salvataggio in Firestore per utenti Google
-      const { handleGoogleAuth } = await import('@/lib/auth-utils');
-      await handleGoogleAuth(result.user);
+      //await handleGoogleAuth(result.user);
 
       console.log('Google signup successful:', result.user);
       onSuccess?.(result.user);

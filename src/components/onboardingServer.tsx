@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import { CheckCircle, Wand2 } from 'lucide-react'
 import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClient, SetupCompleteClient } from '@/components/onboarding'
 
-import { getAuthCookie } from '@/actions/cookie-utils'
 import { ProfileAnalysisClient } from '@/components/onboarding';
 import { completeOnboarding } from '@/actions/onboarding-actions'
 import { Button } from '@/components/ui/button'

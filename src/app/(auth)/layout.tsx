@@ -1,7 +1,5 @@
-import { AuthSection, LoginForm } from "@/components/login-form"
 import { Review, reviews } from "@/components/reviews";
 import { headers } from "next/headers";
-import { AuthWrapper } from "@/components/authWrapper";
 
 export default async function AuthLayout({children}) {
   const email = ""//(await headers()).get("x-email")
