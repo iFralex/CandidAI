@@ -118,7 +118,7 @@ function AppSidebar({ user }) {
     )
 }
 
-export default async function DashboardLayout({ children, currentStep = null, totalSteps = null }: DashboardLayoutProps) {
+export default async function DashboardLayout({ children }: DashboardLayoutProps) {
     const res = await fetch("http://localhost:3000/api/protected/user", {
         credentials: "include",
         cache: "no-cache",
@@ -140,7 +140,9 @@ export default async function DashboardLayout({ children, currentStep = null, to
         redirect('/login')
 
     const onboarded = (user.onboardingStep || 1) > 10
-console.log(onboarded)
+    const currentStep = user.onboardingStep
+    const totalSteps = user.plan === 'pro' || user.plan === 'ultimate' ? 5 : 4
+
     return (
         <div className="min-h-screen bg-black text-white relative">
             <AnimatedBackground />
