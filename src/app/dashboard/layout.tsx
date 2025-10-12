@@ -118,7 +118,7 @@ function AppSidebar({ user }) {
     )
 }
 
-export default async function DashboardLayout({ children }: DashboardLayoutProps) {
+export default async function DashboardLayout({ children }: Readonly<{children: React.ReactNode;}>) {
     const res = await fetch("http://localhost:3000/api/protected/user", {
         credentials: "include",
         cache: "no-cache",
