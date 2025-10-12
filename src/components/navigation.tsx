@@ -2,11 +2,8 @@
 
 import { Menu, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/authContext";
 
 export const Navigation = () => {
-    const { user, loading } = useAuth();
-
     return (
         <nav className="fixed top-0 w-full z-50 bg-black/20 backdrop-blur-lg border-b border-white/10">
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -25,9 +22,9 @@ export const Navigation = () => {
                         <a href="#process" className="text-gray-300 hover:text-white transition-colors">How it Works</a>
                         <a href="#pricing" className="text-gray-300 hover:text-white transition-colors">Pricing</a>
                         <a href="#reviews" className="text-gray-300 hover:text-white transition-colors">Reviews</a>
-                        {!loading && <Button variant="primary" size="sm">
-                            {!user ? <>Get Started</> : user.name}
-                        </Button>}
+                        <Button variant="primary" size="sm">
+                            Get Started
+                        </Button>
                     </div>
 
                     <button

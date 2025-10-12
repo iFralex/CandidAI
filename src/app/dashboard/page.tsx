@@ -1,7 +1,6 @@
 import Dashboard from "@/components/dashboard";
 import { notFound, redirect } from "next/navigation";
 import OnboardingPage from "../../components/onboardingServer";
-import { getAuthCookie } from "@/actions/cookie-utils";
 import { clientConfig, serverConfig } from "@/config";
 import { getTokens } from "next-firebase-auth-edge";
 import { cookies } from "next/headers";
