@@ -41,7 +41,7 @@ interface AdvancedFiltersServerProps {
 export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersServerProps) {
     const maxFilters = plan === 'ultra' ? 50 : 30
 
-    const res = await fetch("http://localhost:3000/api/protected/account", {
+    const res = await fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/account", {
         credentials: "include",
         cache: "no-cache",
         headers: {

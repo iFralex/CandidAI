@@ -6,7 +6,7 @@ import { getTokens } from "next-firebase-auth-edge";
 import { cookies } from "next/headers";
 
 const Page = async () => {
-    const res = await fetch("http://localhost:3000/api/protected/user", {
+    const res = await fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/user", {
         credentials: "include",
         cache: "no-cache",
         headers: {
