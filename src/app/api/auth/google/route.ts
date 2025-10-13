@@ -12,7 +12,7 @@ export async function POST(request) {
     }
 
     // Verifica il token con Firebase Admin
-    const decodedToken = await getAuth(adminApp).verifyIdToken(idToken);
+    const decodedToken = await getAuth().verifyIdToken(idToken);
     const uid = decodedToken.uid;
 
     const userDocRef = doc(db, 'users', uid);
