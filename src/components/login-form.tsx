@@ -68,13 +68,24 @@ export function LoginForm({
         const result = await getRedirectResult(auth);
         if (result?.user) {
           const user = result.user;
-          // Salva informazioni aggiuntive in Firestore
-          await setDoc(doc(db, 'users', user.uid), {
-            name: user.displayName,
-            email: user.email,
-            createdAt: new Date().toISOString(),
-            lastLogin: new Date().toISOString()
-          });
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+
+          if (!userDoc.exists()) {
+            // Crea il documento se non esiste
+            await setDoc(userDocRef, {
+              name: user.displayName || 'Google User',
+              email: user.email,
+              createdAt: new Date().toISOString(),
+              lastLogin: new Date().toISOString(),
+            });
+          } else {
+            // Aggiorna solo lastLogin se esiste già
+            await updateDoc(userDocRef, {
+              lastLogin: new Date().toISOString(),
+            });
+          }
+
           const idToken = await user.getIdToken();
 
           await fetch("/api/login", {
