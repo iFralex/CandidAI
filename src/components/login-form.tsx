@@ -60,53 +60,41 @@ export function LoginForm({
   };
 
   useEffect(() => {
-    const handleRedirectResult = async () => {
+    const handleGoogleRedirect = async () => {
       setGoogleLoading(true);
       setError('');
 
       try {
         const result = await getRedirectResult(auth);
-        console.log(result, auth, typeof window)
-        if (result && result.user) {
+        if (result?.user) {
           const user = result.user;
-
-          // Salva o aggiorna in Firestore
-          const userDocRef = doc(db, 'users', user.uid);
-          const userDoc = await getDoc(userDocRef);
-
-          if (!userDoc.exists()) {
-            await setDoc(userDocRef, {
-              name: user.displayName || 'Google User',
-              email: user.email,
-              createdAt: new Date().toISOString(),
-              lastLogin: new Date().toISOString(),
-              provider: 'google'
-            });
-          } else {
-            await updateDoc(userDocRef, {
-              lastLogin: new Date().toISOString(),
-            });
-          }
-
-          // Ottieni idToken per la sessione
           const idToken = await user.getIdToken();
-          await fetch("/api/login", {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
+
+          // Chiamata all'API per login/registrazione Google
+          const response = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
           });
 
-          router.push("/dashboard");
+          const data = await response.json();
+
+          if (!data.success) {
+            throw new Error(data.error || 'Errore durante il login Google');
+          }
+
+          // Redirect a dashboard
+          router.push('/dashboard');
         }
       } catch (err: any) {
-        console.error('Errore nel gestire il redirect di Google:', err);
+        console.error('Errore Google redirect:', err);
         setError(err.message);
       } finally {
         setGoogleLoading(false);
       }
     };
 
-    handleRedirectResult();
+    handleGoogleRedirect();
   }, [router, setError, setGoogleLoading]);
 
   const handleGoogleLogin = async () => {
