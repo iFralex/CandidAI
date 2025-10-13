@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 export function LoginForm({
   className,
@@ -44,6 +44,11 @@ export function LoginForm({
         password
       );
       const idToken = await credential.user.getIdToken();
+
+      const userDocRef = doc(db, 'users', await credential.user.uid);
+      await updateDoc(userDocRef, {
+        lastLogin: new Date().toISOString(),
+      });
 
       await fetch("/api/login", {
         headers: {
@@ -80,7 +85,6 @@ export function LoginForm({
               lastLogin: new Date().toISOString(),
             });
           } else {
-            // Aggiorna solo lastLogin se esiste già
             await updateDoc(userDocRef, {
               lastLogin: new Date().toISOString(),
             });
