@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
-import { db } from '@/lib/firebase';
+import app, { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 export async function POST(request) {
@@ -12,7 +12,7 @@ export async function POST(request) {
     }
 
     // Verifica il token con Firebase Admin
-    const decodedToken = await getAuth().verifyIdToken(idToken);
+    const decodedToken = await getAuth(app).verifyIdToken(idToken);
     const uid = decodedToken.uid;
 
     const userDocRef = doc(db, 'users', uid);
