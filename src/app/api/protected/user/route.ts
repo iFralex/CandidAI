@@ -41,7 +41,8 @@ export async function GET(request) {
         lastLogin: userData.lastLogin,
         emailVerified: decodedToken.email_verified,
         onboardingStep: userData.onboardingStep,
-        plan: userData.plan
+        plan: userData.plan,
+        picture: decodedToken.picture,
       }
     });
 

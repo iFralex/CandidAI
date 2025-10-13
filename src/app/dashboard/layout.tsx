@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { getTokens } from 'next-firebase-auth-edge';
 import { cookies } from 'next/headers';
 import { clientConfig, serverConfig } from '@/config';
+import Image from 'next/image';
 
 // Tipo di dati utente (puoi prenderlo dal tuo sistema di auth)
 interface User {
@@ -104,9 +105,17 @@ function AppSidebar({ user }) {
                 <Link href="/dashboard/profile">
                     <div className="p-4 hover:bg-white/5 rounded-lg cursor-pointer">
                         <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                                {user?.name?.charAt(0).toUpperCase() || 'U'}
-                            </div>
+                            {user?.picture ? (
+                                <Image
+                                    src={user.picture}
+                                    alt={user.name || 'User'}
+                                    className="w-10 h-10 rounded-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-semibold">
+                                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                </div>
+                            )}
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
                                 <p className="text-xs text-gray-400">{user?.email || 'User'}</p>
@@ -118,7 +127,7 @@ function AppSidebar({ user }) {
     )
 }
 
-export default async function DashboardLayout({ children }: Readonly<{children: React.ReactNode;}>) {
+export default async function DashboardLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
     const res = await fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/user", {
         credentials: "include",
         cache: "no-cache",
@@ -151,13 +160,13 @@ export default async function DashboardLayout({ children }: Readonly<{children: 
                 {onboarded && <AppSidebar user={user} />}
                 {/* Main Content */}
                 <div className="w-full">
-                    {onboarded && <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 px-6 py-4">
+                    <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 px-6 py-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4">
                                 {/* 3. Il pulsante Menu (interattivo) è ora nel Client Component */}
-                                <SidebarTrigger />
+                                {onboarded && <SidebarTrigger />}
                                 <div>
-                                    <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+                                    <h1 className="text-2xl font-bold text-white">{onboarded ? "Dashboard" : "Onboarding"}</h1>
                                     {currentStep && totalSteps && (
                                         <p className="text-sm text-gray-400">
                                             Setup Progress: Step {currentStep} of {totalSteps}
@@ -177,7 +186,7 @@ export default async function DashboardLayout({ children }: Readonly<{children: 
                                 </div>
                             )}
                         </div>
-                    </header>}
+                    </header>
 
                     <main className="p-6 relative z-10">
                         {children}
