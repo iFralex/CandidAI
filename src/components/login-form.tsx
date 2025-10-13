@@ -286,39 +286,79 @@ export function RegisterForm({
     }
   };
 
+  useEffect(() => {
+    const handleGoogleRedirect = async () => {
+      setGoogleLoading(true);
+      setError('');
+
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          const user = result.user;
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+
+          if (!userDoc.exists()) {
+            // Crea il documento se non esiste
+            await setDoc(userDocRef, {
+              name: user.displayName || 'Google User',
+              email: user.email,
+              createdAt: new Date().toISOString(),
+              lastLogin: new Date().toISOString(),
+            });
+          } else {
+            await updateDoc(userDocRef, {
+              lastLogin: new Date().toISOString(),
+            });
+          }
+
+          const idToken = await user.getIdToken();
+
+          await fetch("/api/login", {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          });
+
+          router.push('/dashboard');
+        }
+      } catch (err: any) {
+        console.error('Errore Google redirect:', err);
+        setError(err.message);
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+
+    handleGoogleRedirect();
+  }, [router, setError, setGoogleLoading]);
+
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
     setError('');
 
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-
-      // Gestisci il salvataggio in Firestore per utenti Google
-      //await handleGoogleAuth(result.user);
-
-      console.log('Google signup successful:', result.user);
-      onSuccess?.(result.user);
+      provider.addScope('profile');
+      provider.addScope('email');
+      //useDeviceLanguage(auth);
+      await signInWithRedirect(auth, provider);
     } catch (err: any) {
-      console.error('Google signup error:', err);
-      let errorMessage = 'Errore durante la registrazione con Google';
+      console.error('Google login error:', err);
+      let errorMessage = 'Errore durante il login con Google';
 
       switch (err.code) {
         case 'auth/popup-closed-by-user':
-          errorMessage = 'Registrazione cancellata dall\'utente';
+          errorMessage = 'Login cancellato dall\'utente';
           break;
         case 'auth/popup-blocked':
           errorMessage = 'Popup bloccato dal browser';
-          break;
-        case 'auth/account-exists-with-different-credential':
-          errorMessage = 'Esiste già un account con questa email';
           break;
         default:
           errorMessage = err.message;
       }
 
       setError(errorMessage);
-    } finally {
       setGoogleLoading(false);
     }
   };
