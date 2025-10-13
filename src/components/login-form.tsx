@@ -118,9 +118,6 @@ export function LoginForm({
       provider.addScope('profile');
       provider.addScope('email');
       //useDeviceLanguage(auth);
-      provider.setCustomParameters({
-        display: 'popup'
-      });
       await signInWithRedirect(auth, provider);
     } catch (err: any) {
       console.error('Google login error:', err);
