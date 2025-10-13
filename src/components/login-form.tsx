@@ -39,7 +39,7 @@ export function LoginForm({
 
     try {
       const credential = await signInWithEmailAndPassword(
-        getAuth(app),
+        auth,
         email,
         password
       );
@@ -68,22 +68,21 @@ export function LoginForm({
         const result = await getRedirectResult(auth);
         if (result?.user) {
           const user = result.user;
+          // Salva informazioni aggiuntive in Firestore
+          await setDoc(doc(db, 'users', user.uid), {
+            name: user.displayName,
+            email: user.email,
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+          });
           const idToken = await user.getIdToken();
 
-          // Chiamata all'API per login/registrazione Google
-          const response = await fetch('/api/auth/google', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken }),
+          await fetch("/api/login", {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
           });
 
-          const data = await response.json();
-
-          if (!data.success) {
-            throw new Error(data.error || 'Errore durante il login Google');
-          }
-
-          // Redirect a dashboard
           router.push('/dashboard');
         }
       } catch (err: any) {
