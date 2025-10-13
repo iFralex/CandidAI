@@ -14,11 +14,11 @@ export async function middleware(request: NextRequest) {
     cookieSignatureKeys: serverConfig.cookieSignatureKeys,
     cookieSerializeOptions: serverConfig.cookieSerializeOptions,
     serviceAccount: serverConfig.serviceAccount,
-    handleValidToken: async ({token, decodedToken}, headers) => {
+    handleValidToken: async ({ token, decodedToken }, headers) => {
       if (PUBLIC_PATHS.includes(request.nextUrl.pathname)) {
-  // NON redirezionare se è la callback del login
-  return NextResponse.next();
-}
+        // NON redirezionare se è la callback del login
+        return NextResponse.next();
+      }
 
 
       return NextResponse.next({
@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
       });
     },
     handleInvalidToken: async (reason) => {
-      console.info('Missing or malformed credentials', {reason});
+      console.info('Missing or malformed credentials', { reason });
 
       return redirectToLogin(request, {
         path: '/login',
@@ -36,8 +36,8 @@ export async function middleware(request: NextRequest) {
       });
     },
     handleError: async (error) => {
-      console.error('Unhandled authentication error', {error});
-      
+      console.error('Unhandled authentication error', { error });
+
       return redirectToLogin(request, {
         path: '/login',
         publicPaths: PUBLIC_PATHS
@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard",
-    "/((?!_next|api|.*\\.).*)",
+    "/((?!_next|api|__\\/auth|.*\\.).*)",
     "/api/login",
     "/api/logout",
   ],
