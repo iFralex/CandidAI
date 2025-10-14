@@ -19,7 +19,7 @@ function Input({ className, type = "text", error, icon, ...props }: InputProps) 
           type={type}
           data-slot="input"
           className={cn(
-            "w-full py-4 bg-white/10 border border-white/20 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed",
+            "w-full py-4 bg-white/10 border border-white/20 rounded-full text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed",
             icon ? "pl-12 pr-6" : "px-6", // padding a sinistra se c'è l'icona
             className
           )}

@@ -167,7 +167,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
                                 {onboarded && <SidebarTrigger />}
                                 <div>
                                     <h1 className="text-2xl font-bold text-white">{onboarded ? "Dashboard" : "Onboarding"}</h1>
-                                    {currentStep && totalSteps && (
+                                    {!onboarded && currentStep && totalSteps && (
                                         <p className="text-sm text-gray-400">
                                             Setup Progress: Step {currentStep} of {totalSteps}
                                         </p>

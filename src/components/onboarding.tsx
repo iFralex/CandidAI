@@ -3526,7 +3526,7 @@ export function ProfileAnalysisClient({ userId, plan }: ProfileAnalysisClientPro
                                 </div>
                                 <input
                                     type="url"
-                                    placeholder="https://www.linkedin.com/in/your-profile"
+                                    placeholder="e.g. https://www.linkedin.com/in/..."
                                     value={linkedinUrl}
                                     onChange={(e) => setLinkedinUrl(e.target.value)}
                                     className="w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
@@ -3539,41 +3539,41 @@ export function ProfileAnalysisClient({ userId, plan }: ProfileAnalysisClientPro
                             <label className="block text-sm font-medium text-gray-300 mb-2">Upload Your CV</label>
 
                             <label
-                                htmlFor="cv-upload"
-                                className={`
-      group flex flex-col items-center justify-center w-full h-32 rounded-xl border-2 border-dashed cursor-pointer
-      ${cvFile ? "border-violet-500/50 bg-violet-500/5" : "border-white/20 hover:border-violet-500/50 hover:bg-white/5"}
-      transition-colors duration-200
-    `}
-                            >
-                                <input
-                                    id="cv-upload"
-                                    type="file"
-                                    accept=".pdf,.doc,.docx"
-                                    onChange={handleCvUpload}
-                                    className="hidden"
-                                />
+  htmlFor="cv-upload"
+  className={`
+    group relative flex flex-col items-center justify-center w-full h-32 rounded-xl border-2 border-dashed cursor-pointer overflow-hidden
+    ${cvFile ? "border-violet-500/50 bg-gradient-to-br from-violet-500/5 to-violet-500/10" : "border-white/20 hover:border-violet-500/50 hover:bg-white/5"}
+    transition-colors duration-200
+  `}
+>
+  <input
+    id="cv-upload"
+    type="file"
+    accept=".pdf,.doc,.docx"
+    onChange={handleCvUpload}
+    className="hidden"
+  />
 
-                                {!cvFile ? (
-                                    <div className="flex flex-col items-center space-y-2 text-gray-400 group-hover:text-violet-400 transition-colors">
-                                        <Upload className="w-6 h-6" />
-                                        <span className="text-sm">Click or drag your CV here</span>
-                                        <span className="text-xs text-gray-500">PDF, DOC, DOCX up to 5MB</span>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center p-4 space-x-3 text-violet-400">
-                                        <FileText className="w-6 h-6" />
-                                        <span className="text-sm font-medium">{cvFile.name}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setCvFile(null)}
-                                            className="text-xs text-gray-400 hover:text-red-400 transition"
-                                        >
-                                            <X className="w-4 h-4" color='red' />
-                                        </button>
-                                    </div>
-                                )}
-                            </label>
+  {!cvFile ? (
+    <div className="flex flex-col items-center space-y-2 text-gray-400 group-hover:text-violet-400 transition-colors">
+      <Upload className="w-8 h-8" />
+      <span className="text-sm font-medium">Click or drag your CV here</span>
+      <span className="text-xs text-gray-500">PDF, DOC, DOCX up to 5MB</span>
+    </div>
+  ) : (
+    <div className="relative flex flex-col items-center justify-center w-full h-full px-4 py-3 text-center">
+      <FileText className="w-10 h-10 text-violet-400 mb-2" />
+      <span
+        className="text-sm font-medium text-gray-200 truncate max-w-[80%]"
+        title={cvFile.name}
+      >
+        {cvFile.name}
+      </span>
+      
+    </div>
+  )}
+</label>
+
                         </div>
 
                         {/* Privacy Info */}
