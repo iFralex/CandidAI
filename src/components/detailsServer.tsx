@@ -100,7 +100,7 @@ export function ExperienceList({ experience, editable = false, onEdit }: Experie
                         className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors flex justify-between"
                     >
                         <div className="flex items-start gap-3 flex-1">
-                            <CompanyLogo company={exp.company?.domain || exp.company?.name || ""} />
+                            <CompanyLogo link={exp.company?.logo_url} company={exp.company?.domain || exp.company?.name || ""} />
 
                             <div className="flex-1 min-w-0">
                                 <p className="text-white font-medium">{exp.title?.name || "Role not available"}</p>
@@ -155,7 +155,7 @@ export function EducationList({ education, editable = false, onEdit }: Education
                     >
                         <div className="flex items-start gap-3">
                             {/* Logo */}
-                            <CompanyLogo company={edu.school?.domain || edu.school?.name || ""} />
+                            <CompanyLogo link={edu.school?.logo_url} company={edu.school?.domain || edu.school?.name || ""} />
 
                             <div className="flex-1 min-w-0">
                                 <p className="text-white font-medium">

@@ -326,57 +326,99 @@ const RecruiterProfileCard = ({ data }: { data: any }) => {
 };
 
 const RecruiterSummary = ({ data }: { data: any }) => {
+    const inProgress = !data.recruiter_summary
+    if (inProgress)
+        data.recruiter_summary = { "name": "Lauren Crabb", "experience": [{ "location_names": ["London, England, United Kingdom"], "start_date": "2021-11", "title": { "name": "Senior People Partner (Sales & Technical Services)", "sub_role": "human_resources", "levels": ["senior"], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": true, "company": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png", "name": "Google", "twitter_url": "twitter.com/google", "location": { "name": "Mountain View, California, United States", "postal_code": "94043", "continent": "North America", "street_address": "1600 Amphitheatre Parkway", "region": "California", "metro": "San Jose, California", "country": "United States", "locality": "Mountain View", "geo": "37.39,-122.06", "address_line_2": null }, "linkedin_id": "1441", "industry": "Internet", "founded": 1998, "id": "aKCIYBNF9ey6o5CjHCCO4goHYKlf", "size": "10001+", "facebook_url": "facebook.com/google", "website": "google.com", "linkedin_url": "linkedin.com/company/google" }, "end_date": null }, { "location_names": ["Mountain View, California, United States", "Mexico City, Mexico City, Mexico"], "start_date": "2019-08", "title": { "name": "People Partner (Platforms and Ecosystems)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png", "name": "Google", "twitter_url": "twitter.com/google", "location": { "name": "Mountain View, California, United States", "postal_code": "94043", "continent": "North America", "street_address": "1600 Amphitheatre Parkway", "region": "California", "metro": "San Jose, California", "country": "United States", "locality": "Mountain View", "geo": "37.39,-122.06", "address_line_2": null }, "linkedin_id": "1441", "industry": "Internet", "founded": 1998, "id": "aKCIYBNF9ey6o5CjHCCO4goHYKlf", "size": "10001+", "facebook_url": "facebook.com/google", "website": "google.com", "linkedin_url": "linkedin.com/company/google" }, "end_date": "2021-11" }, { "location_names": ["San Francisco, California, United States"], "start_date": "2019-02", "title": { "name": "Global Human Resources Business Partner (Worldwide Sales & Operations)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQU-0sgMITwNqzwWbNZfDxjhGmmje755YgLHQ&s", "name": "Airbnb", "twitter_url": "twitter.com/airbnb", "location": { "name": "San Francisco, California, United States", "postal_code": "94103", "continent": "North America", "street_address": "888 Brannan Street", "region": "California", "metro": "San Francisco, California", "country": "United States", "locality": "San Francisco", "geo": "37.74,-122.45", "address_line_2": null }, "linkedin_id": "309694", "industry": "Internet", "founded": 2008, "id": "9fGW9Je0KfwfNPtyouflTQneENKN", "size": "5001-10000", "facebook_url": "facebook.com/airbnb", "website": "airbnb.com", "linkedin_url": "linkedin.com/company/airbnb" }, "end_date": "2019-07" }, { "location_names": ["San Francisco, California, United States"], "start_date": "2018-04", "title": { "name": "Human Resources Manager, Global Meraki Bu (Tech + Non-Sales)", "sub_role": "human_resources", "levels": ["manager"], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://images.ctfassets.net/4cd45et68cgf/Rx83JoRDMkYNlMC9MKzcB/2b14d5a59fc3937afd3f03191e19502d/Netflix-Symbol.png?w=700&h=456", "name": "Cisco Meraki", "twitter_url": "twitter.com/meraki", "location": { "name": "San Francisco, California, United States", "postal_code": "94158", "continent": "North America", "street_address": "500 Terry A. Francois Boulevard", "region": "California", "metro": "San Francisco, California", "country": "United States", "locality": "San Francisco", "geo": "37.74,-122.45", "address_line_2": null }, "linkedin_id": "92950", "industry": "Computer Networking", "founded": 2006, "id": "uXlBn3JswjCAx85kpThCvwWuDLxQ", "size": "1001-5000", "facebook_url": "facebook.com/ciscomeraki", "website": null, "linkedin_url": "linkedin.com/company/cisco-meraki" }, "end_date": "2019-02" }, { "location_names": ["San Francisco, California, United States"], "start_date": "2016-08", "title": { "name": "Human Resources Business Partner (Software / Hardware / Product Mgmt)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://images.ctfassets.net/4cd45et68cgf/Rx83JoRDMkYNlMC9MKzcB/2b14d5a59fc3937afd3f03191e19502d/Netflix-Symbol.png?w=700&h=456", "name": "Cisco Meraki", "twitter_url": "twitter.com/meraki", "location": { "name": "San Francisco, California, United States", "postal_code": "94158", "continent": "North America", "street_address": "500 Terry A. Francois Boulevard", "region": "California", "metro": "San Francisco, California", "country": "United States", "locality": "San Francisco", "geo": "37.74,-122.45", "address_line_2": null }, "linkedin_id": "92950", "industry": "Computer Networking", "founded": 2006, "id": "uXlBn3JswjCAx85kpThCvwWuDLxQ", "size": "1001-5000", "facebook_url": "facebook.com/ciscomeraki", "website": null, "linkedin_url": "linkedin.com/company/cisco-meraki" }, "end_date": "2019-02" }, { "location_names": [], "start_date": "2010-06", "title": { "name": "Human Resources Advisor (Recruitment, Selection Policy and Standards)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LinkedIn_icon.svg/1024px-LinkedIn_icon.svg.png", "name": "London Borough of Camden", "twitter_url": "twitter.com/camdentalking", "location": { "name": "London, England, United Kingdom", "postal_code": null, "continent": "Europe", "street_address": "5 Pancras Square", "region": "England", "metro": null, "country": "United Kingdom", "locality": "London", "geo": "51.46,-0.20", "address_line_2": null }, "linkedin_id": "14499", "industry": "Government Administration", "founded": null, "id": "m6QBbKx4WI1XgBnC1R2xXwzz7NFX", "size": "5001-10000", "facebook_url": "facebook.com/grncamden", "website": "camden.gov.uk", "linkedin_url": "linkedin.com/company/london-borough-of-camden" }, "end_date": "2011-05" }, { "location_names": [], "start_date": "2009-07", "title": { "name": "Human Resources Advisor (Employment Initiatives)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LinkedIn_icon.svg/1024px-LinkedIn_icon.svg.png", "name": "London Borough of Camden", "twitter_url": "twitter.com/camdentalking", "location": { "name": "London, England, United Kingdom", "postal_code": null, "continent": "Europe", "street_address": "5 Pancras Square", "region": "England", "metro": null, "country": "United Kingdom", "locality": "London", "geo": "51.46,-0.20", "address_line_2": null }, "linkedin_id": "14499", "industry": "Government Administration", "founded": null, "id": "m6QBbKx4WI1XgBnC1R2xXwzz7NFX", "size": "5001-10000", "facebook_url": "facebook.com/grncamden", "website": "camden.gov.uk", "linkedin_url": "linkedin.com/company/london-borough-of-camden" }, "end_date": "2010-06" }, { "location_names": [], "start_date": "2007-08", "title": { "name": "Leadership Consultant", "sub_role": null, "levels": [], "role": null, "class": null }, "is_primary": false, "company": { "logo_url": "https://pngdownload.io/wp-content/uploads/2023/12/Apple-Logo-Iconic-Tech-Brand-Symbol-PNG-Transparent-Representation-of-Innovation-and-Design-jpg.webp", "name": "Human Assets LTD", "twitter_url": "twitter.com/humanassetsltd", "location": { "name": "London, England, United Kingdom", "postal_code": null, "continent": "Europe", "street_address": "28 Ulysses Road", "region": "England", "metro": null, "country": "United Kingdom", "locality": "London", "geo": "51.46,-0.20", "address_line_2": null }, "linkedin_id": "1583215", "industry": "Human Resources", "founded": 1987, "id": "u2eo7wIyyEDXgExnUkuXLATKH88O", "size": "1-10", "facebook_url": null, "website": "humanassets.co.uk", "linkedin_url": "linkedin.com/company/human-assets-ltd" }, "end_date": "2009-07" }], "location": { "country": "United Kingdom", "continent": "Europe" }, "skills": ["360 Feedback", "Airflow", "Algebraic Combinatorics", "Algorithms", "C++", "Change Management", "Cheesecakes", "Coaching", "Combinatorics", "Computer Science", "Etl", "Facebook", "Facilitation", "Game Design", "Human Resources", "Mathematical Analysis", "Mathematics", "Matlab", "Microsoft Excel", "Microsoft Office", "Microsoft Word", "Neural Networks", "Organizational Design", , "Powerpoint", "Project Planning", "Psychometrics", "Public Sector", "Public Speaking", "Python", "Recruiting", "Redis", "Research", "Stakeholder Management", "Statistics", "Strategy", "Succession Planning", "Talent Management", "Teaching", ,], "title": "Senior People Partner (Sales & Technical Services)", "education": [{ "minors": [], "start_date": "2006", "degrees": ["Master of Science", "Masters"], "school": { "logo_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtRig-9cUpSg95-hbB_GTx8gySkR8fIq6SvQ&s", "name": "University of Surrey", "domain": "surrey.ac.uk", "location": { "name": "Guildford, England, United Kingdom", "locality": "Guildford", "continent": "Europe", "region": "England", "country": "United Kingdom" }, "linkedin_id": "8369", "type": "post-secondary institution", "id": "PZ-O4dspmqcSoCmg46LW9A_0", "facebook_url": "facebook.com/universityofsurrey", "website": "surrey.ac.uk", "linkedin_url": "linkedin.com/school/university-of-surrey", "twitter_url": "twitter.com/uniofsurrey" }, "gpa": null, "majors": ["Psychology"], "end_date": "2007" }, { "minors": [], "start_date": null, "degrees": ["Bachelor of Science", "Bachelors"], "school": { "logo_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtRig-9cUpSg95-hbB_GTx8gySkR8fIq6SvQ&s", "name": "University of California, Davis", "domain": "ucdavis.edu", "location": { "name": "Davis, California, United States", "locality": "Davis", "continent": "North America", "region": "California", "country": "United States" }, "linkedin_id": "2842", "type": "post-secondary institution", "id": "OBL5pZtjTCqcV0YQ6rpb7Q_0", "facebook_url": "facebook.com/ucdavis", "website": "ucdavis.edu", "linkedin_url": "linkedin.com/school/uc-davis", "twitter_url": "twitter.com/ucdavis" }, "gpa": null, "majors": [], "end_date": "2015" }, { "minors": [], "start_date": null, "degrees": [], "school": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Stemma_sapienza.png", "name": "University of California", "domain": "universityofcalifornia.edu", "location": { "name": "Oakland, California, United States", "locality": "Oakland", "continent": "North America", "region": "California", "country": "United States" }, "linkedin_id": "2843", "type": "post-secondary institution", "id": "vy-30YJaHfPKMIrQv0hZHg_0", "facebook_url": null, "website": "jobs.universityofcalifornia.edu", "linkedin_url": "linkedin.com/school/university-of-california", "twitter_url": null }, "gpa": null, "majors": [], "end_date": null }] }
     return (
         <motion.div variants={cardVariants} initial="hidden" animate="visible">
             <Card className="p-6">
                 <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
                     <User className="w-5 h-5 mr-2 text-violet-400" /> Recruiter Summary
                 </h3>
-                <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-4 gap-16 p-2">
-                    <motion.div variants={itemVariants} className="col-span-1">
-                        <div><RecruiterProfileCard data={data} /></div>
-                        <Separator className="my-5" />
+                <div className={(inProgress ? "bg-gray-800 " : "") + "relative rounded-md"}>
+                    {inProgress && <Overlay />}
+                    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-4 gap-16 p-2">
                         <motion.div variants={itemVariants} className="col-span-1">
-                            <p className="text-sm text-gray-400 mb-3">Key Skills</p>
-                            <SkillsListBase skills={data.recruiter_summary.skills} editable={false} />
+                            <div><RecruiterProfileCard data={data} /></div>
+                            <Separator className="my-5" />
+                            <motion.div variants={itemVariants} className="col-span-1">
+                                <p className="text-sm text-gray-400 mb-3">Key Skills</p>
+                                <SkillsListBase skills={data.recruiter_summary.skills} editable={false} />
+                            </motion.div>
+                        </motion.div>
+                        <motion.div variants={itemVariants} className="col-span-3">
+                            <div>
+                                <p className="text-sm text-gray-400 mb-3">Experience</p>
+                                <ul className="grid grid-cols-3 gap-4"><ExperienceList experience={data.recruiter_summary.experience} /></ul>
+                            </div>
+                            <Separator className="my-5" />
+                            <div>
+                                <p className="text-sm text-gray-400 mb-3">Education</p>
+                                <ul className="grid grid-cols-3 gap-4"><EducationList education={data.recruiter_summary.education} /></ul>
+                            </div>
                         </motion.div>
                     </motion.div>
-                    <motion.div variants={itemVariants} className="col-span-3">
-                        <div>
-                            <p className="text-sm text-gray-400 mb-3">Experience</p>
-                            <ul className="grid grid-cols-3 gap-4"><ExperienceList experience={data.recruiter_summary.experience} /></ul>
-                        </div>
+                    <div className="p-2">
                         <Separator className="my-5" />
-                        <div>
-                            <p className="text-sm text-gray-400 mb-3">Education</p>
-                            <ul className="grid grid-cols-3 gap-4"><EducationList education={data.recruiter_summary.education} /></ul>
-                        </div>
-                    </motion.div>
-                </motion.div>
-                <div className="p-2">
-                    <Separator className="my-5" />
-                    <p className="text-sm text-gray-400 mb-3">{data.recruiter_summary.name} matches this criteria - {data.query.name}</p>
-                    <CriteriaDisplay criteria={data.query.criteria} />
+                        <p className="text-sm text-gray-400 mb-3">{data.recruiter_summary.name} matches this criteria - {data.query.name}</p>
+                        <CriteriaDisplay criteria={data.query.criteria} />
+                    </div>
                 </div>
             </Card>
         </motion.div>
     );
 };
 
+const Overlay = () => {
+    return (
+        <div className="absolute inset-0 z-50 isolate flex items-center justify-center">
+            {/* Layer blur dell'overlay */}
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-md"></div>
+
+            {/* Contenuto dell'overlay sopra il blur */}
+            <div className="relative flex flex-col items-center justify-center space-y-4">
+                <span className="text-white text-xl font-semibold animate-pulse">In progress…</span>
+                <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        </div>
+    )
+}
+
 const EmailGenerated = ({ data }: { data: any }) => {
+    const inProgress = !data?.email
+    const placeholderText = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse eu nibh dolor. Fusce at odio id magna interdum fermentum a id lectus. Donec lacinia nunc id felis tincidunt, eu pretium nunc rutrum. Fusce pretium aliquet cursus. Donec sollicitudin hendrerit tellus, eu dapibus sapien dictum vitae. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec pharetra mattis magna, in pellentesque neque fringilla nec. Etiam vel tempor neque.
+Sed et nisi elementum, placerat nisl sit amet, consectetur enim. Morbi nec purus neque. Phasellus in odio nec massa condimentum iaculis ultrices in nisl. Sed feugiat ante eget orci interdum, eu porttitor neque suscipit. Aliquam eget mauris in augue scelerisque imperdiet viverra at magna. Fusce at interdum sapien. Ut ultricies massa dui, rhoncus ultrices mauris interdum sed. Nunc diam felis, ultricies nec magna eget, molestie fermentum lorem. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.
+Nam condimentum varius ipsum, sit amet rutrum eros. Nullam malesuada sem quis rutrum egestas. Integer eu efficitur magna, sit amet pellentesque leo. Aenean consequat purus vitae sapien rhoncus, eget fringilla ipsum ullamcorper. Donec et turpis tincidunt, scelerisque sapien ut, varius nisi. Proin ut placerat ipsum. Nulla eget semper nibh. Integer id suscipit eros, eget lacinia sem. Praesent fermentum egestas aliquet. Cras ultricies sit amet nulla eget viverra. Fusce lobortis mauris tellus, sit amet rutrum sapien venenatis eu. Pellentesque erat quam, feugiat dignissim ultricies a, vestibulum et leo. Pellentesque placerat hendrerit feugiat. Donec sit amet tortor et tortor lobortis vehicula at et nisi. Nulla accumsan ultrices aliquam. Nulla dictum nunc nec sem molestie, vel dictum ipsum convallis.
+`
     return (
         <motion.div variants={cardVariants} initial="hidden" animate="visible">
             <Card className="p-6">
                 <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
                     <Mail className="w-5 h-5 mr-2 text-violet-400" /> Email Generated
                 </h3>
-                <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-5 gap-4">
+                <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className={(!data.email ? "bg-gray-900 " : "") + "rounded-md relative grid grid-cols-5 gap-4"}
+                >
+                    {/* Overlay elegante: visibile solo se manca l'email */}
+                    {inProgress && (
+                        <Overlay />
+                    )}
+
+                    {/* Contenuto sottostante */}
                     <motion.div variants={itemVariants} className="col-span-4">
-                        <Textarea rows={12} />
+                        <Textarea rows={12} defaultValue={data.email || placeholderText} disabled={inProgress} />
                     </motion.div>
+
                     <motion.div variants={itemVariants} className="col-span-1 space-y-4">
-                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}><Button className="w-full">Send email</Button></motion.div>
-                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}><Button className="w-full" variant={"outline"}>Generate another</Button></motion.div>
+                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                            <Button className="w-full">Send email</Button>
+                        </motion.div>
+                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                            <Button className="w-full" variant={"outline"}>Generate another</Button>
+                        </motion.div>
                         <div className="p-4 font-sans">
                             <h2 className="text-2xl font-semibold mb-4">Email perfect because:</h2>
                             <motion.ul variants={containerVariants} initial="hidden" animate="visible" className="space-y-3">
@@ -390,45 +432,50 @@ const EmailGenerated = ({ data }: { data: any }) => {
                         </div>
                     </motion.div>
                 </motion.div>
+
             </Card>
         </motion.div>
     );
 };
 
 const BlogPostsSection = ({ data }: { data: any }) => {
+    const inProgress = !data.blog_posts
     return (
         <motion.div variants={cardVariants} initial="hidden" animate="visible">
             <Card className="p-6">
                 <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
                     <Newspaper className="w-5 h-5 mr-2 text-violet-400" /> Blog Post Selected
                 </h3>
-                <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-3 gap-4">
-                    <BlogCard /><BlogCard /><BlogCard />
-                </motion.div>
-                <Separator className="my-5" />
-                <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-5">
-                    {[
-                        { label: 'Posts found', value: '1', icon: Search, color: 'blue' },
-                        { label: 'Posts Deeply Analyzed', value: '1', icon: Brain, color: 'blue' },
-                        { label: 'Posts selected', value: '1', icon: CheckCircle2, color: 'blue' }
-                    ].map((stat, i) => (
-                        <motion.div key={i} custom={i} variants={statsVariants} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
-                            <Card className="p-6 backdrop-blur-none" /* gradient prop is not standard, assuming custom component */>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
-                                        <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.15 + 0.3 }} className="text-2xl font-bold text-white">
-                                            {stat.value}
-                                        </motion.p>
+                <div className={(inProgress ? "bg-gray-900 " : "") + "relative rounded-md"}>
+                    {inProgress && <Overlay />}
+                    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-3 gap-4">
+                        <BlogCard /><BlogCard /><BlogCard />
+                    </motion.div>
+                    <Separator className="my-5" />
+                    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-5">
+                        {[
+                            { label: 'Posts found', value: '1', icon: Search, color: 'blue' },
+                            { label: 'Posts Deeply Analyzed', value: '1', icon: Brain, color: 'blue' },
+                            { label: 'Posts selected', value: '1', icon: CheckCircle2, color: 'blue' }
+                        ].map((stat, i) => (
+                            <motion.div key={i} custom={i} variants={statsVariants} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
+                                <Card className="p-6 backdrop-blur-none" /* gradient prop is not standard, assuming custom component */>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
+                                            <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.15 + 0.3 }} className="text-2xl font-bold text-white">
+                                                {stat.value}
+                                            </motion.p>
+                                        </div>
+                                        <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.5 }} className={`w-12 h-12 bg-${stat.color}-500/20 rounded-xl flex items-center justify-center`}>
+                                            <stat.icon className={`w-6 h-6 text-${stat.color}-400`} />
+                                        </motion.div>
                                     </div>
-                                    <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.5 }} className={`w-12 h-12 bg-${stat.color}-500/20 rounded-xl flex items-center justify-center`}>
-                                        <stat.icon className={`w-6 h-6 text-${stat.color}-400`} />
-                                    </motion.div>
-                                </div>
-                            </Card>
-                        </motion.div>
-                    ))}
-                </motion.div>
+                                </Card>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                </div>
             </Card>
         </motion.div>
     );

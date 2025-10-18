@@ -11,6 +11,22 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'cdn.brandfetch.io',
       },
+      {
+        protocol: 'https',
+        hostname: 'encrypted-tbn0.gstatic.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.ctfassets.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'pngdownload.io',
+      },
     ],
   },
 
