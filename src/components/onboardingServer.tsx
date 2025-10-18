@@ -40,7 +40,6 @@ interface AdvancedFiltersServerProps {
 
 export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersServerProps) {
     const maxFilters = plan === 'ultra' ? 50 : 30
-
     const res = await fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/account", {
         credentials: "include",
         cache: "no-cache",
@@ -130,7 +129,7 @@ export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersSer
 
     // Deduplicazione
     const seen = new Set();
-    const defaultStrategy = [];
+    defaultStrategy = [];
     let id = 1;
 
     for (const s of rawStrategies) {

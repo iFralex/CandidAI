@@ -1,9 +1,154 @@
 "use client"
 
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "./ui/button";
-import { Badge, BarChart3, CheckCircle, Crown, ExternalLink, Mail, Plus, RefreshCw, Send, Timer } from "lucide-react";
+import { ArrowRight, Badge, BarChart3, CheckCircle, Crown, ExternalLink, Mail, Plus, RefreshCw, Send, Timer } from "lucide-react";
 import { Card } from "./ui/card";
+import Image from "next/image";
+import { motion } from 'framer-motion';
+
+const listVariants = {
+    visible: {
+        opacity: 1,
+        transition: {
+            when: "beforeChildren",
+            staggerChildren: 0.1, // Applica un ritardo tra ogni item
+        },
+    },
+    hidden: {
+        opacity: 0,
+    },
+};
+
+const itemVariants = {
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+    hidden: { opacity: 0, y: 20 },
+};
+
+export const AnimatedResults = ({ children }) => {
+    return (
+        <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            variants={listVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            {/* Mappiamo i children per avvolgerli in un motion.div */}
+            {React.Children.map(children, (child) => (
+                <motion.div variants={itemVariants}>{child}</motion.div>
+            ))}
+        </motion.div>
+    );
+};
+
+function getCachedLogo(company) {
+    if (typeof window === "undefined") return null;
+    const item = localStorage.getItem(`logo_${company}`);
+    if (!item) return null;
+
+    try {
+        const parsed = JSON.parse(item);
+        const now = Date.now();
+
+        // Controlla se è scaduto
+        if (now - parsed.timestamp > 24 * 60 * 60 * 1000) {
+            localStorage.removeItem(`logo_${company}`);
+            return null;
+        }
+        return parsed.url;
+    } catch {
+        localStorage.removeItem(`logo_${company}`);
+        return null;
+    }
+}
+
+// Funzione helper per salvare in cache
+function cacheLogo(company, url) {
+    const data = {
+        url,
+        timestamp: Date.now(),
+    };
+    localStorage.setItem(`logo_${company}`, JSON.stringify(data));
+}
+
+// Funzione per controllare se un link è ancora valido
+async function isUrlValid(url) {
+    try {
+        const response = await fetch(url, { method: "HEAD" });
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+
+export const CompanyLogo = ({ company, maxSize=12 }) => {
+    const [logo, setLogo] = useState(null);
+
+    useEffect(() => {
+        if (!company) return;
+
+        const loadLogo = async () => {
+            let cached = getCachedLogo(company);
+
+            // Se c'è una cache, verifica se è ancora valida
+            if (cached && (await isUrlValid(cached))) {
+                setLogo(cached);
+                return;
+            }
+
+            // Altrimenti, fai il fetch
+            const icon = await fetchLogo(company);
+            if (icon) {
+                cacheLogo(company, icon);
+                setLogo(icon);
+            }
+        };
+
+        loadLogo();
+    }, [company]);
+
+    return (
+        <div className={"relative aspect-square w-full rounded-xl flex items-center justify-center bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold overflow-hidden"} style={{maxWidth: "calc(var(--spacing) * " + (maxSize || 24).toString() + ")"}}>
+            {logo ? (
+                <Image
+                    src={logo}
+                    alt={`${company} logo`}
+                    className="w-full h-full object-contain"
+                    fill
+                />
+            ) : (
+                company?.charAt(0).toUpperCase()
+            )}
+        </div>
+    );
+
+};
+
+async function fetchLogo(domain) {
+    if (logoCache.has(domain)) {
+        return logoCache.get(domain);
+    }
+
+    try {
+        const res = await fetch(
+            `https://api.brandfetch.io/v2/search/${encodeURIComponent(domain)}?limit=1`,
+            { cache: "force-cache" }
+        );
+
+        if (res.ok) {
+            const data = await res.json();
+            const icon = Array.isArray(data) && data[0]?.icon ? data[0].icon : null;
+            logoCache.set(domain, icon);
+            return icon;
+        }
+    } catch (e) {
+        console.error("Errore fetch logo:", e);
+    }
+
+    logoCache.set(domain, null);
+    return null;
+}
+
 const ProgressBar = ({ progress, className = '' }) => {
     return (
         <div className={`w-full bg-white/10 rounded-full h-2 overflow-hidden ${className}`}>
@@ -14,90 +159,15 @@ const ProgressBar = ({ progress, className = '' }) => {
         </div>
     );
 };
-const Dashboard = ({ userData }) => {
-    // Mock data for active campaigns
-    const [campaigns] = useState([
-        {
-            id: 1,
-            company: "Google",
-            status: "processing",
-            progress: 65,
-            recruiterName: "Sarah Johnson",
-            recruiterTitle: "Senior Technical Recruiter",
-            startDate: "2024-01-15",
-            estimatedCompletion: "2024-01-17",
-            emailsGenerated: 0,
-            stage: "Analyzing company culture"
-        },
-        {
-            id: 2,
-            company: "Microsoft",
-            status: "processing",
-            progress: 30,
-            recruiterName: "Michael Chen",
-            recruiterTitle: "Principal Recruiter - Engineering",
-            startDate: "2024-01-16",
-            estimatedCompletion: "2024-01-18",
-            emailsGenerated: 0,
-            stage: "Finding recruiter contacts"
-        },
-        {
-            id: 3,
-            company: "Netflix",
-            status: "ready",
-            progress: 100,
-            recruiterName: "Emma Rodriguez",
-            recruiterTitle: "Technical Talent Acquisition",
-            startDate: "2024-01-10",
-            completedDate: "2024-01-14",
-            emailsGenerated: 2,
-            stage: "Emails ready for review"
-        },
-        {
-            id: 4,
-            company: "Airbnb",
-            status: "sent",
-            progress: 100,
-            recruiterName: "James Park",
-            recruiterTitle: "Senior Engineering Recruiter",
-            startDate: "2024-01-08",
-            sentDate: "2024-01-15",
-            emailsGenerated: 1,
-            emailsSent: 1,
-            stage: "Email sent successfully"
-        }
-    ]);
 
-    const getStatusInfo = (status) => {
-        const statusMap = {
-            processing: {
-                color: 'processing',
-                icon: <RefreshCw className="w-4 h-4 animate-spin" />,
-                label: 'Processing'
-            },
-            ready: {
-                color: 'success',
-                icon: <CheckCircle className="w-4 h-4" />,
-                label: 'Ready to Send'
-            },
-            sent: {
-                color: 'default',
-                icon: <Send className="w-4 h-4" />,
-                label: 'Sent'
-            },
-            paused: {
-                color: 'warning',
-                icon: <Timer className="w-4 h-4" />,
-                label: 'Paused'
-            }
-        };
-        return statusMap[status] || statusMap.processing;
-    };
+const logoCache = new Map();
 
-    const processingCampaigns = campaigns.filter(c => c.status === 'processing').length;
-    const readyCampaigns = campaigns.filter(c => c.status === 'ready').length;
-    const sentCampaigns = campaigns.filter(c => c.status === 'sent').length;
-    const totalEmailsGenerated = campaigns.reduce((sum, c) => sum + c.emailsGenerated, 0);
+const Dashboard = ({ results }) => {
+
+    const processingCampaigns = results.filter(c => c.status === 'processing').length;
+    const readyCampaigns = results.filter(c => c.status === 'ready').length;
+    const sentCampaigns = results.filter(c => c.status === 'sent').length;
+    const totalEmailsGenerated = results.reduce((sum, c) => sum + c.emailsGenerated, 0);
 
     return (
         <div className="space-y-8">
@@ -175,76 +245,10 @@ const Dashboard = ({ userData }) => {
             <Card className="p-8">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-white">Active Campaigns</h2>
-                    <Badge variant="primary">{campaigns.length} total</Badge>
+                    <Badge variant="primary">{results.length} total</Badge>
                 </div>
 
-                <div className="space-y-6">
-                    {campaigns.map((campaign) => {
-                        const statusInfo = getStatusInfo(campaign.status);
-
-                        return (
-                            <Card key={campaign.id} className="p-6 backdrop-blur-none" hover >
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center space-x-4">
-                                        <div className="w-12 h-12 bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-semibold">
-                                            {campaign.company.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-white">{campaign.company}</h3>
-                                            <p className="text-gray-400 text-sm">{campaign.recruiterName} • {campaign.recruiterTitle}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center space-x-4">
-                                        <Badge variant={statusInfo.color} icon={statusInfo.icon}>
-                                            {statusInfo.label}
-                                        </Badge>
-
-                                        {campaign.status === 'ready' && (
-                                            <Button variant="primary" size="sm">
-                                                Review Emails
-                                            </Button>
-                                        )}
-
-                                        {campaign.status === 'sent' && (
-                                            <Button variant="ghost" size="sm" icon={<BarChart3 className="w-4 h-4" />}>
-                                                View Analytics
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {campaign.status === 'processing' && (
-                                    <div className="mb-4">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm text-gray-400">{campaign.stage}</span>
-                                            <span className="text-sm text-gray-400">{campaign.progress}%</span>
-                                        </div>
-                                        <ProgressBar progress={campaign.progress} />
-                                    </div>
-                                )}
-
-                                <div className="flex items-center justify-between text-sm text-gray-400">
-                                    <div className="flex items-center space-x-4">
-                                        <span>Started: {new Date(campaign.startDate).toLocaleDateString()}</span>
-                                        {campaign.estimatedCompletion && (
-                                            <span>ETA: {new Date(campaign.estimatedCompletion).toLocaleDateString()}</span>
-                                        )}
-                                    </div>
-
-                                    <div className="flex items-center space-x-4">
-                                        {campaign.emailsGenerated > 0 && (
-                                            <span>{campaign.emailsGenerated} email{campaign.emailsGenerated > 1 ? 's' : ''} generated</span>
-                                        )}
-                                        {campaign.emailsSent > 0 && (
-                                            <span>{campaign.emailsSent} sent</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </Card>
-                        );
-                    })}
-                </div>
+                <Results results={results} />
             </Card>
 
             {/* Quick Actions */}

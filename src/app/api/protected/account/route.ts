@@ -1,8 +1,8 @@
 // app/api/protected/user/route.js
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/server-auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase-admin/firestore';
+import { adminDb } from '@/lib/firebase-admin';
 import { clientConfig, serverConfig } from '@/config';
 import { getApiRequestTokens, getTokens } from 'next-firebase-auth-edge';
 import { cookies } from 'next/headers';
@@ -19,9 +19,9 @@ export async function GET(request) {
     const decodedToken = tokens?.decodedToken
 
     // Ottieni i dati utente da Firestore
-    const userDoc = await getDoc(doc(db, 'users', decodedToken.uid, "data", "account"));
+    const userDoc = await adminDb.collection('users').doc(decodedToken.uid).collection("data").doc("account").get();
 
-    if (!userDoc.exists()) {
+    if (!userDoc.exists) {
       return NextResponse.json(
         { error: 'Information not found' },
         { status: 404 }

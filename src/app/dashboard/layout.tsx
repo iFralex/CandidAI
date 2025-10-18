@@ -2,16 +2,12 @@
 // Non usare 'use client'
 
 import { Activity, BarChart3, FileText, Home, LogOut, Settings, Sparkles, Menu } from 'lucide-react'; // Importa le icone
-import { SidebarClientWrapper } from '@/components/SidebarClientWrapper'; // Il Client Component che gestirà lo stato
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { getServerUser } from '@/lib/server-auth';
-import { notFound, redirect } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getTokens } from 'next-firebase-auth-edge';
 import { cookies } from 'next/headers';
-import { clientConfig, serverConfig } from '@/config';
 import Image from 'next/image';
+import { ProgressBar } from '@/components/ui/progress-bar';
 
 // Tipo di dati utente (puoi prenderlo dal tuo sistema di auth)
 interface User {
@@ -53,17 +49,6 @@ const AnimatedBackground = () => {
                     }}
                 />
             ))}
-        </div>
-    );
-};
-
-const ProgressBar = ({ progress, className = '' }) => {
-    return (
-        <div className={`w-full bg-white/10 rounded-full h-2 overflow-hidden ${className}`}>
-            <div
-                className="h-full bg-gradient-to-r from-violet-500 to-purple-600 transition-all duration-500 ease-out"
-                style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
-            />
         </div>
     );
 };
@@ -175,7 +160,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
                                 </div>
                             </div>
 
-                            {currentStep && totalSteps && (
+                            {!onboarded && currentStep && totalSteps && (
                                 <div className="flex items-center space-x-4">
                                     <div className="w-48">
                                         <ProgressBar progress={(currentStep / totalSteps) * 100} />

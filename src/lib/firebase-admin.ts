@@ -1,7 +1,7 @@
 // lib/firebase-admin.js
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import app from './firebase';
+import { getFirestore } from 'firebase-admin/firestore';
 
 // Inizializza Firebase Admin solo se non è già stato inizializzato
 if (!getApps().length) {
@@ -19,3 +19,4 @@ if (!getApps().length) {
 }
 
 export const admin = getAuth();
+export const adminDb = getFirestore();

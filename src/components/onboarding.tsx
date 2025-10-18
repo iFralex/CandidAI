@@ -1326,6 +1326,43 @@ const availableCriteria = {
     },
 };
 
+export const CriteriaDisplay = ({ criteria }) => {
+    if (criteria.length === 0) {
+        return (
+            <div className="flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-300 italic text-sm">Any available recruiter</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-2 flex-wrap">
+            {criteria.map((c, idx) => {
+                const criterionInfo = availableCriteria[c.key];
+                if (!criterionInfo) return null;
+                const Icon = criterionInfo.icon;
+
+                return (
+                    <React.Fragment key={c.key}>
+                        <div className={`bg-${criterionInfo.color}-500/20 border border-${criterionInfo.color}-500/30 text-${criterionInfo.color}-300 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center space-x-2 shadow-sm`}>
+                            <Icon className="w-4 h-4" />
+                            <div className='flex flex-wrap'>{criterionInfo.label}:
+                                {Array.isArray(c.value) ? c.value.map((v, i, self) => <>
+                                    <strong className="text-white px-1">{criterionInfo.inputType === "multiselect" ? criterionInfo.options.find(o => o.value === v)?.label || "Missed" : v}</strong>
+                                    {i < self.length - 1 && <span className="text-violet-400 font-bold">or</span>}
+                                </>)
+                                    : <strong className="text-white">{c.value}</strong>}
+                            </div>
+                        </div>
+                        {idx < criteria.length - 1 && <span className="text-violet-400 font-bold">AND</span>}
+                    </React.Fragment>
+                );
+            })}
+        </div>
+    );
+};
+
 export function AdvancedFiltersClient({ defaultStrategy, maxStrategies, userId }) {
     const [strategy, setStrategy] = useState(defaultStrategy);
     const [isPending, startTransition] = useTransition();
@@ -1450,43 +1487,6 @@ export function AdvancedFiltersClient({ defaultStrategy, maxStrategies, userId }
                 return prev + 1;
             });
         }, 1500);
-    };
-
-    const CriteriaDisplay = ({ criteria }) => {
-        if (criteria.length === 0) {
-            return (
-                <div className="flex items-center space-x-2">
-                    <Sparkles className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-300 italic text-sm">Any available recruiter</span>
-                </div>
-            );
-        }
-
-        return (
-            <div className="flex items-center gap-2 flex-wrap">
-                {criteria.map((c, idx) => {
-                    const criterionInfo = availableCriteria[c.key];
-                    if (!criterionInfo) return null;
-                    const Icon = criterionInfo.icon;
-
-                    return (
-                        <React.Fragment key={c.key}>
-                            <div className={`bg-${criterionInfo.color}-500/20 border border-${criterionInfo.color}-500/30 text-${criterionInfo.color}-300 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center space-x-2 shadow-sm`}>
-                                <Icon className="w-4 h-4" />
-                                <div className='flex flex-wrap'>{criterionInfo.label}:
-                                    {Array.isArray(c.value) ? c.value.map((v, i, self) => <>
-                                        <strong className="text-white px-1">{criterionInfo.inputType === "multiselect" ? criterionInfo.options.find(o => o.value === v)?.label || "Missed" : v}</strong>
-                                        {i < self.length - 1 && <span className="text-violet-400 font-bold">or</span>}
-                                    </>)
-                                        : <strong className="text-white">{c.value}</strong>}
-                                </div>
-                            </div>
-                            {idx < criteria.length - 1 && <span className="text-violet-400 font-bold">AND</span>}
-                        </React.Fragment>
-                    );
-                })}
-            </div>
-        );
     };
 
     const CriterionInput = ({ criterionKey, value }) => {
@@ -2412,83 +2412,50 @@ function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
     );
 }
 
-function SkillsList({ profileSummary, setProfileSummary }: any) {
-    const [newSkill, setNewSkill] = useState("");
-    const [adding, setAdding] = useState(false);
+function SkillsListClient({ profileSummary, setProfileSummary }: any) {
+  const [newSkill, setNewSkill] = useState("");
+  const [adding, setAdding] = useState(false);
 
-    const addSkill = () => {
-        if (!newSkill.trim() || profileSummary.skills.length > 70 || profileSummary.skills.find(s => s.trim().toUpperCase() === newSkill.trim().toUpperCase())) return;
-        setProfileSummary((prev: any) =>
-            prev ? { ...prev, skills: [...prev.skills, newSkill.trim()] } : null
-        );
+  const addSkill = () => {
+    if (
+      !newSkill.trim() ||
+      profileSummary.skills.length > 70 ||
+      profileSummary.skills.find(
+        (s: string) => s.trim().toUpperCase() === newSkill.trim().toUpperCase()
+      )
+    ) return;
+
+    setProfileSummary((prev: any) =>
+      prev ? { ...prev, skills: [...prev.skills, newSkill.trim()] } : null
+    );
+    setNewSkill("");
+    setAdding(false);
+  };
+
+  const removeSkill = (index: number) => {
+    setProfileSummary((prev: any) =>
+      prev ? { ...prev, skills: prev.skills.filter((_: any, i: number) => i !== index) } : null
+    );
+  };
+
+  return (
+    <SkillsListBase
+      skills={profileSummary.skills}
+      editable={true}
+      newSkill={newSkill}
+      setNewSkill={setNewSkill}
+      onAdd={addSkill}
+      onRemove={removeSkill}
+      onStartAdd={() => setAdding(true)}
+      onCancelAdd={() => {
         setNewSkill("");
         setAdding(false);
-    };
-
-    return (
-        <div className="flex flex-wrap gap-2 items-start">
-            {profileSummary?.skills?.map((skill: string, index: number) => (
-                <Badge key={index} className="font-bold relative group px-0">
-                    <div className='flex justify-between items-center pl-2 pr-1 gap-2'>
-                        {skill}
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setProfileSummary((prev: any) =>
-                                    prev
-                                        ? {
-                                            ...prev,
-                                            skills: prev.skills.filter((_, i) => i !== index),
-                                        }
-                                        : null
-                                )
-                            }
-                            className="bg-black/20 hover:bg-red-500/50 rounded-full transition-colors"
-                        >
-                            <X className="w-3 h-3" />
-                        </button>
-                    </div>
-                </Badge>
-            ))}
-
-            {/* Badge + per aggiungere una skill */}
-            {adding ? (
-                <div className="flex items-center gap-1 border rounded-full px-2 py-1">
-                    <input
-                        type="text"
-                        value={newSkill}
-                        onChange={(e) => setNewSkill(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && addSkill()}
-                        onBlur={() => !newSkill.trim() && setAdding(false)} // chiude se esci senza testo
-                        placeholder="New skill"
-                        maxLength={30} // limite caratteri
-                        className="bg-transparent outline-none text-sm"
-                        autoFocus
-                    />
-
-                    {newSkill.trim() ? (
-                        <button onClick={addSkill}>
-                            <Plus className="w-4 h-4 text-green-500" />
-                        </button>
-                    ) : (
-                        <button onClick={() => setAdding(false)}>
-                            <X className="text-red-400 size-4" />
-                        </button>
-                    )}
-                </div>
-            ) : (
-                <Badge
-                    onClick={() => setAdding(true)}
-                    className="cursor-pointer flex items-center gap-1 font-bold bg-transparent text-white hover:bg-white/5 transition border border-white/90"
-                >
-                    <Plus className="w-4 h-4" /> Add
-                </Badge>
-            )}
-        </div>
-    );
+      }}
+    />
+  );
 }
 
-function ExperienceSection({ profileSummary, setProfileSummary }: any) {
+function ExperienceEditor({ profileSummary, setProfileSummary }: any) {
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [tempExp, setTempExp] = useState<any>({
         title: { name: "" },
@@ -2498,228 +2465,99 @@ function ExperienceSection({ profileSummary, setProfileSummary }: any) {
         end_date: "",
     });
 
-    // Apri dialog per aggiungere o modificare
     const handleEdit = (index: number | null) => {
         setEditingIndex(index);
-        if (index !== null && profileSummary?.experience?.[index]) {
-            setTempExp({ ...profileSummary.experience[index] });
-        } else {
-            setTempExp({
+        setTempExp(
+            index !== null ? { ...profileSummary.experience[index] } : {
                 title: { name: "" },
                 company: { name: "", location: { name: "" } },
                 logo: "",
                 start_date: "",
                 end_date: "",
-            });
-        }
+            }
+        );
     };
 
     const handleSave = () => {
         if (!tempExp.title?.name.trim() || !tempExp.company?.name.trim()) return;
 
         setProfileSummary((prev: any) => {
-            if (!prev) return prev;
             const newExp = [...(prev.experience || [])];
-
-            if (editingIndex !== null) {
-                // Modifica esperienza esistente
-                newExp[editingIndex] = tempExp;
-            } else {
-                // Aggiungi nuova esperienza
-                newExp.push(tempExp);
-            }
-
+            if (editingIndex !== null) newExp[editingIndex] = tempExp;
+            else newExp.push(tempExp);
             return { ...prev, experience: newExp };
         });
-
         setEditingIndex(null);
     };
 
     const handleDelete = (index: number) => {
-        setProfileSummary((prev: any) => {
-            if (!prev) return prev;
-            const newExp = prev.experience.filter((_: any, i: number) => i !== index);
-            return { ...prev, experience: newExp };
-        });
+        setProfileSummary((prev: any) => ({
+            ...prev,
+            experience: prev.experience.filter((_: any, i: number) => i !== index),
+        }));
     };
 
     return (
         <div>
-            <Dialog>
-                <div className="flex justify-start items-center mb-3 space-x-2">
-                    <p className="text-sm text-gray-400">Experience</p>
-                    <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="p-1" onClick={() => handleEdit(null)}>
-                            <Plus className="w-4 h-4" />
-                        </Button>
-                    </DialogTrigger>
-                </div>
+            <div className="flex justify-between items-center mb-3">
+                <p className="text-sm text-gray-400">Experience</p>
+                <DialogTrigger asChild>
+                    <Button size="sm" variant="ghost" onClick={() => handleEdit(null)}>
+                        <Plus className="w-4 h-4" />
+                    </Button>
+                </DialogTrigger>
+            </div>
 
-                {/* Lista esperienze */}
-                <ul className="space-y-3">
-                    {profileSummary?.experience?.map((exp: any, idx: number) => (
-                        <li
-                            key={idx}
-                            className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors"
-                        >
-                            <div className="flex items-start gap-3">
-                                {/* Logo aziendale */}
-                                {exp.logo ? (
-                                    <img
-                                        src={exp.logo}
-                                        alt={exp.company?.name || "Company"}
-                                        className="w-10 h-10 rounded-lg object-contain bg-white/5 p-1.5 border border-white/10 flex-shrink-0"
-                                    />
-                                ) : (
-                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-600/20 border border-white/10 flex items-center justify-center flex-shrink-0">
-                                        <span className="text-violet-400 text-xs font-bold">
-                                            {exp.company?.name?.charAt(0) || "?"}
-                                        </span>
-                                    </div>
-                                )}
+            {/* stessa UI usata anche nel server */}
+            <ul className="space-y-3">
+                <ExperienceList
+                    experience={profileSummary.experience}
+                    editable
+                    onEdit={(idx) => handleEdit(idx)}
+                />
+            </ul>
 
-                                <div className="flex-1 min-w-0">
-                                    {/* Titolo ruolo */}
-                                    <p className="text-white font-medium">{exp.title?.name || "Role not available"}</p>
-
-                                    {/* Azienda */}
-                                    {exp.company?.name && (
-                                        <p className="text-gray-300 text-sm">
-                                            {exp.company.name}
-                                            {exp.company.location?.name && ` · ${exp.company.location.name}`}
-                                        </p>
-                                    )}
-
-                                    {/* Date */}
-                                    {(exp.start_date || exp.end_date) && (
-                                        <p className="text-gray-400 text-xs mt-1">
-                                            {exp.start_date || "?"} → {exp.end_date || "Current"}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Pulsante modifica singolo */}
-                                <DialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="p-1" onClick={() => handleEdit(idx)}>
-                                        <Edit2 className="w-4 h-4" />
-                                    </Button>
-                                </DialogTrigger>
-                            </div>
-                        </li>
-                    ))}
-
-                    {!profileSummary?.experience?.length && <li
-                        className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors"
-                    >
-                        <div className="flex-1 min-w-0 min-h-16 flex items-center justify-center text-gray-500">
-                            No experience
-                        </div>
-                    </li>}
-                </ul>
-
-                <DialogContent className="">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {editingIndex !== null ? "Edit Experience" : "Add Experience"}
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <ScrollArea className='max-h-[calc(85vh-100px)]'>
-                        <div className='space-y-4 p-1'>
-                            <div className="flex flex-col gap-2">
-                                <label className="text-sm text-gray-400">Role</label>
-                                <Input
-                                    type="text"
-                                    value={tempExp.title?.name || ""}
-                                    onChange={(e) => setTempExp({ ...tempExp, title: { ...tempExp.title, name: e.target.value } })}
-                                    maxLength={50}
-                                />
-                            </div>
-
-                            <div className="flex flex-col gap-2">
-                                <label className="text-sm text-gray-400">Company</label>
-                                <CompanyAutocomplete onChange={(e) =>
-                                    setTempExp({
-                                        ...tempExp,
-                                        company: { domain: "", name: e },
-                                    })
-                                } onAddCompany={(e) => setTempExp({ ...tempExp, logo: e.icon, company: { domain: e.domain, name: e.name } })}
-                                    value={tempExp.company?.name}
-                                />
-                            </div>
-
-                            <div className="flex flex-col gap-2">
-                                <label className="text-sm text-gray-400">Location</label>
-                                <Input
-                                    type="text"
-                                    value={tempExp.company?.location?.name || ""}
-                                    onChange={(e) =>
-                                        setTempExp({
-                                            ...tempExp,
-                                            company: {
-                                                ...tempExp.company,
-                                                location: { ...tempExp.company.location, name: e.target.value },
-                                            },
-                                        })
-                                    }
-                                    maxLength={50}
-                                />
-                            </div>
-
-                            <div className="flex flex-col gap-2">
-                                <label className="text-sm text-gray-400">Logo URL</label>
-                                <Input
-                                    type="text"
-                                    value={tempExp.logo || ""}
-                                    onChange={(e) => setTempExp({ ...tempExp, logo: e.target.value })}
-                                    className=""
-                                    icon={tempExp.logo ? <img src={tempExp.logo} className='w-6 h-6 rounded-md' /> : null}
-                                />
-                            </div>
-
-                            <div className="flex gap-3">
-                                <div className="flex flex-col gap-2 w-1/2">
-                                    <label className="text-sm text-gray-400">Start Date</label>
-                                    <Input
-                                        type="text"
-                                        value={tempExp.start_date || ""}
-                                        onChange={(e) => setTempExp({ ...tempExp, start_date: e.target.value })}
-                                        placeholder="yyyy-mm"
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-2 w-1/2">
-                                    <label className="text-sm text-gray-400">End Date</label>
-                                    <Input
-                                        type="text"
-                                        value={tempExp.end_date || ""}
-                                        onChange={(e) => setTempExp({ ...tempExp, end_date: e.target.value })}
-                                        placeholder="yyyy-mm or Current"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <ScrollBar orientation='vertical' />
-                    </ScrollArea>
+            <Dialog open={editingIndex !== null} onOpenChange={() => setEditingIndex(null)}>
+                <DialogContent>
+                    <div className="space-y-4">
+                        <Input
+                            placeholder="Role"
+                            value={tempExp.title.name}
+                            onChange={(e) =>
+                                setTempExp({ ...tempExp, title: { name: e.target.value } })
+                            }
+                        />
+                        <Input
+                            placeholder="Company"
+                            value={tempExp.company.name}
+                            onChange={(e) =>
+                                setTempExp({
+                                    ...tempExp,
+                                    company: { ...tempExp.company, name: e.target.value },
+                                })
+                            }
+                        />
+                    </div>
 
                     <DialogFooter>
-                        <DialogClose asChild>
-                            {editingIndex !== null && (
+                        {editingIndex !== null && (
+                            <DialogClose asChild>
                                 <Button variant="destructive" onClick={() => handleDelete(editingIndex)}>
                                     <Trash2 className="w-4 h-4" /> Delete
                                 </Button>
-                            )}
-                        </DialogClose>
+                            </DialogClose>
+                        )}
                         <DialogClose asChild>
                             <Button onClick={handleSave}>Save</Button>
                         </DialogClose>
                     </DialogFooter>
                 </DialogContent>
-            </Dialog >
-        </div >
+            </Dialog>
+        </div>
     );
 }
 
-function EducationSection({ profileSummary, setProfileSummary }: any) {
+export default function EducationSection({ profileSummary, setProfileSummary }: any) {
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [tempEdu, setTempEdu] = useState<any>({
         school: { name: "" },
@@ -2730,219 +2568,152 @@ function EducationSection({ profileSummary, setProfileSummary }: any) {
         end_date: "",
     });
 
-    // Apri dialog per aggiungere o modificare
     const handleEdit = (index: number | null) => {
         setEditingIndex(index);
-        if (index !== null && profileSummary?.education?.[index]) {
-            setTempEdu({ ...profileSummary.education[index] });
-        } else {
-            setTempEdu({
+        setTempEdu(
+            index !== null ? { ...profileSummary.education[index] } : {
                 school: { name: "" },
                 degree: "",
                 majors: [],
                 logo: "",
                 start_date: "",
                 end_date: "",
-            });
-        }
+            }
+        );
     };
 
     const handleSave = () => {
-        console.log(tempEdu.majors)
-        if (!tempEdu.school?.name.trim() || !tempEdu.majors.length || tempEdu.majors.filter(m => !m.trim()).length) return;
+        if (!tempEdu.school?.name.trim() || !tempEdu.majors.length || tempEdu.majors.some((m: string) => !m.trim())) return;
 
         setProfileSummary((prev: any) => {
-            if (!prev) return prev;
             const newEdu = [...(prev.education || [])];
-
-            if (editingIndex !== null) {
-                newEdu[editingIndex] = tempEdu;
-            } else {
-                newEdu.push(tempEdu);
-            }
-
+            if (editingIndex !== null) newEdu[editingIndex] = tempEdu;
+            else newEdu.push(tempEdu);
             return { ...prev, education: newEdu };
         });
-
         setEditingIndex(null);
     };
 
     const handleDelete = (index: number) => {
-        setProfileSummary((prev: any) => {
-            if (!prev) return prev;
-            const newEdu = prev.education.filter((_: any, i: number) => i !== index);
-            return { ...prev, education: newEdu };
-        });
+        setProfileSummary((prev: any) => ({
+            ...prev,
+            education: prev.education.filter((_: any, i: number) => i !== index),
+        }));
     };
 
     return (
         <div>
-            <Dialog>
-                <div className="flex justify-start items-center mb-3 space-x-2">
-                    <p className="text-sm text-gray-400">Experience</p>
-                    <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="p-1" onClick={() => handleEdit(null)}>
-                            <Plus className="w-4 h-4" />
-                        </Button>
-                    </DialogTrigger>
-                </div>
+            <div className="flex justify-between items-center mb-3">
+                <p className="text-sm text-gray-400">Education</p>
+                <DialogTrigger asChild>
+                    <Button size="sm" variant="ghost" onClick={() => handleEdit(null)}>
+                        <Plus className="w-4 h-4" />
+                    </Button>
+                </DialogTrigger>
+            </div>
 
-                {/* Lista education */}
-                <ul className="space-y-3">
-                    {profileSummary?.education?.map((edu: any, idx: number) => (
-                        <li
-                            key={idx}
-                            className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors"
-                        >
-                            <div className="flex items-start gap-3">
-                                {/* Logo scuola */}
-                                {edu.logo ? (
-                                    <img
-                                        src={edu.logo}
-                                        alt={edu.school?.name || "School"}
-                                        className="w-10 h-10 rounded-lg object-contain bg-white/5 p-1.5 border border-white/10 flex-shrink-0"
-                                    />
-                                ) : (
-                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-600/20 border border-white/10 flex items-center justify-center flex-shrink-0">
-                                        <span className="text-blue-400 text-xs font-bold">
-                                            {edu.school?.name?.charAt(0) || "?"}
-                                        </span>
-                                    </div>
-                                )}
+            {/* UI condivisa */}
+            <ul className="space-y-3">
+                <EducationList
+                    education={profileSummary.education}
+                    editable
+                    onEdit={(idx) => handleEdit(idx)}
+                />
+            </ul>
 
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-white font-medium">
-                                        {edu.majors?.join(", ") || "Major not available"}
-                                    </p>
-
-                                    {edu.school?.name && (
-                                        <p className="text-gray-300 text-sm">{edu.school.name}</p>
-                                    )}
-
-                                    {(edu.start_date || edu.end_date || edu.degree) && (
-                                        <p className="text-gray-400 text-xs mt-1">
-                                            {edu.degree && <>{edu.degree} | </>}{edu.start_date || "?"} → {edu.end_date || "?"}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Modifica singolo */}
-                                <DialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="p-1" onClick={() => handleEdit(idx)}>
-                                        <Edit2 className="w-4 h-4" />
-                                    </Button>
-                                </DialogTrigger>
-                            </div>
-                        </li>
-                    ))}
-                    {!profileSummary?.education?.length && <li
-                        className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors"
-                    >
-                        <div className="flex-1 min-w-0 min-h-16 flex items-center justify-center text-gray-500">
-                            No education
-                        </div>
-                    </li>}
-                </ul>
-
+            <Dialog open={editingIndex !== null} onOpenChange={() => setEditingIndex(null)}>
                 <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>
-                            {editingIndex !== null ? "Edit Education" : "Add Education"}
-                        </DialogTitle>
-                    </DialogHeader>
+                    <div className="space-y-4 p-1 max-h-[calc(85vh-100px)] overflow-auto">
+                        {/* School */}
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm text-gray-400">School</label>
+                            <CompanyAutocomplete
+                                onChange={(e) =>
+                                    setTempEdu({
+                                        ...tempEdu,
+                                        school: { domain: "", name: e },
+                                    })
+                                }
+                                onAddCompany={(e) =>
+                                    setTempEdu({
+                                        ...tempEdu,
+                                        logo: e.icon,
+                                        school: { domain: e.domain, name: e.name },
+                                    })
+                                }
+                                value={tempEdu.school?.name || ""}
+                            />
+                        </div>
 
-                    <ScrollArea className='max-h-[calc(85vh-100px)]'>
-                        <div className='space-y-4 p-1'>
-                            <div className="flex flex-cols md:flex-row gap-3">
-                                {/* School */}
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-sm text-gray-400">School</label>
-                                    <CompanyAutocomplete onChange={(e) =>
-                                        setTempEdu({
-                                            ...tempEdu,
-                                            school: { domain: "", name: e },
-                                        })
-                                    } onAddCompany={(e) => setTempEdu({ ...tempEdu, logo: e.icon, school: { domain: e.domain, name: e.name } })}
-                                        value={tempEdu.school?.name || ""}
-                                    />
-                                </div>
+                        {/* Degree */}
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm text-gray-400">Degree</label>
+                            <Input
+                                type="text"
+                                value={tempEdu.degree || ""}
+                                onChange={(e) => setTempEdu({ ...tempEdu, degree: e.target.value })}
+                                placeholder="Bachelor"
+                            />
+                        </div>
 
-                                {/* Degree (lista separata da virgole) */}
-                                <div className="flex flex-col gap-2">
-                                    <label className="text-sm text-gray-400">Degree</label>
-                                    <Input
-                                        type="text"
-                                        value={tempEdu.degree || ""}
-                                        onChange={(e) =>
-                                            setTempEdu({
-                                                ...tempEdu,
-                                                degree: e.target.value,
-                                            })
-                                        }
-                                        placeholder="Bachelor"
-                                    />
-                                </div>
-                            </div>
+                        {/* Majors */}
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm text-gray-400">Majors</label>
+                            <Input
+                                type="text"
+                                value={tempEdu.majors?.join(", ") || ""}
+                                onChange={(e) =>
+                                    setTempEdu({
+                                        ...tempEdu,
+                                        majors: e.target.value.split(",").map((m) => m.trim()),
+                                    })
+                                }
+                                placeholder="Computer Science, Mathematics"
+                            />
+                        </div>
 
-                            {/* Majors (lista separata da virgole) */}
-                            <div className="flex flex-col gap-2">
-                                <label className="text-sm text-gray-400">Majors</label>
+                        {/* Logo */}
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm text-gray-400">Logo URL</label>
+                            <Input
+                                type="text"
+                                value={tempEdu.logo || ""}
+                                onChange={(e) => setTempEdu({ ...tempEdu, logo: e.target.value })}
+                                icon={tempEdu.logo ? <img src={tempEdu.logo} className="w-6 h-6 rounded-md" /> : null}
+                            />
+                        </div>
+
+                        {/* Dates */}
+                        <div className="flex gap-3">
+                            <div className="flex flex-col gap-2 w-1/2">
+                                <label className="text-sm text-gray-400">Start Date</label>
                                 <Input
                                     type="text"
-                                    value={tempEdu.majors?.join(", ") || ""}
-                                    onChange={(e) =>
-                                        setTempEdu({
-                                            ...tempEdu,
-                                            majors: e.target.value.split(",").map((m) => m.trim()),
-                                        })
-                                    }
-                                    placeholder="Computer Science, Mathematics"
+                                    value={tempEdu.start_date || ""}
+                                    onChange={(e) => setTempEdu({ ...tempEdu, start_date: e.target.value })}
+                                    placeholder="yyyy-mm"
                                 />
                             </div>
-
-                            {/* Logo */}
-                            <div className="flex flex-col gap-2">
-                                <label className="text-sm text-gray-400">Logo URL</label>
+                            <div className="flex flex-col gap-2 w-1/2">
+                                <label className="text-sm text-gray-400">End Date</label>
                                 <Input
                                     type="text"
-                                    value={tempEdu.logo || ""}
-                                    onChange={(e) => setTempEdu({ ...tempEdu, logo: e.target.value })}
-                                    icon={tempEdu.logo ? <img src={tempEdu.logo} className="w-6 h-6 rounded-md" /> : null}
+                                    value={tempEdu.end_date || ""}
+                                    onChange={(e) => setTempEdu({ ...tempEdu, end_date: e.target.value })}
+                                    placeholder="yyyy-mm or Current"
                                 />
-                            </div>
-
-                            {/* Date */}
-                            <div className="flex gap-3">
-                                <div className="flex flex-col gap-2 w-1/2">
-                                    <label className="text-sm text-gray-400">Start Date</label>
-                                    <Input
-                                        type="text"
-                                        value={tempEdu.start_date || ""}
-                                        onChange={(e) => setTempEdu({ ...tempEdu, start_date: e.target.value })}
-                                        placeholder="yyyy-mm"
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-2 w-1/2">
-                                    <label className="text-sm text-gray-400">End Date</label>
-                                    <Input
-                                        type="text"
-                                        value={tempEdu.end_date || ""}
-                                        onChange={(e) => setTempEdu({ ...tempEdu, end_date: e.target.value })}
-                                        placeholder="yyyy-mm or Current"
-                                    />
-                                </div>
                             </div>
                         </div>
-                        <ScrollBar orientation='vertical' />
-                    </ScrollArea>
+                    </div>
+
                     <DialogFooter>
-                        <DialogClose asChild>
-                            {editingIndex !== null && (
-                                <Button variant="destructive" onClick={() => handleDelete(editingIndex)}>
+                        {editingIndex !== null && (
+                            <DialogClose asChild>
+                                <Button variant="destructive" onClick={() => handleDelete(editingIndex!)}>
                                     <Trash2 className="w-4 h-4" /> Delete
                                 </Button>
-                            )}
-                        </DialogClose>
+                            </DialogClose>
+                        )}
                         <DialogClose asChild>
                             <Button onClick={handleSave}>Save</Button>
                         </DialogClose>
@@ -3336,9 +3107,85 @@ function ProjectsSection({ profileSummary, setProfileSummary }: any) {
     );
 }
 
-export function ProfileAnalysisClient({ userId, plan }: ProfileAnalysisClientProps) {
-    //const mockRecruiterPersona = "Looking for an experienced Frontend Developer with strong React and TypeScript skills, ideally with leadership experience in fast-paced tech environments. The perfect recruiter would be from innovative companies focusing on user experience and modern web technologies."
+export function ProfileSummaryCard({
+    cardVariants,
+    profileSummary,
+    setProfileSummary,
+    cvFile,
+    handleCvUpload
+}) {
+    return (
+        <motion.div variants={cardVariants} className="h-full">
+            <Card className="p-6 h-full">
+                <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
+                    <User className="w-5 h-5 mr-2 text-violet-400" />
+                    Your Profile Summary
+                </h3>
 
+                <div className="space-y-6">
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                        {/* Name & Title */}
+                        <ProfileNameTitle profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
+
+                        {cvFile && <div className="flex justify-between items-center md:flex-row flex-col gap-2 pb-4 border-b border-white/10 w-full">
+                            <div className='flex gap-2 items-center w-full'>
+                                <FileText size={48} className="text-violet-400" />
+                                <div>
+                                    <h3 className="text-xl font-semibold text-white flex items-center">
+                                        Your CV
+                                    </h3>
+                                    <p className="text-gray-400">{cvFile.name || "No CV uploaded."}</p>
+                                </div>
+                            </div>
+                            <label className="md:w-auto w-full flex justify-center bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer inline-flex items-center space-x-2">
+                                <Upload className="w-4 h-4" />
+                                <span>Change CV</span>
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    onChange={handleCvUpload}
+                                    accept=".pdf,.doc,.docx"
+                                />
+                            </label>
+                        </div>}
+                    </div>
+
+                    {/* Key Skills */}
+                    <div className='pb-4 border-b border-white/10'>
+                        <p className="text-sm text-gray-400 mb-3">Key Skills</p>
+                        <SkillsListClient profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
+                    </div>
+
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                        {/* Experience */}
+                        <div>
+                            <ExperienceEditor profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
+                        </div>
+
+                        {/* Education */}
+                        <div>
+                            <EducationSection profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
+                        </div>
+                    </div>
+
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                        {/* Experience */}
+                        <div>
+                            <ProjectsSection profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
+                        </div>
+
+                        {/* Education */}
+                        <div>
+                            <CertificationsSection profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
+                        </div>
+                    </div>
+                </div>
+            </Card>
+        </motion.div>
+    )
+}
+
+export function ProfileAnalysisClient({ userId, plan }: ProfileAnalysisClientProps) {
     const [linkedinUrl, setLinkedinUrl] = useState('')
     const [analyzing, setAnalyzing] = useState(false)
     const [analysisComplete, setAnalysisComplete] = useState(false)
@@ -3361,7 +3208,6 @@ export function ProfileAnalysisClient({ userId, plan }: ProfileAnalysisClientPro
                 throw new Error("Profilo non trovato")
             }
 
-            console.log(record)
             // Mappiamo i dati del record in un formato simile al mock
             const profileSummary: ProfileSummary = {
                 name: record.full_name || "",
@@ -3423,7 +3269,6 @@ export function ProfileAnalysisClient({ userId, plan }: ProfileAnalysisClientPro
             }
 
             setProfileSummary(profileSummary)
-            //setRecruiterPersona(mockRecruiterPersona)
             setAnalysisComplete(true)
         } catch (error) {
             console.error("Errore durante l'analisi del profilo:", error)
@@ -3539,40 +3384,39 @@ export function ProfileAnalysisClient({ userId, plan }: ProfileAnalysisClientPro
                             <label className="block text-sm font-medium text-gray-300 mb-2">Upload Your CV</label>
 
                             <label
-  htmlFor="cv-upload"
-  className={`
+                                htmlFor="cv-upload"
+                                className={`
     group relative flex flex-col items-center justify-center w-full h-32 rounded-xl border-2 border-dashed cursor-pointer overflow-hidden
     ${cvFile ? "border-violet-500/50 bg-gradient-to-br from-violet-500/5 to-violet-500/10" : "border-white/20 hover:border-violet-500/50 hover:bg-white/5"}
     transition-colors duration-200
   `}
->
-  <input
-    id="cv-upload"
-    type="file"
-    accept=".pdf,.doc,.docx"
-    onChange={handleCvUpload}
-    className="hidden"
-  />
+                            >
+                                <input
+                                    id="cv-upload"
+                                    type="file"
+                                    accept=".pdf,.doc,.docx"
+                                    onChange={handleCvUpload}
+                                    className="hidden"
+                                />
 
-  {!cvFile ? (
-    <div className="flex flex-col items-center space-y-2 text-gray-400 group-hover:text-violet-400 transition-colors">
-      <Upload className="w-8 h-8" />
-      <span className="text-sm font-medium">Click or drag your CV here</span>
-      <span className="text-xs text-gray-500">PDF, DOC, DOCX up to 5MB</span>
-    </div>
-  ) : (
-    <div className="relative flex flex-col items-center justify-center w-full h-full px-4 py-3 text-center">
-      <FileText className="w-10 h-10 text-violet-400 mb-2" />
-      <span
-        className="text-sm font-medium text-gray-200 truncate max-w-[80%]"
-        title={cvFile.name}
-      >
-        {cvFile.name}
-      </span>
-      
-    </div>
-  )}
-</label>
+                                {!cvFile ? (
+                                    <div className="flex flex-col items-center space-y-2 text-gray-400 group-hover:text-violet-400 transition-colors">
+                                        <Upload className="w-8 h-8" />
+                                        <span className="text-sm font-medium">Click or drag your CV here</span>
+                                        <span className="text-xs text-gray-500">PDF, DOC, DOCX up to 5MB</span>
+                                    </div>
+                                ) : (
+                                    <div className="relative flex flex-col items-center justify-center w-full h-full px-4 py-3 text-center">
+                                        <FileText className="w-10 h-10 text-violet-400 mb-2" />
+                                        <span
+                                            className="text-sm font-medium text-gray-200 truncate max-w-[80%]"
+                                            title={cvFile.name}
+                                        >
+                                            {cvFile.name}
+                                        </span>
+                                    </div>
+                                )}
+                            </label>
 
                         </div>
 
@@ -3671,73 +3515,13 @@ export function ProfileAnalysisClient({ userId, plan }: ProfileAnalysisClientPro
                     </div>
 
                     <div className="grid gap-8 mb-8 w-full">
-                        <motion.div variants={cardVariants} className="h-full">
-                            <Card className="p-6 h-full">
-                                <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
-                                    <User className="w-5 h-5 mr-2 text-violet-400" />
-                                    Your Profile Summary
-                                </h3>
-
-                                <div className="space-y-6">
-                                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                                        {/* Name & Title */}
-                                        <ProfileNameTitle profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
-
-                                        <div className="flex justify-between items-center md:flex-row flex-col gap-2 pb-4 border-b border-white/10 w-full">
-                                            <div className='flex gap-2 items-center w-full'>
-                                                <FileText size={48} className="text-violet-400" />
-                                                <div>
-                                                    <h3 className="text-xl font-semibold text-white flex items-center">
-                                                        Your CV
-                                                    </h3>
-                                                    <p className="text-gray-400">{cvFile.name || "No CV uploaded."}</p>
-                                                </div>
-                                            </div>
-                                            <label className="md:w-auto w-full flex justify-center bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer inline-flex items-center space-x-2">
-                                                <Upload className="w-4 h-4" />
-                                                <span>Change CV</span>
-                                                <input
-                                                    type="file"
-                                                    className="hidden"
-                                                    onChange={handleCvUpload}
-                                                    accept=".pdf,.doc,.docx"
-                                                />
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    {/* Key Skills */}
-                                    <div className='pb-4 border-b border-white/10'>
-                                        <p className="text-sm text-gray-400 mb-3">Key Skills</p>
-                                        <SkillsList profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
-                                    </div>
-
-                                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                                        {/* Experience */}
-                                        <div>
-                                            <ExperienceSection profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
-                                        </div>
-
-                                        {/* Education */}
-                                        <div>
-                                            <EducationSection profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
-                                        </div>
-                                    </div>
-
-                                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                                        {/* Experience */}
-                                        <div>
-                                            <ProjectsSection profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
-                                        </div>
-
-                                        {/* Education */}
-                                        <div>
-                                            <CertificationsSection profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
-                                        </div>
-                                    </div>
-                                </div>
-                            </Card>
-                        </motion.div>
+                        <ProfileSummaryCard
+                            cardVariants={cardVariants}
+                            profileSummary={profileSummary}
+                            setProfileSummary={setProfileSummary}
+                            cvFile={cvFile}
+                            handleCvUpload={handleCvUpload}
+                        />
 
                         {/*<motion.div
                             variants={cardVariants}
@@ -3824,12 +3608,13 @@ import React, {
     useCallback,
     useEffect,
 } from "react";
-import { enrichProfile } from '@/actions/pdl'
+import { enrichProfile, translateSkillsToEnglish } from '@/actions/pdl'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
 import { Checkbox } from './ui/checkbox'
 import { ScrollArea, ScrollBar } from './ui/scroll-area'
 import { MultiSelect } from './multi-select'
 import { Separator } from './ui/separator'
+import SkillsListBase, { EducationList, ExperienceList } from '@/components/detailsServer'
 
 /**
  * Tipo risultato Brandfetch-like

@@ -1,8 +1,7 @@
 // app/api/protected/user/route.js
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/server-auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import { clientConfig, serverConfig } from '@/config';
 import { getApiRequestTokens, getTokens } from 'next-firebase-auth-edge';
 import { cookies } from 'next/headers';
@@ -16,13 +15,12 @@ export async function GET(request) {
       serviceAccount: serverConfig.serviceAccount,
     });
 
-
     const decodedToken = tokens?.decodedToken
 
     // Ottieni i dati utente da Firestore
-    const userDoc = await getDoc(doc(db, 'users', decodedToken.uid));
+    const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
 
-    if (!userDoc.exists()) {
+    if (!userDoc.exists) {
       return NextResponse.json(
         { error: 'Utente non trovato' },
         { status: 404 }
@@ -71,8 +69,8 @@ export async function PUT(request) {
     }
 
     // Aggiorna i dati utente in Firestore
-    const userDocRef = doc(db, 'users', decodedToken.uid);
-    await updateDoc(userDocRef, {
+    const userDocRef = await adminDb.collection('users').doc(decodedToken.uid)
+    await userDocRef.update({
       name: name.trim(),
       updatedAt: new Date().toISOString()
     });

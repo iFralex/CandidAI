@@ -1,0 +1,158 @@
+[
+    {
+        "id": "0v1ptQj4ysTTCOdYkYVJFQ_0000",
+        "full_name": "bruno marzio",
+        "first_name": "bruno",
+        "middle_initial": None,
+        "middle_name": None,
+        "last_initial": "m",
+        "last_name": "marzio",
+        "sex": "male",
+        "linkedin_url": "linkedin.com/in/bruno-marzio-971557140",
+        "linkedin_username": "bruno-marzio-971557140",
+        "linkedin_id": "574670245",
+        "facebook_url": None,
+        "facebook_username": None,
+        "facebook_id": None,
+        "twitter_url": None,
+        "twitter_username": None,
+        "github_url": None,
+        "github_username": None,
+        "industry": "internet",
+        "job_title": "human resources specialist",
+        "job_title_role": "human_resources",
+        "job_title_sub_role": "human_resources",
+        "job_title_class": "general_and_administrative",
+        "job_title_levels": [],
+        "job_company_id": "aKCIYBNF9ey6o5CjHCCO4goHYKlf",
+        "job_company_name": "google",
+        "job_company_website": "google.com",
+        "job_company_size": "10001+",
+        "job_company_founded": 1998,
+        "job_company_industry": "internet",
+        "job_company_linkedin_url": "linkedin.com/company/google",
+        "job_company_linkedin_id": "1441",
+        "job_company_facebook_url": "facebook.com/google",
+        "job_company_twitter_url": "twitter.com/google",
+        "job_company_location_name": "mountain view, california, united states",
+        "job_company_location_locality": "mountain view",
+        "job_company_location_metro": "san jose, california",
+        "job_company_location_region": "california",
+        "job_company_location_geo": "37.39,-122.06",
+        "job_company_location_street_address": "1600 amphitheatre parkway",
+        "job_company_location_address_line_2": None,
+        "job_company_location_postal_code": "94043",
+        "job_company_location_country": "united states",
+        "job_company_location_continent": "north america",
+        "job_last_changed": "2019-06-12",
+        "job_last_verified": "2025-04-17",
+        "job_start_date": "2015-03",
+        "location_country": "italy",
+        "location_continent": "europe",
+        "location_address_line_2": None,
+        "location_last_updated": "2025-04-17",
+        "interests": [],
+        "skills": [],
+        "countries": [
+            "italy"
+        ],
+        "experience": [
+            {
+                "company": {
+                    "name": "google",
+                    "size": "10001+",
+                    "id": "aKCIYBNF9ey6o5CjHCCO4goHYKlf",
+                    "founded": 1998,
+                    "industry": "internet",
+                    "location": {
+                        "name": "mountain view, california, united states",
+                        "locality": "mountain view",
+                        "region": "california",
+                        "metro": "san jose, california",
+                        "country": "united states",
+                        "continent": "north america",
+                        "street_address": "1600 amphitheatre parkway",
+                        "address_line_2": None,
+                        "postal_code": "94043",
+                        "geo": "37.39,-122.06"
+                    },
+                    "linkedin_url": "linkedin.com/company/google",
+                    "linkedin_id": "1441",
+                    "facebook_url": "facebook.com/google",
+                    "twitter_url": "twitter.com/google",
+                    "website": "google.com"
+                },
+                "location_names": [
+                    "milan, lombardy, italy"
+                ],
+                "end_date": None,
+                "start_date": "2015-03",
+                "title": {
+                    "name": "human resources specialist",
+                    "class": "general_and_administrative",
+                    "role": "human_resources",
+                    "sub_role": "human_resources",
+                    "levels": []
+                },
+                "is_primary": True
+            }
+        ],
+        "education": [
+            {
+                "school": {
+                    "name": "politecnico di milano",
+                    "type": "post-secondary institution",
+                    "id": "bCzaWf9S93VcTsRizyLBTw_0",
+                    "location": {
+                        "name": "milan, lombardy, italy",
+                        "locality": "milan",
+                        "region": "lombardy",
+                        "country": "italy",
+                        "continent": "europe"
+                    },
+                    "linkedin_url": "linkedin.com/school/polimi",
+                    "facebook_url": "facebook.com/polimi",
+                    "twitter_url": "twitter.com/polimi",
+                    "linkedin_id": "165509",
+                    "website": "polimi.it",
+                    "domain": "polimi.it"
+                },
+                "degrees": [],
+                "start_date": "2009",
+                "end_date": "2013",
+                "majors": [
+                    "computer engineering"
+                ],
+                "minors": [],
+                "gpa": None
+            }
+        ],
+        "profiles": [
+            {
+                "network": "linkedin",
+                "id": "574670245",
+                "url": "linkedin.com/in/bruno-marzio-971557140",
+                "username": "bruno-marzio-971557140"
+            }
+        ],
+        "dataset_version": "31.2",
+        "birth_date": False,
+        "birth_year": False,
+        "emails": False,
+        "location_geo": True,
+        "location_locality": True,
+        "location_metro": False,
+        "location_name": True,
+        "location_names": True,
+        "location_postal_code": False,
+        "location_region": True,
+        "location_street_address": False,
+        "mobile_phone": False,
+        "personal_emails": False,
+        "phone_numbers": False,
+        "recommended_personal_email": False,
+        "regions": True,
+        "street_addresses": False,
+        "work_email": False
+    }
+]
