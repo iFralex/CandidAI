@@ -1327,7 +1327,7 @@ const availableCriteria = {
 };
 
 export const CriteriaDisplay = ({ criteria }) => {
-    if (criteria.length === 0) {
+    if (!criteria || criteria.length === 0) {
         return (
             <div className="flex items-center space-x-2">
                 <Sparkles className="w-4 h-4 text-gray-400" />
@@ -2413,46 +2413,46 @@ function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
 }
 
 function SkillsListClient({ profileSummary, setProfileSummary }: any) {
-  const [newSkill, setNewSkill] = useState("");
-  const [adding, setAdding] = useState(false);
+    const [newSkill, setNewSkill] = useState("");
+    const [adding, setAdding] = useState(false);
 
-  const addSkill = () => {
-    if (
-      !newSkill.trim() ||
-      profileSummary.skills.length > 70 ||
-      profileSummary.skills.find(
-        (s: string) => s.trim().toUpperCase() === newSkill.trim().toUpperCase()
-      )
-    ) return;
+    const addSkill = () => {
+        if (
+            !newSkill.trim() ||
+            profileSummary.skills.length > 70 ||
+            profileSummary.skills.find(
+                (s: string) => s.trim().toUpperCase() === newSkill.trim().toUpperCase()
+            )
+        ) return;
 
-    setProfileSummary((prev: any) =>
-      prev ? { ...prev, skills: [...prev.skills, newSkill.trim()] } : null
-    );
-    setNewSkill("");
-    setAdding(false);
-  };
-
-  const removeSkill = (index: number) => {
-    setProfileSummary((prev: any) =>
-      prev ? { ...prev, skills: prev.skills.filter((_: any, i: number) => i !== index) } : null
-    );
-  };
-
-  return (
-    <SkillsListBase
-      skills={profileSummary.skills}
-      editable={true}
-      newSkill={newSkill}
-      setNewSkill={setNewSkill}
-      onAdd={addSkill}
-      onRemove={removeSkill}
-      onStartAdd={() => setAdding(true)}
-      onCancelAdd={() => {
+        setProfileSummary((prev: any) =>
+            prev ? { ...prev, skills: [...prev.skills, newSkill.trim()] } : null
+        );
         setNewSkill("");
         setAdding(false);
-      }}
-    />
-  );
+    };
+
+    const removeSkill = (index: number) => {
+        setProfileSummary((prev: any) =>
+            prev ? { ...prev, skills: prev.skills.filter((_: any, i: number) => i !== index) } : null
+        );
+    };
+
+    return (
+        <SkillsListBase
+            skills={profileSummary.skills}
+            editable={true}
+            newSkill={newSkill}
+            setNewSkill={setNewSkill}
+            onAdd={addSkill}
+            onRemove={removeSkill}
+            onStartAdd={() => setAdding(true)}
+            onCancelAdd={() => {
+                setNewSkill("");
+                setAdding(false);
+            }}
+        />
+    );
 }
 
 function ExperienceEditor({ profileSummary, setProfileSummary }: any) {
@@ -2499,25 +2499,25 @@ function ExperienceEditor({ profileSummary, setProfileSummary }: any) {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-3">
-                <p className="text-sm text-gray-400">Experience</p>
-                <DialogTrigger asChild>
-                    <Button size="sm" variant="ghost" onClick={() => handleEdit(null)}>
-                        <Plus className="w-4 h-4" />
-                    </Button>
-                </DialogTrigger>
-            </div>
-
-            {/* stessa UI usata anche nel server */}
-            <ul className="space-y-3">
-                <ExperienceList
-                    experience={profileSummary.experience}
-                    editable
-                    onEdit={(idx) => handleEdit(idx)}
-                />
-            </ul>
-
             <Dialog open={editingIndex !== null} onOpenChange={() => setEditingIndex(null)}>
+                <div className="flex justify-between items-center mb-3">
+                    <p className="text-sm text-gray-400">Experience</p>
+                    <DialogTrigger asChild>
+                        <Button size="sm" variant="ghost" onClick={() => handleEdit(null)}>
+                            <Plus className="w-4 h-4" />
+                        </Button>
+                    </DialogTrigger>
+                </div>
+
+                {/* stessa UI usata anche nel server */}
+                <ul className="space-y-3">
+                    <ExperienceList
+                        experience={profileSummary.experience}
+                        editable
+                        onEdit={(idx) => handleEdit(idx)}
+                    />
+                </ul>
+
                 <DialogContent>
                     <div className="space-y-4">
                         <Input
@@ -2557,7 +2557,7 @@ function ExperienceEditor({ profileSummary, setProfileSummary }: any) {
     );
 }
 
-export default function EducationSection({ profileSummary, setProfileSummary }: any) {
+function EducationSection({ profileSummary, setProfileSummary }: any) {
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [tempEdu, setTempEdu] = useState<any>({
         school: { name: "" },
@@ -2603,25 +2603,26 @@ export default function EducationSection({ profileSummary, setProfileSummary }: 
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-3">
-                <p className="text-sm text-gray-400">Education</p>
-                <DialogTrigger asChild>
-                    <Button size="sm" variant="ghost" onClick={() => handleEdit(null)}>
-                        <Plus className="w-4 h-4" />
-                    </Button>
-                </DialogTrigger>
-            </div>
-
-            {/* UI condivisa */}
-            <ul className="space-y-3">
-                <EducationList
-                    education={profileSummary.education}
-                    editable
-                    onEdit={(idx) => handleEdit(idx)}
-                />
-            </ul>
-
             <Dialog open={editingIndex !== null} onOpenChange={() => setEditingIndex(null)}>
+                <div className="flex justify-between items-center mb-3">
+                    <p className="text-sm text-gray-400">Education</p>
+                    <DialogTrigger asChild>
+                        <Button size="sm" variant="ghost" onClick={() => handleEdit(null)}>
+                            <Plus className="w-4 h-4" />
+                        </Button>
+                    </DialogTrigger>
+                </div>
+
+                {/* UI condivisa */}
+                <ul className="space-y-3">
+                    <EducationList
+                        education={profileSummary.education}
+                        editable
+                        onEdit={(idx) => handleEdit(idx)}
+                    />
+                </ul>
+
+
                 <DialogContent>
                     <div className="space-y-4 p-1 max-h-[calc(85vh-100px)] overflow-auto">
                         {/* School */}

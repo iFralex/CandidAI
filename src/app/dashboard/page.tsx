@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Crown, ExternalLink, Mail, Plus, RefreshCw, Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { redirect } from "next/navigation";
 
 function Card({ children, className, hover = true, gradient = false, ...props }: CardProps) {
     const baseClasses = "bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl transition-all duration-300"

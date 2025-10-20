@@ -54,16 +54,16 @@ export const CampaignCard = ({ campaign }) => {
     };
 
     const statusInfo = getStatusInfo(campaign.status);
-
+console.log(campaign.company)
     return (
         <Link href={`/dashboard/${campaign.id}`} className="block">
             <Card className="p-6 backdrop-blur-none transition-all duration-200 hover:bg-white/10 hover:shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-4">
-                        <CompanyLogo company={campaign.company.domain || campaign.company.name} />
+                        <CompanyLogo company={campaign.company.domain || campaign.company.name}/>
                         <div>
                             <h3 className="text-lg font-semibold text-white">{campaign.company.name}</h3>
-                            <p className="text-gray-400 text-sm">{campaign.recruiterName} • {campaign.recruiterTitle}</p>
+                            {campaign.recruiterName && <p className="text-gray-400 text-sm">{campaign.recruiterName} • {campaign.recruiterTitle}</p>}
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">

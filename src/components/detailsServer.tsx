@@ -1,7 +1,8 @@
 import Image from "next/image";
 import { CompanyLogo } from "./dashboard";
 import { Badge } from "./ui/badge";
-import { Plus, X } from "lucide-react";
+import { Edit2, Plus, X } from "lucide-react";
+import Link from "next/link";
 
 interface SkillsListBaseProps {
   skills: string[];
@@ -95,6 +96,7 @@ export function ExperienceList({ experience, editable = false, onEdit }: Experie
         <>
             {experience?.length ? (
                 experience.map((exp, idx) => (
+                    <Link href={exp.company.linkedin_url ? ("https://" + exp.company.linkedin_url) : "#"} target="_blank" rel="noopener noreferrer">
                     <li
                         key={idx}
                         className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors flex justify-between"
@@ -128,6 +130,7 @@ export function ExperienceList({ experience, editable = false, onEdit }: Experie
                             </button>
                         )}
                     </li>
+                    </Link>
                 ))
             ) : (
                 <li className="bg-white/5 rounded-lg p-4 border border-white/10 text-center text-gray-500">
@@ -149,6 +152,7 @@ export function EducationList({ education, editable = false, onEdit }: Education
         <>
             {education?.length ? (
                 education.map((edu, idx) => (
+                    <Link href={edu.school.linkedin_url ? ("https://" + edu.school.linkedin_url) : "#"} target="_blank" rel="noopener noreferrer">
                     <li
                         key={idx}
                         className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors"
@@ -183,6 +187,7 @@ export function EducationList({ education, editable = false, onEdit }: Education
                             )}
                         </div>
                     </li>
+                    </Link>
                 ))
             ) : (
                 <li className="bg-white/5 rounded-lg p-4 border border-white/10 text-center text-gray-500">

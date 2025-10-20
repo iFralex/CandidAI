@@ -15,6 +15,7 @@ import Link from "next/link";
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ProgressBar } from "@/components/ui/progress-bar";
+import { useState } from "react";
 
 // ============== ANIMATION VARIANTS ==============
 const containerVariants = {
@@ -92,7 +93,7 @@ const calculateProgress = (data: any) => {
 };
 
 const getStepStatus = (data: any, step: string) => {
-    if (step === 'blog_posts') return data.blog_posts ? 'completed' : 'pending';
+    if (step === 'blog_articles') return data.blog_articles ? 'completed' : 'pending';
     if (step === 'recruiter_summary') return data.recruiter_summary ? 'completed' : 'pending';
     if (step === 'email') return data.email ? 'completed' : 'pending';
     return 'pending';
@@ -149,13 +150,13 @@ const Step = ({ title, status, index }: { title: string; status: 'completed' | '
 
 function CompanyHeader({ data }: { data: any }) {
     const progress = calculateProgress(data);
-    const blogStatus = getStepStatus(data, 'blog_posts');
+    const blogStatus = getStepStatus(data, 'blog_articles');
     const recruiterStatus = getStepStatus(data, 'recruiter_summary');
     const emailStatus = getStepStatus(data, 'email');
 
     let inProgressStep = '';
-    if (blogStatus === 'pending') inProgressStep = 'blog';
-    else if (recruiterStatus === 'pending') inProgressStep = 'recruiter';
+    if (recruiterStatus === 'pending') inProgressStep = 'recruiter';
+    else if (blogStatus === 'pending') inProgressStep = 'blog';
     else if (emailStatus === 'pending') inProgressStep = 'email';
 
     return (
@@ -214,14 +215,14 @@ function CompanyHeader({ data }: { data: any }) {
                     </div>
                     <div className="flex flex-wrap gap-4">
                         <Step
-                            title="Blog posts Found"
-                            status={blogStatus === 'completed' ? 'completed' : inProgressStep === 'blog' ? 'in-progress' : 'pending'}
-                            index={0}
-                        />
-                        <Step
                             title="Recruiter Found"
                             status={recruiterStatus === 'completed' ? 'completed' : inProgressStep === 'recruiter' ? 'in-progress' : 'pending'}
                             index={1}
+                        />
+                        <Step
+                            title="Blog posts Found"
+                            status={blogStatus === 'completed' ? 'completed' : inProgressStep === 'blog' ? 'in-progress' : 'pending'}
+                            index={0}
                         />
                         <Step
                             title="Email Generated"
@@ -235,12 +236,13 @@ function CompanyHeader({ data }: { data: any }) {
     );
 }
 
-function BlogCard() {
-    const article = {
-        title: "Guida Completa a Next.js e Tailwind CSS",
-        text: "Scopri come creare applicazioni web moderne e performanti utilizzando Next.js insieme a Tailwind CSS. In questa guida esploreremo le best practices, i pattern più comuni e come ottimizzare il tuo workflow di sviluppo.",
-        link: "/blog/guida-nextjs-tailwind"
-    };
+function BlogCard({ article }) {
+    if (!article)
+        article = {
+            title: "Guida Completa a Next.js e Tailwind CSS",
+            markdown: "Scopri come creare applicazioni web moderne e performanti utilizzando Next.js insieme a Tailwind CSS. In questa guida esploreremo le best practices, i pattern più comuni e come ottimizzare il tuo workflow di sviluppo.",
+            url: "/blog/guida-nextjs-tailwind"
+        };
     return (
         <motion.div
             variants={cardVariants}
@@ -248,9 +250,9 @@ function BlogCard() {
             className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors"
         >
             <article>
-                <h2 className="text-2xl font-bold text-white mb-3">{article.title}</h2>
-                <p className="text-gray-400 mb-4 line-clamp-3">{article.text}</p>
-                <Link href={article.link} className="inline-flex items-center text-gray-200 hover:text-blue-800 font-semibold transition-colors group">
+                <h2 className="text-2xl font-bold text-white mb-3 line-clamp-3">{article.title}</h2>
+                <p className="text-gray-400 mb-4 line-clamp-6">{article.markdown}</p>
+                <Link href={article.url} className="inline-flex items-center text-gray-200 hover:text-blue-800 font-semibold transition-colors group">
                     Read more
                     <motion.div animate={{ x: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
                         <ArrowRight className="w-4 h-4 ml-2" />
@@ -325,10 +327,14 @@ const RecruiterProfileCard = ({ data }: { data: any }) => {
     );
 };
 
-const RecruiterSummary = ({ data }: { data: any }) => {
-    const inProgress = !data.recruiter_summary
-    if (inProgress)
-        data.recruiter_summary = { "name": "Lauren Crabb", "experience": [{ "location_names": ["London, England, United Kingdom"], "start_date": "2021-11", "title": { "name": "Senior People Partner (Sales & Technical Services)", "sub_role": "human_resources", "levels": ["senior"], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": true, "company": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png", "name": "Google", "twitter_url": "twitter.com/google", "location": { "name": "Mountain View, California, United States", "postal_code": "94043", "continent": "North America", "street_address": "1600 Amphitheatre Parkway", "region": "California", "metro": "San Jose, California", "country": "United States", "locality": "Mountain View", "geo": "37.39,-122.06", "address_line_2": null }, "linkedin_id": "1441", "industry": "Internet", "founded": 1998, "id": "aKCIYBNF9ey6o5CjHCCO4goHYKlf", "size": "10001+", "facebook_url": "facebook.com/google", "website": "google.com", "linkedin_url": "linkedin.com/company/google" }, "end_date": null }, { "location_names": ["Mountain View, California, United States", "Mexico City, Mexico City, Mexico"], "start_date": "2019-08", "title": { "name": "People Partner (Platforms and Ecosystems)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png", "name": "Google", "twitter_url": "twitter.com/google", "location": { "name": "Mountain View, California, United States", "postal_code": "94043", "continent": "North America", "street_address": "1600 Amphitheatre Parkway", "region": "California", "metro": "San Jose, California", "country": "United States", "locality": "Mountain View", "geo": "37.39,-122.06", "address_line_2": null }, "linkedin_id": "1441", "industry": "Internet", "founded": 1998, "id": "aKCIYBNF9ey6o5CjHCCO4goHYKlf", "size": "10001+", "facebook_url": "facebook.com/google", "website": "google.com", "linkedin_url": "linkedin.com/company/google" }, "end_date": "2021-11" }, { "location_names": ["San Francisco, California, United States"], "start_date": "2019-02", "title": { "name": "Global Human Resources Business Partner (Worldwide Sales & Operations)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQU-0sgMITwNqzwWbNZfDxjhGmmje755YgLHQ&s", "name": "Airbnb", "twitter_url": "twitter.com/airbnb", "location": { "name": "San Francisco, California, United States", "postal_code": "94103", "continent": "North America", "street_address": "888 Brannan Street", "region": "California", "metro": "San Francisco, California", "country": "United States", "locality": "San Francisco", "geo": "37.74,-122.45", "address_line_2": null }, "linkedin_id": "309694", "industry": "Internet", "founded": 2008, "id": "9fGW9Je0KfwfNPtyouflTQneENKN", "size": "5001-10000", "facebook_url": "facebook.com/airbnb", "website": "airbnb.com", "linkedin_url": "linkedin.com/company/airbnb" }, "end_date": "2019-07" }, { "location_names": ["San Francisco, California, United States"], "start_date": "2018-04", "title": { "name": "Human Resources Manager, Global Meraki Bu (Tech + Non-Sales)", "sub_role": "human_resources", "levels": ["manager"], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://images.ctfassets.net/4cd45et68cgf/Rx83JoRDMkYNlMC9MKzcB/2b14d5a59fc3937afd3f03191e19502d/Netflix-Symbol.png?w=700&h=456", "name": "Cisco Meraki", "twitter_url": "twitter.com/meraki", "location": { "name": "San Francisco, California, United States", "postal_code": "94158", "continent": "North America", "street_address": "500 Terry A. Francois Boulevard", "region": "California", "metro": "San Francisco, California", "country": "United States", "locality": "San Francisco", "geo": "37.74,-122.45", "address_line_2": null }, "linkedin_id": "92950", "industry": "Computer Networking", "founded": 2006, "id": "uXlBn3JswjCAx85kpThCvwWuDLxQ", "size": "1001-5000", "facebook_url": "facebook.com/ciscomeraki", "website": null, "linkedin_url": "linkedin.com/company/cisco-meraki" }, "end_date": "2019-02" }, { "location_names": ["San Francisco, California, United States"], "start_date": "2016-08", "title": { "name": "Human Resources Business Partner (Software / Hardware / Product Mgmt)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://images.ctfassets.net/4cd45et68cgf/Rx83JoRDMkYNlMC9MKzcB/2b14d5a59fc3937afd3f03191e19502d/Netflix-Symbol.png?w=700&h=456", "name": "Cisco Meraki", "twitter_url": "twitter.com/meraki", "location": { "name": "San Francisco, California, United States", "postal_code": "94158", "continent": "North America", "street_address": "500 Terry A. Francois Boulevard", "region": "California", "metro": "San Francisco, California", "country": "United States", "locality": "San Francisco", "geo": "37.74,-122.45", "address_line_2": null }, "linkedin_id": "92950", "industry": "Computer Networking", "founded": 2006, "id": "uXlBn3JswjCAx85kpThCvwWuDLxQ", "size": "1001-5000", "facebook_url": "facebook.com/ciscomeraki", "website": null, "linkedin_url": "linkedin.com/company/cisco-meraki" }, "end_date": "2019-02" }, { "location_names": [], "start_date": "2010-06", "title": { "name": "Human Resources Advisor (Recruitment, Selection Policy and Standards)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LinkedIn_icon.svg/1024px-LinkedIn_icon.svg.png", "name": "London Borough of Camden", "twitter_url": "twitter.com/camdentalking", "location": { "name": "London, England, United Kingdom", "postal_code": null, "continent": "Europe", "street_address": "5 Pancras Square", "region": "England", "metro": null, "country": "United Kingdom", "locality": "London", "geo": "51.46,-0.20", "address_line_2": null }, "linkedin_id": "14499", "industry": "Government Administration", "founded": null, "id": "m6QBbKx4WI1XgBnC1R2xXwzz7NFX", "size": "5001-10000", "facebook_url": "facebook.com/grncamden", "website": "camden.gov.uk", "linkedin_url": "linkedin.com/company/london-borough-of-camden" }, "end_date": "2011-05" }, { "location_names": [], "start_date": "2009-07", "title": { "name": "Human Resources Advisor (Employment Initiatives)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LinkedIn_icon.svg/1024px-LinkedIn_icon.svg.png", "name": "London Borough of Camden", "twitter_url": "twitter.com/camdentalking", "location": { "name": "London, England, United Kingdom", "postal_code": null, "continent": "Europe", "street_address": "5 Pancras Square", "region": "England", "metro": null, "country": "United Kingdom", "locality": "London", "geo": "51.46,-0.20", "address_line_2": null }, "linkedin_id": "14499", "industry": "Government Administration", "founded": null, "id": "m6QBbKx4WI1XgBnC1R2xXwzz7NFX", "size": "5001-10000", "facebook_url": "facebook.com/grncamden", "website": "camden.gov.uk", "linkedin_url": "linkedin.com/company/london-borough-of-camden" }, "end_date": "2010-06" }, { "location_names": [], "start_date": "2007-08", "title": { "name": "Leadership Consultant", "sub_role": null, "levels": [], "role": null, "class": null }, "is_primary": false, "company": { "logo_url": "https://pngdownload.io/wp-content/uploads/2023/12/Apple-Logo-Iconic-Tech-Brand-Symbol-PNG-Transparent-Representation-of-Innovation-and-Design-jpg.webp", "name": "Human Assets LTD", "twitter_url": "twitter.com/humanassetsltd", "location": { "name": "London, England, United Kingdom", "postal_code": null, "continent": "Europe", "street_address": "28 Ulysses Road", "region": "England", "metro": null, "country": "United Kingdom", "locality": "London", "geo": "51.46,-0.20", "address_line_2": null }, "linkedin_id": "1583215", "industry": "Human Resources", "founded": 1987, "id": "u2eo7wIyyEDXgExnUkuXLATKH88O", "size": "1-10", "facebook_url": null, "website": "humanassets.co.uk", "linkedin_url": "linkedin.com/company/human-assets-ltd" }, "end_date": "2009-07" }], "location": { "country": "United Kingdom", "continent": "Europe" }, "skills": ["360 Feedback", "Airflow", "Algebraic Combinatorics", "Algorithms", "C++", "Change Management", "Cheesecakes", "Coaching", "Combinatorics", "Computer Science", "Etl", "Facebook", "Facilitation", "Game Design", "Human Resources", "Mathematical Analysis", "Mathematics", "Matlab", "Microsoft Excel", "Microsoft Office", "Microsoft Word", "Neural Networks", "Organizational Design", , "Powerpoint", "Project Planning", "Psychometrics", "Public Sector", "Public Speaking", "Python", "Recruiting", "Redis", "Research", "Stakeholder Management", "Statistics", "Strategy", "Succession Planning", "Talent Management", "Teaching", ,], "title": "Senior People Partner (Sales & Technical Services)", "education": [{ "minors": [], "start_date": "2006", "degrees": ["Master of Science", "Masters"], "school": { "logo_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtRig-9cUpSg95-hbB_GTx8gySkR8fIq6SvQ&s", "name": "University of Surrey", "domain": "surrey.ac.uk", "location": { "name": "Guildford, England, United Kingdom", "locality": "Guildford", "continent": "Europe", "region": "England", "country": "United Kingdom" }, "linkedin_id": "8369", "type": "post-secondary institution", "id": "PZ-O4dspmqcSoCmg46LW9A_0", "facebook_url": "facebook.com/universityofsurrey", "website": "surrey.ac.uk", "linkedin_url": "linkedin.com/school/university-of-surrey", "twitter_url": "twitter.com/uniofsurrey" }, "gpa": null, "majors": ["Psychology"], "end_date": "2007" }, { "minors": [], "start_date": null, "degrees": ["Bachelor of Science", "Bachelors"], "school": { "logo_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtRig-9cUpSg95-hbB_GTx8gySkR8fIq6SvQ&s", "name": "University of California, Davis", "domain": "ucdavis.edu", "location": { "name": "Davis, California, United States", "locality": "Davis", "continent": "North America", "region": "California", "country": "United States" }, "linkedin_id": "2842", "type": "post-secondary institution", "id": "OBL5pZtjTCqcV0YQ6rpb7Q_0", "facebook_url": "facebook.com/ucdavis", "website": "ucdavis.edu", "linkedin_url": "linkedin.com/school/uc-davis", "twitter_url": "twitter.com/ucdavis" }, "gpa": null, "majors": [], "end_date": "2015" }, { "minors": [], "start_date": null, "degrees": [], "school": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Stemma_sapienza.png", "name": "University of California", "domain": "universityofcalifornia.edu", "location": { "name": "Oakland, California, United States", "locality": "Oakland", "continent": "North America", "region": "California", "country": "United States" }, "linkedin_id": "2843", "type": "post-secondary institution", "id": "vy-30YJaHfPKMIrQv0hZHg_0", "facebook_url": null, "website": "jobs.universityofcalifornia.edu", "linkedin_url": "linkedin.com/school/university-of-california", "twitter_url": null }, "gpa": null, "majors": [], "end_date": null }] }
+const RecruiterSummary = ({ originalData }: { data: any }) => {
+    const inProgress = getStepStatus(originalData, "recruiter_summary") !== "completed"
+    const [data] = useState(!inProgress ? originalData : {
+        recruiter_summary:
+            { "name": "Lauren Crabb", "experience": [{ "location_names": ["London, England, United Kingdom"], "start_date": "2021-11", "title": { "name": "Senior People Partner (Sales & Technical Services)", "sub_role": "human_resources", "levels": ["senior"], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": true, "company": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png", "name": "Google", "twitter_url": "twitter.com/google", "location": { "name": "Mountain View, California, United States", "postal_code": "94043", "continent": "North America", "street_address": "1600 Amphitheatre Parkway", "region": "California", "metro": "San Jose, California", "country": "United States", "locality": "Mountain View", "geo": "37.39,-122.06", "address_line_2": null }, "linkedin_id": "1441", "industry": "Internet", "founded": 1998, "id": "aKCIYBNF9ey6o5CjHCCO4goHYKlf", "size": "10001+", "facebook_url": "facebook.com/google", "website": "google.com", "linkedin_url": "linkedin.com/company/google" }, "end_date": null }, { "location_names": ["Mountain View, California, United States", "Mexico City, Mexico City, Mexico"], "start_date": "2019-08", "title": { "name": "People Partner (Platforms and Ecosystems)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png", "name": "Google", "twitter_url": "twitter.com/google", "location": { "name": "Mountain View, California, United States", "postal_code": "94043", "continent": "North America", "street_address": "1600 Amphitheatre Parkway", "region": "California", "metro": "San Jose, California", "country": "United States", "locality": "Mountain View", "geo": "37.39,-122.06", "address_line_2": null }, "linkedin_id": "1441", "industry": "Internet", "founded": 1998, "id": "aKCIYBNF9ey6o5CjHCCO4goHYKlf", "size": "10001+", "facebook_url": "facebook.com/google", "website": "google.com", "linkedin_url": "linkedin.com/company/google" }, "end_date": "2021-11" }, { "location_names": ["San Francisco, California, United States"], "start_date": "2019-02", "title": { "name": "Global Human Resources Business Partner (Worldwide Sales & Operations)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQU-0sgMITwNqzwWbNZfDxjhGmmje755YgLHQ&s", "name": "Airbnb", "twitter_url": "twitter.com/airbnb", "location": { "name": "San Francisco, California, United States", "postal_code": "94103", "continent": "North America", "street_address": "888 Brannan Street", "region": "California", "metro": "San Francisco, California", "country": "United States", "locality": "San Francisco", "geo": "37.74,-122.45", "address_line_2": null }, "linkedin_id": "309694", "industry": "Internet", "founded": 2008, "id": "9fGW9Je0KfwfNPtyouflTQneENKN", "size": "5001-10000", "facebook_url": "facebook.com/airbnb", "website": "airbnb.com", "linkedin_url": "linkedin.com/company/airbnb" }, "end_date": "2019-07" }, { "location_names": ["San Francisco, California, United States"], "start_date": "2018-04", "title": { "name": "Human Resources Manager, Global Meraki Bu (Tech + Non-Sales)", "sub_role": "human_resources", "levels": ["manager"], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://images.ctfassets.net/4cd45et68cgf/Rx83JoRDMkYNlMC9MKzcB/2b14d5a59fc3937afd3f03191e19502d/Netflix-Symbol.png?w=700&h=456", "name": "Cisco Meraki", "twitter_url": "twitter.com/meraki", "location": { "name": "San Francisco, California, United States", "postal_code": "94158", "continent": "North America", "street_address": "500 Terry A. Francois Boulevard", "region": "California", "metro": "San Francisco, California", "country": "United States", "locality": "San Francisco", "geo": "37.74,-122.45", "address_line_2": null }, "linkedin_id": "92950", "industry": "Computer Networking", "founded": 2006, "id": "uXlBn3JswjCAx85kpThCvwWuDLxQ", "size": "1001-5000", "facebook_url": "facebook.com/ciscomeraki", "website": null, "linkedin_url": "linkedin.com/company/cisco-meraki" }, "end_date": "2019-02" }, { "location_names": ["San Francisco, California, United States"], "start_date": "2016-08", "title": { "name": "Human Resources Business Partner (Software / Hardware / Product Mgmt)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://images.ctfassets.net/4cd45et68cgf/Rx83JoRDMkYNlMC9MKzcB/2b14d5a59fc3937afd3f03191e19502d/Netflix-Symbol.png?w=700&h=456", "name": "Cisco Meraki", "twitter_url": "twitter.com/meraki", "location": { "name": "San Francisco, California, United States", "postal_code": "94158", "continent": "North America", "street_address": "500 Terry A. Francois Boulevard", "region": "California", "metro": "San Francisco, California", "country": "United States", "locality": "San Francisco", "geo": "37.74,-122.45", "address_line_2": null }, "linkedin_id": "92950", "industry": "Computer Networking", "founded": 2006, "id": "uXlBn3JswjCAx85kpThCvwWuDLxQ", "size": "1001-5000", "facebook_url": "facebook.com/ciscomeraki", "website": null, "linkedin_url": "linkedin.com/company/cisco-meraki" }, "end_date": "2019-02" }, { "location_names": [], "start_date": "2010-06", "title": { "name": "Human Resources Advisor (Recruitment, Selection Policy and Standards)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LinkedIn_icon.svg/1024px-LinkedIn_icon.svg.png", "name": "London Borough of Camden", "twitter_url": "twitter.com/camdentalking", "location": { "name": "London, England, United Kingdom", "postal_code": null, "continent": "Europe", "street_address": "5 Pancras Square", "region": "England", "metro": null, "country": "United Kingdom", "locality": "London", "geo": "51.46,-0.20", "address_line_2": null }, "linkedin_id": "14499", "industry": "Government Administration", "founded": null, "id": "m6QBbKx4WI1XgBnC1R2xXwzz7NFX", "size": "5001-10000", "facebook_url": "facebook.com/grncamden", "website": "camden.gov.uk", "linkedin_url": "linkedin.com/company/london-borough-of-camden" }, "end_date": "2011-05" }, { "location_names": [], "start_date": "2009-07", "title": { "name": "Human Resources Advisor (Employment Initiatives)", "sub_role": "human_resources", "levels": [], "role": "human_resources", "class": "general_and_administrative" }, "is_primary": false, "company": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/LinkedIn_icon.svg/1024px-LinkedIn_icon.svg.png", "name": "London Borough of Camden", "twitter_url": "twitter.com/camdentalking", "location": { "name": "London, England, United Kingdom", "postal_code": null, "continent": "Europe", "street_address": "5 Pancras Square", "region": "England", "metro": null, "country": "United Kingdom", "locality": "London", "geo": "51.46,-0.20", "address_line_2": null }, "linkedin_id": "14499", "industry": "Government Administration", "founded": null, "id": "m6QBbKx4WI1XgBnC1R2xXwzz7NFX", "size": "5001-10000", "facebook_url": "facebook.com/grncamden", "website": "camden.gov.uk", "linkedin_url": "linkedin.com/company/london-borough-of-camden" }, "end_date": "2010-06" }, { "location_names": [], "start_date": "2007-08", "title": { "name": "Leadership Consultant", "sub_role": null, "levels": [], "role": null, "class": null }, "is_primary": false, "company": { "logo_url": "https://pngdownload.io/wp-content/uploads/2023/12/Apple-Logo-Iconic-Tech-Brand-Symbol-PNG-Transparent-Representation-of-Innovation-and-Design-jpg.webp", "name": "Human Assets LTD", "twitter_url": "twitter.com/humanassetsltd", "location": { "name": "London, England, United Kingdom", "postal_code": null, "continent": "Europe", "street_address": "28 Ulysses Road", "region": "England", "metro": null, "country": "United Kingdom", "locality": "London", "geo": "51.46,-0.20", "address_line_2": null }, "linkedin_id": "1583215", "industry": "Human Resources", "founded": 1987, "id": "u2eo7wIyyEDXgExnUkuXLATKH88O", "size": "1-10", "facebook_url": null, "website": "humanassets.co.uk", "linkedin_url": "linkedin.com/company/human-assets-ltd" }, "end_date": "2009-07" }], "location": { "country": "United Kingdom", "continent": "Europe" }, "skills": ["360 Feedback", "Airflow", "Algebraic Combinatorics", "Algorithms", "C++", "Change Management", "Cheesecakes", "Coaching", "Combinatorics", "Computer Science", "Etl", "Facebook", "Facilitation", "Game Design", "Human Resources", "Mathematical Analysis", "Mathematics", "Matlab", "Microsoft Excel", "Microsoft Office", "Microsoft Word", "Neural Networks", "Organizational Design", , "Powerpoint", "Project Planning", "Psychometrics", "Public Sector", "Public Speaking", "Python", "Recruiting", "Redis", "Research", "Stakeholder Management", "Statistics", "Strategy", "Succession Planning", "Talent Management", "Teaching", ,], "title": "Senior People Partner (Sales & Technical Services)", "education": [{ "minors": [], "start_date": "2006", "degrees": ["Master of Science", "Masters"], "school": { "logo_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtRig-9cUpSg95-hbB_GTx8gySkR8fIq6SvQ&s", "name": "University of Surrey", "domain": "surrey.ac.uk", "location": { "name": "Guildford, England, United Kingdom", "locality": "Guildford", "continent": "Europe", "region": "England", "country": "United Kingdom" }, "linkedin_id": "8369", "type": "post-secondary institution", "id": "PZ-O4dspmqcSoCmg46LW9A_0", "facebook_url": "facebook.com/universityofsurrey", "website": "surrey.ac.uk", "linkedin_url": "linkedin.com/school/university-of-surrey", "twitter_url": "twitter.com/uniofsurrey" }, "gpa": null, "majors": ["Psychology"], "end_date": "2007" }, { "minors": [], "start_date": null, "degrees": ["Bachelor of Science", "Bachelors"], "school": { "logo_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtRig-9cUpSg95-hbB_GTx8gySkR8fIq6SvQ&s", "name": "University of California, Davis", "domain": "ucdavis.edu", "location": { "name": "Davis, California, United States", "locality": "Davis", "continent": "North America", "region": "California", "country": "United States" }, "linkedin_id": "2842", "type": "post-secondary institution", "id": "OBL5pZtjTCqcV0YQ6rpb7Q_0", "facebook_url": "facebook.com/ucdavis", "website": "ucdavis.edu", "linkedin_url": "linkedin.com/school/uc-davis", "twitter_url": "twitter.com/ucdavis" }, "gpa": null, "majors": [], "end_date": "2015" }, { "minors": [], "start_date": null, "degrees": [], "school": { "logo_url": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Stemma_sapienza.png", "name": "University of California", "domain": "universityofcalifornia.edu", "location": { "name": "Oakland, California, United States", "locality": "Oakland", "continent": "North America", "region": "California", "country": "United States" }, "linkedin_id": "2843", "type": "post-secondary institution", "id": "vy-30YJaHfPKMIrQv0hZHg_0", "facebook_url": null, "website": "jobs.universityofcalifornia.edu", "linkedin_url": "linkedin.com/school/university-of-california", "twitter_url": null }, "gpa": null, "majors": [], "end_date": null }] },
+        query: {"criteria":[{"value":["senior","manager","director"],"key":"job_title_levels"},{"value":["europe"],"key":"location_continent"},{"value":[,"Web Applications",,"E-Commerce",,"Project Management",,"Computer Engineering",,"Javascript",,"Python",,"React.js",,"Front End Development",,"Back-End Web Development",,"Web Design",,"Marketing Strategy",,"Product Development",,"SaaS Development",,"Video Game Development",,"Customer Service",,"Teaching",,"Bootstrap"],"key":"skills"}],"name":"Senior Tech Roles with Skills in Target Continent","id":21}
+        })
+    console.log(JSON.stringify(data.query))
     return (
         <motion.div variants={cardVariants} initial="hidden" animate="visible">
             <Card className="p-6">
@@ -349,7 +355,9 @@ const RecruiterSummary = ({ data }: { data: any }) => {
                         <motion.div variants={itemVariants} className="col-span-3">
                             <div>
                                 <p className="text-sm text-gray-400 mb-3">Experience</p>
-                                <ul className="grid grid-cols-3 gap-4"><ExperienceList experience={data.recruiter_summary.experience} /></ul>
+                                <ul className="grid grid-cols-3 gap-4">
+                                    <ExperienceList experience={data.recruiter_summary.experience} />
+                                </ul>
                             </div>
                             <Separator className="my-5" />
                             <div>
@@ -360,8 +368,8 @@ const RecruiterSummary = ({ data }: { data: any }) => {
                     </motion.div>
                     <div className="p-2">
                         <Separator className="my-5" />
-                        <p className="text-sm text-gray-400 mb-3">{data.recruiter_summary.name} matches this criteria - {data.query.name}</p>
-                        <CriteriaDisplay criteria={data.query.criteria} />
+                        <p className="text-sm text-gray-400 mb-3">{data.recruiter_summary.name} matches this criteria - {data.query?.name}</p>
+                        <CriteriaDisplay criteria={data.query?.criteria} />
                     </div>
                 </div>
             </Card>
@@ -439,23 +447,27 @@ Nam condimentum varius ipsum, sit amet rutrum eros. Nullam malesuada sem quis ru
 };
 
 const BlogPostsSection = ({ data }: { data: any }) => {
-    const inProgress = !data.blog_posts
+    const inProgress = getStepStatus(data, "blog_articles") !== "completed"
     return (
         <motion.div variants={cardVariants} initial="hidden" animate="visible">
             <Card className="p-6">
                 <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
-                    <Newspaper className="w-5 h-5 mr-2 text-violet-400" /> Blog Post Selected
+                    <Newspaper className="w-5 h-5 mr-2 text-violet-400" /> Blog Articles Selected
                 </h3>
                 <div className={(inProgress ? "bg-gray-900 " : "") + "relative rounded-md"}>
                     {inProgress && <Overlay />}
                     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-3 gap-4">
-                        <BlogCard /><BlogCard /><BlogCard />
+                        {inProgress ?
+                            Array.from({ length: 3 }).map((_, i) => <BlogCard key={i} />)
+                            : data.blog_articles.content.map(article => (
+                                <BlogCard key={article.url} article={article} />
+                            ))}
                     </motion.div>
                     <Separator className="my-5" />
                     <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-5">
                         {[
-                            { label: 'Posts found', value: '1', icon: Search, color: 'blue' },
-                            { label: 'Posts Deeply Analyzed', value: '1', icon: Brain, color: 'blue' },
+                            { label: 'Posts found', value: data.blog_articles?.articles_found || 0, icon: Search, color: 'blue' },
+                            { label: 'Posts Deeply Analyzed', value: data.blog_articles?.content.length || 0, icon: Brain, color: 'blue' },
                             { label: 'Posts selected', value: '1', icon: CheckCircle2, color: 'blue' }
                         ].map((stat, i) => (
                             <motion.div key={i} custom={i} variants={statsVariants} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
@@ -495,7 +507,7 @@ export default function ResultClient({ data }: { data: any }) {
         >
             <CompanyHeader data={data} />
             <EmailGenerated data={data} />
-            <RecruiterSummary data={data} />
+            <RecruiterSummary originalData={data} />
             <BlogPostsSection data={data} />
         </motion.div>
     );

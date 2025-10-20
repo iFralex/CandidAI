@@ -4,7 +4,7 @@ import { CheckCircle, Wand2 } from 'lucide-react'
 import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClient, SetupCompleteClient } from '@/components/onboarding'
 
 import { ProfileAnalysisClient } from '@/components/onboarding';
-import { completeOnboarding } from '@/actions/onboarding-actions'
+import { completeOnboarding, submitQueries } from '@/actions/onboarding-actions'
 import { Button } from '@/components/ui/button'
 import { cookies } from 'next/headers'
 
@@ -55,7 +55,6 @@ export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersSer
 
     if (!data.success)
         throw new Error(data.error)
-    console.log(data)
 
     const profileSummary = data.data.profileSummary
     const companies = profileSummary.experience.map(e => e.company.name)
@@ -129,7 +128,7 @@ export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersSer
 
     // Deduplicazione
     const seen = new Set();
-    defaultStrategy = [];
+    const defaultStrategy = [];
     let id = 1;
 
     for (const s of rawStrategies) {
@@ -138,6 +137,10 @@ export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersSer
             seen.add(serialized);
             defaultStrategy.push({ id: id++, ...s });
         }
+    }
+
+    if (plan !== "pro" && plan !== "ultra") {
+        return await submitQueries(userId, defaultStrategy)
     }
 
     return (
@@ -331,7 +334,7 @@ export default async function OnboardingPage({ user, currentStep }) {
                 <ProfileAnalysisServer userId={user.uid} plan={user.plan} />
             )}
 
-            {currentStep === 4 && (user.plan === 'pro' || user.plan === 'ultra') && (
+            {currentStep === 4 && (
                 <AdvancedFiltersServer
                     userId={user.uid}
                     plan={user.plan}

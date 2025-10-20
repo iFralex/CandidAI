@@ -81,7 +81,7 @@ async function isUrlValid(url) {
     }
 }
 
-export const CompanyLogo = ({ company, link, maxSize=12 }) => {
+export const CompanyLogo = ({ company, link, maxSize=12, minSize=12 }) => {
     const [logo, setLogo] = useState(link || null);
 
     useEffect(() => {
@@ -102,13 +102,14 @@ export const CompanyLogo = ({ company, link, maxSize=12 }) => {
                 cacheLogo(company, icon);
                 setLogo(icon);
             }
+            console.log(icon)
         };
 
         loadLogo();
     }, [company]);
 
     return (
-        <div className={"relative aspect-square w-full rounded-xl flex items-center justify-center bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold overflow-hidden"} style={{maxWidth: "calc(var(--spacing) * " + (maxSize || 24).toString() + ")"}}>
+        <div className={"relative aspect-square w-full rounded-xl flex items-center justify-center bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold overflow-hidden"} style={{maxWidth: "calc(var(--spacing) * " + (maxSize || 12).toString() + ")", minWidth: "calc(var(--spacing) * " + (minSize || 12).toString() + ")"}}>
             {logo ? (
                 <Image
                     src={logo}

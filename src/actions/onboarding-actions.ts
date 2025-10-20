@@ -45,10 +45,8 @@ export async function submitProfile(
         cvUrl: cvUrl || null
     };
 
-    const nextStep = (plan === "free_trial" || plan === "base") ? 5 : 4;
-
     await updateDoc(doc(db, "users", userId, "data", "account"), updatedProfile);
-    await updateDoc(doc(db, "users", userId), { onboardingStep: nextStep });
+    await updateDoc(doc(db, "users", userId), { onboardingStep: 4 });
 
     revalidatePath("/dashboard");
 }
@@ -57,7 +55,10 @@ export async function submitQueries(userId: string, queries: any) {
     await updateDoc(doc(db, "users", userId, "data", "account"), { queries: queries });
     await updateDoc(doc(db, "users", userId), { onboardingStep: 5 });
 
-    revalidatePath('/dashboard')
+    if (typeof window !== "undefined")
+        revalidatePath('/dashboard')
+    else
+        redirect("/dashboard")
 }
 
 export async function completeOnboarding(userId: string, customizations: any) {
