@@ -1,6 +1,8 @@
 from candidai_script import db
 from firebase_admin import firestore
 
+from candidai_script import db
+
 def get_account_data(user_id):
     """
     Recupera i dati dell'account per un determinato utente.
@@ -89,10 +91,13 @@ def save_recruiter_and_query(user_id: str, unique_id, recruiter: dict, query: di
         experience = []
         for exp in record.get("experience", []):
             new_exp = exp.copy()
+            for key in ["is_primary", "location_names"]:
+                new_exp.pop(key, None)
             for key in ["twitter_url", "linkedin_id", "id", "facebook_url", "founded", "industry", "size", "is_primary", "location_names"]:
                 new_exp["company"].pop(key, None)
-            for key in ["locality", "region", "address_line_2", "geo", "metro", "postal_code", "street_address"]:
-                new_exp["company"]["location"].pop(key, None)
+            if isinstance(new_exp.get("company", {}).get("location"), dict):
+                for key in ["locality", "region", "address_line_2", "geo", "metro", "postal_code", "street_address"]:
+                    new_exp["company"]["location"].pop(key, None)
             for key in ["class", "levels", "role", "sub_role"]:
                 new_exp["title"].pop(key, None)
             experience.append(new_exp)
@@ -157,6 +162,7 @@ def save_recruiter_and_query(user_id: str, unique_id, recruiter: dict, query: di
 
     row_ref.set({
         "recruiter": recruiter,
+        "query": query
     })
 
     print(f"✅ Dati salvati per utente {user_id} con ID {unique_id}")
@@ -230,3 +236,93 @@ def save_articles(user_id: str, unique_id: str, articles_content: list, articles
     }, merge=True)
 
     print(f"✅ Articoli salvati per utente {user_id} con ID {unique_id}")
+
+def save_email(user_id: str, unique_id: str, email):
+    """
+    Salva articoli di blog in Firestore:
+      - row: oggetto blog_articles con content completo e lista articoli
+      - details: oggetto blog_articles con content troncato e numero articoli trovati
+      - results: riferimento rapido con chiave unique_id
+
+    Args:
+        user_id (str): ID utente
+        unique_id (str): ID univoco per il set di risultati
+        articles_content (list): Lista di oggetti dei migliori articoli (con contenuto completo)
+        articles_list (list): Lista di tutti gli articoli trovati (oggetti con title e href)
+    """
+
+    
+    # 1️⃣ Aggiorna il documento results con chiave unique_id
+    results_ref = db.collection("users").document(user_id)\
+        .collection("data").document("results")
+
+    results_ref.set({
+        unique_id: {
+            "email_generated": True
+        }
+    }, merge=True)
+
+    # 2️⃣ Salva in details
+    details_ref = db.collection("users").document(user_id)\
+        .collection("data").document("results")\
+        .collection(unique_id).document("details")
+
+    details_ref.set({
+        "email": email,
+    }, merge=True)
+
+    # 3️⃣ Salva in row
+    row_ref = db.collection("users").document(user_id)\
+        .collection("data").document("results")\
+        .collection(unique_id).document("row")
+
+    row_ref.set({
+        "email": email
+    }, merge=True)
+
+def get_results_status(user_id):
+    """
+    Recupera lo stato dei risultati per ogni azienda dell'utente.
+    Restituisce un dict:
+    {
+        unique_id: {
+            "blog_articles": {...},
+            "recruiter": {...},
+            "email_generated": True/False
+        },
+        ...
+    }
+    """
+    results_ref = db.collection("users").document(user_id)\
+        .collection("data").document("results")
+
+    doc = results_ref.get()
+    
+    if not doc.exists:
+        return {}
+
+    return doc.to_dict() or {}
+
+def get_results_row(user_id, id):
+    """
+    Recupera lo stato dei risultati per ogni azienda dell'utente.
+    Restituisce un dict:
+    {
+        unique_id: {
+            "blog_articles": {...},
+            "recruiter": {...},
+            "email_generated": True/False
+        },
+        ...
+    }
+    """
+    row_ref = db.collection("users").document(user_id)\
+        .collection("data").document("results")\
+        .collection(id).document("row")
+
+    doc = row_ref.get()
+    
+    if not doc.exists:
+        return {}
+
+    return doc.to_dict() or {}

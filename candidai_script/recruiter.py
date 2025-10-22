@@ -102,6 +102,7 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
     return found_profiles[:n_profiles], final_query
 
 def build_elasticsearch_query(company: Dict, criteria: List[Dict]) -> Dict:
+    company = {"name": "Wikimedia Foundation"}
     """
     Costruisce una query Elasticsearch basata sui criteri forniti.
     
@@ -260,6 +261,7 @@ def build_elasticsearch_query(company: Dict, criteria: List[Dict]) -> Dict:
     }
 
 def find_recruiters_for_user(user_id, ids, companies, queries):
+    results = {}
     for company in companies:
         result, query = find_company_recruiters(company, queries)
         result = result[0] if result else {}
@@ -272,7 +274,7 @@ def find_recruiters_for_user(user_id, ids, companies, queries):
             query,
             result.get("job_company_linkedin_url", None)
         )
+        results[company["name"]] = result, query
         time.sleep(2)
-    # 📤 9. Stampa o gestisci il risultato
-    print("📢 Risultato della funzione find_company_recruiters:")
-    print(result)
+    
+    return results

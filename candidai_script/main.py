@@ -1,50 +1,167 @@
 from candidai_script.recruiter import find_recruiters_for_user
 from candidai_script.blog_posts import get_blog_posts
-from candidai_script.database import get_account_data, save_companies_to_results
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from candidai_script.email_generator import generate_email
+from candidai_script.database import (
+    get_account_data,
+    save_companies_to_results,
+    get_results_status,
+    get_results_row,
+)
 import logging
+import time
 
-def main():
-    user_id = "qJTjvx46caUSRMPPygNnmhNNsrL2"#"ubcXUkixqchJEBoQ895M2jDy93H2"#"WWQLqljHlWTg8NbCmE00seHglXu1"
+
+def main(mode="auto", manual_tasks=None, target_companies=None):
+    """
+    Esegue i task per generare blog, recruiter ed email in modalità automatica o manuale.
+
+    Args:
+        mode (str): "auto" o "manual".
+        manual_tasks (list): task da rieseguire manualmente, es. ["blog", "recruiters", "email"]
+        target_companies (list): aziende specifiche da includere, es. ["Google", "Meta"]
+    """
+    user_id = "8TGSaFuS3ObRNnbZ3BxMa4KOmlG3"#"ubcXUkixqchJEBoQ895M2jDy93H2"
     account = get_account_data(user_id)
+
     if not account:
+        print("❌ Account non trovato.")
         return
-    
+
     companies = account.get("companies", [])
+    companies = [companies[3]]
+    profile_summary = account["profileSummary"]
+    cv_url = account["cvUrl"]
 
-    ids = save_companies_to_results(user_id, account["companies"])
+    # Crea o recupera ID univoci per ogni azienda
+    ids = save_companies_to_results(user_id, companies)
 
-    # Configura il logging una volta (magari all'inizio del tuo script)
+    # Configura logging
     logging.basicConfig(
         level=logging.INFO,
-        format='[%(asctime)s] %(levelname)s - %(message)s',
-        datefmt='%H:%M:%S'
+        format="[%(asctime)s] %(levelname)s - %(message)s",
+        datefmt="%H:%M:%S",
     )
 
-    # Funzioni da eseguire in parallelo
-    tasks = [
-        ("get_blog_posts", get_blog_posts, (user_id, ids, companies, account["profileSummary"])),
-        ("find_recruiters_for_user", find_recruiters_for_user, (user_id, ids, companies, account.get("queries", []))),
-    ]
+    # Recupera lo stato attuale
+    current_status = get_results_status(user_id)
 
-    results = {}
+    # Determina i task da eseguire per ciascuna azienda
+    tasks_per_company = decide_tasks_per_company(
+        mode, manual_tasks, current_status, companies, user_id, ids, target_companies
+    )
 
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        futures = {executor.submit(func, *args): name for name, func, args in tasks}
+    if not tasks_per_company:
+        print("✅ Tutte le aziende sono già complete.")
+        return
 
-        for future in as_completed(futures):
-            task_name = futures[future]
-            try:
-                result = future.result()
-                results[task_name] = result
-                logging.info(f"✅ Task '{task_name}' completato con successo.")
-            except Exception as e:
-                logging.error(f"❌ Errore nel task '{task_name}': {e}", exc_info=True)
-                results[task_name] = None
+    logging.info(f"🚀 Avvio processi in modalità '{mode.upper()}'")
 
-    # Puoi accedere ai risultati se le funzioni restituiscono qualcosa
-    result_blog = results["get_blog_posts"]
-    result_recruiters = results["find_recruiters_for_user"]
+    # Esegui per ogni azienda
+    for company in companies:
+        name = company["name"]
+        if name not in tasks_per_company:
+            continue
+
+        company_tasks = tasks_per_company[name]
+        company_key = f"{name}-{user_id}"
+        single_id = {company_key: ids[company_key]}
+        single_company_list = [company]
+
+        logging.info(f"\n🏢 {name}: eseguo {company_tasks}")
+
+        try:
+            # Esegui task in ordine logico
+            result_blog = None
+            result_recruiters = None
+
+            if "blog" in company_tasks:
+                start = time.time()
+                result_blog = get_blog_posts(user_id, single_id, single_company_list, profile_summary)
+                logging.info(f"✅ Blog completato per {name} ({time.time() - start:.2f}s)")
+
+            if "recruiters" in company_tasks:
+                start = time.time()
+                result_recruiters = find_recruiters_for_user(
+                    user_id, single_id, single_company_list, account.get("queries", [])
+                )
+                logging.info(f"✅ Recruiter completato per {name} ({time.time() - start:.2f}s)")
+            
+            if "email" in company_tasks:
+                start = time.time()
+                if not result_blog or not result_recruiters:
+                    row = get_results_row(user_id, ids[company_key])
+
+                    if not result_blog:
+                        result_blog = {name: row.get("blog_articles", {}).get("content", None)}
+                    if not result_recruiters:
+                        result_recruiters = {name: [row.get("recruiter", None), row.get("query", None)]}
+
+                generate_email(
+                    user_id,
+                    single_id,
+                    single_company_list,
+                    profile_summary,
+                    cv_url,
+                    result_blog,
+                    result_recruiters,
+                )
+                logging.info(f"✅ Email generata per {name} ({time.time() - start:.2f}s)")
+
+        except Exception as e:
+            logging.error(f"❌ Errore nell'elaborazione di {name}: {e}", exc_info=True)
+
+    logging.info("\n🎉 Tutti i processi terminati.")
+
+
+def decide_tasks_per_company(mode, manual_tasks, current_status, companies, user_id, ids, target_companies=None):
+    """
+    Restituisce un dizionario dei task da eseguire per ciascuna azienda:
+    {
+        "Google": ["recruiters", "email"],
+        "Meta": ["blog", "recruiters", "email"]
+    }
+    """
+    tasks_per_company = {}
+    target_companies = [c for c in target_companies] if target_companies else None
+
+    for company in companies:
+        name = company["name"]
+        company_key = f"{name}-{user_id}"
+        data = current_status.get(ids[company_key], {})
+        company_tasks = []
+
+        # Se specificate aziende target, ignora le altre
+        if target_companies and name not in target_companies:
+            continue
+
+        if mode == "manual":
+            # Forza riesecuzione solo dei task specificati
+            company_tasks = manual_tasks or []
+        else:
+            # Modalità automatica → controlla cosa manca nel DB
+            if "blog_articles" not in data:
+                company_tasks.append("blog")
+            if "recruiter" not in data:
+                company_tasks.append("recruiters")
+            if not data.get("email_generated", False):
+                company_tasks.append("email")
+
+        if company_tasks:
+            tasks_per_company[name] = company_tasks
+
+    return tasks_per_company
+
 
 if __name__ == "__main__":
-    main()
+    # 🔹 Esempi d’uso:
+
+    # 1️⃣ Modalità automatica → esegue solo ciò che manca
+    # main(mode="auto")
+
+    # 2️⃣ Modalità manuale → forza solo recruiter ed email per tutte le aziende
+    # main(mode="manual", manual_tasks=["recruiters", "email"])
+
+    # 3️⃣ Modalità manuale → forza solo blog per alcune aziende
+    # main(mode="manual", manual_tasks=["blog"], target_companies=["Google", "Meta"])
+
+    main(mode="auto")

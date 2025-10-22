@@ -107,7 +107,6 @@ def log_ai_interaction(file_path: str, prompt: str, response: dict):
     """
     global SESSION_OBJECT_CREATED
     file = Path(file_path)
-    print(file.resolve())
 
     # Carica i dati esistenti o crea una lista vuota
     if file.exists():
@@ -169,14 +168,15 @@ def ai_chat(
     site_name: Optional[str] = None
 ) -> Optional[Union[str, Dict]]:
     """
-    Invia un prompt a OpenRouter API con gestione avanzata degli errori.
+    Invia un prompt a OpenRouter API con gestione avanzata degli errori multi-step.
     
-    Strategie di resilienza:
-    - Retry automatico con exponential backoff per rate limiting (429)
-    - Rotazione automatica delle API key
-    - Fallback su modelli alternativi
-    - Uso di proxy per errori di rete persistenti
-    - Gestione timeout e errori del modello
+    Strategie di resilienza modulari:
+    - 429 (Rate Limit): attesa → rotazione API key → cambio modello
+    - 401 (Auth): rotazione API key → attesa → cambio modello
+    - 502 (Bad Gateway): cambio modello → attesa → proxy
+    - 503 (Unavailable): attesa breve → proxy → cambio modello
+    - Timeout: retry → proxy → cambio modello
+    - Connection Error: proxy → attesa → cambio modello
     """
     
     def parse_json(response: str) -> dict:
@@ -185,11 +185,11 @@ def ai_chat(
             raise ValueError("Nessun oggetto JSON trovato nella stringa")
         return json.loads(match.group(0))
     
-    # Pool di API keys (ruota se una fallisce)
+    # Pool di API keys
     API_KEYS = os.getenv("OPENROUTER_API_KEYS", "").split(",")
     API_KEYS = [key.strip() for key in API_KEYS if key.strip()]
     
-    # Modelli fallback in ordine di preferenza
+    # Modelli fallback
     FALLBACK_MODELS = [
         "microsoft/mai-ds-r1:free",
         "deepseek/deepseek-r1-0528:free",
@@ -205,14 +205,293 @@ def ai_chat(
     }
     
     API_URL = "https://openrouter.ai/api/v1/chat/completions"
-    MAX_RETRIES = 8
+    MAX_RETRIES = 12
     INITIAL_BACKOFF = 2
     
     # Stato della richiesta
     current_api_key_idx = 0
-    current_model_idx = 0
+    current_model_idx = FALLBACK_MODELS.index(model) if model in FALLBACK_MODELS else 0
     use_proxy = False
     
+    # Contatori per strategie multi-step
+    error_counters = {
+        429: 0,  # Rate limit
+        401: 0,  # Unauthorized
+        502: 0,  # Bad Gateway
+        503: 0,  # Service Unavailable
+        408: 0,  # Timeout
+        'timeout': 0,
+        'connection': 0,
+        'proxy_error': 0
+    }
+    
+    def handle_429_strategy(attempt: int) -> tuple[bool, int]:
+        """
+        Strategia multi-step per 429:
+        Step 1-2: Attesa con backoff
+        Step 3-4: Cambio API key + attesa
+        Step 5+: Cambio modello + attesa
+        """
+        nonlocal current_api_key_idx, current_model_idx, error_counters
+        
+        error_counters[429] += 1
+        count = error_counters[429]
+        
+        retry_after = INITIAL_BACKOFF * (2 ** min(attempt, 5))
+        
+        if count <= 2:
+            # Step 1-2: Solo attesa
+            print(f"⏳ Rate limit (429) - Step 1: Attesa {retry_after}s... (Occorrenza {count})")
+            time.sleep(retry_after)
+            return True, retry_after
+        
+        elif count <= 4:
+            # Step 3-4: Cambio API key
+            old_idx = current_api_key_idx
+            current_api_key_idx = (current_api_key_idx + 1) % len(API_KEYS)
+            print(f"⏳ Rate limit (429) - Step 2: Cambio API key [{old_idx}→{current_api_key_idx}] + attesa {retry_after}s...")
+            time.sleep(retry_after)
+            return True, retry_after
+        
+        else:
+            # Step 5+: Cambio modello
+            old_model = FALLBACK_MODELS[current_model_idx]
+            current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
+            new_model = FALLBACK_MODELS[current_model_idx]
+            print(f"⏳ Rate limit (429) - Step 3: Cambio modello [{old_model}→{new_model}] + attesa {retry_after}s...")
+            time.sleep(retry_after)
+            
+            # Reset counter se abbiamo provato tutti i modelli
+            if current_model_idx == 0:
+                error_counters[429] = 0
+            
+            return True, retry_after
+    
+    def handle_401_strategy() -> bool:
+        """
+        Strategia multi-step per 401:
+        Step 1: Cambio API key immediato
+        Step 2-3: Cambio API key + attesa
+        Step 4+: Cambio modello (potrebbe avere restrizioni diverse)
+        """
+        nonlocal current_api_key_idx, current_model_idx, error_counters
+        
+        error_counters[401] += 1
+        count = error_counters[401]
+        
+        if count == 1:
+            # Step 1: Cambio API key immediato
+            old_idx = current_api_key_idx
+            current_api_key_idx = (current_api_key_idx + 1) % len(API_KEYS)
+            print(f"🔑 Auth error (401) - Step 1: Cambio API key [{old_idx}→{current_api_key_idx}]")
+            return True
+        
+        elif count <= 3:
+            # Step 2-3: Cambio API key + attesa
+            old_idx = current_api_key_idx
+            current_api_key_idx = (current_api_key_idx + 1) % len(API_KEYS)
+            print(f"🔑 Auth error (401) - Step 2: Cambio API key [{old_idx}→{current_api_key_idx}] + attesa 2s...")
+            time.sleep(2)
+            return True
+        
+        else:
+            # Step 4+: Cambio modello
+            old_model = FALLBACK_MODELS[current_model_idx]
+            current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
+            new_model = FALLBACK_MODELS[current_model_idx]
+            print(f"🔑 Auth error (401) - Step 3: Cambio modello [{old_model}→{new_model}]")
+            time.sleep(1)
+            
+            # Se abbiamo provato tutte le combinazioni, ferma
+            if current_model_idx == 0 and count > len(API_KEYS) * len(FALLBACK_MODELS):
+                print("❌ Tutte le API key fallite su tutti i modelli")
+                return False
+            
+            return True
+    
+    def handle_502_strategy() -> bool:
+        """
+        Strategia multi-step per 502:
+        Step 1: Cambio modello immediato
+        Step 2-3: Cambio modello + attesa
+        Step 4+: Proxy + cambio modello
+        """
+        nonlocal current_model_idx, use_proxy, error_counters
+        
+        error_counters[502] += 1
+        count = error_counters[502]
+        
+        if count == 1:
+            # Step 1: Cambio modello immediato
+            old_model = FALLBACK_MODELS[current_model_idx]
+            current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
+            new_model = FALLBACK_MODELS[current_model_idx]
+            print(f"🔧 Bad Gateway (502) - Step 1: Cambio modello [{old_model}→{new_model}]")
+            return True
+        
+        elif count <= 3:
+            # Step 2-3: Cambio modello + attesa
+            old_model = FALLBACK_MODELS[current_model_idx]
+            current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
+            new_model = FALLBACK_MODELS[current_model_idx]
+            wait_time = INITIAL_BACKOFF * count
+            print(f"🔧 Bad Gateway (502) - Step 2: Cambio modello [{old_model}→{new_model}] + attesa {wait_time}s...")
+            time.sleep(wait_time)
+            return True
+        
+        else:
+            # Step 4+: Attiva proxy
+            if not use_proxy:
+                use_proxy = True
+                print(f"🔧 Bad Gateway (502) - Step 3: Attivazione proxy")
+                time.sleep(2)
+            else:
+                # Continua a cambiare modello con proxy attivo
+                old_model = FALLBACK_MODELS[current_model_idx]
+                current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
+                new_model = FALLBACK_MODELS[current_model_idx]
+                print(f"🔧 Bad Gateway (502) - Step 3: Cambio modello con proxy [{old_model}→{new_model}]")
+                time.sleep(3)
+            
+            return True
+    
+    def handle_503_strategy() -> bool:
+        """
+        Strategia multi-step per 503:
+        Step 1: Attesa breve
+        Step 2: Attiva proxy
+        Step 3+: Cambio modello + proxy
+        """
+        nonlocal use_proxy, current_model_idx, error_counters
+        
+        error_counters[503] += 1
+        count = error_counters[503]
+        
+        if count == 1:
+            # Step 1: Attesa breve
+            print(f"⏸️ Service Unavailable (503) - Step 1: Attesa 3s...")
+            time.sleep(3)
+            return True
+        
+        elif count == 2:
+            # Step 2: Attiva proxy
+            use_proxy = True
+            print(f"⏸️ Service Unavailable (503) - Step 2: Attivazione proxy + attesa 5s...")
+            time.sleep(5)
+            return True
+        
+        else:
+            # Step 3+: Cambio modello con proxy
+            old_model = FALLBACK_MODELS[current_model_idx]
+            current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
+            new_model = FALLBACK_MODELS[current_model_idx]
+            print(f"⏸️ Service Unavailable (503) - Step 3: Cambio modello con proxy [{old_model}→{new_model}]")
+            time.sleep(4)
+            return True
+    
+    def handle_timeout_strategy() -> bool:
+        """
+        Strategia multi-step per Timeout:
+        Step 1: Retry immediato
+        Step 2: Attiva proxy
+        Step 3+: Cambio modello con proxy
+        """
+        nonlocal use_proxy, current_model_idx, error_counters
+        
+        error_counters['timeout'] += 1
+        count = error_counters['timeout']
+        
+        if count == 1:
+            # Step 1: Retry immediato
+            print(f"⏱️ Timeout - Step 1: Retry immediato")
+            time.sleep(1)
+            return True
+        
+        elif count == 2:
+            # Step 2: Attiva proxy
+            use_proxy = True
+            print(f"⏱️ Timeout - Step 2: Attivazione proxy")
+            time.sleep(2)
+            return True
+        
+        else:
+            # Step 3+: Cambio modello
+            old_model = FALLBACK_MODELS[current_model_idx]
+            current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
+            new_model = FALLBACK_MODELS[current_model_idx]
+            print(f"⏱️ Timeout - Step 3: Cambio modello con proxy [{old_model}→{new_model}]")
+            time.sleep(2)
+            return True
+    
+    def handle_connection_error_strategy() -> bool:
+        """
+        Strategia multi-step per Connection Error:
+        Step 1: Attiva proxy immediato
+        Step 2: Attesa + proxy
+        Step 3+: Cambio modello + proxy
+        """
+        nonlocal use_proxy, current_model_idx, error_counters
+        
+        error_counters['connection'] += 1
+        count = error_counters['connection']
+        
+        if count == 1:
+            # Step 1: Attiva proxy
+            use_proxy = True
+            print(f"🔌 Connection Error - Step 1: Attivazione proxy")
+            time.sleep(2)
+            return True
+        
+        elif count == 2:
+            # Step 2: Attesa con proxy
+            print(f"🔌 Connection Error - Step 2: Attesa 5s con proxy...")
+            time.sleep(5)
+            return True
+        
+        else:
+            # Step 3+: Cambio modello
+            old_model = FALLBACK_MODELS[current_model_idx]
+            current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
+            new_model = FALLBACK_MODELS[current_model_idx]
+            print(f"🔌 Connection Error - Step 3: Cambio modello [{old_model}→{new_model}]")
+            time.sleep(3)
+            return True
+    
+    def handle_proxy_error_strategy() -> bool:
+        """
+        Strategia multi-step per Proxy Error:
+        Step 1: Disabilita proxy
+        Step 2: Attesa senza proxy
+        Step 3+: Cambio modello senza proxy
+        """
+        nonlocal use_proxy, current_model_idx, error_counters
+        
+        error_counters['proxy_error'] += 1
+        count = error_counters['proxy_error']
+        
+        if count == 1:
+            # Step 1: Disabilita proxy
+            use_proxy = False
+            print(f"🚫 Proxy Error - Step 1: Disabilitazione proxy")
+            time.sleep(1)
+            return True
+        
+        elif count == 2:
+            # Step 2: Attesa
+            print(f"🚫 Proxy Error - Step 2: Attesa 3s senza proxy...")
+            time.sleep(3)
+            return True
+        
+        else:
+            # Step 3+: Cambio modello
+            old_model = FALLBACK_MODELS[current_model_idx]
+            current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
+            new_model = FALLBACK_MODELS[current_model_idx]
+            print(f"🚫 Proxy Error - Step 3: Cambio modello [{old_model}→{new_model}]")
+            time.sleep(2)
+            return True
+    
+    # Loop principale
     for attempt in range(MAX_RETRIES):
         try:
             # Prepara headers
@@ -232,34 +511,36 @@ def ai_chat(
                 "messages": [{"role": "user", "content": prompt}]
             }
             
-            # Esegui richiesta (con o senza proxy)
+            # Esegui richiesta
             response = requests.post(
                 API_URL,
                 headers=headers,
                 data=json.dumps(data),
                 proxies=PROXY if use_proxy else None,
-                timeout=60  # Timeout esplicito
+                timeout=60
             )
             
-            # Gestione errori HTTP
+            # Successo!
             if response.status_code == 200:
                 result = response.json()
                 log_ai_interaction("./candidai_script/ai_log.json", prompt, result)
                 output = result.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
                 
+                print(f"✅ Richiesta completata con successo!")
+                print(f"   API Key: {current_api_key_idx}, Modello: {FALLBACK_MODELS[current_model_idx]}, Proxy: {use_proxy}")
+                
                 if format == "json":
                     return parse_json(output)
                 return output
             
-            # Gestione errori specifici
+            # Gestione errori con strategie multi-step
             elif response.status_code == 400:
-                print(f"⚠️ Errore 400: Bad Request. Verifica parametri.")
+                print(f"⚠️ Errore 400: Bad Request. Parametri non validi.")
                 return None
             
             elif response.status_code == 401:
-                print(f"⚠️ Errore 401: Credenziali non valide. Cambio API key...")
-                current_api_key_idx = (current_api_key_idx + 1) % len(API_KEYS)
-                time.sleep(1)
+                if not handle_401_strategy():
+                    return None
                 continue
             
             elif response.status_code == 403:
@@ -267,32 +548,22 @@ def ai_chat(
                 return None
             
             elif response.status_code == 408:
-                print(f"⚠️ Errore 408: Timeout. Ritento...")
-                time.sleep(INITIAL_BACKOFF * (2 ** min(attempt, 5)))
+                error_counters[408] += 1
+                wait_time = INITIAL_BACKOFF * (2 ** min(error_counters[408], 4))
+                print(f"⏱️ Timeout (408) - Attesa {wait_time}s... (Occorrenza {error_counters[408]})")
+                time.sleep(wait_time)
                 continue
             
             elif response.status_code == 429:
-                retry_after = int(response.headers.get("Retry-After", 0)) or (INITIAL_BACKOFF * (2 ** attempt))
-                current_api_key_idx = (current_api_key_idx + 1) % len(API_KEYS)
-                print(f"⏳ Rate limit (429). Attesa {retry_after}s... (Tentativo {attempt+1}/{MAX_RETRIES})")
-                time.sleep(retry_after)
+                handle_429_strategy(attempt)
                 continue
             
             elif response.status_code == 502:
-                print(f"⚠️ Errore 502: Modello non disponibile. Cambio modello...")
-                current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
-                
-                # Se abbiamo provato tutti i modelli, attendi prima di ricominciare
-                if current_model_idx == 0:
-                    wait_time = INITIAL_BACKOFF * (2 ** min(attempt, 4))
-                    print(f"   Tutti i modelli provati. Attesa {wait_time}s prima di ritentare...")
-                    time.sleep(wait_time)
+                handle_502_strategy()
                 continue
             
             elif response.status_code == 503:
-                print(f"⚠️ Errore 503: Nessun provider disponibile. Attivo proxy e ritento...")
-                use_proxy = True
-                time.sleep(INITIAL_BACKOFF * (2 ** min(attempt, 4)))
+                handle_503_strategy()
                 continue
             
             else:
@@ -301,21 +572,15 @@ def ai_chat(
                 continue
         
         except requests.exceptions.Timeout:
-            print(f"⏱️ Timeout della richiesta. Ritento con proxy...")
-            use_proxy = True
-            time.sleep(INITIAL_BACKOFF)
+            handle_timeout_strategy()
             continue
         
         except requests.exceptions.ProxyError:
-            print(f"⚠️ Errore proxy. Disabilito proxy e ritento...")
-            use_proxy = False
-            time.sleep(INITIAL_BACKOFF)
+            handle_proxy_error_strategy()
             continue
         
         except requests.exceptions.ConnectionError:
-            print(f"⚠️ Errore di connessione. Attivo proxy e ritento...")
-            use_proxy = True
-            time.sleep(INITIAL_BACKOFF * (2 ** min(attempt, 3)))
+            handle_connection_error_strategy()
             continue
         
         except requests.exceptions.RequestException as e:
@@ -332,7 +597,9 @@ def ai_chat(
             time.sleep(INITIAL_BACKOFF)
             continue
     
-    print(f"❌ Falliti tutti i {MAX_RETRIES} tentativi. Impossibile completare la richiesta.")
+    print(f"❌ Falliti tutti i {MAX_RETRIES} tentativi.")
+    print(f"   Configurazione finale: API Key {current_api_key_idx}, Modello {FALLBACK_MODELS[current_model_idx]}, Proxy {use_proxy}")
+    print(f"   Errori per tipo: {error_counters}")
     return None
 
 # 1. Estrai tutti i link dal sorgente HTML
@@ -5011,8 +5278,8 @@ MAX_ARTICLES = 35
 
 from candidai_script.database import save_articles
 
-# --- ESEMPIO D'USO ---
 def get_blog_posts(user_id, ids, companies, user_info):
+    results = {}
     start_time_total = time.time()
     company_durations = {}
 
@@ -5024,8 +5291,8 @@ def get_blog_posts(user_id, ids, companies, user_info):
         relevant_articles = select_relevant_articles(articles, user_info)
         articles_content = extract_articles_content(relevant_articles)
 
-        save_articles(user_id, ids[f'{company}-{user_id}'], articles_content, articles_list)
-        #about_md = get_about_description(company)
+        save_articles(user_id, ids[f'{company}-{user_id}'], articles_content, articles)
+        results[company] = articles_content
 
         end_time_company = time.time()
         company_durations[company] = end_time_company - start_time_company
@@ -5035,3 +5302,5 @@ def get_blog_posts(user_id, ids, companies, user_info):
     total_duration = end_time_total - start_time_total
     print(f"\nTempo totale: {total_duration:.2f} secondi")
     close_driver()
+
+    return results
