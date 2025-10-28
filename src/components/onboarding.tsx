@@ -1363,34 +1363,213 @@ export const CriteriaDisplay = ({ criteria }) => {
     );
 };
 
-export function AdvancedFiltersClient({ defaultStrategy, maxStrategies, userId }) {
+export function AddStrategyButton({
+    strategy,
+    maxStrategies,
+    openAddForm,
+}) {
+    return (
+        <motion.button
+            initial={{ y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.log(strategy.length + 1) * 0.1 + 0.7 }}
+            whileHover={{
+                scale: strategy.length >= maxStrategies ? 1 : 1.02,
+                boxShadow:
+                    strategy.length >= maxStrategies
+                        ? '0 0 0 rgba(139, 92, 246, 0)'
+                        : '0 20px 60px rgba(139, 92, 246, 0.4)',
+            }}
+            whileTap={{ scale: strategy.length >= maxStrategies ? 1 : 0.98 }}
+            onClick={openAddForm}
+            disabled={strategy.length >= maxStrategies}
+            className="relative my-4 w-full group overflow-hidden rounded-xl border-2 border-dashed border-white/20 
+                 hover:border-violet-500/50 bg-white/5 hover:bg-violet-500/10 transition-all duration-300 
+                 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-white/20 
+                 disabled:hover:bg-white/5"
+        >
+            <div className="flex items-center justify-center gap-4 py-8">
+                <motion.div
+                    className="relative"
+                    whileHover={{ rotate: 180 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <motion.div
+                        className="absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl blur-md"
+                        animate={{
+                            opacity: [0.3, 0.6, 0.3],
+                            scale: [1, 1.2, 1],
+                        }}
+                        transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                        }}
+                    />
+                    <div className="relative bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl p-3 shadow-lg">
+                        <Plus className="w-6 h-6 text-white" />
+                    </div>
+                </motion.div>
+
+                <div className="flex flex-col items-start">
+                    <motion.span
+                        className="text-white font-semibold text-lg group-hover:text-violet-300 transition-colors"
+                        whileHover={{ x: 5 }}
+                    >
+                        Add Strategy
+                    </motion.span>
+                    <span className="text-gray-400 text-sm">
+                        {strategy.length >= maxStrategies
+                            ? `Maximum limit reached (${maxStrategies})`
+                            : 'Create a new query'}
+                    </span>
+                </div>
+            </div>
+
+            <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                initial={{ x: '-100%' }}
+                animate={{ x: '-100%' }}
+                whileHover={{ x: '100%' }}
+                transition={{ duration: 0.6 }}
+            />
+        </motion.button>
+    );
+}
+
+export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, userId }) {
     const [strategy, setStrategy] = useState(defaultStrategy);
     const [isPending, startTransition] = useTransition();
+    const [hasChanges, setHasChanges] = useState(false);
+
+    useEffect(() => {
+        setHasChanges(JSON.stringify(strategy) !== JSON.stringify(defaultStrategy))
+    }, [strategy])
+
+    const resetStrategy = () => {
+        setStrategy(defaultStrategy);
+    };
+
+    const handleContinue = () => {
+        startTransition(async () => {
+            await submitQueries(userId, strategy)
+        })
+    };
+
+    return (
+        <AdvancedFiltersClient strategy={strategy} setStrategy={setStrategy} maxStrategies={maxStrategies}>
+            {/* Action Buttons */}
+            <motion.div
+                className="flex flex-wrap items-center justify-center gap-3 mb-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+            >
+                <motion.button
+                    onClick={resetStrategy}
+                    disabled={!hasChanges}
+                    className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-lg transition-all flex items-center space-x-2 border border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    whileHover={{ scale: hasChanges ? 1.05 : 1, boxShadow: hasChanges ? '0 5px 20px rgba(255, 255, 255, 0.1)' : '0 0 0 rgba(255, 255, 255, 0)' }}
+                    whileTap={{ scale: hasChanges ? 0.95 : 1 }}
+                >
+                    <motion.div
+                        animate={hasChanges ? { rotate: [0, -180, -360] } : {}}
+                        transition={{ duration: 0.6 }}
+                    >
+                        <RotateCcw className="w-5 h-5" />
+                    </motion.div>
+                    <span>Reset to Default</span>
+                </motion.button>
+
+                <motion.button
+                    onClick={handleContinue}
+                    disabled={isPending}
+                    className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2 shadow-lg shadow-violet-500/50"
+                    whileHover={{ scale: isPending ? 1 : 1.05 }}
+                    whileTap={{ scale: isPending ? 1 : 0.95 }}
+                >
+                    {isPending ? (
+                        <>
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            >
+                                <Loader2 className="w-5 h-5" />
+                            </motion.div>
+                            <span>Saving...</span>
+                        </>
+                    ) : (
+                        <>
+                            <span>Continue Setup</span>
+                            <motion.div
+                                animate={{ x: [0, 5, 0] }}
+                                transition={{ duration: 1, repeat: Infinity }}
+                            >
+                                <ArrowRight className="w-5 h-5" />
+                            </motion.div>
+                        </>
+                    )}
+                </motion.button>
+            </motion.div>
+
+            {/* Changes Indicator */}
+            <AnimatePresence>
+                {hasChanges && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.8 }}
+                        transition={{ type: "spring", stiffness: 200 }}
+                        className="text-center"
+                    >
+                        <motion.span
+                            className="text-amber-400 text-sm flex items-center justify-center space-x-2 bg-amber-500/10 px-4 py-2 rounded-full inline-flex border border-amber-500/20"
+                            animate={{
+                                boxShadow: [
+                                    '0 0 0 0 rgba(251, 191, 36, 0.4)',
+                                    '0 0 0 10px rgba(251, 191, 36, 0)',
+                                ]
+                            }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                        >
+                            <motion.div
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{ duration: 1, repeat: Infinity }}
+                            >
+                                <AlertCircle className="w-4 h-4" />
+                            </motion.div>
+                            <span>You have unsaved changes</span>
+                        </motion.span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </AdvancedFiltersClient>
+    )
+}
+
+export function AdvancedFiltersClient({ maxStrategies, strategy, setStrategy, children }) {
     const [showFormModal, setShowFormModal] = useState(false);
     const [editingQuery, setEditingQuery] = useState(null);
+    const [addPosition, setAddPosition] = useState("first");
 
     const [queryName, setQueryName] = useState('');
     const [queryCriteria, setQueryCriteria] = useState([]);
 
-    const [hasChanges, setHasChanges] = useState(false);
-    const [demoStep, setDemoStep] = useState(0);
-
     const handleReorder = (newOrder) => {
         setStrategy(newOrder);
-        setHasChanges(true);
     };
 
     const deleteQuery = (id) => {
         if (strategy.length <= 1) return;
         setStrategy(strategy.filter(q => q.id !== id));
-        setHasChanges(true);
     };
 
-    const openAddForm = () => {
+    const openAddForm = (position) => {
         setEditingQuery(null);
         setQueryName('');
         setQueryCriteria([]);
         setShowFormModal(true);
+        setAddPosition(position)
     };
 
     const openEditForm = (query) => {
@@ -1438,26 +1617,15 @@ export function AdvancedFiltersClient({ defaultStrategy, maxStrategies, userId }
         } else {
             const newId = Math.max(...strategy.map(q => q.id), 0) + 1;
             const newQuery = { id: newId, name: queryName.trim(), criteria: queryCriteria };
-            setStrategy([...strategy, newQuery]);
+            setStrategy(addPosition === "first" ? [newQuery, ...strategy] : [...strategy, newQuery]);
         }
 
         closeForm();
-        setHasChanges(true);
-    };
-
-    const resetStrategy = () => {
-        setStrategy(defaultStrategy);
-        setHasChanges(false);
-    };
-
-    const handleContinue = () => {
-        startTransition(async () => {
-            await submitQueries(userId, strategy)
-            setHasChanges(false);
-        })
     };
 
     const duplicateQuery = (query) => {
+        if (strategy.length >= maxStrategies) return
+        
         const newId = Math.max(...strategy.map(q => q.id), 0) + 1;
         const duplicatedQuery = {
             id: newId,
@@ -1473,19 +1641,17 @@ export function AdvancedFiltersClient({ defaultStrategy, maxStrategies, userId }
         ];
 
         setStrategy(newStrategy);
-        setHasChanges(true);
     };
 
     const startDemo = () => {
-        setDemoStep(0);
         const interval = setInterval(() => {
-            setDemoStep(prev => {
+            /*setDemoStep(prev => {
                 if (prev >= strategy.length - 1) {
                     clearInterval(interval);
                     return prev;
                 }
                 return prev + 1;
-            });
+            });*/
         }, 1500);
     };
 
@@ -1637,7 +1803,7 @@ export function AdvancedFiltersClient({ defaultStrategy, maxStrategies, userId }
                     transition={{ duration: 0.5, delay: 0.1 }}
                 >
                     <motion.div
-                        className="flex items-center justify-between mb-6"
+                        className="flex items-center justify-between mb-3"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
@@ -1670,6 +1836,8 @@ export function AdvancedFiltersClient({ defaultStrategy, maxStrategies, userId }
                     </motion.div>
 
                     <Reorder.Group axis="y" values={strategy} onReorder={handleReorder} className="space-y-3">
+                        <AddStrategyButton maxStrategies={maxStrategies} strategy={strategy} openAddForm={() => openAddForm("first")} />
+
                         {strategy.map((query, idx) => (
                             <Reorder.Item key={query.id} value={query} layoutId={`strategy-${query.id}`}>
                                 <motion.div
@@ -1765,14 +1933,14 @@ export function AdvancedFiltersClient({ defaultStrategy, maxStrategies, userId }
                                                             <Edit2 className="w-4 h-4" />
                                                         </motion.button>
 
-                                                        <motion.button
+                                                        {strategy.length < maxStrategies && <motion.button
                                                             onClick={() => duplicateQuery(query)}
                                                             className="bg-green-500/20 hover:bg-green-500/30 text-green-400 p-2 rounded-lg"
                                                             whileHover={{ scale: 1.1, rotate: -15 }}
                                                             whileTap={{ scale: 0.9 }}
                                                         >
                                                             <CopyPlus className="w-4 h-4" />
-                                                        </motion.button>
+                                                        </motion.button>}
 
                                                         <motion.button
                                                             onClick={() => deleteQuery(query.id)}
@@ -1846,152 +2014,11 @@ export function AdvancedFiltersClient({ defaultStrategy, maxStrategies, userId }
                             </Reorder.Item>
                         ))}
 
-                        <motion.button
-                            initial={{ y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: Math.log(strategy.length + 1) * 0.1 + 0.7 }}
-                            whileHover={{
-                                scale: strategy.length >= maxStrategies ? 1 : 1.02,
-                                boxShadow: strategy.length >= maxStrategies ? '0 0 0 rgba(139, 92, 246, 0)' : '0 20px 60px rgba(139, 92, 246, 0.4)'
-                            }}
-                            whileTap={{ scale: strategy.length >= maxStrategies ? 1 : 0.98 }}
-                            onClick={openAddForm}
-                            disabled={strategy.length >= maxStrategies}
-                            className="mt-4 w-full group relative overflow-hidden rounded-xl border-2 border-dashed border-white/20 hover:border-violet-500/50 bg-white/5 hover:bg-violet-500/10 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-white/20 disabled:hover:bg-white/5"
-                        >
-                            <div className="flex items-center justify-center gap-4 py-8">
-                                <motion.div
-                                    className="relative"
-                                    whileHover={{ rotate: 180 }}
-                                    transition={{ duration: 0.5 }}
-                                >
-                                    <motion.div
-                                        className="absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl blur-md"
-                                        animate={{
-                                            opacity: [0.3, 0.6, 0.3],
-                                            scale: [1, 1.2, 1]
-                                        }}
-                                        transition={{
-                                            duration: 2,
-                                            repeat: Infinity,
-                                            ease: "easeInOut"
-                                        }}
-                                    />
-                                    <div className="relative bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl p-3 shadow-lg">
-                                        <Plus className="w-6 h-6 text-white" />
-                                    </div>
-                                </motion.div>
-                                <div className="flex flex-col items-start">
-                                    <motion.span
-                                        className="text-white font-semibold text-lg group-hover:text-violet-300 transition-colors"
-                                        whileHover={{ x: 5 }}
-                                    >
-                                        Add Strategy
-                                    </motion.span>
-                                    <span className="text-gray-400 text-sm">
-                                        {strategy.length >= maxStrategies
-                                            ? `Maximum limit reached (${maxStrategies})`
-                                            : 'Create a new query'
-                                        }
-                                    </span>
-                                </div>
-                            </div>
-                            <motion.div
-                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-                                initial={{ x: '-100%' }}
-                                animate={{ x: '-100%' }}
-                                whileHover={{ x: '100%' }}
-                                transition={{ duration: 0.6 }}
-                            />
-                        </motion.button>
+                        <AddStrategyButton maxStrategies={maxStrategies} strategy={strategy} openAddForm={() => openAddForm("last")} />
                     </Reorder.Group>
                 </motion.div>
 
-                {/* Action Buttons */}
-                <motion.div
-                    className="flex flex-wrap items-center justify-center gap-3 mb-4"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                >
-                    <motion.button
-                        onClick={resetStrategy}
-                        disabled={!hasChanges}
-                        className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-lg transition-all flex items-center space-x-2 border border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                        whileHover={{ scale: hasChanges ? 1.05 : 1, boxShadow: hasChanges ? '0 5px 20px rgba(255, 255, 255, 0.1)' : '0 0 0 rgba(255, 255, 255, 0)' }}
-                        whileTap={{ scale: hasChanges ? 0.95 : 1 }}
-                    >
-                        <motion.div
-                            animate={hasChanges ? { rotate: [0, -180, -360] } : {}}
-                            transition={{ duration: 0.6 }}
-                        >
-                            <RotateCcw className="w-5 h-5" />
-                        </motion.div>
-                        <span>Reset to Default</span>
-                    </motion.button>
-
-                    <motion.button
-                        onClick={handleContinue}
-                        disabled={isPending}
-                        className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2 shadow-lg shadow-violet-500/50"
-                        whileHover={{ scale: isPending ? 1 : 1.05 }}
-                        whileTap={{ scale: isPending ? 1 : 0.95 }}
-                    >
-                        {isPending ? (
-                            <>
-                                <motion.div
-                                    animate={{ rotate: 360 }}
-                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                >
-                                    <Loader2 className="w-5 h-5" />
-                                </motion.div>
-                                <span>Saving...</span>
-                            </>
-                        ) : (
-                            <>
-                                <span>Continue Setup</span>
-                                <motion.div
-                                    animate={{ x: [0, 5, 0] }}
-                                    transition={{ duration: 1, repeat: Infinity }}
-                                >
-                                    <ArrowRight className="w-5 h-5" />
-                                </motion.div>
-                            </>
-                        )}
-                    </motion.button>
-                </motion.div>
-
-                {/* Changes Indicator */}
-                <AnimatePresence>
-                    {hasChanges && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.8 }}
-                            transition={{ type: "spring", stiffness: 200 }}
-                            className="text-center"
-                        >
-                            <motion.span
-                                className="text-amber-400 text-sm flex items-center justify-center space-x-2 bg-amber-500/10 px-4 py-2 rounded-full inline-flex border border-amber-500/20"
-                                animate={{
-                                    boxShadow: [
-                                        '0 0 0 0 rgba(251, 191, 36, 0.4)',
-                                        '0 0 0 10px rgba(251, 191, 36, 0)',
-                                    ]
-                                }}
-                                transition={{ duration: 1.5, repeat: Infinity }}
-                            >
-                                <motion.div
-                                    animate={{ scale: [1, 1.2, 1] }}
-                                    transition={{ duration: 1, repeat: Infinity }}
-                                >
-                                    <AlertCircle className="w-4 h-4" />
-                                </motion.div>
-                                <span>You have unsaved changes</span>
-                            </motion.span>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                {children}
             </motion.div>
 
             {/* Add/Edit Form Modal */}
@@ -3823,13 +3850,40 @@ export function CompanyInputClient({
             .replace(/^www\./i, "")
             .split(/[/?#]/)[0];
 
-        return cleaned
+        return cleaned;
     };
 
     const handleContinue = () => {
         const companies = selectedCompanies
-            .map(c => ({ domain: toLinkedInUrl(c.domain), name: c.name }))
-            .filter((u) => !!u?.domain);
+            .map(c => {
+                const url = toLinkedInUrl(c.domain);
+                if (!url) return null;
+
+                // Caso LinkedIn
+                if (url.includes("linkedin.com/company/")) {
+                    const linkedin_url = url;
+                    const name =
+                        c.name ||
+                        linkedin_url
+                            .split("linkedin.com/company/")[1]
+                            ?.split(/[/?#]/)[0]
+                            ?.replace(/-/g, " ") // openai-inc -> openai inc
+                            .replace(/\b\w/g, l => l.toUpperCase()) // Capitalizza
+                        || "";
+                    return { linkedin_url, name };
+                }
+
+                // Caso dominio generico
+                const domain = url;
+                const name =
+                    c.name ||
+                    domain
+                        .split(".")[0]
+                        .replace(/-/g, " ")
+                        .replace(/\b\w/g, l => l.toUpperCase()); // google.com -> Google
+                return { domain, name };
+            })
+            .filter(Boolean);
 
         startTransition(async () => {
             try {

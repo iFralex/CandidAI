@@ -182,10 +182,11 @@ const PageContent = async ({ params }: { params: { id: string } }) => {
         throw new Error(dataResponse.error || "API returned an error");
     }
 
-    const data = dataResponse.data;
+    const details = dataResponse.details;
+    const customizations = dataResponse.customizations;
 
     // I dati recuperati vengono passati al componente client tramite props
-    return <ResultClient data={data} />;
+    return <ResultClient data={details} customizations={customizations} />;
 };
 
 

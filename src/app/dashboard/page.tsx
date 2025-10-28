@@ -7,6 +7,7 @@ import { CheckCircle, Crown, ExternalLink, Mail, Plus, RefreshCw, Send } from "l
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { redirect } from "next/navigation";
+import { AnimatedResults, ConfirmCompanies } from "@/components/dashboard";
 
 function Card({ children, className, hover = true, gradient = false, ...props }: CardProps) {
     const baseClasses = "bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl transition-all duration-300"
@@ -24,8 +25,9 @@ function Card({ children, className, hover = true, gradient = false, ...props }:
     )
 }
 
-async function ResultsWrapper() {
+async function ResultsWrapper({userId}) {
     const parseResults = (results) => {
+        delete results.companies_to_confirm
         return Object.entries(results).map(([id, info]) => {
             // valori sicuri
             const recruiterName = info?.recruiter?.name ?? null;
@@ -95,8 +97,121 @@ async function ResultsWrapper() {
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
-    const parsedResults = parseResults(data.data || {});
-    return <Results results={parsedResults} />;
+    const companiesToConfirm = data.data.companies_to_confirm
+    const parsedResults = parseResults(data.data || {}).filter(i => !(companiesToConfirm || []).includes(i.id));
+    
+    const processingCampaigns = 1//results.filter(c => c.status === 'processing').length;
+    const readyCampaigns = 2//results.filter(c => c.status === 'ready').length;
+    const sentCampaigns = 3//results.filter(c => c.status === 'sent').length;
+    const totalEmailsGenerated = 2//results.reduce((sum, c) => sum + c.emailsGenerated, 0);
+
+    return <>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="p-6" gradient>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-400 text-sm mb-1">Processing</p>
+                        <p className="text-2xl font-bold text-white">{processingCampaigns}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                        <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" />
+                    </div>
+                </div>
+            </Card>
+
+            <Card className="p-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-400 text-sm mb-1">Ready to Send</p>
+                        <p className="text-2xl font-bold text-white">{readyCampaigns}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                        <CheckCircle className="w-6 h-6 text-green-400" />
+                    </div>
+                </div>
+            </Card>
+
+            <Card className="p-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-400 text-sm mb-1">Emails Sent</p>
+                        <p className="text-2xl font-bold text-white">{sentCampaigns}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                        <Send className="w-6 h-6 text-purple-400" />
+                    </div>
+                </div>
+            </Card>
+
+            <Card className="p-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-gray-400 text-sm mb-1">Total Generated</p>
+                        <p className="text-2xl font-bold text-white">{totalEmailsGenerated}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-violet-500/20 rounded-xl flex items-center justify-center">
+                        <Mail className="w-6 h-6 text-violet-400" />
+                    </div>
+                </div>
+            </Card>
+        </div>
+
+        {companiesToConfirm && companiesToConfirm.length > 0 && <Card className="p-8 backdrop-blur-none">
+            <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-white">Companies To Be Confirmed</h2>
+                <Badge variant="primary"> total</Badge>
+            </div>
+
+            <Suspense fallback={<ResultsSkeleton />}>
+                <ConfirmCompaniesWrapper userId={userId} companiesToConfirm={companiesToConfirm} />
+            </Suspense>
+        </Card>}
+
+        {/* Active Campaigns */}
+        <Card className="p-8 backdrop-blur-none">
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">Active Campaigns</h2>
+                <Badge variant="primary"> total</Badge>
+            </div>
+
+            <Results results={parsedResults} />
+        </Card>
+    </>
+}
+
+const ConfirmCompaniesWrapper = async ({ companiesToConfirm, userId }) => {
+    const detailsRes = await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/protected/all_details`, {
+        method: 'POST',
+        credentials: 'include',       // Include cookie
+        cache: 'no-cache',
+        headers: {
+            'Content-Type': 'application/json',
+            cookie: await cookies()
+        },
+        body: JSON.stringify({ companyIds: companiesToConfirm }) // Corpo della richiesta con array di companyId
+    });
+
+    if (!detailsRes.ok) throw new Error(detailsRes.status);
+    const detailsData = await detailsRes.json();
+    if (!detailsData.success) throw new Error(detailsData.error);
+
+    const res = await fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/account", {
+        credentials: "include",
+        cache: "no-cache",
+        headers: {
+            cookie: await cookies()
+        }
+    });
+
+    if (!res.ok) {
+        throw new Error(res.status);
+    }
+    const d = await res.json();
+
+    return (
+        <ConfirmCompanies userId={userId} allDetails={detailsData.data} queries={d.data.queries} defaultInstructions={d.data.customizations.instructions}/>
+    )
 }
 
 const Page = async () => {
@@ -125,11 +240,6 @@ const Page = async () => {
     if (currentStep < 10)
         return <OnboardingPage user={user} currentStep={currentStep} />
 
-    const processingCampaigns = 1//results.filter(c => c.status === 'processing').length;
-    const readyCampaigns = 2//results.filter(c => c.status === 'ready').length;
-    const sentCampaigns = 3//results.filter(c => c.status === 'sent').length;
-    const totalEmailsGenerated = 2//results.reduce((sum, c) => sum + c.emailsGenerated, 0);
-
     return (
         <div className="space-y-8">
             {/* Welcome Header */}
@@ -151,68 +261,9 @@ const Page = async () => {
                 </Button>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="p-6" gradient>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-gray-400 text-sm mb-1">Processing</p>
-                            <p className="text-2xl font-bold text-white">{processingCampaigns}</p>
-                        </div>
-                        <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                            <RefreshCw className="w-6 h-6 text-blue-400 animate-spin" />
-                        </div>
-                    </div>
-                </Card>
-
-                <Card className="p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-gray-400 text-sm mb-1">Ready to Send</p>
-                            <p className="text-2xl font-bold text-white">{readyCampaigns}</p>
-                        </div>
-                        <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
-                            <CheckCircle className="w-6 h-6 text-green-400" />
-                        </div>
-                    </div>
-                </Card>
-
-                <Card className="p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-gray-400 text-sm mb-1">Emails Sent</p>
-                            <p className="text-2xl font-bold text-white">{sentCampaigns}</p>
-                        </div>
-                        <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                            <Send className="w-6 h-6 text-purple-400" />
-                        </div>
-                    </div>
-                </Card>
-
-                <Card className="p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-gray-400 text-sm mb-1">Total Generated</p>
-                            <p className="text-2xl font-bold text-white">{totalEmailsGenerated}</p>
-                        </div>
-                        <div className="w-12 h-12 bg-violet-500/20 rounded-xl flex items-center justify-center">
-                            <Mail className="w-6 h-6 text-violet-400" />
-                        </div>
-                    </div>
-                </Card>
-            </div>
-
-            {/* Active Campaigns */}
-            <Card className="p-8 backdrop-blur-none">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-white">Active Campaigns</h2>
-                    <Badge variant="primary"> total</Badge>
-                </div>
-
-                <Suspense fallback={<ResultsSkeleton />}>
-                    <ResultsWrapper />
-                </Suspense>
-            </Card>
+            <Suspense fallback={<ResultsSkeleton />}>
+                <ResultsWrapper userId={user.uid} />
+            </Suspense>
 
             {/* Quick Actions */}
             <div className="grid md:grid-cols-2 gap-6">

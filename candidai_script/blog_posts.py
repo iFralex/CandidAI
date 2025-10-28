@@ -3396,12 +3396,16 @@ def get_about_description(company):
 def get_all_articles(company):
     found_link = ""
     article_links = []
+    blogs_analyzed = 0
     times = 0
 
     while len(article_links) < MAX_ARTICLES and times < 2:
         found_link = blog_link = get_blog_link_with_google(company, found_link)
         print("blog_link", blog_link)
+
         if blog_link:
+            blogs_analyzed += 1  # 🔹 Conta ogni blog trovato
+
             category_link = find_tech_category_link_with_deepseek(blog_link)
             print("Link categoria Ingegneria:", category_link)
             
@@ -3409,18 +3413,20 @@ def get_all_articles(company):
                 blog_link = category_link
 
             article_links.extend(get_all_blog_pages(blog_link, len(article_links)))
+
             if len(article_links) < MAX_ARTICLES:
                 article_links.extend(get_articles_with_load_more(blog_link, len(article_links)))
-            print("Articoli trovati per", company, len(article_links))
+
+            print(f"Articoli trovati per {company}: {len(article_links)} (blogs analizzati: {blogs_analyzed})")
+
         else:
             print("Nessun blog trovato.")
             break
         
-        save_articles_to_file(article_links, "articles-" + company + ".json")
+        save_articles_to_file(article_links, f"articles-{company}.json")
         times += 1
 
-    return article_links
-
+    return article_links, blogs_analyzed  # 🔹 Restituisce entrambi
 
 from bs4 import BeautifulSoup
 import re
@@ -5287,12 +5293,12 @@ def get_blog_posts(user_id, ids, companies, user_info):
         company = company["name"]
         start_time_company = time.time()
         
-        articles = get_all_articles(company)
+        articles, n_blogs = get_all_articles(company)
         relevant_articles = select_relevant_articles(articles, user_info)
         articles_content = extract_articles_content(relevant_articles)
 
-        save_articles(user_id, ids[f'{company}-{user_id}'], articles_content, articles)
-        results[company] = articles_content
+        save_articles(user_id, ids[f'{company}-{user_id}'], articles_content, articles, n_blogs)
+        results[company] = articles_content, n_blogs
 
         end_time_company = time.time()
         company_durations[company] = end_time_company - start_time_company

@@ -2,6 +2,7 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 
 // Inizializza Firebase Admin solo se non è già stato inizializzato
 if (!getApps().length) {
@@ -12,6 +13,7 @@ if (!getApps().length) {
         clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
         privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
       }),
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
     });
   } catch (error) {
     console.error('Error initializing Firebase Admin:', error);
@@ -20,3 +22,4 @@ if (!getApps().length) {
 
 export const admin = getAuth();
 export const adminDb = getFirestore();
+export const adminStorage = getStorage();

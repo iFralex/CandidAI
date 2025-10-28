@@ -30,27 +30,38 @@ export async function GET(request, { params }) {
         // Percorso Firestore:
         // users/{userId}/data/results/{resultId}/details
         const detailsRef = adminDb
-            .collection('users')
+            .collection("users")
             .doc(userId)
-            .collection('data')
-            .doc('results')
+            .collection("data")
+            .doc("results")
             .collection(resultId)
-            .doc('details');
+            .doc("details");
 
-        const detailsDoc = await detailsRef.get();
+        const customizationsRef = adminDb
+            .collection("users")
+            .doc(userId)
+            .collection("data")
+            .doc("results")
+            .collection(resultId)
+            .doc("customizations")
 
-        if (!detailsDoc.exists) {
-            return NextResponse.json({
-                success: true,
-                data: {}
-            });
-        }
+        // 🔹 Fetch parallelo
+        const [detailsDoc, customizationsDoc] = await Promise.all([
+            detailsRef.get(),
+            customizationsRef.get(),
+        ]);
 
-        const detailsData = detailsDoc.data();
+        // 🔹 Dati estratti
+        const detailsData = detailsDoc.exists ? detailsDoc.data() : {};
+        const customizationsData = customizationsDoc.exists
+            ? customizationsDoc.data()
+            : {};
 
+        // 🔹 Risposta finale
         return NextResponse.json({
             success: true,
-            data: detailsData
+            details: detailsData,
+            customizations: customizationsData,
         });
 
     } catch (error) {

@@ -1,7 +1,7 @@
 import { getServerUser } from '@/lib/server-auth'
 import { redirect } from 'next/navigation'
 import { CheckCircle, Wand2 } from 'lucide-react'
-import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClient, SetupCompleteClient } from '@/components/onboarding'
+import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient } from '@/components/onboarding'
 
 import { ProfileAnalysisClient } from '@/components/onboarding';
 import { completeOnboarding, submitQueries } from '@/actions/onboarding-actions'
@@ -155,7 +155,7 @@ export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersSer
                 </p>
             </div>
 
-            <AdvancedFiltersClient userId={userId} maxStrategies={maxFilters} defaultStrategy={defaultStrategy} />
+            <AdvancedFiltersClientWrapper userId={userId} maxStrategies={maxFilters} defaultStrategy={defaultStrategy} />
 
             <div className="text-center mt-6">
                 <p className="text-sm text-gray-500">

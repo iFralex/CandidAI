@@ -1,11 +1,13 @@
-from candidai_script.recruiter import find_recruiters_for_user
+from candidai_script.recruiter import find_recruiters_for_user, get_companies_info
 from candidai_script.blog_posts import get_blog_posts
 from candidai_script.email_generator import generate_email
 from candidai_script.database import (
     get_account_data,
+    get_changed_companies,
     save_companies_to_results,
     get_results_status,
     get_results_row,
+    get_custom_queries
 )
 import logging
 import time
@@ -20,20 +22,26 @@ def main(mode="auto", manual_tasks=None, target_companies=None):
         manual_tasks (list): task da rieseguire manualmente, es. ["blog", "recruiters", "email"]
         target_companies (list): aziende specifiche da includere, es. ["Google", "Meta"]
     """
-    user_id = "8TGSaFuS3ObRNnbZ3BxMa4KOmlG3"#"ubcXUkixqchJEBoQ895M2jDy93H2"
+    user_id = "WGF1EmgNV2TT8TrgWVxNg7dWWcS2"#"lLIEw8OuiIfPb8j2fQZUm4At2YK2"#"0PFh0vUafpToWL6GcZmgtGTDGFx1"#"WHc5uQGuPKWopAnyl55iwkq8KQv2"#"8TGSaFuS3ObRNnbZ3BxMa4KOmlG3"#"ubcXUkixqchJEBoQ895M2jDy93H2"
     account = get_account_data(user_id)
+    changed_companies = get_changed_companies(user_id)
 
     if not account:
         print("❌ Account non trovato.")
         return
 
     companies = account.get("companies", [])
-    companies = [companies[3]]
     profile_summary = account["profileSummary"]
     cv_url = account["cvUrl"]
-
+    user_instructions = account.get("customizations", {}).get("instructions", "")
+    
     # Crea o recupera ID univoci per ogni azienda
-    ids = save_companies_to_results(user_id, companies)
+    companies, ids, new_companies = save_companies_to_results(user_id, companies, changed_companies)
+    if len(new_companies) > 0:
+        get_companies_info(user_id, ids, new_companies)
+
+    companies = [c for c in companies if c not in new_companies]
+    print(companies,new_companies)
 
     # Configura logging
     logging.basicConfig(
@@ -73,6 +81,7 @@ def main(mode="auto", manual_tasks=None, target_companies=None):
             # Esegui task in ordine logico
             result_blog = None
             result_recruiters = None
+            custom_user_inscructions = {}
 
             if "blog" in company_tasks:
                 start = time.time()
@@ -81,20 +90,20 @@ def main(mode="auto", manual_tasks=None, target_companies=None):
 
             if "recruiters" in company_tasks:
                 start = time.time()
-                result_recruiters = find_recruiters_for_user(
+                result_recruiters, custom_user_inscructions = find_recruiters_for_user(
                     user_id, single_id, single_company_list, account.get("queries", [])
                 )
                 logging.info(f"✅ Recruiter completato per {name} ({time.time() - start:.2f}s)")
             
             if "email" in company_tasks:
                 start = time.time()
-                if not result_blog or not result_recruiters:
-                    row = get_results_row(user_id, ids[company_key])
+                row = get_results_row(user_id, ids[company_key])
 
-                    if not result_blog:
-                        result_blog = {name: row.get("blog_articles", {}).get("content", None)}
-                    if not result_recruiters:
-                        result_recruiters = {name: [row.get("recruiter", None), row.get("query", None)]}
+                result_blog = {name: row.get("blog_articles", {}).get("content", None)}
+                result_recruiters = {name: [row.get("recruiter", None), row.get("query", None)]}
+                result_company_info = {name: row.get("company_info", None)}
+                if not ids[company_key] in custom_user_inscructions:
+                    queries, custom_user_inscructions[ids[company_key]] = get_custom_queries(user_id, ids[f'{company["name"]}-{user_id}'])
 
                 generate_email(
                     user_id,
@@ -104,6 +113,8 @@ def main(mode="auto", manual_tasks=None, target_companies=None):
                     cv_url,
                     result_blog,
                     result_recruiters,
+                    result_company_info,
+                    custom_user_inscructions[ids[company_key]] or user_instructions
                 )
                 logging.info(f"✅ Email generata per {name} ({time.time() - start:.2f}s)")
 
