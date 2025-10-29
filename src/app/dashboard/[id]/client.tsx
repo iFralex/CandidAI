@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText } from "lucide-react";
+import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText, Copy, Download } from "lucide-react";
 import Link from "next/link";
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -304,7 +304,7 @@ export function useAccountCustomizations(defaultStrategy, defaultInstructions) {
   return { strategy, instructions, loading };
 }
 
-const RecruiterProfileCard = ({ data, defaultStrategy }: { data: any, defaultStrategy: any, userId: string, companyId: string }) => {
+const RecruiterProfileCard = ({ data, defaultStrategy, inProgress }: { data: any, defaultStrategy: any, userId: string, companyId: string }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { strategy, loading } = useAccountCustomizations(defaultStrategy, null);
   const [customStrategy, setCustomStrategy] = useState<any[]>(strategy || []);
@@ -383,7 +383,7 @@ const RecruiterProfileCard = ({ data, defaultStrategy }: { data: any, defaultStr
               <Button className="w-full" variant="outline">Find someone else</Button>
             </motion.div>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-4xl w-4xl max-h-screen">
+          {!inProgress && <DialogContent className="sm:max-w-4xl w-4xl max-h-screen">
             {isSubmitting && <Overlay />}
             <DialogHeader>
               <DialogTitle>Do you want to search for another recruiter profile?</DialogTitle>
@@ -423,7 +423,7 @@ const RecruiterProfileCard = ({ data, defaultStrategy }: { data: any, defaultStr
                 )}
               </Button>
             </DialogFooter>
-          </DialogContent>
+          </DialogContent>}
         </Dialog>
       </motion.div>
     </motion.div>
@@ -448,7 +448,7 @@ const RecruiterSummary = ({ originalData, customStrategy }: { data: any }) => {
           {inProgress && <Overlay />}
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-4 gap-16 p-2">
             <motion.div variants={itemVariants} className="col-span-1">
-              <div><RecruiterProfileCard data={data} defaultStrategy={customStrategy} /></div>
+              <div><RecruiterProfileCard data={data} defaultStrategy={customStrategy} inProgress={inProgress} /></div>
               <Separator className="my-5" />
               <motion.div variants={itemVariants} className="col-span-1">
                 <p className="text-sm text-gray-400 mb-3">Key Skills</p>
@@ -559,32 +559,29 @@ export function EmailDialog({
   attachmentUrl,
   attachmentName = "cv.pdf",
   buttonLabel = "Send email",
-}: Props) {
+}) {
   const [fileData, setFileData] = useState<{ base64: string; mimeType: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const CACHE_PREFIX = "cachedEmailFiles";
   const CACHE_TTL = 2592000000; // 30 giorni
 
   const fetchFile = async () => {
     if (!attachmentUrl) return;
 
-    // Prendi la cache globale dal localStorage
     const cachedStorage = localStorage.getItem(CACHE_PREFIX);
     let cache: Record<string, CachedFile> = cachedStorage ? JSON.parse(cachedStorage) : {};
-
     const cachedFile = cache[attachmentUrl];
 
-    // Controlla se esiste e non è scaduto
     const now = Date.now();
     if (cachedFile && now - cachedFile.timestamp < CACHE_TTL) {
       setFileData({ base64: cachedFile.base64, mimeType: cachedFile.mimeType });
       return cachedFile;
     }
 
-    // Scarica il file da Firebase
     const result = await getFileFromFirebase(attachmentUrl);
     const newCacheFile: CachedFile = { ...result, timestamp: now };
 
-    // Aggiorna la cache globale
     cache[attachmentUrl] = newCacheFile;
     localStorage.setItem(CACHE_PREFIX, JSON.stringify(cache));
 
@@ -593,25 +590,18 @@ export function EmailDialog({
   };
 
   const handleDragStart = async (e: React.DragEvent<HTMLDivElement>) => {
-    // Assicurati che fileData sia disponibile
     let file = fileData;
     if (!file) {
       file = await fetchFile();
       if (!file) return;
     }
 
-    // Converti base64 in Blob
     const blob = b64toBlob(file.base64, file.mimeType);
-
-    // Usa attachmentName per il drag
-    const fileName = attachmentName;
-
-    // Crea un URL temporaneo per il drag
     const url = URL.createObjectURL(blob);
 
     e.dataTransfer.setData(
       "DownloadURL",
-      `${file.mimeType}:${fileName}:${url}`
+      `${file.mimeType}:${attachmentName}:${url}`
     );
 
     e.dataTransfer.setDragImage(e.currentTarget, 0, 0);
@@ -630,6 +620,18 @@ export function EmailDialog({
       byteArrays.push(byteArray);
     }
     return new Blob(byteArrays, { type: contentType });
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setIsLoading(true);
+      await submitEmailSent(window.location.pathname.split("/").filter(Boolean).pop(), true);
+      setSuccess(true);
+    } catch (err) {
+      console.error("Error submitting email:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(
@@ -661,6 +663,23 @@ export function EmailDialog({
             <span>Drag me into your email</span>
           </div>
         </div>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="ghost">Close</Button>
+          </DialogClose>
+
+          <Button
+            onClick={handleSubmit}
+            disabled={isLoading}
+          >
+            {isLoading
+              ? "Sending..."
+              : success
+                ? "Email sent ✓"
+                : "Email Sent"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -735,35 +754,85 @@ export function EmailDraftButton({
   );
 }
 
-const EmailGenerated = ({ data, defaultInstructions }: { data: any }) => {
-  const inProgress = !data?.email
+export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defaultInstructions: string; emailSent: boolean }) => {
+  const inProgress = !data?.email;
   const placeholderEmail = {
-    "body": `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse eu nibh dolor. Fusce at odio id magna interdum fermentum a id lectus. Donec lacinia nunc id felis tincidunt, eu pretium nunc rutrum. Fusce pretium aliquet cursus. Donec sollicitudin hendrerit tellus, eu dapibus sapien dictum vitae. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec pharetra mattis magna, in pellentesque neque fringilla nec. Etiam vel tempor neque.
-Sed et nisi elementum, placerat nisl sit amet, consectetur enim. Morbi nec purus neque. Phasellus in odio nec massa condimentum iaculis ultrices in nisl. Sed feugiat ante eget orci interdum, eu porttitor neque suscipit. Aliquam eget mauris in augue scelerisque imperdiet viverra at magna. Fusce at interdum sapien. Ut ultricies massa dui, rhoncus ultrices mauris interdum sed. Nunc diam felis, ultricies nec magna eget, molestie fermentum lorem. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.
-Nam condimentum varius ipsum, sit amet rutrum eros. Nullam malesuada sem quis rutrum egestas. Integer eu efficitur magna, sit amet pellentesque leo. Aenean consequat purus vitae sapien rhoncus, eget fringilla ipsum ullamcorper. Donec et turpis tincidunt, scelerisque sapien ut, varius nisi. Proin ut placerat ipsum. Nulla eget semper nibh. Integer id suscipit eros, eget lacinia sem. Praesent fermentum egestas aliquet. Cras ultricies sit amet nulla eget viverra. Fusce lobortis mauris tellus, sit amet rutrum sapien venenatis eu. Pellentesque erat quam, feugiat dignissim ultricies a, vestibulum et leo. Pellentesque placerat hendrerit feugiat. Donec sit amet tortor et tortor lobortis vehicula at et nisi. Nulla accumsan ultrices aliquam. Nulla dictum nunc nec sem molestie, vel dictum ipsum convallis.
-`,
+    body: `Lorem ipsum dolor sit amet...`,
     subject: "AI/ML Innovations at Google & Shared Passion for Scalable Solutions",
-    key_points: ["The subject line is attention-grabbing and specific, clearly stating the position and any", "The body strategically aligns the applicant's qualifications with the job requirements ", "The email maintains a professional yet personable tone throughout, balancing."],
-  }
-  const { instructions, loading } = useAccountCustomizations(null, defaultInstructions)
-  const [customInstructions, setCustomInstructions] = useState(defaultInstructions)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+    key_points: ["Point 1...", "Point 2...", "Point 3..."],
+  };
+
+  const { instructions, loading } = useAccountCustomizations(null, defaultInstructions);
+  const [customInstructions, setCustomInstructions] = useState(defaultInstructions);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEmailSubmitting, setIsEmailSubmitting] = useState(false); // ✅ stato di caricamento per Email Sent
+  const [email, setEmail] = useState(data.email || {});
+  const [emailSentSuccess, setEmailSentSuccess] = useState(false);
 
   useEffect(() => {
-    setCustomInstructions(instructions)
-  }, [instructions])
+    setCustomInstructions(instructions);
+  }, [instructions]);
+
+  useEffect(() => {
+    setEmail(data.email || {});
+    setEmailSentSuccess(false)
+    setIsEmailSubmitting(false)
+  }, [data]);
 
   const handleGenerate = async () => {
     try {
       setIsSubmitting(true);
-      await regenerateEmail(window.location.pathname.split('/').filter(Boolean).pop(), customInstructions);
-
+      await regenerateEmail(window.location.pathname.split("/").filter(Boolean).pop(), customInstructions);
       // la redirect è già gestita dentro la action
     } catch (err) {
       console.error("Errore durante il refindRecruiter:", err);
+    } finally {
       setIsSubmitting(false);
     }
   };
+
+  const handleEmailSent = async () => {
+    try {
+      setIsEmailSubmitting(true);
+
+      await submitEmailSent(window.location.pathname.split("/").filter(Boolean).pop(), false);
+
+      setEmailSentSuccess(true);
+    } catch (err) {
+      console.error("Errore durante l’invio:", err);
+    } finally {
+      setIsEmailSubmitting(false);
+    }
+  };
+
+  const handleUpdateEmail = async () => {
+    try {
+      setIsEmailSubmitting(true);
+
+      await submitUpdateEmail(window.location.pathname.split("/").filter(Boolean).pop(), email.subject !== data.email.subject ? email.subject : null, email.body !== data.email.body ? email.body : null);
+
+      setEmailSentSuccess(true);
+    } catch (err) {
+      console.error("Errore durante l’invio:", err);
+    } finally {
+      setIsEmailSubmitting(false);
+    }
+  };
+
+  function downloadTextFile(filename, text) {
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+
+    // Pulizia
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <motion.div variants={cardVariants} initial="hidden" animate="visible">
@@ -771,65 +840,129 @@ Nam condimentum varius ipsum, sit amet rutrum eros. Nullam malesuada sem quis ru
         <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
           <Mail className="w-5 h-5 mr-2 text-violet-400" /> Email Generated
         </h3>
+
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className={(!data.email ? "bg-gray-900 " : "") + "rounded-md relative grid grid-cols-5 gap-4"}
+          className={(inProgress ? "bg-gray-900 " : "") + "rounded-md relative grid grid-cols-5 gap-4"}
         >
-
-          {/* Overlay elegante: visibile solo se manca l'email */}
-          {inProgress && (
-            <Overlay />
-          )}
+          {inProgress && <Overlay />}
 
           <div className="col-span-4 space-y-3">
             <motion.div variants={itemVariants}>
               <label className="text-gray-300 text-sm font-medium mb-2 block">Subject</label>
-              <Input defaultValue={(!inProgress ? data.email : placeholderEmail)?.subject} disabled={inProgress} />
+              <Input
+                value={(!inProgress ? email : placeholderEmail)?.subject}
+                onChange={(e) => setEmail((prev) => ({ ...prev, subject: e.target.value }))}
+                disabled={inProgress || email.email_sent}
+              />
             </motion.div>
 
-            {/* Contenuto sottostante */}
             <motion.div variants={itemVariants}>
               <label className="text-gray-300 text-sm font-medium mb-2 block">Body</label>
-              <Textarea rows={12} defaultValue={(!inProgress ? data.email : placeholderEmail)?.body} disabled={inProgress} />
+              <Textarea
+                rows={12}
+                value={(!inProgress ? email : placeholderEmail)?.body}
+                onChange={(e) => setEmail((prev) => ({ ...prev, body: e.target.value }))}
+                disabled={inProgress || email.email_sent}
+              />
+            </motion.div>
+
+            <Separator />
+
+            <motion.div variants={itemVariants} className="w-full flex items-center justify-end flex-wrap gap-3">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size={"sm"} variant={"outline"}>View Prompt</Button>
+                </DialogTrigger>
+                {!inProgress && <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>
+                      Prompt used for the email
+                    </DialogTitle>
+                  </DialogHeader>
+                  <ScrollArea className="max-h-[calc(100vh-200px)] w-full">
+                    <div className="w-full max-w-md">
+                      {email.prompt
+                        .split(/\n/)
+                        .map((line, i) =>
+                          line.trim() === "" ? (
+                            <br key={i} /> // se la riga è vuota, aggiunge spazio verticale
+                          ) : (
+                            <p key={i}>{line}</p>
+                          )
+                        )}
+                    </div>
+                  </ScrollArea>
+                  <DialogFooter>
+                    <Button variant={"outline"} icon={<Download />} onClick={() => downloadTextFile("prompt", email.prompt)}>Download</Button>
+                    <Button variant={"outline"} icon={<Copy />} onClick={() => navigator.clipboard.writeText(email.prompt)}>Copy</Button>
+                  </DialogFooter>
+                </DialogContent>}
+              </Dialog>
+              {(email.body !== data.email.body || email.subject !== data.email.subject) && <>
+                <Button size={"sm"} variant={"outline"} onClick={() => setEmail(data.email || {})} disabled={isEmailSubmitting}>Reset to default</Button>
+                <Button size={"sm"} onClick={() => handleUpdateEmail()} disabled={isEmailSubmitting}>Update</Button>
+              </>}
             </motion.div>
           </div>
 
           <motion.div variants={itemVariants} className="col-span-1 space-y-4">
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              {/*<EmailDraftButton to={data.email?.email_address} from={"ifralex.business@gmail.com"} subject={data.email?.subject} body={data.email?.body} attachmentUrl={"https://firebasestorage.googleapis.com/v0/b/candidai-1bda0.firebasestorage.app/o/cv%2FWGF1EmgNV2TT8TrgWVxNg7dWWcS2%2FCV.pdf?alt=media&token=70f9f6f2-d731-4b7a-a66c-34c34e4795e3"} />*/}
-              <EmailDialog to={data.email?.email_address} from={"ifralex.business@gmail.com"} subject={data.email?.subject} body={data.email?.body} attachmentUrl={"https://firebasestorage.googleapis.com/v0/b/candidai-1bda0.firebasestorage.app/o/cv%2FWGF1EmgNV2TT8TrgWVxNg7dWWcS2%2FCV.pdf?alt=media&token=70f9f6f2-d731-4b7a-a66c-34c34e4795e3"} />
+              {!email.email_sent ? (
+                <EmailDialog
+                  to={email?.email_address}
+                  from={"ifralex.business@gmail.com"}
+                  subject={email?.subject}
+                  body={email?.body}
+                  attachmentUrl={
+                    "https://firebasestorage.googleapis.com/v0/b/candidai-1bda0.firebasestorage.app/o/cv%2FWGF1EmgNV2TT8TrgWVxNg7dWWcS2%2FCV.pdf?alt=media&token=70f9f6f2-d731-4b7a-a66c-34c34e4795e3"
+                  }
+                />
+              ) : (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  icon={isEmailSubmitting ? <Loader2 className="animate-spin w-4 h-4" /> : <Check color="green" />}
+                  onClick={handleEmailSent}
+                  disabled={isEmailSubmitting || emailSentSuccess}
+                >
+                  {isEmailSubmitting
+                    ? "Sending..."
+                    : emailSentSuccess
+                      ? "Email sent ✓"
+                      : "Email Sent"}
+                </Button>
+              )}
             </motion.div>
+
+            {/* Dialog per rigenerare email */}
             <Dialog>
               <DialogTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className="w-full"
-                  disabled={loading}
-                >
+                <Button variant="outline" className="w-full" disabled={loading}>
                   Generate another
                 </Button>
               </DialogTrigger>
-              <DialogContent className={"sm:max-w-4xl w-4xl max-h-screen"}>
+              <DialogContent className="sm:max-w-4xl w-4xl max-h-screen">
                 {isSubmitting && <Overlay />}
                 <DialogHeader>
-                  <DialogTitle className="flex">
-                    Define Custom Instructions
-                  </DialogTitle>
+                  <DialogTitle className="flex">Define Custom Instructions</DialogTitle>
                 </DialogHeader>
-                <ScrollArea className="oveflow-y-auto max-h-[calc(100vh-200px)]">
+                <ScrollArea className="max-h-[calc(100vh-200px)]">
                   <div className="p-1">
                     <Textarea rows={5} value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} />
                   </div>
                 </ScrollArea>
                 <DialogFooter>
                   <DialogClose>
-                    <Button variant={"ghost"}>
-                      Close
-                    </Button>
+                    <Button variant="ghost">Close</Button>
                   </DialogClose>
-                  <Button variant={"outline"} onClick={() => setCustomInstructions(instructions)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCustomInstructions(instructions)}
+                    disabled={instructions === customInstructions}
+                  >
                     Reset to default
                   </Button>
                   <Button onClick={handleGenerate} disabled={isSubmitting}>
@@ -845,10 +978,12 @@ Nam condimentum varius ipsum, sit amet rutrum eros. Nullam malesuada sem quis ru
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            {/* Key points */}
             <div className="p-4 font-sans">
               <h2 className="text-2xl font-semibold mb-4">Email perfect because:</h2>
               <motion.ul variants={containerVariants} initial="hidden" animate="visible" className="space-y-3">
-                {(!inProgress ? data.email : placeholderEmail)?.key_points.map((item, i) => (
+                {(!inProgress ? email : placeholderEmail)?.key_points.map((item: string, i: number) => (
                   <motion.li key={i} variants={itemVariants} className="flex items-center">
                     <Check className="text-green-500 mr-2 min-w-5 h-5" size={5} />
                     <span>{item}</span>
@@ -858,7 +993,6 @@ Nam condimentum varius ipsum, sit amet rutrum eros. Nullam malesuada sem quis ru
             </div>
           </motion.div>
         </motion.div>
-
       </Card>
     </motion.div>
   );
@@ -914,7 +1048,7 @@ const BlogPostsSection = ({ data }: { data: any }) => {
 // ============== MAIN CLIENT COMPONENT ==============
 // Questo è il componente principale che assembla tutte le parti animate
 // e riceve i dati dal componente Server.
-export default function ResultClient({ data, customizations }: { data: any }) {
+export default function ResultClient({ data, customizations, emailSent }: { data: any }) {
   return (
     <motion.div
       variants={containerVariants}
@@ -923,7 +1057,7 @@ export default function ResultClient({ data, customizations }: { data: any }) {
       className="space-y-16"
     >
       <CompanyHeader data={data} />
-      <EmailGenerated data={data} defaultInstructions={customizations.instructions} />
+      <EmailGenerated data={data} defaultInstructions={customizations.instructions} emailSent={emailSent} />
       <RecruiterSummary originalData={data} customStrategy={customizations.queries} />
       <BlogPostsSection data={data} />
       {data.company_info && <CompanyCard company={data.company_info} />}
@@ -935,7 +1069,7 @@ import React from "react"
 import { Globe, MapPin, Calendar, Users, Building2, TrendingUp, Sparkles, Zap, Target, Shield, Link2, Award, BarChart3, Layers } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getFileFromFirebase, refindRecruiter, regenerateEmail } from "@/actions/onboarding-actions";
+import { getFileFromFirebase, refindRecruiter, regenerateEmail, submitEmailSent, submitUpdateEmail } from "@/actions/onboarding-actions";
 
 
 const formatNumber = (num) => {

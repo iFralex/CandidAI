@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { db, storage } from '@/lib/firebase'
-import { arrayRemove, deleteDoc, deleteField, doc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { arrayRemove, deleteDoc, deleteField, doc, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { cookies } from 'next/headers';
 import { getTokens } from 'next-firebase-auth-edge';
@@ -117,7 +117,7 @@ export async function refindRecruiter(companyId: string, strategy: any, name, li
         // Cancella campi in results
         updateDoc(resultsRef, {
             [`${companyId}.recruiter`]: deleteField(),
-            [`${companyId}.email_generated`]: deleteField()
+            [`${companyId}.email_sent`]: deleteField()
         }),
         // Cancella campi in details
         updateDoc(detailsRef, {
@@ -167,7 +167,7 @@ export async function regenerateEmail(companyId: string, instructions: string) {
     const updates = Promise.all([
         // Cancella campi in results
         updateDoc(resultsRef, {
-            [`${companyId}.email_generated`]: deleteField()
+            [`${companyId}.email_sent`]: deleteField()
         }),
         // Cancella campi in details
         updateDoc(detailsRef, {
@@ -229,32 +229,107 @@ export async function confirmCompany(userId: string, selections: Object, strateg
     redirect('/dashboard')
 }
 
-
 export async function getFileFromFirebase(publicUrl: string) {
-  try {
-    // ✅ 1. Estrai il percorso interno del file dal public URL
-    // Esempio URL:
-    // https://firebasestorage.googleapis.com/v0/b/tuo-bucket/o/offerte%2Fcliente123%2Fofferta.pdf?alt=media
-    const match = publicUrl.match(/\/o\/([^?]+)/);
-    if (!match) throw new Error("URL Firebase non valido");
-    const encodedPath = match[1];
-    const filePath = decodeURIComponent(encodedPath); // "offerte/cliente123/offerta.pdf"
+    try {
+        // ✅ 1. Estrai il percorso interno del file dal public URL
+        // Esempio URL:
+        // https://firebasestorage.googleapis.com/v0/b/tuo-bucket/o/offerte%2Fcliente123%2Fofferta.pdf?alt=media
+        const match = publicUrl.match(/\/o\/([^?]+)/);
+        if (!match) throw new Error("URL Firebase non valido");
+        const encodedPath = match[1];
+        const filePath = decodeURIComponent(encodedPath); // "offerte/cliente123/offerta.pdf"
 
-    // ✅ 2. Recupera il file tramite Firebase Admin SDK
-    const bucket = adminStorage.bucket();
-    const file = bucket.file(filePath);
-    const [data] = await file.download();
+        // ✅ 2. Recupera il file tramite Firebase Admin SDK
+        const bucket = adminStorage.bucket();
+        const file = bucket.file(filePath);
+        const [data] = await file.download();
 
-    // ✅ 3. Recupera i metadati (tipo MIME)
-    const [metadata] = await file.getMetadata();
+        // ✅ 3. Recupera i metadati (tipo MIME)
+        const [metadata] = await file.getMetadata();
 
-    // ✅ 4. Restituisci il contenuto codificato in base64 e il MIME type
-    return {
-      base64: data.toString("base64"),
-      mimeType: metadata.contentType || "application/octet-stream",
-    };
-  } catch (error) {
-    console.error("❌ Errore nel recupero file da Firebase:", error);
-    throw new Error("Impossibile scaricare il file da Firebase Storage");
-  }
+        // ✅ 4. Restituisci il contenuto codificato in base64 e il MIME type
+        return {
+            base64: data.toString("base64"),
+            mimeType: metadata.contentType || "application/octet-stream",
+        };
+    } catch (error) {
+        console.error("❌ Errore nel recupero file da Firebase:", error);
+        throw new Error("Impossibile scaricare il file da Firebase Storage");
+    }
+}
+
+export async function submitEmailSent(companyId: string, sent: boolean) {
+    // Ottieni i token dell'utente autenticato
+    const tokens = await getTokens(await cookies(), {
+        apiKey: clientConfig.apiKey,
+        cookieName: serverConfig.cookieName,
+        cookieSignatureKeys: serverConfig.cookieSignatureKeys,
+        serviceAccount: serverConfig.serviceAccount,
+    });
+
+    const userId = tokens?.decodedToken?.uid;
+    if (!userId) throw new Error("Utente non autenticato");
+
+    // Valore da salvare: false o timestamp server
+    const value = sent ? serverTimestamp() : false;
+
+    // Crea batch Firestore
+    const batch = writeBatch(db);
+
+    // Riferimenti documenti
+    const resultsRef = doc(db, "users", userId, "data", "results");
+    const emailsRef = doc(db, "users", userId, "data", "emails");
+    const detailsRef = doc(db, "users", userId, "data", "results", companyId, "details");
+
+    // Aggiornamenti atomici
+    batch.update(resultsRef, { [`${companyId}.email_sent`]: value });
+    batch.update(emailsRef, { [`${companyId}.email_sent`]: value });
+    batch.update(detailsRef, { "email.email_sent": value });
+
+    // Esegui batch
+    await batch.commit();
+
+    // Revalida la pagina della dashboard
+    revalidatePath(`/dashboard/${companyId}`);
+}
+
+export async function submitUpdateEmail(companyId: string, subject: string | null, body: string | null) {
+    // Ottieni i token dell'utente autenticato
+    if (subject === null && body === null) return
+
+    const tokens = await getTokens(await cookies(), {
+        apiKey: clientConfig.apiKey,
+        cookieName: serverConfig.cookieName,
+        cookieSignatureKeys: serverConfig.cookieSignatureKeys,
+        serviceAccount: serverConfig.serviceAccount,
+    });
+
+    const userId = tokens?.decodedToken?.uid;
+    if (!userId) throw new Error("Utente non autenticato");
+
+    // Crea batch Firestore
+    const batch = writeBatch(db);
+
+    // Riferimenti documenti
+    const emailsRef = doc(db, "users", userId, "data", "emails");
+    const detailsRef = doc(db, "users", userId, "data", "results", companyId, "details");
+    const rowRef = doc(db, "users", userId, "data", "results", companyId, "row");
+
+    // Aggiornamenti atomici
+    if (body !== null) {
+        batch.update(emailsRef, { [`${companyId}.body`]: body });
+        batch.update(detailsRef, { "email.body": body });
+        batch.update(rowRef, { "email.body": body });
+    }
+    if (subject !== null) {
+        batch.update(emailsRef, { [`${companyId}.subject`]: subject });
+        batch.update(detailsRef, { "email.subject": subject });
+        batch.update(rowRef, { "email.subject": subject });
+    }
+
+    // Esegui batch
+    await batch.commit();
+
+    // Revalida la pagina della dashboard
+    revalidatePath(`/dashboard/${companyId}`);
 }

@@ -164,11 +164,11 @@ const BlogPostsSkeleton = () => {
 // Questo componente esegue il fetch dei dati sul server.
 const PageContent = async ({ params }: { params: { id: string } }) => {
     // Il fetch dei dati avviene qui, sul server
-    const res = await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/protected/result/${params.id}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/protected/result/${(await params).id}`, {
         credentials: "include",
         cache: "no-cache",
         headers: {
-            cookie: cookies().toString() // Utilizza la funzione cookies() di Next.js
+            cookie: await cookies().toString() // Utilizza la funzione cookies() di Next.js
         }
     });
 
@@ -186,7 +186,7 @@ const PageContent = async ({ params }: { params: { id: string } }) => {
     const customizations = dataResponse.customizations;
 
     // I dati recuperati vengono passati al componente client tramite props
-    return <ResultClient data={details} customizations={customizations} />;
+    return <ResultClient data={details} customizations={customizations} emailSent={dataResponse.email_sent} />;
 };
 
 

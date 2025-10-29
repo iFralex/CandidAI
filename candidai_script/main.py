@@ -154,7 +154,7 @@ def decide_tasks_per_company(mode, manual_tasks, current_status, companies, user
                 company_tasks.append("blog")
             if "recruiter" not in data:
                 company_tasks.append("recruiters")
-            if not data.get("email_generated", False):
+            if not data.get("email_sent", False):
                 company_tasks.append("email")
 
         if company_tasks:

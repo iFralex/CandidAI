@@ -348,7 +348,7 @@ def save_email(user_id: str, unique_id: str, email, prompt, email_address):
 
     results_ref.set({
         unique_id: {
-            "email_generated": True
+            "email_sent": False
         }
     }, merge=True)
 
@@ -388,7 +388,7 @@ def get_results_status(user_id):
         unique_id: {
             "blog_articles": {...},
             "recruiter": {...},
-            "email_generated": True/False
+            "email_sent": True/False
         },
         ...
     }
@@ -411,7 +411,7 @@ def get_results_row(user_id, id):
         unique_id: {
             "blog_articles": {...},
             "recruiter": {...},
-            "email_generated": True/False
+            "email_sent": True/False
         },
         ...
     }

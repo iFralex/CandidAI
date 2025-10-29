@@ -47,11 +47,11 @@ async function ResultsWrapper({userId}) {
 
             // progress: logica semplice e personalizzabile
             // - blog_post_analyzed true => +60
-            // - email_generated true => +40
+            // - email_sent true => +40
             // (puoi cambiare i pesi a piacere)
             const recruiterFound = info?.recruiter !== undefined;
             const blogDone = info?.blog_post_analyzed === true;
-            const emailDone = info?.email_generated === true;
+            const emailDone = info?.email_sent === true;
             let progress = 0;
             if (recruiterFound) progress += 30;
             if (blogDone) progress += 50;
