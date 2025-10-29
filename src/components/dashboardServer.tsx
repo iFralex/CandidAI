@@ -98,7 +98,7 @@ export const CampaignCard = ({ campaign }) => {
 
                     <div className="flex items-center space-x-4">
                         {campaign.emailsGenerated > 0 && (
-                            <span>{campaign.emailsGenerated} email{campaign.emailsGenerated > 1 ? 's' : ''} generated</span>
+                            <span>Email  generated</span>
                         )}
                         {campaign.emailsSent > 0 && (
                             <span>{campaign.emailsSent} sent</span>

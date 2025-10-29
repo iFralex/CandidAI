@@ -3,7 +3,7 @@
 "use client";
 
 import { CompanyLogo } from "@/components/dashboard";
-import SkillsListBase, { EducationList, ExperienceList } from "@/components/detailsServer";
+import SkillsListBase, { calculateProgress, EducationList, ExperienceList } from "@/components/detailsServer";
 import { AdvancedFiltersClient, CriteriaDisplay } from "@/components/onboarding";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -84,16 +84,7 @@ const statsVariants = {
   })
 };
 
-// ============== HELPER FUNCTIONS ==============
-const calculateProgress = (data: any) => {
-  let progress = 0;
-  if (data.blog_articles) progress += 50;
-  if (data.recruiter_summary) progress += 30;
-  if (data.email) progress += 20;
-  return progress;
-};
-
-const getStepStatus = (data: any, step: string) => {
+export const getStepStatus = (data: any, step: string) => {
   if (step === 'blog_articles') return data.blog_articles ? 'completed' : 'pending';
   if (step === 'recruiter_summary') return data.recruiter_summary ? 'completed' : 'pending';
   if (step === 'email') return data.email ? 'completed' : 'pending';

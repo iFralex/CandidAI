@@ -186,7 +186,7 @@ const Dashboard = ({ results }) => {
                         Welcome back! 👋
                     </h1>
                     <p className="text-gray-400">
-                        Here's what's happening with your job search campaigns
+                        Here's what's happening with your work email generation
                     </p>
                 </div>
 

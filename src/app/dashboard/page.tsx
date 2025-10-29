@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import { AnimatedResults, ConfirmCompanies } from "@/components/dashboard";
+import { calculateProgress } from "@/components/detailsServer";
 
 function Card({ children, className, hover = true, gradient = false, ...props }: CardProps) {
     const baseClasses = "bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl transition-all duration-300"
@@ -25,7 +26,7 @@ function Card({ children, className, hover = true, gradient = false, ...props }:
     )
 }
 
-async function ResultsWrapper({userId}) {
+async function ResultsWrapper({ userId }) {
     const parseResults = (results) => {
         delete results.companies_to_confirm
         return Object.entries(results).map(([id, info]) => {
@@ -50,14 +51,10 @@ async function ResultsWrapper({userId}) {
             // - email_sent true => +40
             // (puoi cambiare i pesi a piacere)
             const recruiterFound = info?.recruiter !== undefined;
-            const blogDone = info?.blog_post_analyzed === true;
-            const emailDone = info?.email_sent === true;
-            let progress = 0;
-            if (recruiterFound) progress += 30;
-            if (blogDone) progress += 50;
-            if (emailDone) progress += 20;
-            // clamp a 100
-            if (progress > 100) progress = 100;
+            const blogDone = info?.blog_articles;
+            const emailDone = info?.email_sent !== undefined;
+            const emailSent = info?.email_sent;
+            let progress = calculateProgress(info)
 
             const status = progress === 100 ? 'completed' : 'processing';
 
@@ -99,11 +96,18 @@ async function ResultsWrapper({userId}) {
 
     const companiesToConfirm = data.data.companies_to_confirm
     const parsedResults = parseResults(data.data || {}).filter(i => !(companiesToConfirm || []).includes(i.id));
-    
-    const processingCampaigns = 1//results.filter(c => c.status === 'processing').length;
-    const readyCampaigns = 2//results.filter(c => c.status === 'ready').length;
-    const sentCampaigns = 3//results.filter(c => c.status === 'sent').length;
-    const totalEmailsGenerated = 2//results.reduce((sum, c) => sum + c.emailsGenerated, 0);
+console.log(data.data)
+    const processingCampaigns = Object.values(data.data)
+        .filter(obj => !("email_sent" in obj))
+        .length;
+    const readyCampaigns = Object.values(data.data)
+        .filter(obj => obj.email_sent === false)
+        .length;
+    const sentCampaigns = Object.values(data.data)
+        .filter(obj => obj.email_sent !== false)
+        .length;
+    const articlesFound = Object.values(data.data)
+  .reduce((sum, obj) => sum + (obj.blog_articles || 0), 0);
 
     return <>
         {/* Stats Cards */}
@@ -147,8 +151,8 @@ async function ResultsWrapper({userId}) {
             <Card className="p-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-gray-400 text-sm mb-1">Total Generated</p>
-                        <p className="text-2xl font-bold text-white">{totalEmailsGenerated}</p>
+                        <p className="text-gray-400 text-sm mb-1">Articles Found</p>
+                        <p className="text-2xl font-bold text-white">{articlesFound}</p>
                     </div>
                     <div className="w-12 h-12 bg-violet-500/20 rounded-xl flex items-center justify-center">
                         <Mail className="w-6 h-6 text-violet-400" />
@@ -210,7 +214,7 @@ const ConfirmCompaniesWrapper = async ({ companiesToConfirm, userId }) => {
     const d = await res.json();
 
     return (
-        <ConfirmCompanies userId={userId} allDetails={detailsData.data} queries={d.data.queries} defaultInstructions={d.data.customizations.instructions}/>
+        <ConfirmCompanies userId={userId} allDetails={detailsData.data} queries={d.data.queries} defaultInstructions={d.data.customizations.instructions} />
     )
 }
 
@@ -246,10 +250,10 @@ const Page = async () => {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2">
-                        Welcome back! 👋
+                        Welcome back {user.name}! 👋
                     </h1>
                     <p className="text-gray-400">
-                        Here's what's happening with your job search campaigns
+                        Here's what's happening with your work email generation
                     </p>
                 </div>
 
