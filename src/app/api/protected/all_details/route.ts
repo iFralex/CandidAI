@@ -39,21 +39,26 @@ export async function POST(request) {
             companyIds.map(async (companyId) => {
                 try {
                     console.log(companyId, userId)
-                    const detailsRef = adminDb
+                    const baseRef = adminDb
                         .collection('users')
                         .doc(userId)
                         .collection('data')
-                        .doc("results")
-                        .collection(companyId)
-                        .doc('details');
+                        .doc('results')
+                        .collection(companyId);
 
-                    const detailsDoc = await detailsRef.get();
+                    const detailsRef = baseRef.doc('details');
+                    const unlockedRef = baseRef.doc('unlocked');
+
+                    const [detailsDoc, unlocked] = await Promise.all([
+                        detailsRef.get(),
+                        unlockedRef.get()
+                    ]);
 
                     if (!detailsDoc.exists) {
                         return { companyId, data: {} };
                     }
 
-                    return { companyId, data: detailsDoc.data() };
+                    return { companyId, data: detailsDoc.data(), unlocked: unlocked.data() };
                 } catch (err) {
                     console.error(`Errore con companyId ${companyId}:`, err);
                     return { companyId, data: {}, error: true };

@@ -13,6 +13,7 @@ import { Input } from "./ui/input";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { AddStrategyButton, AdvancedFiltersClient } from "./onboarding";
 import { Textarea } from "./ui/textarea";
+import { CreditsDialog } from "@/app/dashboard/[id]/client";
 
 const listVariants = {
     visible: {
@@ -326,7 +327,7 @@ export const ConfirmCompanies = ({ allDetails, userId, queries, defaultInstructi
             return updated;
         })
     }
-    
+
     const handleResetCustomInstructions = companyId => {
         setCustomInstructions(prev => {
             const updated = { ...prev };
@@ -387,10 +388,12 @@ export const ConfirmCompanies = ({ allDetails, userId, queries, defaultInstructi
             const filteredStrategies = Object.fromEntries(Object.entries(strategies).filter(([k, v]) => v !== queries))
             const filteredInstructions = Object.fromEntries(Object.entries(customInstructions).filter(([k, v]) => v !== defaultInstructions))
 
-            await confirmCompany(userId, selections, filteredStrategies, filteredInstructions)
+            const res = await confirmCompany(selections, filteredStrategies, filteredInstructions)
 
             // Dopo il salvataggio, resetta le selezioni
-            setSelections({});
+            if (res.success)
+                setSelections({});
+            return res
         } catch (err) {
             console.error(err);
         } finally {
@@ -617,7 +620,7 @@ export const ConfirmCompanies = ({ allDetails, userId, queries, defaultInstructi
                                                                 </DialogHeader>
                                                                 <ScrollArea className="oveflow-y-auto max-h-[calc(100vh-200px)]">
                                                                     <div className="p-1">
-                                                                        <Textarea rows={5} value={customInstructions[companyId] !== undefined ? customInstructions[companyId] : defaultInstructions} onChange={e => setCustomInstructions(prev => ({...prev, [companyId]: e.target.value }))} />
+                                                                        <Textarea rows={5} value={customInstructions[companyId] !== undefined ? customInstructions[companyId] : defaultInstructions} onChange={e => setCustomInstructions(prev => ({ ...prev, [companyId]: e.target.value }))} />
                                                                     </div>
                                                                 </ScrollArea>
                                                                 <DialogFooter>
@@ -847,7 +850,7 @@ export const ConfirmCompanies = ({ allDetails, userId, queries, defaultInstructi
                         <DialogFooter>
                             <DialogClose>
                                 <Button
-                                    variant="secondary"
+                                    variant="ghost"
                                 >
                                     Cancel
                                 </Button>
@@ -908,18 +911,19 @@ export const ConfirmCompanies = ({ allDetails, userId, queries, defaultInstructi
                                 >
                                     Reset
                                 </Button>
-                                <Button
-                                    onClick={handleSaveAll}
-                                    disabled={isSaving}
-                                    icon={isSaving ? (
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    ) : (
-                                        <Save className="w-4 h-4" />
-                                    )}
-                                    className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-6"
-                                >
-                                    {isSaving ? 'Saving...' : 'Save All'}
-                                </Button>
+                                <CreditsDialog contentType={"change-company"} unlocked={!Object.values(selections).find(s => s.action === 'wrong')} action={handleSaveAll} number={Object.values(selections).filter(s => s.action === 'wrong').length}>
+                                    <Button
+                                        disabled={isSaving}
+                                        icon={isSaving ? (
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        ) : (
+                                            <Save className="w-4 h-4" />
+                                        )}
+                                        className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-6"
+                                    >
+                                        {isSaving ? 'Saving...' : 'Save All'}
+                                    </Button>
+                                </CreditsDialog>
                             </div>
                         </div>
                     </motion.div>

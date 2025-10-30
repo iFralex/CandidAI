@@ -3,11 +3,11 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { db, storage } from '@/lib/firebase'
-import { arrayRemove, deleteDoc, deleteField, doc, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { arrayRemove, deleteDoc, deleteField, doc, getDoc, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { cookies } from 'next/headers';
 import { getTokens } from 'next-firebase-auth-edge';
-import { clientConfig, serverConfig } from '@/config';
+import { clientConfig, creditsInfo, serverConfig } from '@/config';
 import { adminStorage } from '@/lib/firebase-admin';
 
 export async function selectPlan(userId: string, planId: string) {
@@ -134,7 +134,8 @@ export async function refindRecruiter(companyId: string, strategy: any, name, li
         // Cancella companyId dentro emails
         updateDoc(emailsRef, {
             [companyId]: deleteField()
-        })
+        }),
+        deleteCreditsPaid(userId, companyId, "find-recruiter")
     ]);
 
     // Esegui tutto in parallelo
@@ -180,7 +181,8 @@ export async function regenerateEmail(companyId: string, instructions: string) {
         // Cancella companyId dentro emails
         updateDoc(emailsRef, {
             [companyId]: deleteField()
-        })
+        }),
+        deleteCreditsPaid(userId, companyId, "generate-email")
     ]);
 
     // Esegui tutto in parallelo
@@ -189,8 +191,36 @@ export async function regenerateEmail(companyId: string, instructions: string) {
     redirect("/dashboard/" + companyId);
 }
 
-export async function confirmCompany(userId: string, selections: Object, strategies: Object, instructions) {
+export async function confirmCompany(selections: Object, strategies: Object, instructions) {
+    const tokens = await getTokens(await cookies(), {
+        apiKey: clientConfig.apiKey,
+        cookieName: serverConfig.cookieName,
+        cookieSignatureKeys: serverConfig.cookieSignatureKeys,
+        serviceAccount: serverConfig.serviceAccount,
+    });
+
+    const userId = tokens?.decodedToken?.uid;
+    if (!userId) {
+        return { success: false, error: "User not authenticated" };
+    }
+
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+        return { success: false, error: "User not found" };
+    }
+
+    const currentCredits = userSnap.data().credits || 0;
+    const amount = creditsInfo["change-company"]?.cost || 0 * Object.values(selections).filter(s => s.action === 'wrong').length
+
+    if (currentCredits < amount) {
+        return { success: false, error: "Insufficient credits" };
+    }
+
+    // ✅ Batch: atomic update
     const batch = writeBatch(db);
+    batch.update(userRef, { credits: currentCredits - amount});
 
     for (const [companyId, selection] of Object.entries(selections)) {
         selection.newData = Object.fromEntries(Object.entries(selection.newData).filter(([_, v]) => v != null && v !== ""));
@@ -332,4 +362,55 @@ export async function submitUpdateEmail(companyId: string, subject: string | nul
 
     // Revalida la pagina della dashboard
     revalidatePath(`/dashboard/${companyId}`);
+}
+
+export async function payCredits(companyId: string, contentKey: string) {
+    try {
+        const tokens = await getTokens(await cookies(), {
+            apiKey: clientConfig.apiKey,
+            cookieName: serverConfig.cookieName,
+            cookieSignatureKeys: serverConfig.cookieSignatureKeys,
+            serviceAccount: serverConfig.serviceAccount,
+        });
+
+        const userId = tokens?.decodedToken?.uid;
+        if (!userId) {
+            return { success: false, error: "User not authenticated" };
+        }
+
+        const userRef = doc(db, "users", userId);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            return { success: false, error: "User not found" };
+        }
+
+        const currentCredits = userSnap.data().credits || 0;
+        const amount = creditsInfo[contentKey]?.cost || 0;
+
+        if (currentCredits < amount) {
+            return { success: false, error: "Insufficient credits" };
+        }
+
+        // ✅ Batch: atomic update
+        const batch = writeBatch(db);
+        batch.update(userRef, { credits: currentCredits - amount });
+        batch.set(doc(db, "users", userId, "data", "results", companyId, "unlocked"), {
+            [contentKey]: true,
+        }, { merge: true });
+
+        await batch.commit();
+        revalidatePath("/dashboard");
+
+        return { success: true };
+    } catch (err) {
+        console.error("Server error in payCredits:", err);
+        return { success: false, error: "Server error" };
+    }
+}
+
+const deleteCreditsPaid = async (userId, companyId, contentKey) => {
+    await updateDoc(doc(db, "users", userId, "data", "results", companyId, "unlocked"), {
+        [contentKey]: deleteField()
+    })
 }

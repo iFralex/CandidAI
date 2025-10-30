@@ -45,17 +45,31 @@ export async function GET(request, { params }) {
             .collection(resultId)
             .doc("customizations")
 
+        const unlockedRef = adminDb
+            .collection("users")
+            .doc(userId)
+            .collection("data")
+            .doc("results")
+            .collection(resultId)
+            .doc("unlocked")
+
         // 🔹 Fetch parallelo
-        const [detailsDoc, customizationsDoc] = await Promise.all([
+        const [detailsDoc, customizationsDoc, unlockedDoc] = await Promise.all([
             detailsRef.get(),
             customizationsRef.get(),
+            unlockedRef.get(),
         ]);
 
         // 🔹 Dati estratti
         const detailsData = detailsDoc.exists ? detailsDoc.data() : {};
+        const unlocked = unlockedDoc.exists ? unlockedDoc.data() : {};
         const customizationsData = customizationsDoc.exists
             ? customizationsDoc.data()
             : {};
+
+        if (!unlocked.prompt && detailsData.email) detailsData.email.prompt = null
+        if (!unlocked["generate-email"]) customizationsData.instructions = null
+        if (!unlocked["find-recruiter"]) customizationsData.queries = null
 
         // 🔹 Risposta finale
         return NextResponse.json({

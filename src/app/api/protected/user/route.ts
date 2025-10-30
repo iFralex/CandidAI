@@ -40,6 +40,7 @@ export async function GET(request) {
         emailVerified: decodedToken.email_verified,
         onboardingStep: userData.onboardingStep,
         plan: userData.plan,
+        credits: userData.credits,
         picture: decodedToken.picture,
       }
     });

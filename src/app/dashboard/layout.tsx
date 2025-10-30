@@ -1,13 +1,14 @@
 // components/DashboardLayout.tsx (rimane un Server Component per la struttura)
 // Non usare 'use client'
 
-import { Activity, BarChart3, FileText, Home, LogOut, Settings, Sparkles, Menu } from 'lucide-react'; // Importa le icone
+import { Activity, BarChart3, FileText, Home, LogOut, Settings, Sparkles, Menu, Zap } from 'lucide-react'; // Importa le icone
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import Image from 'next/image';
 import { ProgressBar } from '@/components/ui/progress-bar';
+import { Badge } from '@/components/ui/badge';
 
 // Tipo di dati utente (puoi prenderlo dal tuo sistema di auth)
 interface User {
@@ -136,6 +137,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
     const onboarded = (user.onboardingStep || 1) > 10
     const currentStep = user.onboardingStep
     const totalSteps = user.plan === 'pro' || user.plan === 'ultimate' ? 5 : 4
+    const credits = user.credits
 
     return (
         <div className="min-h-screen bg-black text-white relative">
@@ -169,6 +171,16 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
                                         {Math.round((currentStep / totalSteps) * 100)}%
                                     </span>
                                 </div>
+                            )}
+                            {onboarded && credits && (
+                                <Badge variant={"secondary"}>
+                                    <div className="flex items-center gap-2">
+                                        <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                                        <span className="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                                            {credits}
+                                        </span>
+                                    </div>
+                                </Badge>
                             )}
                         </div>
                     </header>

@@ -168,7 +168,7 @@ const PageContent = async ({ params }: { params: { id: string } }) => {
         credentials: "include",
         cache: "no-cache",
         headers: {
-            cookie: await cookies().toString() // Utilizza la funzione cookies() di Next.js
+            cookie: (await cookies()).toString() // Utilizza la funzione cookies() di Next.js
         }
     });
 

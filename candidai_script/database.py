@@ -341,6 +341,8 @@ def save_email(user_id: str, unique_id: str, email, prompt, email_address):
         articles_list (list): Lista di tutti gli articoli trovati (oggetti con title e href)
     """
 
+    if not email:
+        return
     
     # 1️⃣ Aggiorna il documento results con chiave unique_id
     results_ref = db.collection("users").document(user_id)\

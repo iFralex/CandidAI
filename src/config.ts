@@ -25,3 +25,22 @@ export const clientConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
 };
+
+export const creditsInfo = {
+  prompt: {
+    cost: 100,
+    description: "Unlock the complete prompt used to generate the email"
+  },
+  "generate-email": {
+    cost: 50,
+    description: "Generate a new email using custom instructions for this company"
+  },
+  "find-recruiter": {
+    cost: 100,
+    description: "Find a new recruiter using a custom strategy for this company"
+  },
+  "change-company": {
+    cost: 70,
+    description: "Replace the selected companies with new ones and retrieve their updated data"
+  },
+}

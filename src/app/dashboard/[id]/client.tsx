@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText, Copy, Download } from "lucide-react";
+import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText, Copy, Download, ChevronRight, Lock, XCircle } from "lucide-react";
 import Link from "next/link";
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -257,13 +257,12 @@ function BlogCard({ article }) {
 
 let cachedCustomizations: any = {}; // cache globale in memoria runtime
 
-export function useAccountCustomizations(defaultStrategy, defaultInstructions) {
-  const [strategy, setStrategy] = useState<any>(defaultStrategy || cachedCustomizations.strategy);
-  const [instructions, setInstructions] = useState<any>(defaultInstructions || cachedCustomizations.instructions);
-  const [loading, setLoading] = useState(!(defaultStrategy || cachedCustomizations.strategy) && (defaultInstructions || cachedCustomizations.instructions));
+export function useAccountCustomizations() {
+  const [data, setData] = useState<any>({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if ((defaultStrategy || cachedCustomizations.strategy) && (defaultInstructions || cachedCustomizations.instructions)) return; // già in memoria
+    if (Object.keys(cachedCustomizations).length) return; // già in memoria
     setLoading(true);
     fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/account", {
       credentials: "include",
@@ -274,8 +273,44 @@ export function useAccountCustomizations(defaultStrategy, defaultInstructions) {
         return res.json(); // ✅ converte la risposta in oggetto JS
       })
       .then((data) => {
+        cachedCustomizations = data.data
+        setData(data.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Errore:", err);
+        setLoading(false);
+      });
+
+  }, []);
+
+  return { data, loading };
+}
+
+/*export function auseAccountCustomizations(defaultStrategy, defaultInstructions) {
+  const [strategy, setStrategy] = useState<any>(defaultStrategy || cachedCustomizations.strategy);
+  const [instructions, setInstructions] = useState<any>(defaultInstructions || cachedCustomizations.instructions);
+  const [loading, setLoading] = useState(!(defaultStrategy || cachedCustomizations.strategy) && (defaultInstructions || cachedCustomizations.instructions));
+
+  useEffect(() => {
+    //if (defaultInstructions === undefined) return
+    console.log("1", defaultStrategy)
+    if ((defaultStrategy !== undefined || cachedCustomizations.strategy) && (defaultInstructions !== undefined || cachedCustomizations.instructions)) return; // già in memoria
+    setLoading(true);
+    console.log("2", defaultStrategy)
+    fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/account", {
+      credentials: "include",
+      cache: "no-cache",
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Errore durante la fetch");
+        return res.json(); // ✅ converte la risposta in oggetto JS
+      })
+      .then((data) => {
         data = data.data
+        console.log("3", defaultStrategy, cachedCustomizations.strategy, data.queries)
         if (!defaultStrategy && !cachedCustomizations.strategy) {
+          console.log("defaultStrategy", data.queries)
           cachedCustomizations.strategy = data.queries;  // ✅ ora contiene i dati reali
           setStrategy(data.queries);
         }
@@ -290,21 +325,25 @@ export function useAccountCustomizations(defaultStrategy, defaultInstructions) {
         setLoading(false);
       });
 
-  }, []);
+  }, [defaultStrategy, defaultInstructions]);
 
   return { strategy, instructions, loading };
-}
+}*/
 
 const RecruiterProfileCard = ({ data, defaultStrategy, inProgress }: { data: any, defaultStrategy: any, userId: string, companyId: string }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { strategy, loading } = useAccountCustomizations(defaultStrategy, null);
+  const { data: { queries: strategy } = {}, loading } = useAccountCustomizations();
   const [customStrategy, setCustomStrategy] = useState<any[]>(strategy || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const rightStrategy = defaultStrategy !== undefined ? (defaultStrategy || strategy) : strategy
+  const handleSetRightStrategy = () => {
+    setCustomStrategy(rightStrategy)
+  }
+
   useEffect(() => {
-    console.log(strategy)
-    setCustomStrategy(strategy)
-  }, [strategy])
+    handleSetRightStrategy()
+  }, [strategy, defaultStrategy]);
 
   const getInitials = (name: string) => {
     if (!name) return "??";
@@ -368,54 +407,57 @@ const RecruiterProfileCard = ({ data, defaultStrategy, inProgress }: { data: any
 
       {/* DIALOG */}
       <motion.div variants={itemVariants}>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button className="w-full" variant="outline">Find someone else</Button>
-            </motion.div>
-          </DialogTrigger>
-          {!inProgress && <DialogContent className="sm:max-w-4xl w-4xl max-h-screen">
-            {isSubmitting && <Overlay />}
-            <DialogHeader>
-              <DialogTitle>Do you want to search for another recruiter profile?</DialogTitle>
-              <DialogDescription>
-                You will be redirected to the onboarding flow to specify new criteria.
-              </DialogDescription>
-            </DialogHeader>
+        <CreditsDialog unlocked={defaultStrategy !== null} contentType={"find-recruiter"} className="w-full">
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button className="w-full" variant="outline">Find someone else</Button>
+              </motion.div>
+            </DialogTrigger>
+            {!inProgress && defaultStrategy !== null && <DialogContent className="sm:max-w-4xl w-4xl max-h-screen">
+              {isSubmitting && <Overlay />}
+              <DialogHeader>
+                <DialogTitle>Do you want to search for another recruiter profile?</DialogTitle>
+                <DialogDescription>
+                  You will be redirected to the onboarding flow to specify new criteria.
+                </DialogDescription>
+              </DialogHeader>
 
-            {/* Contenuto */}
-            {loading ? (
-              <p className="text-center text-sm text-gray-500">Loading filters...</p>
-            ) : (
-              <ScrollArea className="oveflow-y-auto max-h-[calc(100vh-200px)]">
-                <AdvancedFiltersClient
-                  maxStrategies={30}
-                  setStrategy={setCustomStrategy}
-                  strategy={customStrategy}
-                />
-              </ScrollArea>
-            )}
+              {/* Contenuto */}
+              {loading ? (
+                <p className="text-center text-sm text-gray-500">Loading filters...</p>
+              ) : (
+                <ScrollArea className="oveflow-y-auto max-h-[calc(100vh-200px)]">
+                  {console.log(customStrategy)}
+                  <AdvancedFiltersClient
+                    maxStrategies={30}
+                    setStrategy={setCustomStrategy}
+                    strategy={customStrategy}
+                  />
+                </ScrollArea>
+              )}
 
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="ghost">Close</Button>
-              </DialogClose>
-              <Button variant="outline" onClick={() => setCustomStrategy(strategy)}>Reset to default</Button>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="ghost">Close</Button>
+                </DialogClose>
+                <Button variant="outline" onClick={handleSetRightStrategy}>Reset to default</Button>
 
-              {/* Pulsante con stato di loading */}
-              <Button onClick={handleFind} disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Finding recruiter...
-                  </>
-                ) : (
-                  "Find the new recruiter with the new criteria"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>}
-        </Dialog>
+                {/* Pulsante con stato di loading */}
+                <Button onClick={handleFind} disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Finding recruiter...
+                    </>
+                  ) : (
+                    "Find the new recruiter with the new criteria"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>}
+          </Dialog>
+        </CreditsDialog>
       </motion.div>
     </motion.div>
   );
@@ -745,6 +787,156 @@ export function EmailDraftButton({
   );
 }
 
+export const CreditsDialog = ({ children, contentType, unlocked, className = "", action, number = 1}) => {
+  const requiredCredits = creditsInfo[contentType]?.cost || 0 * number;
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleUnlock = async () => {
+    setIsUnlocking(true);
+    setError(null);
+
+    const companyId = window.location.pathname.split("/").filter(Boolean).pop();
+    const result = action === undefined ? await payCredits(companyId, contentType) : await action?.()
+
+    if (!result.success) {
+      setError(result.error);
+      setIsUnlocking(false);
+      return;
+    }
+  };
+
+  return (
+    <Dialog>
+      <DialogTrigger className={className} onClick={() => unlocked ? action?.() : null}>{children}</DialogTrigger>
+      {!unlocked && (
+        <DialogContent>
+          <div className="flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="relative w-full max-w-md bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-2xl shadow-2xl border border-purple-500/20 overflow-hidden animate-in zoom-in-95 duration-200">
+
+              {/* Background */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-700" />
+              </div>
+
+              <div className="relative p-8">
+                {/* Icon */}
+                <div className="flex justify-center mb-6">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur-xl opacity-50 animate-pulse" />
+                    <div className="relative bg-gradient-to-br from-purple-500 to-blue-500 rounded-full p-5 transition-all duration-500">
+                      <Lock className="w-10 h-10 text-white" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h2 className="text-2xl font-bold text-center text-white mb-3">
+                  Premium Content
+                </h2>
+
+                <p className="text-center text-slate-300 mb-8">
+                  {creditsInfo[contentType]?.description || <>Unlock this {contentType} to access exclusive features</>}
+                </p>
+
+                {/* Credits card */}
+                <div className="bg-slate-800/50  rounded-xl p-6 mb-6 border border-purple-500/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-slate-400 text-sm font-medium">
+                      Credits required
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                      <span className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                        {requiredCredits}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Animated progress bar */}
+                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className={`
+                        h-full rounded-full 
+                        bg-gradient-to-r from-purple-500 to-blue-500 
+                        transition-all duration-[1500ms] ease-in-out
+                        ${isUnlocking ? 'w-full animate-pulse' : 'w-0'}
+                      `}
+                    />
+                  </div>
+                </div>
+
+
+                {/* Error states */}
+                {error === "Insufficient credits" && (
+                  <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-center rounded-xl p-4 mb-4 flex flex-col items-center gap-3 animate-in fade-in duration-200">
+                    <XCircle className="w-6 h-6" />
+                    <p>You don’t have enough credits to unlock this content.</p>
+                    <Link
+                      href="/dashboard/credits"
+                      className="mt-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg text-white font-semibold hover:from-purple-600 hover:to-blue-600 transition-all"
+                    >
+                      Buy more credits
+                    </Link>
+                  </div>
+                )}
+
+                {error && error !== "Insufficient credits" && (
+                  <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-center rounded-xl p-4 mb-4 animate-in fade-in duration-200">
+                    {error}
+                  </div>
+                )}
+
+                {/* Unlock button */}
+                {!error && (
+                  <button
+                    onClick={handleUnlock}
+                    disabled={isUnlocking}
+                    className={`
+                      w-full py-4 px-6 rounded-xl font-semibold text-white
+                      transition-all duration-300 transform
+                      bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 hover:shadow-lg hover:shadow-purple-500/50 hover:scale-[1.02] active:scale-[0.98]
+                      disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
+                      flex items-center justify-center gap-2 relative overflow-hidden
+                    `}
+                  >
+                    {isUnlocking ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Unlocking...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Unlock for {requiredCredits} credits</span>
+                        <ChevronRight className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* Cancel */}
+                <DialogClose asChild>
+                  <button
+                    disabled={isUnlocking}
+                    className="w-full mt-4 py-2 text-slate-400 hover:text-white transition-colors text-sm"
+                  >
+                    Maybe later
+                  </button>
+                </DialogClose>
+              </div>
+
+              {/* Decorations */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-transparent rounded-bl-full" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-blue-500/20 to-transparent rounded-tr-full" />
+            </div>
+          </div>
+        </DialogContent>
+      )}
+    </Dialog>
+  );
+};
+
 export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defaultInstructions: string; emailSent: boolean }) => {
   const inProgress = !data?.email;
   const placeholderEmail = {
@@ -753,16 +945,21 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
     key_points: ["Point 1...", "Point 2...", "Point 3..."],
   };
 
-  const { instructions, loading } = useAccountCustomizations(null, defaultInstructions);
+  const { data: { customizations: { instructions } = {} } = {}, loading } = useAccountCustomizations();
   const [customInstructions, setCustomInstructions] = useState(defaultInstructions);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEmailSubmitting, setIsEmailSubmitting] = useState(false); // ✅ stato di caricamento per Email Sent
   const [email, setEmail] = useState(data.email || {});
   const [emailSentSuccess, setEmailSentSuccess] = useState(false);
 
+  const rightInstructions = defaultInstructions !== undefined ? (defaultInstructions || instructions) : instructions
+  const handleSetRightInstructions = () => {
+    setCustomInstructions(rightInstructions)
+  }
+
   useEffect(() => {
-    setCustomInstructions(instructions);
-  }, [instructions]);
+    handleSetRightInstructions()
+  }, [instructions, defaultInstructions]);
 
   useEffect(() => {
     setEmail(data.email || {});
@@ -863,36 +1060,38 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
             <Separator />
 
             <motion.div variants={itemVariants} className="w-full flex items-center justify-end flex-wrap gap-3">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button size={"sm"} variant={"outline"}>View Prompt</Button>
-                </DialogTrigger>
-                {!inProgress && <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      Prompt used for the email
-                    </DialogTitle>
-                  </DialogHeader>
-                  <ScrollArea className="max-h-[calc(100vh-200px)] w-full">
-                    <div className="w-full max-w-md">
-                      {email.prompt
-                        .split(/\n/)
-                        .map((line, i) =>
-                          line.trim() === "" ? (
-                            <br key={i} /> // se la riga è vuota, aggiunge spazio verticale
-                          ) : (
-                            <p key={i}>{line}</p>
-                          )
-                        )}
-                    </div>
-                  </ScrollArea>
-                  <DialogFooter>
-                    <Button variant={"outline"} icon={<Download />} onClick={() => downloadTextFile("prompt", email.prompt)}>Download</Button>
-                    <Button variant={"outline"} icon={<Copy />} onClick={() => navigator.clipboard.writeText(email.prompt)}>Copy</Button>
-                  </DialogFooter>
-                </DialogContent>}
-              </Dialog>
-              {(email.body !== data.email.body || email.subject !== data.email.subject) && <>
+              <CreditsDialog unlocked={email.prompt} contentType="prompt">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size={"sm"} variant={"outline"}>View Prompt</Button>
+                  </DialogTrigger>
+                  {!inProgress && email.prompt && <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>
+                        Prompt used for the email
+                      </DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[calc(100vh-200px)] w-full">
+                      <div className="w-full max-w-md">
+                        {email.prompt
+                          .split(/\n/)
+                          .map((line, i) =>
+                            line.trim() === "" ? (
+                              <br key={i} /> // se la riga è vuota, aggiunge spazio verticale
+                            ) : (
+                              <p key={i}>{line}</p>
+                            )
+                          )}
+                      </div>
+                    </ScrollArea>
+                    <DialogFooter>
+                      <Button variant={"outline"} icon={<Download />} onClick={() => downloadTextFile("prompt", email.prompt)}>Download</Button>
+                      <Button variant={"outline"} icon={<Copy />} onClick={() => navigator.clipboard.writeText(email.prompt)}>Copy</Button>
+                    </DialogFooter>
+                  </DialogContent>}
+                </Dialog>
+              </CreditsDialog>
+              {data.email && (email.body !== data.email.body || email.subject !== data.email.subject) && <>
                 <Button size={"sm"} variant={"outline"} onClick={() => setEmail(data.email || {})} disabled={isEmailSubmitting}>Reset to default</Button>
                 <Button size={"sm"} onClick={() => handleUpdateEmail()} disabled={isEmailSubmitting}>Update</Button>
               </>}
@@ -929,46 +1128,48 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
             </motion.div>
 
             {/* Dialog per rigenerare email */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="w-full" disabled={loading}>
-                  Generate another
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-4xl w-4xl max-h-screen">
-                {isSubmitting && <Overlay />}
-                <DialogHeader>
-                  <DialogTitle className="flex">Define Custom Instructions</DialogTitle>
-                </DialogHeader>
-                <ScrollArea className="max-h-[calc(100vh-200px)]">
-                  <div className="p-1">
-                    <Textarea rows={5} value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} />
-                  </div>
-                </ScrollArea>
-                <DialogFooter>
-                  <DialogClose>
-                    <Button variant="ghost">Close</Button>
-                  </DialogClose>
-                  <Button
-                    variant="outline"
-                    onClick={() => setCustomInstructions(instructions)}
-                    disabled={instructions === customInstructions}
-                  >
-                    Reset to default
+            <CreditsDialog contentType="generate-email" unlocked={defaultInstructions !== null} className="w-full">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full" disabled={loading}>
+                    Generate another
                   </Button>
-                  <Button onClick={handleGenerate} disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Generating email...
-                      </>
-                    ) : (
-                      "Generate the new email with the new instructions"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                {defaultInstructions !== null && <DialogContent className="sm:max-w-4xl w-4xl max-h-screen">
+                  {isSubmitting && <Overlay />}
+                  <DialogHeader>
+                    <DialogTitle className="flex">Define Custom Instructions</DialogTitle>
+                  </DialogHeader>
+                  <ScrollArea className="max-h-[calc(100vh-200px)]">
+                    <div className="p-1">
+                      <Textarea rows={5} value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} />
+                    </div>
+                  </ScrollArea>
+                  <DialogFooter>
+                    <DialogClose>
+                      <Button variant="ghost">Close</Button>
+                    </DialogClose>
+                    <Button
+                      variant="outline"
+                      onClick={handleSetRightInstructions}
+                      disabled={customInstructions === rightInstructions}
+                    >
+                      Reset to default
+                    </Button>
+                    <Button onClick={handleGenerate} disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Generating email...
+                        </>
+                      ) : (
+                        "Generate the new email with the new instructions"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>}
+              </Dialog>
+            </CreditsDialog>
 
             {/* Key points */}
             <div className="p-4 font-sans">
@@ -1060,8 +1261,8 @@ import React from "react"
 import { Globe, MapPin, Calendar, Users, Building2, TrendingUp, Sparkles, Zap, Target, Shield, Link2, Award, BarChart3, Layers } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getFileFromFirebase, refindRecruiter, regenerateEmail, submitEmailSent, submitUpdateEmail } from "@/actions/onboarding-actions";
-
+import { getFileFromFirebase, payCredits, refindRecruiter, regenerateEmail, submitEmailSent, submitUpdateEmail } from "@/actions/onboarding-actions";
+import { creditsInfo } from "@/config";
 
 const formatNumber = (num) => {
   if (!num) return 'N/A';
