@@ -66,39 +66,79 @@ def generate_email(user_id, ids, companies, profile_summary, cv_url, result_blog
         return record
 
     def parse_recruiter(record):
-        # Experience
-        for key in ["birth_date", "birth_year", "dataset_version", "emails", "facebook_id", "facebook_username", "facebook_url", "github_url", "github_username", "id", "job_company_facebook_url", "job_company_founded", "job_company_id", "job_company_industry", "job_company_linkedin_id", "job_company_linkedin_url", "job_company_location_address_line_2", "job_company_location_continent", "job_company_location_country", "job_company_location_geo", "job_company_location_locality", "job_company_location_metro", "job_company_location_name", "job_company_location_postal_code", "job_company_location_region", "job_company_location_street_address", "job_company_size", "job_company_twitter_url", "job_company_website", "job_start_date", "job_title_class", "job_title_levels", "job_title_role", "job_title_sub_role", "last_initial", "linkedin_id", "linkedin_url", "linkedin_username", "location_address_line_2", "location_geo", "location_locality", "location_metro", "location_name", "location_names", "location_postal_code", "location_region", "location_street_address", "middle_initial", "middle_name", "mobile_phone", "personal_emails", "phone_numbers", "profiles", "recommended_personal_email", "regions", "street_addresses", "twitter_username", "twitter_url", "work_email"]:
+        # Copia del record originale per sicurezza
+        record = record.copy() if isinstance(record, dict) else {}
+
+        # Rimozione chiavi indesiderate di alto livello
+        keys_to_remove = [
+            "birth_date", "birth_year", "dataset_version", "emails", "facebook_id",
+            "facebook_username", "facebook_url", "github_url", "github_username",
+            "id", "job_company_facebook_url", "job_company_founded", "job_company_id",
+            "job_company_industry", "job_company_linkedin_id", "job_company_linkedin_url",
+            "job_company_location_address_line_2", "job_company_location_continent",
+            "job_company_location_country", "job_company_location_geo", "job_company_location_locality",
+            "job_company_location_metro", "job_company_location_name", "job_company_location_postal_code",
+            "job_company_location_region", "job_company_location_street_address", "job_company_size",
+            "job_company_twitter_url", "job_company_website", "job_start_date", "job_title_class",
+            "job_title_levels", "job_title_role", "job_title_sub_role", "last_initial", "linkedin_id",
+            "linkedin_url", "linkedin_username", "location_address_line_2", "location_geo",
+            "location_locality", "location_metro", "location_name", "location_names",
+            "location_postal_code", "location_region", "location_street_address",
+            "middle_initial", "middle_name", "mobile_phone", "personal_emails", "phone_numbers",
+            "profiles", "recommended_personal_email", "regions", "street_addresses",
+            "twitter_username", "twitter_url", "work_email"
+        ]
+        for key in keys_to_remove:
             record.pop(key, None)
 
+        # EXPERIENCE
         experience = []
-        for exp in record.get("experience", []):
-            new_exp = exp.copy()
-            for key in ["twitter_url", "linkedin_id", "id", "facebook_url", "linkedin_url"]:
-                new_exp["company"].pop(key, None)
-            if isinstance(new_exp.get("company", {}).get("location"), dict):
-                for key in ["locality", "region", "address_line_2", "geo", "metro", "postal_code", "street_address"]:
-                    new_exp["company"]["location"].pop(key, None)
-            for key in ["class", "levels", "role", "sub_role"]:
-                new_exp["title"].pop(key, None)
+        for exp in record.get("experience", []) or []:
+            new_exp = exp.copy() if isinstance(exp, dict) else {}
+
+            company = new_exp.get("company")
+            if isinstance(company, dict):
+                for key in ["twitter_url", "linkedin_id", "id", "facebook_url", "linkedin_url"]:
+                    company.pop(key, None)
+
+                location = company.get("location")
+                if isinstance(location, dict):
+                    for key in [
+                        "locality", "region", "address_line_2", "geo",
+                        "metro", "postal_code", "street_address"
+                    ]:
+                        location.pop(key, None)
+
+            title = new_exp.get("title")
+            if isinstance(title, dict):
+                for key in ["class", "levels", "role", "sub_role"]:
+                    title.pop(key, None)
+
             experience.append(new_exp)
 
-        # Education
+        # EDUCATION
         education = []
-        for edu in record.get("education", []):
-            new_edu = edu.copy()
-            for key in ["twitter_url", "linkedin_id", "id", "facebook_url"]:
-                new_edu["school"].pop(key, None)
-            if isinstance(new_edu.get("school", {}).get("location"), dict):
-                for key in ["locality", "region"]:
-                    new_edu["school"]["location"].pop(key, None)
+        for edu in record.get("education", []) or []:
+            new_edu = edu.copy() if isinstance(edu, dict) else {}
+
+            school = new_edu.get("school")
+            if isinstance(school, dict):
+                for key in ["twitter_url", "linkedin_id", "id", "facebook_url"]:
+                    school.pop(key, None)
+
+                location = school.get("location")
+                if isinstance(location, dict):
+                    for key in ["locality", "region"]:
+                        location.pop(key, None)
+
             education.append(new_edu)
 
-        # Costruzione dell'oggetto finale
-        record["education"] = education
+        # Costruzione oggetto finale
         record["experience"] = experience
-        
+        record["education"] = education
+
         return record
-        
+
     cv = extract_cv_text(cv_url)
     emails = {}
     

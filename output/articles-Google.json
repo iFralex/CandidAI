@@ -20,16 +20,28 @@
     "title": "Google Labs\nAI\nAI Homepage\nAnnouncements\nProblem-Solving\n\nMeet Jules’ sharpest c..."
   },
   {
-    "href": "https://developers.googleblog.com/en/introducing-coral-npu-a-full-stack-platform-for-edge-ai/",
-    "title": "Introducing Coral NPU: A full-stack platform for Edge AI\nCoral NPU is a full-stack platf..."
+    "href": "https://developers.googleblog.com/en/announcing-the-agent-development-kit-for-go-build-powerful-ai-agents-with-your-favorite-languages/",
+    "title": "Announcing the Agent Development Kit for Go: Build Powerful AI Agents with Your Favorite..."
   },
   {
-    "href": "https://developers.googleblog.com/en/say-hello-to-a-new-level-of-interactivity-in-gemini-cli/",
-    "title": "Say hello to a new level of interactivity in Gemini CLI\nWe're excited to announce an enhan..."
+    "href": "https://developers.googleblog.com/en/announcing-user-simulation-in-adk-evaluation/",
+    "title": "Announcing User Simulation in ADK Evaluation\nThe new **User Simulation** feature in th..."
+  },
+  {
+    "href": "https://developers.googleblog.com/en/agent-garden-samples-for-learning-discovering-and-building/",
+    "title": "Agent Garden - Samples for learning, discovering and building\nAgent Garden is now avail..."
+  },
+  {
+    "href": "https://developers.googleblog.com/en/introducing-coral-npu-a-full-stack-platform-for-edge-ai/",
+    "title": "Introducing Coral NPU: A full-stack platform for Edge AI"
   },
   {
     "href": "https://developers.googleblog.com/en/introducing-veo-3-1-and-new-creative-capabilities-in-the-gemini-api/",
-    "title": "Introducing Veo 3.1 and new creative capabilities in the Gemini API\nGoogle is releasing..."
+    "title": "Introducing Veo 3.1 and new creative capabilities in the Gemini API"
+  },
+  {
+    "href": "https://developers.googleblog.com/en/say-hello-to-a-new-level-of-interactivity-in-gemini-cli/",
+    "title": "Say hello to a new level of interactivity in Gemini CLI"
   },
   {
     "href": "https://developers.googleblog.com/en/own-your-ai-fine-tune-gemma-3-270m-for-on-device/",

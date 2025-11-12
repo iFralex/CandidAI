@@ -7,7 +7,7 @@ import { arrayRemove, deleteDoc, deleteField, doc, getDoc, serverTimestamp, setD
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { cookies } from 'next/headers';
 import { getTokens } from 'next-firebase-auth-edge';
-import { clientConfig, creditsInfo, serverConfig } from '@/config';
+import { clientConfig, creditsInfo, plansData, serverConfig } from '@/config';
 import { adminStorage } from '@/lib/firebase-admin';
 
 export async function selectPlan(userId: string, planId: string) {
@@ -16,7 +16,8 @@ export async function selectPlan(userId: string, planId: string) {
 
     await updateDoc(ref, {
         "onboardingStep": 2,
-        "plan": planId
+        "plan": planId,
+        "credits": plansData[planId].credits || 0
     });
 
     // Revalida la pagina per mostrare il nuovo step
@@ -212,7 +213,7 @@ export async function confirmCompany(selections: Object, strategies: Object, ins
     }
 
     const currentCredits = userSnap.data().credits || 0;
-    const amount = creditsInfo["change-company"]?.cost || 0 * Object.values(selections).filter(s => s.action === 'wrong').length
+    const amount = (creditsInfo["change-company"]?.cost || 0) * Object.values(selections).filter(s => s.action === 'wrong').length
 
     if (currentCredits < amount) {
         return { success: false, error: "Insufficient credits" };

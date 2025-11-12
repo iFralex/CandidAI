@@ -7,6 +7,7 @@ import { ProfileAnalysisClient } from '@/components/onboarding';
 import { completeOnboarding, submitQueries } from '@/actions/onboarding-actions'
 import { Button } from '@/components/ui/button'
 import { cookies } from 'next/headers'
+import { plansData } from '@/config';
 
 interface SetupCompleteServerProps {
     userId: string
@@ -183,10 +184,7 @@ interface CompanyInputServerProps {
 }
 
 export function CompanyInputServer({ userId, plan }: CompanyInputServerProps) {
-    const maxCompanies =
-        plan === 'free_trial' ? 1 :
-            plan === 'base' ? 25 :
-                plan === 'pro' ? 100 : 200
+    const maxCompanies = plansData[plan]?.maxCompanies || 1
 
     const isUltraPlan = plan === 'ultra'
 

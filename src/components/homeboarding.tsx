@@ -9,80 +9,11 @@ import {
 } from 'lucide-react';
 import { getServerUser } from '@/lib/server-auth';
 import { Card } from './ui/card';
+import { plansInfo } from '@/config';
 
 // Plan Selection Component
 const PlanSelection = ({ onPlanSelect, onFreeTrial }) => {
     const [selectedPlan, setSelectedPlan] = useState(null);
-
-    const plans = [
-        {
-            id: 'free_trial',
-            name: "Free Trial",
-            price: 0,
-            description: "Try with one company",
-            features: [
-                "1 company analysis",
-                "1 recruiter match",
-                "1 personalized email",
-                "Basic company research"
-            ],
-            highlight: "Perfect to test our AI",
-            icon: <Gift className="w-8 h-8" />,
-            color: "from-green-500 to-emerald-600"
-        },
-        {
-            id: 'base',
-            name: "Base",
-            price: 25,
-            description: "Perfect for targeted job search",
-            features: [
-                "25 companies maximum",
-                "10 recruiters analyzed per company",
-                "3 detailed recruiter profiles",
-                "1 personalized email per company",
-                "Basic company intelligence"
-            ],
-            highlight: "Great for focused search",
-            icon: <Target className="w-8 h-8" />,
-            color: "from-blue-500 to-cyan-600"
-        },
-        {
-            id: 'pro',
-            name: "Pro",
-            price: 59,
-            description: "For serious job seekers",
-            features: [
-                "100 companies maximum",
-                "25 recruiters analyzed per company",
-                "10 detailed recruiter profiles",
-                "2 personalized emails per company",
-                "1 additional search filter",
-                "Follow-up email automation"
-            ],
-            highlight: "Most Popular",
-            icon: <Rocket className="w-8 h-8" />,
-            color: "from-violet-500 to-purple-600",
-            popular: true
-        },
-        {
-            id: 'ultra',
-            name: "Ultra",
-            price: 119,
-            description: "Maximum job search power",
-            features: [
-                "200 companies maximum",
-                "100 recruiters analyzed per company",
-                "25 detailed recruiter profiles",
-                "3 personalized emails per company",
-                "3 additional search filters",
-                "AI company recommendations",
-                "Company name search"
-            ],
-            highlight: "Ultimate power",
-            icon: <Crown className="w-8 h-8" />,
-            color: "from-yellow-500 to-orange-600"
-        }
-    ];
 
     return (
         <div className="max-w-6xl mx-auto">
@@ -101,7 +32,7 @@ const PlanSelection = ({ onPlanSelect, onFreeTrial }) => {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {plans.map((plan) => (
+                {plansInfo.map((plan) => (
                     <Card
                         key={plan.id}
                         className={`p-6 flex flex-col cursor-pointer transition-all duration-300 relative ${selectedPlan === plan.id ? 'ring-2 ring-violet-500 bg-white/10' : ''
@@ -117,7 +48,7 @@ const PlanSelection = ({ onPlanSelect, onFreeTrial }) => {
 
                         <div className="text-center mb-6">
                             <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${plan.color} flex items-center justify-center mx-auto mb-4 text-white`}>
-                                {plan.icon}
+                                  <plan.icon className="w-8 h-8" />
                             </div>
 
                             <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>

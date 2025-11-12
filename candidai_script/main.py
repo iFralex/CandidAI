@@ -22,7 +22,7 @@ def main(mode="auto", manual_tasks=None, target_companies=None):
         manual_tasks (list): task da rieseguire manualmente, es. ["blog", "recruiters", "email"]
         target_companies (list): aziende specifiche da includere, es. ["Google", "Meta"]
     """
-    user_id = "WGF1EmgNV2TT8TrgWVxNg7dWWcS2"#"lLIEw8OuiIfPb8j2fQZUm4At2YK2"#"0PFh0vUafpToWL6GcZmgtGTDGFx1"#"WHc5uQGuPKWopAnyl55iwkq8KQv2"#"8TGSaFuS3ObRNnbZ3BxMa4KOmlG3"#"ubcXUkixqchJEBoQ895M2jDy93H2"
+    user_id = "YyITPeS9KlUuNx5LCmuRyre2lr93"
     account = get_account_data(user_id)
     changed_companies = get_changed_companies(user_id)
 

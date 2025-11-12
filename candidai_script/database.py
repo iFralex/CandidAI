@@ -179,36 +179,64 @@ def save_recruiter_and_query(user_id: str, unique_id, recruiter: dict, query: di
     def parse(record):
         # Experience
         experience = []
-        for exp in record.get("experience", []):
+        for exp in record.get("experience", []) or []:
             new_exp = exp.copy()
+
+            # Rimuove chiavi di primo livello non necessarie
             for key in ["is_primary", "location_names"]:
                 new_exp.pop(key, None)
-            for key in ["twitter_url", "linkedin_id", "id", "facebook_url", "founded", "industry", "size", "is_primary", "location_names"]:
-                new_exp["company"].pop(key, None)
-            if isinstance(new_exp.get("company", {}).get("location"), dict):
-                for key in ["locality", "region", "address_line_2", "geo", "metro", "postal_code", "street_address"]:
-                    new_exp["company"]["location"].pop(key, None)
-            for key in ["class", "levels", "role", "sub_role"]:
-                new_exp["title"].pop(key, None)
+
+            # Gestione company (può essere None)
+            company = new_exp.get("company")
+            if isinstance(company, dict):
+                for key in [
+                    "twitter_url", "linkedin_id", "id", "facebook_url",
+                    "founded", "industry", "size", "is_primary", "location_names"
+                ]:
+                    company.pop(key, None)
+
+                # Gestione location della company
+                location = company.get("location")
+                if isinstance(location, dict):
+                    for key in [
+                        "locality", "region", "address_line_2",
+                        "geo", "metro", "postal_code", "street_address"
+                    ]:
+                        location.pop(key, None)
+
+            # Gestione title (può essere None)
+            title = new_exp.get("title")
+            if isinstance(title, dict):
+                for key in ["class", "levels", "role", "sub_role"]:
+                    title.pop(key, None)
+
             experience.append(new_exp)
 
         # Education
         education = []
-        for edu in record.get("education", []):
+        for edu in record.get("education", []) or []:
             new_edu = edu.copy()
-            for key in ["twitter_url", "linkedin_id", "id", "facebook_url"]:
-                new_edu["school"].pop(key, None)
-            if isinstance(new_edu.get("school", {}).get("location"), dict):
-                for key in ["locality", "region"]:
-                    new_edu["school"]["location"].pop(key, None)
+
+            # Gestione school (può essere None)
+            school = new_edu.get("school")
+            if isinstance(school, dict):
+                for key in ["twitter_url", "linkedin_id", "id", "facebook_url"]:
+                    school.pop(key, None)
+
+                # Gestione location della scuola
+                location = school.get("location")
+                if isinstance(location, dict):
+                    for key in ["locality", "region"]:
+                        location.pop(key, None)
+
             education.append(new_edu)
 
-        # Costruzione dell'oggetto finale
+        # Costruzione oggetto finale
         parsed = {
-            "name": record.get("full_name", ""),
-            "title": record.get("job_title", ""),
+            "name": record.get("full_name", "") or "",
+            "title": record.get("job_title", "") or "",
             "experience": experience,
-            "skills": record.get("skills", []),
+            "skills": record.get("skills", []) or [],
             "education": education,
             "location": {
                 "country": record.get("location_country"),

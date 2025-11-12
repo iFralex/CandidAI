@@ -428,7 +428,6 @@ const RecruiterProfileCard = ({ data, defaultStrategy, inProgress }: { data: any
                 <p className="text-center text-sm text-gray-500">Loading filters...</p>
               ) : (
                 <ScrollArea className="oveflow-y-auto max-h-[calc(100vh-200px)]">
-                  {console.log(customStrategy)}
                   <AdvancedFiltersClient
                     maxStrategies={30}
                     setStrategy={setCustomStrategy}
@@ -1212,7 +1211,7 @@ const BlogPostsSection = ({ data }: { data: any }) => {
             {[
               { label: 'Posts found', value: data.blog_articles?.articles_found || 0, icon: Search, color: 'blue' },
               { label: 'Posts Deeply Analyzed', value: data.blog_articles?.content.length || 0, icon: Brain, color: 'blue' },
-              { label: 'Blogs found', value: data.blog_articles.blogs_analized, icon: CheckCircle2, color: 'blue' }
+              { label: 'Blogs found', value: data.blog_articles?.blogs_analized || 0, icon: CheckCircle2, color: 'blue' }
             ].map((stat, i) => (
               <motion.div key={i} custom={i} variants={statsVariants} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
                 <Card className="p-6 backdrop-blur-none" /* gradient prop is not standard, assuming custom component */>

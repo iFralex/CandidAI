@@ -2335,6 +2335,7 @@ function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
             setTempTitle(profileSummary?.title || "");
             setTempLocation(profileSummary?.location.country || "");
         }
+        console.log(profileSummary)
         setProfileSummary((prev: any) =>
             prev
                 ? {
@@ -2345,6 +2346,7 @@ function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
                 }
                 : null
         );
+        console.log(tempLocation)
     };
 
     return (
@@ -2378,7 +2380,7 @@ function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
                 <DialogContent className="space-y-4" onCloseAutoFocus={() => {
                     setTempName(profileSummary?.name || "");
                     setTempTitle(profileSummary?.title || "");
-                    setTempLocation(profileSummary?.location || "");
+                    setTempLocation(profileSummary?.location.country || "");
                 }}>
                     <DialogHeader>
                         <DialogTitle>
@@ -2469,6 +2471,7 @@ function SkillsListClient({ profileSummary, setProfileSummary }: any) {
         <SkillsListBase
             skills={profileSummary.skills}
             editable={true}
+            adding={adding}
             newSkill={newSkill}
             setNewSkill={setNewSkill}
             onAdd={addSkill}
@@ -2584,7 +2587,238 @@ function ExperienceEditor({ profileSummary, setProfileSummary }: any) {
     );
 }
 
-function EducationSection({ profileSummary, setProfileSummary }: any) {
+function ExperienceSection({ profileSummary, setProfileSummary }: any) {
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [tempExp, setTempExp] = useState<any>({
+        title: { name: "" },
+        company: { name: "", location: { name: "" } },
+        logo: "",
+        start_date: "",
+        end_date: "",
+    });
+
+    // Apri dialog per aggiungere o modificare
+    const handleEdit = (index: number | null) => {
+        setEditingIndex(index);
+        if (index !== null && profileSummary?.experience?.[index]) {
+            setTempExp({ ...profileSummary.experience[index] });
+        } else {
+            setTempExp({
+                title: { name: "" },
+                company: { name: "", location: { name: "" } },
+                logo: "",
+                start_date: "",
+                end_date: "",
+            });
+        }
+    };
+
+    const handleSave = () => {
+        if (!tempExp.title?.name.trim() || !tempExp.company?.name.trim()) return;
+
+        setProfileSummary((prev: any) => {
+            if (!prev) return prev;
+            const newExp = [...(prev.experience || [])];
+
+            if (editingIndex !== null) {
+                // Modifica esperienza esistente
+                newExp[editingIndex] = tempExp;
+            } else {
+                // Aggiungi nuova esperienza
+                newExp.push(tempExp);
+            }
+
+            return { ...prev, experience: newExp };
+        });
+
+        setEditingIndex(null);
+    };
+
+    const handleDelete = (index: number) => {
+        setProfileSummary((prev: any) => {
+            if (!prev) return prev;
+            const newExp = prev.experience.filter((_: any, i: number) => i !== index);
+            return { ...prev, experience: newExp };
+        });
+    };
+
+    return (
+        <div>
+            <Dialog>
+                <div className="flex justify-start items-center mb-3 space-x-2">
+                    <p className="text-sm text-gray-400">Experience</p>
+                    <DialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="p-1" onClick={() => handleEdit(null)}>
+                            <Plus className="w-4 h-4" />
+                        </Button>
+                    </DialogTrigger>
+                </div>
+
+                {/* Lista esperienze */}
+                <ul className="space-y-3">
+                    {profileSummary?.experience?.map((exp: any, idx: number) => (
+                        <li
+                            key={idx}
+                            className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors"
+                        >
+                            <div className="flex items-start gap-3">
+                                {/* Logo aziendale */}
+                                {exp.logo ? (
+                                    <img
+                                        src={exp.logo}
+                                        alt={exp.company?.name || "Company"}
+                                        className="w-10 h-10 rounded-lg object-contain bg-white/5 p-1.5 border border-white/10 flex-shrink-0"
+                                    />
+                                ) : (
+                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-600/20 border border-white/10 flex items-center justify-center flex-shrink-0">
+                                        <span className="text-violet-400 text-xs font-bold">
+                                            {exp.company?.name?.charAt(0) || "?"}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div className="flex-1 min-w-0">
+                                    {/* Titolo ruolo */}
+                                    <p className="text-white font-medium">{exp.title?.name || "Role not available"}</p>
+
+                                    {/* Azienda */}
+                                    {exp.company?.name && (
+                                        <p className="text-gray-300 text-sm">
+                                            {exp.company.name}
+                                            {exp.company.location?.name && ` · ${exp.company.location.name}`}
+                                        </p>
+                                    )}
+
+                                    {/* Date */}
+                                    {(exp.start_date || exp.end_date) && (
+                                        <p className="text-gray-400 text-xs mt-1">
+                                            {exp.start_date || "?"} → {exp.end_date || "Current"}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Pulsante modifica singolo */}
+                                <DialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="p-1" onClick={() => handleEdit(idx)}>
+                                        <Edit2 className="w-4 h-4" />
+                                    </Button>
+                                </DialogTrigger>
+                            </div>
+                        </li>
+                    ))}
+
+                    {!profileSummary?.experience?.length && <li
+                        className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors"
+                    >
+                        <div className="flex-1 min-w-0 min-h-16 flex items-center justify-center text-gray-500">
+                            No experience
+                        </div>
+                    </li>}
+                </ul>
+
+                <DialogContent className="">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {editingIndex !== null ? "Edit Experience" : "Add Experience"}
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <ScrollArea className='max-h-[calc(85vh-100px)]'>
+                        <div className='space-y-4 p-1'>
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm text-gray-400">Role</label>
+                                <Input
+                                    type="text"
+                                    value={tempExp.title?.name || ""}
+                                    onChange={(e) => setTempExp({ ...tempExp, title: { ...tempExp.title, name: e.target.value } })}
+                                    maxLength={50}
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm text-gray-400">Company</label>
+                                <CompanyAutocomplete onChange={(e) =>
+                                    setTempExp({
+                                        ...tempExp,
+                                        company: { domain: "", name: e },
+                                    })
+                                } onAddCompany={(e) => setTempExp({ ...tempExp, logo: e.icon, company: { domain: e.domain, name: e.name } })}
+                                    value={tempExp.company?.name}
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm text-gray-400">Location</label>
+                                <Input
+                                    type="text"
+                                    value={tempExp.company?.location?.name || ""}
+                                    onChange={(e) =>
+                                        setTempExp({
+                                            ...tempExp,
+                                            company: {
+                                                ...tempExp.company,
+                                                location: { ...tempExp.company.location, name: e.target.value },
+                                            },
+                                        })
+                                    }
+                                    maxLength={50}
+                                />
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm text-gray-400">Logo URL</label>
+                                <Input
+                                    type="text"
+                                    value={tempExp.logo || ""}
+                                    onChange={(e) => setTempExp({ ...tempExp, logo: e.target.value })}
+                                    className=""
+                                    icon={tempExp.logo ? <img src={tempExp.logo} className='w-6 h-6 rounded-md' /> : null}
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <div className="flex flex-col gap-2 w-1/2">
+                                    <label className="text-sm text-gray-400">Start Date</label>
+                                    <Input
+                                        type="text"
+                                        value={tempExp.start_date || ""}
+                                        onChange={(e) => setTempExp({ ...tempExp, start_date: e.target.value })}
+                                        placeholder="yyyy-mm"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-2 w-1/2">
+                                    <label className="text-sm text-gray-400">End Date</label>
+                                    <Input
+                                        type="text"
+                                        value={tempExp.end_date || ""}
+                                        onChange={(e) => setTempExp({ ...tempExp, end_date: e.target.value })}
+                                        placeholder="yyyy-mm or Current"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <ScrollBar orientation='vertical' />
+                    </ScrollArea>
+
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            {editingIndex !== null && (
+                                <Button variant="destructive" onClick={() => handleDelete(editingIndex)}>
+                                    <Trash2 className="w-4 h-4" /> Delete
+                                </Button>
+                            )}
+                        </DialogClose>
+                        <DialogClose asChild>
+                            <Button onClick={handleSave}>Save</Button>
+                        </DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog >
+        </div >
+    );
+}
+
+function EducationEditor({ profileSummary, setProfileSummary }: any) {
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [tempEdu, setTempEdu] = useState<any>({
         school: { name: "" },
@@ -2742,6 +2976,240 @@ function EducationSection({ profileSummary, setProfileSummary }: any) {
                                 </Button>
                             </DialogClose>
                         )}
+                        <DialogClose asChild>
+                            <Button onClick={handleSave}>Save</Button>
+                        </DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}
+
+function EducationSection({ profileSummary, setProfileSummary }: any) {
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [tempEdu, setTempEdu] = useState<any>({
+        school: { name: "" },
+        degree: "",
+        majors: [],
+        logo: "",
+        start_date: "",
+        end_date: "",
+    });
+
+    // Apri dialog per aggiungere o modificare
+    const handleEdit = (index: number | null) => {
+        setEditingIndex(index);
+        if (index !== null && profileSummary?.education?.[index]) {
+            setTempEdu({ ...profileSummary.education[index] });
+        } else {
+            setTempEdu({
+                school: { name: "" },
+                degree: "",
+                majors: [],
+                logo: "",
+                start_date: "",
+                end_date: "",
+            });
+        }
+    };
+
+    const handleSave = () => {
+        console.log(tempEdu.majors)
+        if (!tempEdu.school?.name.trim() || !tempEdu.majors.length || tempEdu.majors.filter(m => !m.trim()).length) return;
+
+        setProfileSummary((prev: any) => {
+            if (!prev) return prev;
+            const newEdu = [...(prev.education || [])];
+
+            if (editingIndex !== null) {
+                newEdu[editingIndex] = tempEdu;
+            } else {
+                newEdu.push(tempEdu);
+            }
+
+            return { ...prev, education: newEdu };
+        });
+
+        setEditingIndex(null);
+    };
+
+    const handleDelete = (index: number) => {
+        setProfileSummary((prev: any) => {
+            if (!prev) return prev;
+            const newEdu = prev.education.filter((_: any, i: number) => i !== index);
+            return { ...prev, education: newEdu };
+        });
+    };
+
+    return (
+        <div>
+            <Dialog>
+                <div className="flex justify-start items-center mb-3 space-x-2">
+                    <p className="text-sm text-gray-400">Experience</p>
+                    <DialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="p-1" onClick={() => handleEdit(null)}>
+                            <Plus className="w-4 h-4" />
+                        </Button>
+                    </DialogTrigger>
+                </div>
+
+                {/* Lista education */}
+                <ul className="space-y-3">
+                    {profileSummary?.education?.map((edu: any, idx: number) => (
+                        <li
+                            key={idx}
+                            className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors"
+                        >
+                            <div className="flex items-start gap-3">
+                                {/* Logo scuola */}
+                                {edu.logo ? (
+                                    <img
+                                        src={edu.logo}
+                                        alt={edu.school?.name || "School"}
+                                        className="w-10 h-10 rounded-lg object-contain bg-white/5 p-1.5 border border-white/10 flex-shrink-0"
+                                    />
+                                ) : (
+                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-600/20 border border-white/10 flex items-center justify-center flex-shrink-0">
+                                        <span className="text-blue-400 text-xs font-bold">
+                                            {edu.school?.name?.charAt(0) || "?"}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-white font-medium">
+                                        {edu.majors?.join(", ") || "Major not available"}
+                                    </p>
+
+                                    {edu.school?.name && (
+                                        <p className="text-gray-300 text-sm">{edu.school.name}</p>
+                                    )}
+
+                                    {(edu.start_date || edu.end_date || edu.degree) && (
+                                        <p className="text-gray-400 text-xs mt-1">
+                                            {edu.degree && <>{edu.degree} | </>}{edu.start_date || "?"} → {edu.end_date || "?"}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Modifica singolo */}
+                                <DialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="p-1" onClick={() => handleEdit(idx)}>
+                                        <Edit2 className="w-4 h-4" />
+                                    </Button>
+                                </DialogTrigger>
+                            </div>
+                        </li>
+                    ))}
+                    {!profileSummary?.education?.length && <li
+                        className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors"
+                    >
+                        <div className="flex-1 min-w-0 min-h-16 flex items-center justify-center text-gray-500">
+                            No education
+                        </div>
+                    </li>}
+                </ul>
+
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>
+                            {editingIndex !== null ? "Edit Education" : "Add Education"}
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <ScrollArea className='max-h-[calc(85vh-100px)]'>
+                        <div className='space-y-4 p-1'>
+                            <div className="flex flex-cols md:flex-row gap-3">
+                                {/* School */}
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-sm text-gray-400">School</label>
+                                    <CompanyAutocomplete onChange={(e) =>
+                                        setTempEdu({
+                                            ...tempEdu,
+                                            school: { domain: "", name: e },
+                                        })
+                                    } onAddCompany={(e) => setTempEdu({ ...tempEdu, logo: e.icon, school: { domain: e.domain, name: e.name } })}
+                                        value={tempEdu.school?.name || ""}
+                                    />
+                                </div>
+
+                                {/* Degree (lista separata da virgole) */}
+                                <div className="flex flex-col gap-2">
+                                    <label className="text-sm text-gray-400">Degree</label>
+                                    <Input
+                                        type="text"
+                                        value={tempEdu.degree || ""}
+                                        onChange={(e) =>
+                                            setTempEdu({
+                                                ...tempEdu,
+                                                degree: e.target.value,
+                                            })
+                                        }
+                                        placeholder="Bachelor"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Majors (lista separata da virgole) */}
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm text-gray-400">Majors</label>
+                                <Input
+                                    type="text"
+                                    value={tempEdu.majors?.join(", ") || ""}
+                                    onChange={(e) =>
+                                        setTempEdu({
+                                            ...tempEdu,
+                                            majors: e.target.value.split(",").map((m) => m.trim()),
+                                        })
+                                    }
+                                    placeholder="Computer Science, Mathematics"
+                                />
+                            </div>
+
+                            {/* Logo */}
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm text-gray-400">Logo URL</label>
+                                <Input
+                                    type="text"
+                                    value={tempEdu.logo || ""}
+                                    onChange={(e) => setTempEdu({ ...tempEdu, logo: e.target.value })}
+                                    icon={tempEdu.logo ? <img src={tempEdu.logo} className="w-6 h-6 rounded-md" /> : null}
+                                />
+                            </div>
+
+                            {/* Date */}
+                            <div className="flex gap-3">
+                                <div className="flex flex-col gap-2 w-1/2">
+                                    <label className="text-sm text-gray-400">Start Date</label>
+                                    <Input
+                                        type="text"
+                                        value={tempEdu.start_date || ""}
+                                        onChange={(e) => setTempEdu({ ...tempEdu, start_date: e.target.value })}
+                                        placeholder="yyyy-mm"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-2 w-1/2">
+                                    <label className="text-sm text-gray-400">End Date</label>
+                                    <Input
+                                        type="text"
+                                        value={tempEdu.end_date || ""}
+                                        onChange={(e) => setTempEdu({ ...tempEdu, end_date: e.target.value })}
+                                        placeholder="yyyy-mm or Current"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <ScrollBar orientation='vertical' />
+                    </ScrollArea>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            {editingIndex !== null && (
+                                <Button variant="destructive" onClick={() => handleDelete(editingIndex)}>
+                                    <Trash2 className="w-4 h-4" /> Delete
+                                </Button>
+                            )}
+                        </DialogClose>
                         <DialogClose asChild>
                             <Button onClick={handleSave}>Save</Button>
                         </DialogClose>
@@ -3187,7 +3655,7 @@ export function ProfileSummaryCard({
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
                         {/* Experience */}
                         <div>
-                            <ExperienceEditor profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
+                            <ExperienceSection profileSummary={profileSummary} setProfileSummary={setProfileSummary} />
                         </div>
 
                         {/* Education */}
