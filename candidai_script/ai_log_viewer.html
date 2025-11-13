@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Log Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            background: #eef1ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e0e7ff;
+            border-color: #764ba2;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-text {
+            color: #667eea;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .execution-item {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .execution-item:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .execution-header {
+            padding: 20px;
+            cursor: pointer;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .execution-header:hover {
+            background: linear-gradient(to right, #5568d3, #6a3f91);
+        }
+
+        .execution-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .execution-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            opacity: 0.95;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .execution-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .execution-content.expanded {
+            max-height: 100000px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        .io-pair {
+            border-bottom: 1px solid #eee;
+            padding: 20px;
+        }
+
+        .io-pair:last-child {
+            border-bottom: none;
+        }
+
+        .io-section {
+            margin-bottom: 15px;
+        }
+
+        .io-label {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .io-content {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .io-content.output {
+            border-left-color: #764ba2;
+        }
+
+        .chevron {
+            transition: transform 0.3s;
+            font-size: 20px;
+        }
+
+        .chevron.rotated {
+            transform: rotate(180deg);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .io-content h1, .io-content h2, .io-content h3 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .io-content h1 { font-size: 24px; }
+        .io-content h2 { font-size: 20px; }
+        .io-content h3 { font-size: 18px; }
+
+        .io-content p {
+            margin-bottom: 10px;
+        }
+
+        .io-content code {
+            background: #e0e7ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .io-content pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .io-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        .io-content ul, .io-content ol {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .io-content li {
+            margin-bottom: 5px;
+        }
+
+        .io-content blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 15px;
+            margin: 10px 0;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Log Viewer</h1>
+            <div class="upload-area" id="uploadArea">
+                <input type="file" id="fileInput" accept=".json">
+                <div class="upload-text">
+                    📁 Clicca qui o trascina il file JSON per caricarlo
+                </div>
+            </div>
+        </div>
+
+        <div class="stats" id="stats" style="display: none;"></div>
+        <div id="executions"></div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const statsDiv = document.getElementById('stats');
+        const executionsDiv = document.getElementById('executions');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    displayData(data);
+                } catch (err) {
+                    alert('Errore nel parsing del file JSON: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function displayData(data) {
+            if (!Array.isArray(data) || data.length === 0) {
+                executionsDiv.innerHTML = '<div class="no-data">Nessun dato disponibile</div>';
+                return;
+            }
+
+            // Reverse array to show latest first
+            const reversedData = [...data].reverse();
+
+            // Calculate stats
+            const totalExecs = data.length;
+            const totalTokens = data.reduce((sum, item) => sum + (item['total-tokens'] || 0), 0);
+            const totalCost = data.reduce((sum, item) => sum + (item.cost || 0), 0);
+
+            statsDiv.style.display = 'grid';
+            statsDiv.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${totalExecs}</div>
+                    <div class="stat-label">Esecuzioni Totali</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${totalTokens.toLocaleString()}</div>
+                    <div class="stat-label">Token Totali</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">$${totalCost.toFixed(4)}</div>
+                    <div class="stat-label">Costo Totale</div>
+                </div>
+            `;
+
+            executionsDiv.innerHTML = reversedData.map((exec, idx) => {
+                const execNum = data.length - idx;
+                const inputs = exec.input || [];
+                const outputs = exec.output || [];
+                
+                const ioPairs = Math.max(inputs.length, outputs.length);
+                const pairsHtml = Array.from({length: ioPairs}, (_, i) => {
+                    const input = inputs[i] || '';
+                    const output = outputs[i] || '';
+                    
+                    return `
+                        <div class="io-pair">
+                            ${input ? `
+                            <div class="io-section">
+                                <div class="io-label">📥 Input ${i + 1}</div>
+                                <div class="io-content">${marked.parse(input)}</div>
+                            </div>
+                            ` : ''}
+                            ${output ? `
+                            <div class="io-section">
+                                <div class="io-label">📤 Output ${i + 1}</div>
+                                <div class="io-content output">${marked.parse(output)}</div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="execution-item">
+                        <div class="execution-header" onclick="toggleExecution(${idx})">
+                            <div class="execution-title">Esecuzione #${execNum}</div>
+                            <div class="execution-meta">
+                                <div class="meta-item">
+                                    <span>🎯</span>
+                                    <span>${exec['total-tokens'] || 0} tokens</span>
+                                </div>
+                                <div class="meta-item">
+                                    <span>💰</span>
+                                    <span>$${(exec.cost || 0).toFixed(4)}</span>
+                                </div>
+                                <span class="chevron" id="chevron-${idx}">▼</span>
+                            </div>
+                        </div>
+                        <div class="execution-content" id="content-${idx}">
+                            ${pairsHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleExecution(idx) {
+            const content = document.getElementById(`content-${idx}`);
+            const chevron = document.getElementById(`chevron-${idx}`);
+            content.classList.toggle('expanded');
+            chevron.classList.toggle('rotated');
+        }
+    </script>
+</body>
+</html>

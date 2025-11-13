@@ -242,7 +242,8 @@ def save_recruiter_and_query(user_id: str, unique_id, recruiter: dict, query: di
                 "country": record.get("location_country"),
                 "continent": record.get("location_continent")
             },
-            "linkedin_url": record.get("linkedin_url")
+            "linkedin_url": record.get("linkedin_url"),
+            "email": record.get("work_email"),
         }
 
         return parsed

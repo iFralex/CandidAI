@@ -145,10 +145,10 @@ def generate_email(user_id, ids, companies, profile_summary, cv_url, result_blog
     for company in companies:
         articles_contents = result_blog[company["name"]]
         recruiter_summary, query = result_recruiters[company["name"]]
+        email_address = recruiter_summary["email"]
         recruiter_summary = parse_recruiter(recruiter_summary)
         company_info = parse_company_info(result_company_info[company["name"]])
         profile_summary = parse_recruiter(profile_summary)
-        email_address = get_work_email_from_rocketreach(recruiter_summary["full_name"], company["name"])
         
         company_info_block = f"\nCOMPANY INFO:\n{company_info}\n" if company_info else ""
         user_instructions_block = (

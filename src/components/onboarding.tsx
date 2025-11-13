@@ -52,8 +52,9 @@ const focusOptions = [
 
 export function SetupCompleteClient({ userId }: SetupCompleteClientProps) {
     const [customizations, setCustomizations] = useState<Customizations>({
-        tone: 'professional',
-        length: 'medium',
+        //tone: 'professional',
+        //length: 'medium',
+        position_description: '',
         instructions: ''
     })
     const [isPending, startTransition] = useTransition()
@@ -97,50 +98,61 @@ export function SetupCompleteClient({ userId }: SetupCompleteClientProps) {
                 initial="hidden"
                 animate="visible"
             >
-                {/* Email Tone */}
-                <motion.div
-                    variants={itemVariants}
-                    className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6"
-                >
-                    <h3 className="text-xl font-semibold text-white mb-4">Email Tone</h3>
-                    <div className="grid md:grid-cols-3 gap-4">
-                        {toneOptions.map((option) => (
-                            <div
-                                key={option.id}
-                                onClick={() => setCustomizations({ ...customizations, tone: option.id })}
-                                className={`bg-white/5  border rounded-xl p-4 cursor-pointer transition-all duration-300 ${customizations.tone === option.id
-                                    ? 'ring-2 ring-violet-500 bg-white/10 border-violet-500'
-                                    : 'border-white/10 hover:bg-white/10'
-                                    }`}
-                            >
-                                <h4 className="text-white font-medium mb-2">{option.label}</h4>
-                                <p className="text-gray-400 text-sm">{option.description}</p>
-                            </div>
-                        ))}
-                    </div>
-                </motion.div>
+                {false && <>
+                    {/* Email Tone */}
+                    <motion.div
+                        variants={itemVariants}
+                        className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6"
+                    >
+                        <h3 className="text-xl font-semibold text-white mb-4">Email Tone</h3>
+                        <div className="grid md:grid-cols-3 gap-4">
+                            {toneOptions.map((option) => (
+                                <div
+                                    key={option.id}
+                                    onClick={() => setCustomizations({ ...customizations, tone: option.id })}
+                                    className={`bg-white/5  border rounded-xl p-4 cursor-pointer transition-all duration-300 ${customizations.tone === option.id
+                                        ? 'ring-2 ring-violet-500 bg-white/10 border-violet-500'
+                                        : 'border-white/10 hover:bg-white/10'
+                                        }`}
+                                >
+                                    <h4 className="text-white font-medium mb-2">{option.label}</h4>
+                                    <p className="text-gray-400 text-sm">{option.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
 
-                {/* Email Length */}
+                    {/* Email Length */}
+                    <motion.div
+                        variants={itemVariants}
+                        className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6"
+                    >
+                        <h3 className="text-xl font-semibold text-white mb-4">Email Length</h3>
+                        <div className="grid md:grid-cols-3 gap-4">
+                            {lengthOptions.map((option) => (
+                                <div
+                                    key={option.id}
+                                    onClick={() => setCustomizations({ ...customizations, length: option.id })}
+                                    className={`bg-white/5 border rounded-xl p-4 cursor-pointer transition-all duration-300 ${customizations.length === option.id
+                                        ? 'ring-2 ring-violet-500 bg-white/10 border-violet-500'
+                                        : 'border-white/10 hover:bg-white/10'
+                                        }`}
+                                >
+                                    <h4 className="text-white font-medium mb-2">{option.label}</h4>
+                                    <p className="text-gray-400 text-sm">{option.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                </>}
+
+                {/* Primary Focus */}
                 <motion.div
                     variants={itemVariants}
                     className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6"
                 >
-                    <h3 className="text-xl font-semibold text-white mb-4">Email Length</h3>
-                    <div className="grid md:grid-cols-3 gap-4">
-                        {lengthOptions.map((option) => (
-                            <div
-                                key={option.id}
-                                onClick={() => setCustomizations({ ...customizations, length: option.id })}
-                                className={`bg-white/5 border rounded-xl p-4 cursor-pointer transition-all duration-300 ${customizations.length === option.id
-                                    ? 'ring-2 ring-violet-500 bg-white/10 border-violet-500'
-                                    : 'border-white/10 hover:bg-white/10'
-                                    }`}
-                            >
-                                <h4 className="text-white font-medium mb-2">{option.label}</h4>
-                                <p className="text-gray-400 text-sm">{option.description}</p>
-                            </div>
-                        ))}
-                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-4">Target Position Description</h3>
+                    <Textarea value={customizations.position_description} onChange={v => setCustomizations(prev => ({ ...prev, position_description: v.target.value }))} placeholder='I want to be...' rows={4} />
                 </motion.div>
 
                 {/* Primary Focus */}
@@ -162,7 +174,7 @@ export function SetupCompleteClient({ userId }: SetupCompleteClientProps) {
             >
                 <button
                     onClick={handleStartGeneration}
-                    disabled={isPending}
+                    disabled={isPending || !customizations.position_description.trim()}
                     className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2 shadow-lg shadow-green-500/20"
                 >
                     {isPending ? (
@@ -1625,7 +1637,7 @@ export function AdvancedFiltersClient({ maxStrategies, strategy, setStrategy, ch
 
     const duplicateQuery = (query) => {
         if (strategy.length >= maxStrategies) return
-        
+
         const newId = Math.max(...strategy.map(q => q.id), 0) + 1;
         const duplicatedQuery = {
             id: newId,

@@ -331,7 +331,7 @@ def get_work_email_from_rocketreach(name: str, company_domain: str) -> str:
         # RocketReach restituisce un oggetto con 'emails' o 'email' (dipende dal piano)
         if not data:
             return None
-        print(data)
+        
         # 'emails' è solitamente una lista di dizionari con tipi (work, personal, ecc.)
         if "recommended_personal_email" in data:
             return data["recommended_personal_email"]

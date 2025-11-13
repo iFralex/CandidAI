@@ -22,7 +22,7 @@ def main(mode="auto", manual_tasks=None, target_companies=None):
         manual_tasks (list): task da rieseguire manualmente, es. ["blog", "recruiters", "email"]
         target_companies (list): aziende specifiche da includere, es. ["Google", "Meta"]
     """
-    user_id = "YyITPeS9KlUuNx5LCmuRyre2lr93"
+    user_id = "ZXntR0NAPTUOPYDASxEEkikY68e2"
     account = get_account_data(user_id)
     changed_companies = get_changed_companies(user_id)
 
@@ -33,6 +33,7 @@ def main(mode="auto", manual_tasks=None, target_companies=None):
     companies = account.get("companies", [])
     profile_summary = account["profileSummary"]
     cv_url = account["cvUrl"]
+    position_description = account.get("customizations", {}).get("position_description", "")
     user_instructions = account.get("customizations", {}).get("instructions", "")
     
     # Crea o recupera ID univoci per ogni azienda
@@ -85,7 +86,7 @@ def main(mode="auto", manual_tasks=None, target_companies=None):
 
             if "blog" in company_tasks:
                 start = time.time()
-                result_blog = get_blog_posts(user_id, single_id, single_company_list, profile_summary)
+                result_blog = get_blog_posts(user_id, single_id, single_company_list, profile_summary, position_description)
                 logging.info(f"✅ Blog completato per {name} ({time.time() - start:.2f}s)")
 
             if "recruiters" in company_tasks:

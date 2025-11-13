@@ -652,7 +652,7 @@ def search_on_google(query, exclude_url="", num_results=3):
         f"?key={api_key}&cx={cx}&q={query}&num={num_results}"
         f"&hl=en&gl=IE&siteSearch={exclude_url}&siteSearchFilter=e"
     )
-    
+    print(f"cerco su google: {query}")
     try:
         response = requests.get(url)
         data = response.json()
@@ -661,58 +661,132 @@ def search_on_google(query, exclude_url="", num_results=3):
         print(f"Errore nella ricerca Google: {e}")
         return []
 
-def get_blog_link_with_google(company, exclude_link):
+import json
+
+def get_blog_link_with_google(company, target_position_description, exclude_link):
     """
-    Usa i risultati della ricerca Google e DeepSeek per individuare la homepage del blog tech aziendale.
-    """
-    results_raw = search_on_google(f"tech blog {company}", exclude_link)
+    Usa i risultati della ricerca Google e AI per individuare la homepage del blog aziendale
+    più rilevante rispetto alla posizione target dell'utente.
     
-    if not results_raw:
-        print("Nessun risultato trovato.")
+    Args:
+        company: Nome dell'azienda
+        target_position_description: Descrizione della posizione desiderata dall'utente
+        exclude_link: Link da escludere dai risultati
+    """
+    
+    # --- 1️⃣ Estrai keywords chiave ---
+    keywords_prompt = f"""
+    Extract 2-5 key topic keywords from this job position description that would be relevant for finding a company blog.
+    Focus on the main domain/field (e.g., "engineering", "marketing", "data science", "product design").
+    Respond ONLY with a valid JSON array of strings, no explanation.
+    
+    Example:
+    ["engineering", "innovation", "AI research"]
+    
+    Position description:
+    {target_position_description}
+    """
+    
+    try:
+        keywords_response = ai_chat(keywords_prompt).strip()
+        # Prova a fare il parse JSON in lista
+        keywords = json.loads(keywords_response)
+        if not isinstance(keywords, list) or not all(isinstance(k, str) for k in keywords):
+            raise ValueError("Formato non valido per le keywords.")
+    except Exception as e:
+        print(f"Errore estrazione keywords: {e}")
+        keywords = ["blog"]
+
+    results = []
+    found_links = set()
+
+    # --- 🔍 Funzione di ricerca con esclusioni dinamiche ---
+    def search_with_exclusions(query, exclude_link, exclude_urls):
+        exclude_str = " ".join([f'-{url}' for url in exclude_urls]) if exclude_urls else ""
+        full_query = f"{query} {exclude_str} -{exclude_link}".strip()
+        return search_on_google(full_query, exclude_link)
+
+    # --- 2️⃣ Ricerca principale combinando tutte le keywords ---
+    combined_query = f"{' '.join(keywords)} blog {company}"
+    results_raw = search_with_exclusions(combined_query, exclude_link, found_links)
+
+    if results_raw:
+        for item in results_raw:
+            link = item.get("link", "")
+            if link and link not in found_links:
+                found_links.add(link)
+                results.append({
+                    "title": item.get("title", ""),
+                    "link": link,
+                    "snippet": item.get("snippet", "")
+                })
+    else:
+        print("Nessun risultato trovato per la query principale.")
+
+    # --- 3️⃣ Ricerche per ogni keyword individuale ---
+    for word in keywords:
+        query = f"{word} blog {company}"
+        results_raw = search_with_exclusions(query, exclude_link, found_links)
+        if not results_raw:
+            continue
+        for item in results_raw:
+            link = item.get("link", "")
+            if link and link not in found_links:
+                found_links.add(link)
+                results.append({
+                    "title": item.get("title", ""),
+                    "link": link,
+                    "snippet": item.get("snippet", "")
+                })
+
+    # --- 4️⃣ Rimuovi duplicati ---
+    unique_results = []
+    seen_links = set()
+    for item in results:
+        if item["link"] not in seen_links:
+            seen_links.add(item["link"])
+            unique_results.append(item)
+
+    if not unique_results:
+        print("Nessun risultato complessivo trovato.")
         return None
 
-    results = [
-        {
-            "title": item.get("title", ""),
-            "link": item.get("link", ""),
-            "snippet": item.get("snippet", "")
-        }
-        for item in results_raw
-    ]
+    results = unique_results
 
-    prompt = f"""
-# Tech Blog Homepage Identification Task
+    # --- 5️⃣ Prompt per identificare il blog più rilevante ---
+    prompt = f"""# Company Blog Homepage Identification Task
 
-I need to identify which search result is most likely the official tech/engineering blog homepage for '{company}'.
+Identify which search result is most likely the official company blog homepage for '{company}'
+that is MOST RELEVANT to this target position:
+
+**Target Position Description:**
+{target_position_description}
 
 ## Instructions
-- Evaluate each search result carefully
-- Respond with ONLY a single number (1, 2, 3, or 0)
-- Do not provide any explanation or additional text
+- Evaluate each search result carefully based on relevance to the target position.
+- Prioritize blogs covering topics related to the position's field/domain.
+- Respond ONLY with a single number (1, 2, 3, etc., or 0).
+- Do NOT provide any explanation or extra text.
 
-## Priority Ranking (from highest to lowest)
-1. Official company tech/engineering/software/developer blog homepage
-2. Official company tech blog hosted on third-party platforms (Medium, Substack, etc.)
-3. Generic company blog homepage that may include tech content
-4. Generic company blog hosted on third-party platforms
-
-## Response Required
-Respond with:
-- 1, 2, or 3 if that result matches any of the priority criteria
-- 0 if no one meets these criteria, is similar to an blog homepage or if looks like a single article or other page type.
--*-
+## Priority Ranking
+1. Official company blog homepage highly relevant to the target position's domain
+2. Official company blog on third-party platforms (Medium, Substack, etc.) relevant to the position
+3. Generic official company blog homepage that may include relevant content
+4. Generic company blog on third-party platforms
+5. Company blog with partial relevance to the position
 
 ## Search Results
 """
-
+    
     for idx, r in enumerate(results, 1):
         prompt += f"\n{idx}. {r['title']}\n   URL: {r['link']}\n   Snippet: {r['snippet']}\n"
 
+    # --- 6️⃣ Chiamata all’AI per scegliere il risultato ---
     try:
-        deepseek_response = ai_chat(prompt).strip()
-        selected_index = int(deepseek_response)
+        ai_response = ai_chat(prompt).strip()
+        selected_index = int(ai_response)
     except Exception as e:
-        print(f"Errore chiamata DeepSeek o conversione numero: {e}")
+        print(f"Errore chiamata AI o conversione numero: {e}")
         return None
 
     if 1 <= selected_index <= len(results):
@@ -724,59 +798,64 @@ import requests
 from bs4 import BeautifulSoup
 import json
 
-def find_tech_category_link_with_deepseek(url):
+def find_relevant_category_link_with_ai(url, target_position_description):
     """
-    Usa DeepSeek per analizzare l'HTML e trovare il link corretto della categoria tecnologia.
+    Usa AI per analizzare l'HTML e trovare il link della categoria più rilevante
+    rispetto alla posizione target dell'utente.
     
     Args:
-        html (str): Il contenuto HTML della pagina
+        url (str): L'URL della pagina da analizzare
+        target_position_description (str): Descrizione della posizione desiderata dall'utente
         
     Returns:
-        str: L'URL della categoria tecnologia se trovato, altrimenti None
+        str: L'URL della categoria rilevante se trovato, altrimenti None
     """
 
-    def create_prompt(links_json):
+    def create_prompt(links_json, position_desc):
         formatted_links = "\n".join(f"- text: {item['text']} | href: {item['href']}" for item in links_json)
-        return f"""Carefully analyze the links provided in the following JSON:
+        return f"""Carefully analyze the links provided below in relation to this target position:
 
+**Target Position Description:**
+{position_desc}
+
+**Available Links:**
 {formatted_links}
 
 Your task:
-Identify with maximum precision the link that leads to the main page or section dedicated to technology, software development, engineering, or similar technical topics.
+Identify with maximum precision the link that leads to the main page or section most relevant to the target position's domain/field.
 
 Instructions:
-- Only select the link that points to a **listing page** of multiple tech/engineering posts (e.g., the main blog section for these topics).
+- Only select the link that points to a **listing page** of multiple posts/articles relevant to the position's field.
 - DO NOT select:
   - Single articles.
   - The site's homepage or generic sections.
-  - Pages unrelated to technology, engineering, or development.
-  - Developer documentation or API reference pages.
+  - Pages unrelated to the position's domain.
+  - Documentation or reference pages.
 
 Hints:
-You can also infer patterns from the links (e.g., if blog sections have similar URL structures) to make a better choice.
+- Consider the position's main domain/field (e.g., marketing, engineering, design, data, product, sales, HR, etc.)
+- Look for category names, section titles, or URL patterns that match the position's focus area
+- You can infer patterns from the links to make a better choice
 
-Examples of acceptable link texts:
-- "See all tech and engineering posts"
-- "Technology & Engineering"
-- "Tech Blog"
-- "Engineering Posts"
-- "Tech Category"
-- "Developers Posts"
-- "Software Development"
+Examples of acceptable link texts (depending on the position):
+- For Tech roles: "Engineering Blog", "Technology Posts", "Developer Articles"
+- For Marketing roles: "Marketing Insights", "Content & Strategy", "Marketing Blog"
+- For Design roles: "Design Blog", "UX/UI Articles", "Product Design"
+- For Data roles: "Data Science", "Analytics Blog", "Data Insights"
+- For Product roles: "Product Blog", "Product Management", "Product Updates"
 
 Response rules:
 - Return **only** the correct URL exactly as it appears in the given data.
 - If you are unsure or no appropriate link is found, return exactly **"None"** (without quotes).
 - Do NOT add explanations, comments, or any extra text.
 - The response must be strictly either:
-  - A URL in the format "https://example.com/..." if is a absolute url or "/..." if is a relative one.  
+  - A URL in the format "https://example.com/..." if is an absolute url or "/..." if is a relative one.  
   - OR the string "None".
 
 Answer strictly according to these instructions.
-
 """
 
-    def check_category(link):
+    def check_category(link, position_desc):
         link = urljoin(url, link) if link.startswith("/") else link
         html = get_html(link)
         if html is None:
@@ -786,7 +865,8 @@ Answer strictly according to these instructions.
 
         # Prendi titolo della pagina
         title = soup.title.string.strip() if soup.title and soup.title.string else ""
-        description = soup.find("meta", attrs={"name": "description"}) or soup.find("meta", attrs={"property": "og:description"}); description = description["content"].strip() if description and "content" in description.attrs else "Missing"
+        description = soup.find("meta", attrs={"name": "description"}) or soup.find("meta", attrs={"property": "og:description"})
+        description = description["content"].strip() if description and "content" in description.attrs else "Missing"
 
         # Prendi primi 5 H1 e H2
         headings = []
@@ -801,25 +881,35 @@ Answer strictly according to these instructions.
 
         # Prompt per AI
         ai_prompt = f"""
-    Analyze the following texts extracted from a web page:
-title: {title}
-description: {description}
-first texts:
+Analyze the following texts extracted from a web page in relation to this target position:
+
+**Target Position Description:**
+{position_desc}
+
+**Page Content:**
+Title: {title}
+Description: {description}
+First headings:
 {texts}
 
 Your task:
-Determine whether this page is the main blog section about technology, software development, engineering, or related technical topics.
+Determine whether this page is a blog section/category page relevant to the target position's domain/field.
 
-Do NOT evaluate individual articles. Focus only on whether the entire page appears to be a general category or section about technology/engineering.
+Do NOT evaluate individual articles. Focus only on whether the entire page appears to be a general category or section related to the position's area.
 
-Rate the likelihood that this page is a blog category focused on tech/engineering topics, on a scale from 1 to 10:
-- 1 = Definitely not a blog category page, but an another kind of website
-- 10 = Definitely a tech/engineering blog section
+Rate the likelihood that this page is a blog category focused on topics relevant to the target position, on a scale from 1 to 10:
+- 1 = Definitely not a relevant blog category page
+- 10 = Definitely a blog section highly relevant to the position's domain
+
+Consider:
+- Does the page content align with the position's field/domain?
+- Is it a listing/archive page (not a single article)?
+- Are the topics covered relevant to what someone in this position would care about?
 
 IMPORTANT:
 - Respond ONLY with a single integer from 1 to 10.
 - Do NOT add explanations or any additional text.
-    """
+"""
 
         try:
             result = ai_chat(ai_prompt)
@@ -830,8 +920,9 @@ IMPORTANT:
             return False
 
 
-    if check_category(url):
+    if check_category(url, target_position_description):
         return None
+        
     html = get_html(url)
 
     # Estrai tutti i link con il loro testo
@@ -851,23 +942,23 @@ IMPORTANT:
     if not links:
         return None
     
-    # Prepara il contesto per DeepSeek
+    # Prepara il contesto per AI
     links_json = json.dumps(links, ensure_ascii=False)
 
     # Invia la richiesta
     try:
-        prompt = create_prompt(links_json)
+        prompt = create_prompt(links_json, target_position_description)
         link = ai_chat(prompt)
         print(len(links), link)
         if not link or link == "None":
             return None
         
-        while not check_category(link):
+        while not check_category(link, target_position_description):
             # Rimuovi il link corrente dalla lista dei link
             links = [l for l in links if l["href"] != link]
             
             # Aggiorna il prompt basandoti sulla nuova lista di link
-            prompt = create_prompt(json.dumps(links, ensure_ascii=False))
+            prompt = create_prompt(json.dumps(links, ensure_ascii=False), target_position_description)
             
             link = ai_chat(prompt)
             print("no checked", len(links), link)
@@ -878,7 +969,7 @@ IMPORTANT:
     except Exception as e:
         print(f"Errore durante la chiamata API: {e}")
         return None
-
+    
 import re
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
@@ -2016,7 +2107,6 @@ def find_load_more_button(driver: WebDriver) -> Optional[WebElement]:
         )
         
         chosen_index_str = ai_chat(prompt).strip()
-        print(prompt, chosen_index_str)
         
         # Converte la risposta in un indice (gestendo eventuali errori)
         try:
@@ -2229,55 +2319,79 @@ def find_with_ai(driver):
     return None
 
 import json
+import ast
 
-def select_relevant_articles(articles_list, user_info):
-    """
-    Selects the 3 most relevant articles for a candidate's profile
-    by asking an AI model to identify the most pertinent ones
-    based on skills, experience, and interests.
-    """
 
+def select_relevant_articles(articles_list, user_info, target_position_description, company):
+    """
+    Seleziona gli articoli più rilevanti per il profilo del candidato
+    chiedendo ad un modello AI di identificare quelli più pertinenti
+    basandosi su competenze, esperienza, interessi e la posizione target.
+    """
     article_list_str = "\n".join([
         f"{i}) {articles_list[i]['title']} | {articles_list[i]['href'].replace('https://', '').replace('http://', '').replace('www.', '')}"
         for i in range(len(articles_list))
     ])
-
+    
     prompt = f"""
-Candidate Profile (JSON):
+**Target Position Description:**
+{target_position_description}
+
+**Candidate Profile (JSON):**
 {json.dumps(user_info, indent=2)}
 
-You are an expert career advisor helping a candidate tailor their job application for maximum impact.
-Your task is to strategically evaluate company blog articles that would be most effective when referenced in the candidate's application to demonstrate genuine interest and relevance.
+You are an expert career advisor helping a candidate tailor their job application for maximum impact for the specific position described above.
+
+Your task is to strategically evaluate company blog articles that would be most effective when referenced in the candidate's application for {company} to demonstrate genuine interest, relevance, and alignment with the target role.
 
 Instructions:
-1. Analyze the candidate's profile thoroughly: career trajectory, technical skills, domain expertise, industry experience, and specific technologies mastered.
-2. Evaluate each article's potential value for the candidate's specific application strategy using these criteria:
-   - Relevance to candidate's technical expertise (0-3 points)
-   - Alignment with candidate's career goals and industry focus (0-2 points)
-   - Recency and timeliness of the article (0-2 points)
-   - Potential to showcase candidate's understanding of company challenges (0-2 points)
-   - Opportunity to demonstrate values alignment (0-1 point)
+0. If the article is not relevant for {company}, assign it a score of 1.
 
-3. Return ONLY an array with scores (1-10) for each article, with the exact same length as the articles list.
-4. Format your response strictly as a valid array with this structure:
+1. **Understand the target position first**: Identify the key requirements, skills, domain expertise, and responsibilities of the target role.
+
+2. **Analyze the candidate's profile** in relation to the target position: 
+   - How does their experience align with the role?
+   - Which of their skills are most relevant?
+   - What gaps might they need to address?
+   - What unique value do they bring?
+
+3. **Evaluate each article's strategic value** for this specific application using these criteria:
+   - **Relevance to target position requirements** (0-4 points): Does the article discuss topics, technologies, or challenges central to the role?
+   - **Alignment with candidate's strengths** (0-2 points): Can the candidate demonstrate expertise by referencing this article?
+   - **Opportunity to bridge gaps** (0-2 points): Does the article help address any mismatches between candidate profile and position requirements?
+   - **Recency and timeliness** (0-1 point): Is the article recent and relevant to current industry trends?
+   - **Company culture and values fit** (0-1 point): Does it showcase understanding of company's approach and values?
+
+4. **Return ONLY an array with scores (1-10)** for each article, with the exact same length as the articles list.
+
+5. **Format your response strictly** as a valid array with this structure:
    [score1, score2, score3, …, lastScoreOfList]
 
 Example output: [8, 3, 5, 7, 9, 1, 2, ...]
 
-Available Articles:
+**Available Articles:**
 {article_list_str}"""
-    
+
     # Call the AI with the prompt
     ai_response = ai_chat(prompt, True)
-
-    # Extract the 3 selected indices from the AI response
+    
     try:
         scores = ast.literal_eval(ai_response)
-        sorted_articles = [x for _, x in sorted(zip(scores, articles_list), reverse=True)]
+        if not isinstance(scores, list):
+            raise ValueError("AI response non è una lista valida.")
+
+        # Allinea le lunghezze, nel caso in cui l'AI restituisca meno punteggi
+        min_len = min(len(scores), len(articles_list))
+        scores = scores[:min_len]
+        articles_list = articles_list[:min_len]
+
+        # Ordina per punteggio in modo decrescente
+        sorted_articles = [x for _, x in sorted(zip(scores, articles_list), key=lambda x: x[0], reverse=True)]
         return sorted_articles[:2]
+
     except Exception as e:
-        print(f"AI response parsing error: {e}. Falling back to first 3 articles.")
-        return articles_list[:3]
+        print(f"AI response parsing error: {e}. Falling back to first 2 articles.")
+        return articles_list[:2]
 
 from typing import List, Dict, Any, Callable
 from bs4 import BeautifulSoup
@@ -3393,20 +3507,20 @@ def get_about_description(company):
 
     return result
 
-def get_all_articles(company):
+def get_all_articles(company, target_position_description):
     found_link = ""
     article_links = []
     blogs_analyzed = 0
     times = 0
 
     while len(article_links) < MAX_ARTICLES and times < 2:
-        found_link = blog_link = get_blog_link_with_google(company, found_link)
+        found_link = blog_link = get_blog_link_with_google(company, target_position_description, found_link)
         print("blog_link", blog_link)
-
+        
         if blog_link:
             blogs_analyzed += 1  # 🔹 Conta ogni blog trovato
 
-            category_link = find_tech_category_link_with_deepseek(blog_link)
+            category_link = find_relevant_category_link_with_ai(blog_link, target_position_description)
             print("Link categoria Ingegneria:", category_link)
             
             if category_link:
@@ -3426,7 +3540,7 @@ def get_all_articles(company):
         save_articles_to_file(article_links, f"articles-{company}.json")
         times += 1
 
-    return article_links, blogs_analyzed  # 🔹 Restituisce entrambi
+    return article_links, blogs_analyzed
 
 from bs4 import BeautifulSoup
 import re
@@ -5284,7 +5398,7 @@ MAX_ARTICLES = 35
 
 from candidai_script.database import save_articles
 
-def get_blog_posts(user_id, ids, companies, user_info):
+def get_blog_posts(user_id, ids, companies, user_info, target_position_description):
     results = {}
     start_time_total = time.time()
     company_durations = {}
@@ -5293,8 +5407,9 @@ def get_blog_posts(user_id, ids, companies, user_info):
         company = company["name"]
         start_time_company = time.time()
         
-        articles, n_blogs = get_all_articles(company)
-        relevant_articles = select_relevant_articles(articles, user_info)
+        articles, n_blogs = get_all_articles(company, target_position_description)
+        print(articles)
+        relevant_articles = select_relevant_articles(articles, user_info, target_position_description, company)
         articles_content = extract_articles_content(relevant_articles)
 
         save_articles(user_id, ids[f'{company}-{user_id}'], articles_content, articles, n_blogs)
