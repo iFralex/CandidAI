@@ -10,6 +10,7 @@ from candidai_script.database import get_account_data, save_recruiter_and_query,
 def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None, n_profiles: int = 1) -> List[Dict]:
     """
     Trova n_profiles recruiters per un'azienda specifica eseguendo queries progressive.
+    Se non trova recruiters, cerca owner/founder, poi senior, poi qualsiasi persona.
     
     Args:
         company: Dizionario con 'domain' e 'name' dell'azienda
@@ -34,12 +35,46 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
     if not queries:
         queries = [{"id": 1, "name": "Base Query", "criteria": []}]
     
+    # Crea query aggiuntive per owner/founder con gli stessi criteri
+    owner_queries = []
+    for query in queries:
+        owner_query = {
+            "id": f"{query['id']}_owner",
+            "name": f"{query['name']} (Owner/Founder)",
+            "criteria": query["criteria"],
+            "search_type": "owner"
+        }
+        owner_queries.append(owner_query)
+    
+    # Query per senior roles
+    senior_queries = []
+    for query in queries:
+        senior_query = {
+            "id": f"{query['id']}_senior",
+            "name": f"{query['name']} (Senior)",
+            "criteria": query["criteria"],
+            "search_type": "senior"
+        }
+        senior_queries.append(senior_query)
+    
+    # Query generica per qualsiasi persona in azienda
+    general_query = {
+        "id": "general",
+        "name": "General Employee",
+        "criteria": queries[0]["criteria"] if queries else [],
+        "search_type": "general"
+    }
+    
+    # Combina tutte le query: prima recruiters, poi owner/founder, poi senior, poi generale
+    all_queries = queries + owner_queries + senior_queries + [general_query]
+    
     # Esegui le query in ordine finché non raggiungi n_profiles
     request_timestamps = deque()
     MAX_REQUESTS = 10
     WINDOW_SECONDS = 65  # 1 minuto
+    final_query = None
 
-    for query in queries:
+    for query in all_queries:
         if len(found_profiles) >= n_profiles:
             break
 
@@ -55,17 +90,17 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
             wait_time = WINDOW_SECONDS - (now - request_timestamps[0])
             print(f"🕒 Limite di {MAX_REQUESTS} richieste al minuto raggiunto. Attendo {wait_time:.2f} secondi...")
             time.sleep(wait_time)
-            # Dopo l’attesa, aggiorna il timestamp e ricalcola il tempo
+            # Dopo l'attesa, aggiorna il timestamp e ricalcola il tempo
             now = time.time()
             while request_timestamps and now - request_timestamps[0] >= WINDOW_SECONDS:
                 request_timestamps.popleft()
-            # E poi prosegui normalmente, SENZA continue
 
         # Calcola quanti profili mancano
         remaining = n_profiles - len(found_profiles)
 
         # Costruisci la query Elasticsearch
-        es_query = build_elasticsearch_query(company, query["criteria"])
+        search_type = query.get("search_type", "recruiter")
+        es_query = build_elasticsearch_query(company, query["criteria"], search_type)
 
         # Parametri per la richiesta
         params = {
@@ -94,7 +129,10 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
                         # Se abbiamo raggiunto il target, fermati
                         if len(found_profiles) >= n_profiles:
                             break
-                final_query = query
+                
+                if data:  # Salva solo se ha trovato risultati
+                    final_query = query
+                    
                 print(f"Query '{query['name']}' (ID: {query['id']}): trovati {len(data)} profili, totale accumulato: {len(found_profiles)}/{n_profiles}")
             else:
                 print(f"❌ '{query['id']}': {response}")
@@ -102,16 +140,19 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
         except Exception as e:
             print(f"⚠️ Eccezione durante la query '{query['name']}': {str(e)}")
             continue
+    
     print(f"\nTotale profili trovati per {company['name']}: {len(found_profiles)}/{n_profiles}")
     return found_profiles[:n_profiles], final_query
 
-def build_elasticsearch_query(company: Dict, criteria: List[Dict]) -> Dict:
+
+def build_elasticsearch_query(company: Dict, criteria: List[Dict], search_type: str = "recruiter") -> Dict:
     """
     Costruisce una query Elasticsearch basata sui criteri forniti.
     
     Args:
         company: Dizionario con informazioni sull'azienda ('domain' e 'name')
         criteria: Lista di criteri da applicare
+        search_type: Tipo di ricerca ("recruiter", "owner", "senior", "general")
     
     Returns:
         Query Elasticsearch formattata
@@ -119,20 +160,52 @@ def build_elasticsearch_query(company: Dict, criteria: List[Dict]) -> Dict:
     must_clauses = []
     must_not_clauses = []
 
-    # Clausola per i titoli di lavoro legati a recruiting/HR
-    must_clauses.append({
-        "bool": {
-            "should": [
-                {"wildcard": {"job_title": "*recruiter*"}},
-                {"wildcard": {"job_title": "*talent acquisition*"}},
-                {"wildcard": {"job_title": "*technical recruiter*"}},
-                {"wildcard": {"job_title": "*hr*"}},
-                {"wildcard": {"job_title": "*human resources*"}},
-                {"term": {"job_title_sub_role": "recruiting"}},
-                {"term": {"job_title_role": "human_resources"}}
-            ]
-        }
-    })
+    # Clausola per il tipo di ruolo cercato
+    if search_type == "recruiter":
+        must_clauses.append({
+            "bool": {
+                "should": [
+                    {"wildcard": {"job_title": "*recruiter*"}},
+                    {"wildcard": {"job_title": "*talent acquisition*"}},
+                    {"wildcard": {"job_title": "*technical recruiter*"}},
+                    {"wildcard": {"job_title": "*hr*"}},
+                    {"wildcard": {"job_title": "*human resources*"}},
+                    {"term": {"job_title_sub_role": "recruiting"}},
+                    {"term": {"job_title_role": "human_resources"}}
+                ]
+            }
+        })
+    elif search_type == "owner":
+        must_clauses.append({
+            "bool": {
+                "should": [
+                    {"wildcard": {"job_title": "*owner*"}},
+                    {"wildcard": {"job_title": "*founder*"}},
+                    {"wildcard": {"job_title": "*co-founder*"}},
+                    {"wildcard": {"job_title": "*ceo*"}},
+                    {"wildcard": {"job_title": "*chief executive*"}},
+                    {"term": {"job_title_role": "owner"}},
+                    {"term": {"job_title_sub_role": "founder"}}
+                ]
+            }
+        })
+    elif search_type == "senior":
+        must_clauses.append({
+            "bool": {
+                "should": [
+                    {"terms": {"job_title_levels": ["senior", "director", "vp", "c_suite", "owner", "partner"]}},
+                    {"wildcard": {"job_title": "*senior*"}},
+                    {"wildcard": {"job_title": "*director*"}},
+                    {"wildcard": {"job_title": "*vp*"}},
+                    {"wildcard": {"job_title": "*vice president*"}},
+                    {"wildcard": {"job_title": "*head of*"}},
+                    {"wildcard": {"job_title": "*chief*"}},
+                    {"wildcard": {"job_title": "*c-level*"}},
+                    {"wildcard": {"job_title": "*manager*"}}
+                ]
+            }
+        })
+    # Per "general" non aggiungiamo nessun filtro sul job title
     
     # Clausola per l'azienda corrente (job_company_name)
     must_clauses.append({

@@ -22,7 +22,7 @@ def main(mode="auto", manual_tasks=None, target_companies=None):
         manual_tasks (list): task da rieseguire manualmente, es. ["blog", "recruiters", "email"]
         target_companies (list): aziende specifiche da includere, es. ["Google", "Meta"]
     """
-    user_id = "ZXntR0NAPTUOPYDASxEEkikY68e2"
+    user_id = "qssypc2kb6X7sHt6kdD7FwA3sqn1"
     account = get_account_data(user_id)
     changed_companies = get_changed_companies(user_id)
 
@@ -155,7 +155,7 @@ def decide_tasks_per_company(mode, manual_tasks, current_status, companies, user
                 company_tasks.append("blog")
             if "recruiter" not in data:
                 company_tasks.append("recruiters")
-            if not data.get("email_sent", False):
+            if not "email_sent" in data:
                 company_tasks.append("email")
 
         if company_tasks:
