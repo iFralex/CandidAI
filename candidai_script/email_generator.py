@@ -145,7 +145,7 @@ def generate_email(user_id, ids, companies, profile_summary, cv_url, result_blog
     for company in companies:
         articles_contents = result_blog[company["name"]]
         recruiter_summary, query = result_recruiters[company["name"]]
-        email_address = recruiter_summary["work_email"]
+        email_address = recruiter_summary.get("work_email")
         recruiter_summary = parse_recruiter(recruiter_summary)
         company_info = parse_company_info(result_company_info[company["name"]])
         profile_summary = parse_recruiter(profile_summary)

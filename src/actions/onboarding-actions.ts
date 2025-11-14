@@ -10,6 +10,16 @@ import { getTokens } from 'next-firebase-auth-edge';
 import { clientConfig, creditsInfo, plansData, serverConfig } from '@/config';
 import { adminStorage } from '@/lib/firebase-admin';
 
+async function startServer(userId: string) {
+    fetch(process.env.SERVER__RUNNER_URL || "", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ user_id: userId })
+    })
+}
+
 export async function selectPlan(userId: string, planId: string) {
     // Salva nel database
     const ref = doc(db, "users", userId);
@@ -69,7 +79,7 @@ export async function submitQueries(userId: string, queries: any) {
 export async function completeOnboarding(userId: string, customizations: any) {
     await updateDoc(doc(db, "users", userId, "data", "account"), { customizations });
     await updateDoc(doc(db, "users", userId), { onboardingStep: 50 });
-
+    await startServer(userId)
     // Reindirizza alla dashboard dopo il completamento
     redirect('/dashboard')
 }
@@ -141,6 +151,7 @@ export async function refindRecruiter(companyId: string, strategy: any, name, li
 
     // Esegui tutto in parallelo
     await Promise.all([setStrategy, updates]);
+    await startServer(userId)
 
     redirect("/dashboard/" + companyId);
 }
@@ -188,6 +199,7 @@ export async function regenerateEmail(companyId: string, instructions: string) {
 
     // Esegui tutto in parallelo
     await Promise.all([setInstructions, updates]);
+    await startServer(userId)
 
     redirect("/dashboard/" + companyId);
 }
@@ -221,7 +233,7 @@ export async function confirmCompany(selections: Object, strategies: Object, ins
 
     // ✅ Batch: atomic update
     const batch = writeBatch(db);
-    batch.update(userRef, { credits: currentCredits - amount});
+    batch.update(userRef, { credits: currentCredits - amount });
 
     for (const [companyId, selection] of Object.entries(selections)) {
         selection.newData = Object.fromEntries(Object.entries(selection.newData).filter(([_, v]) => v != null && v !== ""));
@@ -256,6 +268,7 @@ export async function confirmCompany(selections: Object, strategies: Object, ins
     }
 
     await batch.commit();
+    await startServer(userId)
     // Reindirizza alla dashboard dopo il completamento
     redirect('/dashboard')
 }
