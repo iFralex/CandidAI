@@ -13,7 +13,7 @@ import logging
 import time
 
 
-def main(mode="auto", manual_tasks=None, target_companies=None):
+def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
     """
     Esegue i task per generare blog, recruiter ed email in modalità automatica o manuale.
 
@@ -22,7 +22,6 @@ def main(mode="auto", manual_tasks=None, target_companies=None):
         manual_tasks (list): task da rieseguire manualmente, es. ["blog", "recruiters", "email"]
         target_companies (list): aziende specifiche da includere, es. ["Google", "Meta"]
     """
-    user_id = "qssypc2kb6X7sHt6kdD7FwA3sqn1"
     account = get_account_data(user_id)
     changed_companies = get_changed_companies(user_id)
 
@@ -164,16 +163,5 @@ def decide_tasks_per_company(mode, manual_tasks, current_status, companies, user
     return tasks_per_company
 
 
-if __name__ == "__main__":
-    # 🔹 Esempi d’uso:
-
-    # 1️⃣ Modalità automatica → esegue solo ciò che manca
-    # main(mode="auto")
-
-    # 2️⃣ Modalità manuale → forza solo recruiter ed email per tutte le aziende
-    # main(mode="manual", manual_tasks=["recruiters", "email"])
-
-    # 3️⃣ Modalità manuale → forza solo blog per alcune aziende
-    # main(mode="manual", manual_tasks=["blog"], target_companies=["Google", "Meta"])
-
-    main(mode="auto")
+def run(user_id):
+    return main(user_id=user_id, mode="auto")
