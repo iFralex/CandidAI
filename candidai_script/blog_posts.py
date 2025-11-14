@@ -46,6 +46,8 @@ def init_driver():
     if driver is None:  # lo creo solo la prima volta
         options = uc.ChromeOptions()
         options.headless = False
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
         driver = uc.Chrome(options=options)
         #driver.get("https://www.linkedin.com/")
         #try:
