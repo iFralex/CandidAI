@@ -48,99 +48,59 @@
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/11/14/production-engineering/open-source-is-good-for-the-environment/",
+    "href": "https://engineering.fb.com/2025/10/07/open-source/introducing-the-react-foundation-the-new-home-for-react-react-native/",
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/11/11/web/stylex-a-styling-library-for-css-at-scale/",
+    "href": "https://engineering.fb.com/2025/10/06/developer-tools/openzl-open-source-format-aware-compression-framework/",
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/11/10/ml-applications/metas-generative-ads-model-gem-the-central-brain-accelerating-ads-recommendation-ai-innovation/",
+    "href": "https://engineering.fb.com/2025/10/05/connectivity/introducing-the-candle-subsea-cable-updates-to-our-asia-pacific-connectivity-projects/",
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/11/04/video-engineering/video-invisible-watermarking-at-scale/",
+    "href": "https://engineering.fb.com/2025/10/01/android/accelerating-our-android-apps-with-baseline-profiles/",
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/10/23/security/scaling-privacy-infrastructure-for-genai-product-innovation/",
+    "href": "https://engineering.fb.com/2025/09/30/security/llms-are-the-key-to-mutation-testing-and-better-compliance/",
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/10/20/data-center-engineering/disaggregated-scheduled-fabric-scaling-metas-ai-journey/",
+    "href": "https://engineering.fb.com/2025/09/29/virtual-reality/assetgen-generating-3d-worlds-with-ai/",
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/10/17/ai-research/scaling-llm-inference-innovations-tensor-parallelism-context-parallelism-expert-parallelism/",
+    "href": "https://engineering.fb.com/2025/09/29/data-infrastructure/metas-infrastructure-evolution-and-the-advent-of-ai/",
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/10/16/developer-tools/branching-in-a-sapling-monorepo/",
+    "href": "https://engineering.fb.com/2025/09/26/networking-traffic/networking-at-the-heart-of-ai-scale-networking-2025-recap/",
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/10/16/data-center-engineering/10x-backbone-how-meta-is-scaling-backbone-connectivity-for-ai/",
+    "href": "https://engineering.fb.com/2025/09/24/video-engineering/video-streaming-with-av1-video-codec-mobile-devices-meta-white-paper/",
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/10/14/data-center-engineering/design-for-sustainability-new-design-principles-for-reducing-it-hardware-emissions/",
+    "href": "https://sustainability.atmeta.com/2025-sustainability-report/",
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/10/14/data-center-engineering/how-meta-is-leveraging-ai-to-improve-the-quality-of-scope-3-emission-estimates-for-it-hardware/",
+    "href": "https://engineering.fb.com/2025/09/02/ml-applications/a-new-ranking-framework-for-better-notification-quality-on-instagram/",
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/10/13/data-infrastructure/ocp-summit-2025-the-open-future-of-networking-hardware-for-ai/",
+    "href": "https://engineering.fb.com/2025/08/26/open-source/enabling-kotlin-incremental-compilation-on-buck2/",
     "title": "Titolo non trovato"
   },
   {
-    "href": "https://engineering.fb.com/2025/11/14/production-engineering/open-source-is-good-for-the-environment/",
-    "title": "Titolo non trovato"
+    "href": "https://www.metacareers.com/careerprograms/accelerate-eng-talent",
+    "title": "Accelerate Eng Talent"
   },
   {
-    "href": "https://engineering.fb.com/2025/11/11/web/stylex-a-styling-library-for-css-at-scale/",
-    "title": "Titolo non trovato"
-  },
-  {
-    "href": "https://engineering.fb.com/2025/11/10/ml-applications/metas-generative-ads-model-gem-the-central-brain-accelerating-ads-recommendation-ai-innovation/",
-    "title": "Titolo non trovato"
-  },
-  {
-    "href": "https://engineering.fb.com/2025/11/04/video-engineering/video-invisible-watermarking-at-scale/",
-    "title": "Titolo non trovato"
-  },
-  {
-    "href": "https://engineering.fb.com/2025/10/23/security/scaling-privacy-infrastructure-for-genai-product-innovation/",
-    "title": "Titolo non trovato"
-  },
-  {
-    "href": "https://engineering.fb.com/2025/10/20/data-center-engineering/disaggregated-scheduled-fabric-scaling-metas-ai-journey/",
-    "title": "Titolo non trovato"
-  },
-  {
-    "href": "https://engineering.fb.com/2025/10/17/ai-research/scaling-llm-inference-innovations-tensor-parallelism-context-parallelism-expert-parallelism/",
-    "title": "Titolo non trovato"
-  },
-  {
-    "href": "https://engineering.fb.com/2025/10/16/developer-tools/branching-in-a-sapling-monorepo/",
-    "title": "Titolo non trovato"
-  },
-  {
-    "href": "https://engineering.fb.com/2025/10/16/data-center-engineering/10x-backbone-how-meta-is-scaling-backbone-connectivity-for-ai/",
-    "title": "Titolo non trovato"
-  },
-  {
-    "href": "https://engineering.fb.com/2025/10/14/data-center-engineering/design-for-sustainability-new-design-principles-for-reducing-it-hardware-emissions/",
-    "title": "Titolo non trovato"
-  },
-  {
-    "href": "https://engineering.fb.com/2025/10/14/data-center-engineering/how-meta-is-leveraging-ai-to-improve-the-quality-of-scope-3-emission-estimates-for-it-hardware/",
-    "title": "Titolo non trovato"
-  },
-  {
-    "href": "https://engineering.fb.com/2025/10/13/data-infrastructure/ocp-summit-2025-the-open-future-of-networking-hardware-for-ai/",
-    "title": "Titolo non trovato"
+    "href": "https://www.metacareers.com/accessibility-and-engagement",
+    "title": "Accessibility and Engagement"
   }
 ]

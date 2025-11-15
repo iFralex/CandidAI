@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from bs4 import Tag
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 import time
 from urllib.parse import urljoin
 from typing import Optional, List, Tuple, Union, Dict
@@ -16,6 +16,8 @@ import undetected_chromedriver as uc
 import json
 import time
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import WebDriverException
+import urllib3
 
 def loginLinkedin(email: str, password: str, cookies_file: str = 'cookies.json'):
     # Avvio browser
@@ -41,50 +43,84 @@ def loginLinkedin(email: str, password: str, cookies_file: str = 'cookies.json')
 
 driver = None  # istanza globale
 
-def init_driver():
+def init_driver(force_new=False):
     global driver
-    if driver is None:  # lo creo solo la prima volta
+
+    # Se serve forzare un nuovo driver
+    if force_new:
+        driver_quit_safely()
+
+    # Se non esiste, crealo
+    if driver is None:
+        print("🟢 Creating new driver")
         options = uc.ChromeOptions()
         options.headless = False
         options.add_argument("--no-sandbox")
         options.add_argument("--use-gl=swiftshader")
         options.add_argument("--disable-dev-shm-usage")
-        driver = uc.Chrome(options=options)
-        #driver.get("https://www.linkedin.com/")
-        #try:
-        #    with open('cookies.json', 'r') as file:
-        #        cookies = json.load(file)
-        #        for cookie in cookies:
-        #            if "domain" in cookie and "linkedin.com" in cookie["domain"]:
-        #                driver.add_cookie(cookie)
-        #    print("Cookies caricati correttamente.")
-        #    driver.refresh()
-        #except FileNotFoundError:
-        #    print("Nessun file cookies.json trovato, procedo senza cookies.")
-            
-    return driver
 
-def get_html(url: str, wait_time: int = 1, scroll_pause_time: float = 1.0, max_scrolls: int = 50) -> str:
-    driver = init_driver()  # prendi il driver esistente
+        driver = uc.Chrome(options=options)
+        return driver
+
+    # Controllo se il driver è ancora vivo
+    try:
+        _ = driver.title  # comando leggero
+        print("driver fun")
+        return driver      # driver funzionante
+    except (WebDriverException, urllib3.exceptions.NewConnectionError):
+        print("🔴 Driver crashato! Ricreazione...")
+        return init_driver(force_new=True)
+
+
+def driver_quit_safely():
+    global driver
+    if driver is not None:
+        try:
+            driver.quit()
+        except:
+            pass
+    driver = None
+
+def get_html(
+    url: str, 
+    wait_time: int = 1, 
+    scroll_pause_time: float = 1.0, 
+    max_scrolls: int = 50
+) -> str:
+    driver = init_driver()  # recupera il driver esistente
+
+    # Se siamo già sulla stessa pagina, restituisci l'HTML corrente
+    try:
+        current_url = driver.current_url
+        if current_url == url:
+            print(f"URL già caricato: '{url}', restituisco HTML corrente senza ricaricare.")
+            return driver.page_source
+    except Exception:
+        # Se il driver non ha ancora una current_url valida, continuiamo normalmente
+        pass
 
     print(f"Navigating to URL: '{url}'")
     driver.get(url)
-  
     time.sleep(wait_time)
 
     # Scroll dinamico
     last_height = driver.execute_script("return document.body.scrollHeight")
     scrolls = 0
+
     while scrolls < max_scrolls:
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(scroll_pause_time)
+
         new_height = driver.execute_script("return document.body.scrollHeight")
         if new_height == last_height:
             break
+
         last_height = new_height
         scrolls += 1
 
+    # Torna all'inizio della pagina
     driver.execute_script("window.scrollTo(0, 0);")
+
     return driver.page_source
 
 def close_driver():
@@ -182,11 +218,43 @@ def ai_chat(
     - Connection Error: proxy → attesa → cambio modello
     """
     
-    def parse_json(response: str) -> dict:
-        match = re.search(r"\{.*\}", response, re.DOTALL)
+    def parse_json(response: str) -> Any:
+        """
+        Estrae e fa il parse del primo oggetto JSON ({} o []) trovato nella stringa `response`.
+        Restituisce il valore Python corrispondente (dict o list).
+        Solleva ValueError se non trova un JSON o se il parsing fallisce.
+        """
+
+        if not isinstance(response, str):
+            raise TypeError("response deve essere una stringa")
+
+        # normalizza virgolette "curly" in normali
+        response = (response
+                    .replace("\u201c", '"').replace("\u201d", '"')
+                    .replace("\u2018", "'").replace("\u2019", "'"))
+
+        # rimuove eventuali blocchi di codice come ```json\n ... ``` o ```\n ... ```
+        response = re.sub(r"```[^\n]*\n?", "", response)
+        response = response.replace("```", "")
+        # rimuove backtick singoli
+        response = response.replace("`", "")
+
+        # rimuove caratteri zero-width/BOM che possono interferire
+        response = re.sub(r"[\u200B-\u200D\uFEFF]", "", response)
+
+        # trova il primo {...} o [...] (non-greedy)
+        match = re.search(r"(\{.*?\}|\[.*?\])", response, re.DOTALL)
         if not match:
             raise ValueError("Nessun oggetto JSON trovato nella stringa")
-        return json.loads(match.group(0))
+
+        fragment = match.group(0).strip()
+
+        try:
+            return json.loads(fragment)
+        except json.JSONDecodeError as e:
+            # messaggio più informativo per debug
+            raise ValueError(f"Parsing JSON fallito per il frammento: {fragment!r}. Errore: {e}") from e
+
     
     # Pool di API keys
     API_KEYS = os.getenv("OPENROUTER_API_KEYS", "").split(",")
@@ -655,7 +723,7 @@ def search_on_google(query, exclude_url="", num_results=3):
         f"?key={api_key}&cx={cx}&q={query}&num={num_results}"
         f"&hl=en&gl=IE&siteSearch={exclude_url}&siteSearchFilter=e"
     )
-    print(f"cerco su google: {query}")
+
     try:
         response = requests.get(url)
         data = response.json()
@@ -666,15 +734,24 @@ def search_on_google(query, exclude_url="", num_results=3):
 
 import json
 
-def get_blog_link_with_google(company, target_position_description, exclude_link):
+def get_blog_links_ranked(company, target_position_description, exclude_link = ""):
     """
-    Usa i risultati della ricerca Google e AI per individuare la homepage del blog aziendale
-    più rilevante rispetto alla posizione target dell'utente.
+    Usa i risultati della ricerca Google e AI per individuare e classificare le homepage 
+    dei blog aziendali più rilevanti rispetto alla posizione target dell'utente.
     
     Args:
         company: Nome dell'azienda
         target_position_description: Descrizione della posizione desiderata dall'utente
         exclude_link: Link da escludere dai risultati
+        
+    Returns:
+        Lista di dizionari ordinati per rilevanza, ogni elemento contiene:
+        {
+            "link": str,
+            "title": str,
+            "snippet": str,
+            "score": int
+        }
     """
     
     # --- 1️⃣ Estrai keywords chiave ---
@@ -692,7 +769,6 @@ def get_blog_link_with_google(company, target_position_description, exclude_link
     
     try:
         keywords_response = ai_chat(keywords_prompt).strip()
-        # Prova a fare il parse JSON in lista
         keywords = json.loads(keywords_response)
         if not isinstance(keywords, list) or not all(isinstance(k, str) for k in keywords):
             raise ValueError("Formato non valido per le keywords.")
@@ -746,56 +822,81 @@ def get_blog_link_with_google(company, target_position_description, exclude_link
     unique_results = []
     seen_links = set()
     for item in results:
-        if item["link"] not in seen_links:
+        if item["link"] not in seen_links and item["link"] != exclude_link:
             seen_links.add(item["link"])
             unique_results.append(item)
 
     if not unique_results:
         print("Nessun risultato complessivo trovato.")
-        return None
+        return []
 
     results = unique_results
 
-    # --- 5️⃣ Prompt per identificare il blog più rilevante ---
-    prompt = f"""# Company Blog Homepage Identification Task
+    # --- 5️⃣ Prompt per valutare e classificare tutti i blog ---
+    prompt = f"""# Company Blog Homepage Scoring Task
 
-Identify which search result is most likely the official company blog homepage for '{company}'
-that is MOST RELEVANT to this target position:
+Score each search result based on how likely it is to be the official company blog HOMEPAGE for '{company}'
+and how RELEVANT it is to this target position.
 
 **Target Position Description:**
 {target_position_description}
 
-## Instructions
-- Evaluate each search result carefully based on relevance to the target position.
-- Prioritize blogs covering topics related to the position's field/domain.
-- Respond ONLY with a single number (1, 2, 3, etc., or 0).
-- Do NOT provide any explanation or extra text.
+## CRITICAL REQUIREMENTS
+- ONLY score blog HOMEPAGES (main blog index pages like /blog, /insights, /stories)
+- DO NOT score individual blog articles or internal blog posts
+- Look for URLs that end with /blog, /insights, /news, or similar homepage patterns
+- Avoid URLs with dates, article titles, or specific post paths (e.g., /blog/article-name, /blog/2024/01/post)
 
-## Priority Ranking
-1. Official company blog homepage highly relevant to the target position's domain
-2. Official company blog on third-party platforms (Medium, Substack, etc.) relevant to the position
-3. Generic official company blog homepage that may include relevant content
-4. Generic company blog on third-party platforms
-5. Company blog with partial relevance to the position
+## Scoring Criteria (0-100 points)
+- **Is it a HOMEPAGE?** (0-40 points)
+- **Relevance to Position** (0-40 points)
+- **Official Company Blog** (0-20 points)
+
+## Instructions
+- Evaluate each result and assign a score from 0 to 100
+- Respond ONLY with a valid JSON array with ONLY the scores in order
+- Example format: [85, 72, 40, 0]
 
 ## Search Results
 """
-    
+
     for idx, r in enumerate(results, 1):
         prompt += f"\n{idx}. {r['title']}\n   URL: {r['link']}\n   Snippet: {r['snippet']}\n"
 
-    # --- 6️⃣ Chiamata all’AI per scegliere il risultato ---
-    try:
-        ai_response = ai_chat(prompt).strip()
-        selected_index = int(ai_response)
-    except Exception as e:
-        print(f"Errore chiamata AI o conversione numero: {e}")
-        return None
 
-    if 1 <= selected_index <= len(results):
-        return results[selected_index - 1]["link"]
-    else:
-        return None
+    # --- 6️⃣ Chiamata all'AI per ottenere gli score ---
+    try:
+        scores = ai_chat(prompt, "json")
+        
+        if not isinstance(scores, list):
+            raise ValueError("La risposta non è una lista valida")
+            
+        # Verifica che tutti siano numeri
+        if not all(isinstance(s, (int, float)) for s in scores):
+            raise ValueError("La lista deve contenere solo numeri")
+
+    except Exception as e:
+        print(f"Errore chiamata AI o parsing JSON: {e}")
+        return []
+
+    # --- 7️⃣ Aggiungi gli score ai risultati ---
+    scored_results = []
+    for i, score in enumerate(scores):
+        try:
+            if 0 <= i < len(results):
+                result = results[i].copy()
+                result["score"] = score
+                scored_results.append(result)
+        except Exception as e:
+            print(f"Errore processing score item: {e}")
+            continue
+
+
+    # --- 8️⃣ Ordina per score decrescente ---
+    scored_results.sort(key=lambda x: x["score"], reverse=True)
+
+    # --- 9️⃣ Filtra solo i risultati con score > 0 ---
+    return [r for r in scored_results if r["score"] > 0]
 
 import requests
 from bs4 import BeautifulSoup
@@ -860,7 +961,9 @@ Answer strictly according to these instructions.
 
     def check_category(link, position_desc):
         link = urljoin(url, link) if link.startswith("/") else link
+        print("Checking category link:", link)
         html = get_html(link)
+        print("Fetched HTML length:", len(html) if html else "None")
         if html is None:
             return False
 
@@ -1168,8 +1271,7 @@ def find_next_page(url):
         ])
 
         ai_response = ai_chat(
-            f"""
-Find the ONE most likely "next page" link from this blog at {url}.
+            f"""Find the ONE most likely "next page" link from this blog at {url}.
 TASK:
 Identify the single link that would take a user to the next page of blog posts.
 COMMON INDICATORS:
@@ -1208,7 +1310,7 @@ If no "next page" link is found, return '0'.
                 options = uc.ChromeOptions()
                 options.headless = False  # Puoi mettere True per non vedere il browser
 
-                driver = uc.Chrome(options=options)
+                driver = init_driver()
                 try:
                     print(f"Navigating to URL: '{url}'")
                     driver.get(url)
@@ -1228,7 +1330,7 @@ If no "next page" link is found, return '0'.
                         if new_url != prev_url:
                             return new_url
                 finally:
-                    driver.quit()
+                    print("Closing the browser...")
             else:
                 # Se è un link normale, risolvi normalmente
                 return urljoin(url, href)
@@ -1567,7 +1669,7 @@ def extract_articles_with_deepseek(base_url, articles_num, html=None, batch_size
 
     # Trova tutti i tag article
     articles = soup.find_all('article')
-
+    
     # Verifica se ci sono almeno 3 article
     if len(articles) >= 3:
         print(f"Trovati {len(articles)} tag article nella pagina")
@@ -1631,7 +1733,7 @@ def extract_articles_with_deepseek(base_url, articles_num, html=None, batch_size
         
         if len(article_links) > len(articles) / 2:
             return article_links
-
+    
     # Estrai tutti i link con testo
     link_candidates = []
     for a in soup.find_all('a', href=True):
@@ -1820,16 +1922,6 @@ def get_articles_with_load_more(start_url, articles_num, max_clicks=5):
         list: Lista di tutti gli articoli recuperati
         list: Lista degli URL visitati
     """
-    # Configurazione del driver Chrome
-    options = uc.ChromeOptions()
-    #options.add_argument('--headless')
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--disable-gpu')
-    options.add_argument('--window-size=1920,1080')
-    
-    # Usa un user agent realistico
-    options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36')
     
     all_articles = []
     visited_urls = [start_url]
@@ -1837,7 +1929,7 @@ def get_articles_with_load_more(start_url, articles_num, max_clicks=5):
     
     try:
         # Inizializza il driver
-        driver = uc.Chrome(options=options)
+        driver = init_driver()
         
         # Carica la pagina iniziale
         driver.get(start_url)
@@ -1869,24 +1961,34 @@ def get_articles_with_load_more(start_url, articles_num, max_clicks=5):
             # Cerca pulsante "Load More" 
             load_more_button = find_load_more_button(driver)
             print("load_more_button", load_more_button)
-
+            
             # Se non trova un pulsante, interrompi
             if not load_more_button:
                 break
             
             # Clicca sul pulsante e attendi il caricamento di nuovi contenuti
-            try:
-                #print(load_more_button.tag_name, load_more_button.text)
-
+            try:                
                 try_close_overlays(driver)
-                print("b", load_more_button.tag_name, load_more_button.text)
+                load_more_button = find_load_more_button(driver)
+                try:
+                    print("b", load_more_button.tag_name, load_more_button.text)
 
-                # Scrolla fino al pulsante per assicurarsi che sia visibile
-                driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", load_more_button)
-                time.sleep(1)
-                
-                # Clicca sul pulsante
-                load_more_button.click()
+                    # Scrolla fino al pulsante per assicurarsi che sia visibile
+                    driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", load_more_button)
+                    time.sleep(1)
+                    
+                    # Clicca sul pulsante
+                    load_more_button.click()
+                except StaleElementReferenceException:
+                    load_more_button = find_load_more_button(driver)
+                    print("b", load_more_button.tag_name, load_more_button.text)
+
+                    # Scrolla fino al pulsante per assicurarsi che sia visibile
+                    driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", load_more_button)
+                    time.sleep(1)
+                    
+                    # Clicca sul pulsante
+                    load_more_button.click()
                 
                 # Attendi che nuovi contenuti vengano caricati
                 time.sleep(3)
@@ -1920,58 +2022,80 @@ def get_articles_with_load_more(start_url, articles_num, max_clicks=5):
         print(f"Errore durante il recupero degli articoli: {e}")
         return all_articles
         
-    finally:
-        # Chiudi il browser in ogni caso
-        try:
-            driver.quit()
-        except:
-            pass
-
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 
-def try_close_overlays(driver):
+def try_close_overlays(driver, similarity_threshold=0.40):
     """
-    Rileva e chiude overlay o popup (es. cookie banner) che impediscono clic.
+    Rileva e chiude overlay/popup usando sentence embeddings.
+    Identifica semanticamente i pulsanti per chiudere o accettare.
     """
-    close_keywords = ['accept', 'agree', 'ok', 'got it', 'close', 'chiudi', 'accetta']
+
+    close_keywords = [
+        "accept", "agree", "ok", "got it", "close", "dismiss", "allow",
+        "chiudi", "accetta", "va bene", "continua", "consenti"
+    ]
+
+    # Pre-calcolo embedding keyword
+    kw_embeds = embedder.encode(close_keywords, convert_to_tensor=True)
+
     overlay_xpaths = [
-        '//div[@role="dialog" or contains(@class, "cookie") or contains(@class, "consent") or contains(@class, "overlay") or contains(@class, "modal")]',
+        '//div[@role="dialog" or contains(@class, "cookie") or contains(@class, "consent") or contains(@class, "overlay") or contains(@class, "modal")]'
     ]
 
     for xpath in overlay_xpaths:
         overlays = driver.find_elements(By.XPATH, xpath)
+
         for overlay in overlays:
+            print("Found overlay:", overlay)
             if not overlay.is_displayed():
                 continue
 
-            # Verifica se l'overlay copre una porzione visibile dello schermo
-            overlay_size = overlay.size
-            if overlay_size['width'] < 100 or overlay_size['height'] < 50:
+            size = overlay.size
+            if size["width"] < 100 or size["height"] < 50:
                 continue
 
             try:
-                # Prova a trovare un pulsante utile all'interno dell'overlay
-                buttons = overlay.find_elements(By.XPATH, './/button | .//a')
-                for btn in buttons:
-                    text = btn.text.strip().lower()
-                    if any(kw in text for kw in close_keywords):
-                        if btn.is_displayed() and btn.is_enabled():
-                            try:
-                                btn.click()
-                                driver.implicitly_wait(1)
-                                return True
-                            except Exception:
-                                continue
+                # Prima i button, poi gli <a>
+                elements = overlay.find_elements(By.XPATH, ".//button") + \
+                           overlay.find_elements(By.XPATH, ".//a")
+                print(elements)
+                for el in elements:
+                    if not el.is_displayed() or not el.is_enabled():
+                        continue
+
+                    text = el.text.strip().lower()
+                    print("Overlay button text:", text)
+                    if not text or len(text) > 60:
+                        continue
+
+                    # Embedding pulsante
+                    el_embed = embedder.encode(text, convert_to_tensor=True)
+
+                    # Similarità con tutte le keyword
+                    sims = util.cos_sim(el_embed, kw_embeds)[0].cpu().tolist()
+                    print(sims)
+                    best_sim = max(sims)
+
+                    # Debug (se vuoi)
+                    # print(f"[DEBUG] '{text}' sim={best_sim:.3f}")
+
+                    if best_sim >= similarity_threshold:
+                        try:
+                            el.click()
+                            time.sleep(2)
+                            return True
+                        except:
+                            continue
+
             except Exception:
                 continue
 
     return False
 
-
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, util
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Inizializza il modello di embedding
@@ -2390,11 +2514,11 @@ Example output: [8, 3, 5, 7, 9, 1, 2, ...]
 
         # Ordina per punteggio in modo decrescente
         sorted_articles = [x for _, x in sorted(zip(scores, articles_list), key=lambda x: x[0], reverse=True)]
-        return sorted_articles[:2]
+        return sorted_articles[:3]
 
     except Exception as e:
         print(f"AI response parsing error: {e}. Falling back to first 2 articles.")
-        return articles_list[:2]
+        return articles_list[:3]
 
 from typing import List, Dict, Any, Callable
 from bs4 import BeautifulSoup
@@ -3511,13 +3635,15 @@ def get_about_description(company):
     return result
 
 def get_all_articles(company, target_position_description):
-    found_link = ""
     article_links = []
+    seen_hrefs = set()  # 🔹 Traccia href già visti
     blogs_analyzed = 0
     times = 0
 
+    blog_links = get_blog_links_ranked(company, target_position_description)
+
     while len(article_links) < MAX_ARTICLES and times < 2:
-        found_link = blog_link = get_blog_link_with_google(company, target_position_description, found_link)
+        blog_link = blog_links[times]["link"] if times < len(blog_links) else None
         print("blog_link", blog_link)
         
         if blog_link:
@@ -3529,20 +3655,29 @@ def get_all_articles(company, target_position_description):
             if category_link:
                 blog_link = category_link
 
-            article_links.extend(get_all_blog_pages(blog_link, len(article_links)))
+            new_articles = get_all_blog_pages(blog_link, len(article_links))
 
-            if len(article_links) < MAX_ARTICLES:
-                article_links.extend(get_articles_with_load_more(blog_link, len(article_links)))
+            if len(article_links) + len(new_articles) < MAX_ARTICLES:
+                new_articles.extend(get_articles_with_load_more(blog_link, len(article_links) + len(new_articles)))
+
+            # Filtra i duplicati in base all'href
+            unique_new_articles = []
+            for article in new_articles:
+                href = article.get("href")  # assuming each article is a dict with 'href'
+                if href and href not in seen_hrefs:
+                    seen_hrefs.add(href)
+                    unique_new_articles.append(article)
+
+            article_links.extend(unique_new_articles)
 
             print(f"Articoli trovati per {company}: {len(article_links)} (blogs analizzati: {blogs_analyzed})")
-
         else:
             print("Nessun blog trovato.")
             break
         
         save_articles_to_file(article_links, f"articles-{company}.json")
         times += 1
-
+    
     return article_links, blogs_analyzed
 
 from bs4 import BeautifulSoup
@@ -5411,7 +5546,6 @@ def get_blog_posts(user_id, ids, companies, user_info, target_position_descripti
         start_time_company = time.time()
         
         articles, n_blogs = get_all_articles(company, target_position_description)
-        print(articles)
         relevant_articles = select_relevant_articles(articles, user_info, target_position_description, company)
         articles_content = extract_articles_content(relevant_articles)
 
