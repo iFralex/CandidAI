@@ -201,7 +201,7 @@ fi
 
             content = lines.join("\n");
 
-        }else if (platform === "win32") {
+        } else if (platform === "win32") {
             // --- Windows (PowerShell + Outlook COM) ---
 
             blobType = "text/x-powershell";
@@ -237,7 +237,7 @@ fi
             // --- 2. GENERA SCRIPT (CON SPAZI ASCII GARANTITI) ---
             const lines = [
                 "# Imposta la preferenza di errore per fermare lo script in caso di problemi",
-                "Set-ErrorActionPreference -ErrorAction Stop",
+                "$ErrorActionPreference = 'Stop'",
                 "$ErrorCount = 0",
                 "try {",
                 "    # Definiamo l'encoding una sola volta all'inizio",
@@ -256,12 +256,12 @@ fi
                 "        # $companyIdsJson e $apiUrl sono ora variabili PS sicure",
                 `        $response = Invoke-WebRequest -Method POST -Uri $apiUrl -Body $companyIdsJson -ContentType "application/json"`,
                 `        $status = $response.StatusCode`,
-                `        if ($status -eq 200) { Write-Host "✔️  Email sent status successfully registered." }`,
-                `        else { Write-Host "✔️  Registrazione completata (HTTP $status)." }`,
+                "        if ($status -eq 200) { Write-Host \"✔️  Email sent status successfully registered.\" }",
+                "        else { Write-Host \"✔️  Registrazione completata (HTTP $status).\" }",
                 "    } catch {",
-                `        $status = ""`,
-                `        if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }`,
-                `        Write-Warning "❌  Errore durante la chiamata API (HTTP $status): $_.Exception.Message"`,
+                "        $status = \"\"",
+                "        if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }",
+                "        Write-Warning \"❌  Errore durante la chiamata API (HTTP $status): $_.Exception.Message\"",
                 "    }",
                 "",
                 "    # 2. Definizioni delle variabili Base64 per i CV",
@@ -276,7 +276,21 @@ fi
 
             lines.push("    # 3. Creazione delle email in Outlook");
             lines.push("    Write-Host 'Avvio di Outlook...'");
-            lines.push(`    $outlook = New-Object -ComObject "Outlook.Application"`);
+            lines.push("    Write-Host 'Avvio di Outlook con il profilo utente...'");
+            lines.push("");
+            lines.push("    # Se Outlook non è in esecuzione, avvialo così carica il profilo predefinito");
+            lines.push("    $running = Get-Process OUTLOOK -ErrorAction SilentlyContinue");
+            lines.push("    if (-not $running) {");
+            lines.push("        Start-Process 'outlook.exe'");
+            lines.push("        Start-Sleep -Seconds 5  # attende il caricamento del profilo");
+            lines.push("    } else {");
+            lines.push("        # Se è già aperto, forziamo la connessione alla stessa istanza");
+            lines.push("        & 'outlook.exe' /recycle");
+            lines.push("        Start-Sleep -Seconds 2");
+            lines.push("    }");
+            lines.push("");
+            lines.push("    # Recupera l'istanza già avviata (niente creazione di nuovi profili)");
+            lines.push("    $outlook = [Runtime.InteropServices.Marshal]::GetActiveObject('Outlook.Application')");
             lines.push("");
             // $utf8 è già stato definito sopra
 
@@ -303,7 +317,7 @@ fi
                 lines.push("");
                 // Crea l'oggetto mail
                 lines.push(`        $mail = $outlook.CreateItem(0) # 0 = olMailItem`);
-                
+
                 // Definisce le variabili B64 nello scope di PS
                 lines.push(`        $toB64 = '${toEmailB64}'`);
                 lines.push(`        $fromB64 = '${fromEmailB64}'`);
@@ -316,7 +330,7 @@ fi
                 lines.push(`        $fromEmail = $utf8.GetString([System.Convert]::FromBase64String($fromB64))`);
                 lines.push(`        $subject = $utf8.GetString([System.Convert]::FromBase64String($subjectB64))`);
                 lines.push(`        $body = $utf8.GetString([System.Convert]::FromBase64String($bodyB64))`);
-                
+
                 // Imposta l'account "From"
                 lines.push(`        if ($fromEmail) {`);
                 lines.push(`            try {`);
@@ -325,7 +339,7 @@ fi
                 lines.push(`                else { Write-Warning "Account '$fromEmail' non trovato in Outlook. Verrà usato l'account predefinito." }`);
                 lines.push(`            } catch { Write-Warning "Impossibile impostare l'account 'From': $_.Exception.Message" }`);
                 lines.push(`        }`);
-                
+
                 // Imposta destinatario, oggetto e corpo (usando le variabili decodificate)
                 lines.push(`        $mail.To = $toEmail`);
                 lines.push(`        $mail.Subject = $subject`);
@@ -353,7 +367,7 @@ fi
             lines.push(`if ($ErrorCount -gt 0) { Write-Warning "$ErrorCount errori riscontrati durante la creazione delle email." }`);
             lines.push(`else { Write-Host "Tutte le email sono state processate con successo." }`);
             lines.push(`Write-Host "Script terminato. Premi Invio per chiudere."`);
-            lines.push(`Read-Host`); 
+            lines.push(`Read-Host`);
 
             content = lines.join("\r\n"); // Windows usa CRLF
 
