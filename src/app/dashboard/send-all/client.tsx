@@ -209,16 +209,18 @@ fi
 
             /**
              * [FUNZIONE HELPER]
-             * Converte una stringa (anche UTF-8) in Base64
+             * Converte una stringa (anche UTF-8) in Base64 in modo sicuro.
              */
             function stringAsBase64(str) {
                 try {
                     const encoder = new TextEncoder(); // Codifica in UTF-8
                     const data = encoder.encode(str || ""); // Gestisce stringhe null/undefined
                     let binString = '';
+                    // Converte l'array di byte (Uint8Array) in una stringa binaria
                     data.forEach((byte) => {
                         binString += String.fromCharCode(byte);
                     });
+                    // Codifica la stringa binaria in Base64
                     return btoa(binString);
                 } catch (e) {
                     console.error("Errore nella codifica Base64:", e);
@@ -226,34 +228,37 @@ fi
                 }
             }
 
-            // --- FIX: Codifichiamo TUTTI i dati dinamici ---
+            // --- 1. PREPARA TUTTI I DATI COME BASE64 ---
+            // Codifichiamo *tutto* ciò che è dinamico.
+            const apiUrl = process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/sent_emails";
+            const apiUrlB64 = stringAsBase64(apiUrl);
             const companyIdsJsonB64 = stringAsBase64(companyIdsJson);
 
+            // --- 2. GENERA SCRIPT (CON SPAZI ASCII GARANTITI) ---
             const lines = [
                 "# Imposta la preferenza di errore per fermare lo script in caso di problemi",
                 "Set-ErrorActionPreference -ErrorAction Stop",
                 "$ErrorCount = 0",
                 "try {",
                 "    # Definiamo l'encoding una sola volta all'inizio",
-                `    $utf8 = [System.Text.Encoding]::UTF8`,
+                "    $utf8 = [System.Text.Encoding]::UTF8",
                 "",
                 "    # 1. Chiamata API per registrare gli invii",
                 "    Write-Host 'Registrazione dello stato di invio sul server...'",
-                
-                "    # --- FIX: Decodifichiamo il JSON dall'interno di PowerShell ---",
+                "",
+                "    # --- Decodifichiamo i dati per l'API (ora tutti B64) ---",
+                `    $apiUrlB64 = '${apiUrlB64}'`,
+                `    $apiUrl = $utf8.GetString([System.Convert]::FromBase64String($apiUrlB64))`,
                 `    $companyIdsJsonB64 = '${companyIdsJsonB64}'`,
                 `    $companyIdsJson = $utf8.GetString([System.Convert]::FromBase64String($companyIdsJsonB64))`,
-                "    # --- Fine FIX ---",
                 "",
-                `    $uri = "${process.env.NEXT_PUBLIC_DOMAIN}/api/protected/sent_emails"`,
                 "    try {",
-                "        # $companyIdsJson è ora una variabile PS sicura",
-                `        $response = Invoke-WebRequest -Method POST -Uri $uri -Body $companyIdsJson -ContentType "application/json"`,
+                "        # $companyIdsJson e $apiUrl sono ora variabili PS sicure",
+                `        $response = Invoke-WebRequest -Method POST -Uri $apiUrl -Body $companyIdsJson -ContentType "application/json"`,
                 `        $status = $response.StatusCode`,
                 `        if ($status -eq 200) { Write-Host "✔️  Email sent status successfully registered." }`,
-                `        else { Write-Host "✔️  Registrazione completata (HTTP $status)." }`, // Gestisce altri 2xx
+                `        else { Write-Host "✔️  Registrazione completata (HTTP $status)." }`,
                 "    } catch {",
-                "        # Prova a recuperare lo status code dall'eccezione per un log migliore",
                 `        $status = ""`,
                 `        if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }`,
                 `        Write-Warning "❌  Errore durante la chiamata API (HTTP $status): $_.Exception.Message"`,
@@ -262,6 +267,7 @@ fi
                 "    # 2. Definizioni delle variabili Base64 per i CV",
             ];
 
+            // Aggiungi le definizioni B64 dei CV (queste sono già sicure)
             for (const url of uniqueUrls) {
                 const varName = urlToVar[url];
                 lines.push(`    $${varName} = "${fileCache[url]}"`);
@@ -274,53 +280,65 @@ fi
             lines.push("");
             // $utf8 è già stato definito sopra
 
+            // Loop per generare i blocchi di creazione email
             for (let i = 0; i < filteredMails.length; i++) {
                 const m = filteredMails[i];
-                m.from = emailFrom; 
+                m.from = emailFrom; // Assicura che 'from' sia impostato
 
                 const varName = urlToVar[m.cv_url];
                 const tempFolder = `(Join-Path $env:TEMP "email_attach_${i}")`;
                 const tempPath = `(Join-Path ${tempFolder} "cv.pdf")`;
 
-                // Codifichiamo Subject e Body in Base64
+                // --- CODIFICA BASE64 PER TUTTI I DATI DELL'EMAIL ---
+                const toEmailB64 = stringAsBase64(m.email_address);
+                const fromEmailB64 = stringAsBase64(m.from || "");
                 const subjectB64 = stringAsBase64(m.subject);
                 const bodyB64 = stringAsBase64(m.body);
 
-                lines.push(`    # --- Preparazione Email ${i + 1} per ${m.email_address} ---`);
+                lines.push(`    # --- Preparazione Email ${i + 1} ---`);
                 lines.push("    try {");
+                // Crea file temp per l'allegato
                 lines.push(`        New-Item -ItemType Directory -Path ${tempFolder} -Force -ErrorAction SilentlyContinue | Out-Null`);
                 lines.push(`        [Convert]::FromBase64String($${varName}) | Set-Content -Path ${tempPath} -Encoding Byte`);
                 lines.push("");
+                // Crea l'oggetto mail
                 lines.push(`        $mail = $outlook.CreateItem(0) # 0 = olMailItem`);
                 
+                // Definisce le variabili B64 nello scope di PS
+                lines.push(`        $toB64 = '${toEmailB64}'`);
+                lines.push(`        $fromB64 = '${fromEmailB64}'`);
                 lines.push(`        $subjectB64 = '${subjectB64}'`);
                 lines.push(`        $bodyB64 = '${bodyB64}'`);
+                lines.push("");
 
-                // Imposta l'account "From"
-                const fromEmail = m.from || "";
-                if (fromEmail) {
-                    // L'email "from" è sicura, ma usiamo escapePowerShell per coerenza
-                    lines.push(`        $fromEmail = '${escapePowerShell(fromEmail)}'`);
-                    lines.push(`        $account = $outlook.Session.Accounts | Where-Object { $_.SmtpAddress -eq $fromEmail }`);
-                    lines.push(`        if ($null -ne $account) { $mail.SendUsingAccount = $account }`);
-                    lines.push(`        else { Write-Warning "Account '$fromEmail' non trovato in Outlook. Verrà usato l'account predefinito." }`);
-                }
-
-                // Imposta destinatario, oggetto e corpo
-                lines.push(`        $mail.To = '${m.email_address}'`);
+                // Decodifica i dati
+                lines.push(`        $toEmail = $utf8.GetString([System.Convert]::FromBase64String($toB64))`);
+                lines.push(`        $fromEmail = $utf8.GetString([System.Convert]::FromBase64String($fromB64))`);
+                lines.push(`        $subject = $utf8.GetString([System.Convert]::FromBase64String($subjectB64))`);
+                lines.push(`        $body = $utf8.GetString([System.Convert]::FromBase64String($bodyB64))`);
                 
-                // Decodifichiamo il Base64 per impostare Oggetto e Corpo
-                lines.push(`        $mail.Subject = $utf8.GetString([System.Convert]::FromBase64String($subjectB64))`);
-                lines.push(`        $mail.Body = $utf8.GetString([System.Convert]::FromBase64String($bodyB64))`);
+                // Imposta l'account "From"
+                lines.push(`        if ($fromEmail) {`);
+                lines.push(`            try {`);
+                lines.push(`                $account = $outlook.Session.Accounts | Where-Object { $_.SmtpAddress -eq $fromEmail }`);
+                lines.push(`                if ($null -ne $account) { $mail.SendUsingAccount = $account }`);
+                lines.push(`                else { Write-Warning "Account '$fromEmail' non trovato in Outlook. Verrà usato l'account predefinito." }`);
+                lines.push(`            } catch { Write-Warning "Impossibile impostare l'account 'From': $_.Exception.Message" }`);
+                lines.push(`        }`);
+                
+                // Imposta destinatario, oggetto e corpo (usando le variabili decodificate)
+                lines.push(`        $mail.To = $toEmail`);
+                lines.push(`        $mail.Subject = $subject`);
+                lines.push(`        $mail.Body = $body`);
 
                 // Aggiungi allegato
                 lines.push(`        $mail.Attachments.Add(${tempPath})`);
 
                 // Mostra l'email all'utente
                 lines.push(`        $mail.Display()`);
-                lines.push(`        Write-Host "✔️  Email per ${m.email_address} pronta."`);
+                lines.push(`        Write-Host "✔️  Email per $toEmail pronta."`);
                 lines.push("    } catch {");
-                lines.push(`        Write-Error "❌  Errore nella creazione email per ${m.email_address}: $_"`);
+                lines.push(`        Write-Error "❌  Errore nella creazione email: $_.Exception.Message"`);
                 lines.push("        $ErrorCount++");
                 lines.push("    }");
                 lines.push("");
