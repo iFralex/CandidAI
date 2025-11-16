@@ -1,7 +1,16 @@
 from flask import Flask, request, jsonify
 import threading
 import time
+import logging
+import sys
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+
+logger = logging.getLogger(__name__)
 # Import del tuo modulo
 import candidai_script.main as main_module  # Assicurati che main.py abbia una funzione run(user_id)
 
@@ -17,15 +26,15 @@ def run_candidai_script(user_id):
     Deve restituire il risultato.
     """
     # Esempio: chiama la funzione run nel modulo
-    print(user_id)
+    logger.debug(user_id)
     result = main_module.run(user_id)
     return result
 
 @app.route("/run_module", methods=["POST"])
 def run_module():
-    print("a")
+    logger.debug("a")
     data = request.json
-    print(data)
+    logger.debug(data)
     return jsonify({"result": data})
     if not data or "user_id" not in data:
         return jsonify({"error": "user_id mancante"}), 400
