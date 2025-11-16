@@ -165,6 +165,3 @@ def decide_tasks_per_company(mode, manual_tasks, current_status, companies, user
 
 def run(user_id):
     return main(user_id=user_id, mode="auto")
-
-if __name__ == "__main__":
-    run("Sn5nDML56rTmeYwnJn4wvRQrS3X2")
