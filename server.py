@@ -32,10 +32,7 @@ def run_candidai_script(user_id):
 
 @app.route("/run_module", methods=["POST"])
 def run_module():
-    logger.debug("a")
     data = request.json
-    logger.debug(data)
-    return jsonify({"result": data})
     if not data or "user_id" not in data:
         return jsonify({"error": "user_id mancante"}), 400
 
