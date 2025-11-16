@@ -17,6 +17,7 @@ def run_candidai_script(user_id):
     Deve restituire il risultato.
     """
     # Esempio: chiama la funzione run nel modulo
+    print(user_id)
     result = main_module.run(user_id)
     return result
 
@@ -42,8 +43,3 @@ def run_module():
             return jsonify({"error": str(e)}), 500
 
     return jsonify({"result": result})
-
-if __name__ == "__main__":
-    # Ascolta su tutte le interfacce per accesso da altri PC
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
