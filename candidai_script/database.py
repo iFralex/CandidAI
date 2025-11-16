@@ -356,7 +356,7 @@ def save_articles(user_id: str, unique_id: str, articles_content: list, articles
 
     print(f"✅ Articoli salvati per utente {user_id} con ID {unique_id}")
 
-def save_email(user_id: str, unique_id: str, email, prompt, email_address):
+def save_email(user_id: str, unique_id: str, email, prompt, email_address, cv_url):
     """
     Salva articoli di blog in Firestore:
       - row: oggetto blog_articles con content completo e lista articoli
@@ -386,6 +386,7 @@ def save_email(user_id: str, unique_id: str, email, prompt, email_address):
     emails_ref = db.collection("users").document(user_id)\
         .collection("data").document("emails")
 
+    email["cv_url"] = cv_url
     emails_ref.set({
         unique_id: email,
     }, merge=True)

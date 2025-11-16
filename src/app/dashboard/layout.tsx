@@ -26,7 +26,7 @@ interface DashboardLayoutProps {
 // 1. Dati di navigazione definiti nel Server Component (meno JS client)
 const navigationItems = [
     { name: 'Dashboard', icon: <Home className="w-5 h-5" />, href: '/dashboard', active: true },
-    { name: 'Campaigns', icon: <Activity className="w-5 h-5" />, href: '/campaigns' },
+    { name: 'Send All', icon: <Activity className="w-5 h-5" />, href: '/dashboard/send-all' },
     { name: 'Templates', icon: <FileText className="w-5 h-5" />, href: '/templates' },
     { name: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, href: '/analytics' },
     { name: 'Settings', icon: <Settings className="w-5 h-5" />, href: '/settings' }

@@ -215,7 +215,7 @@ Generate ONLY the JSON output with no additional commentary.
 
         email = ai_chat(prompt, "json")
 
-        save_email(user_id, ids[f'{company["name"]}-{user_id}'], email, prompt, email_address)
+        save_email(user_id, ids[f'{company["name"]}-{user_id}'], email, prompt, email_address, cv_url)
         emails[company["name"]] = email
     
     return emails

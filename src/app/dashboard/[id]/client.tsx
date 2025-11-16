@@ -1130,9 +1130,7 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
                   from={"ifralex.business@gmail.com"}
                   subject={email?.subject}
                   body={email?.body}
-                  attachmentUrl={
-                    "https://firebasestorage.googleapis.com/v0/b/candidai-1bda0.firebasestorage.app/o/cv%2FWGF1EmgNV2TT8TrgWVxNg7dWWcS2%2FCV.pdf?alt=media&token=70f9f6f2-d731-4b7a-a66c-34c34e4795e3"
-                  }
+                  attachmentUrl={email?.cv_url}
                 />
               ) : (
                 <Button
