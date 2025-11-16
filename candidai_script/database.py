@@ -387,6 +387,8 @@ def save_email(user_id: str, unique_id: str, email, prompt, email_address, cv_ur
         .collection("data").document("emails")
 
     email["cv_url"] = cv_url
+    if email_address:
+        email["email_address"] = email_address
     emails_ref.set({
         unique_id: email,
     }, merge=True)
@@ -397,8 +399,6 @@ def save_email(user_id: str, unique_id: str, email, prompt, email_address, cv_ur
         .collection(unique_id).document("details")
 
     email["prompt"] = prompt
-    if email_address:
-        email["email_address"] = email_address
     details_ref.set({
         "email": email,
     }, merge=True)

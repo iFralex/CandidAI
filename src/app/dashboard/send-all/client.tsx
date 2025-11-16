@@ -25,6 +25,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { getFileFromFirebase } from '@/actions/onboarding-actions';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 
 // Mock data for demonstration
 const mockMails = [
@@ -59,7 +62,303 @@ const cardVariants = {
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
 };
 
-export const Emails = ({ mails = mockMails, onSendEmails, onUnsendEmail }) => {
+export const Emails = ({ mails, userId }) => {
+    const [emails, setEmails] = useState(mails || []);
+    const [emailFrom, setEmailFrom] = useState("");
+    const [sentInclude, setSentInclude] = useState(false);
+
+    const generateMailExecutable = async (platform = "darwin") => {
+        /**
+         * Esegue l'escape delle stringhe per AppleScript (per "Mail.app")
+         */
+        function escapeAppleScript(str) {
+            return str.replace(/"/g, '\\"');
+        }
+
+        /**
+         * Esegue l'escape delle stringhe per PowerShell (per stringhe tra apici singoli)
+         */
+        function escapePowerShell(str) {
+            // Sostituisce un apice singolo ' con due apici singoli ''
+            return str.replace(/'/g, "''");
+        }
+
+        // 1. Filtra le email
+        let filteredMails = [...emails];
+        if (!sentInclude) {
+            filteredMails = filteredMails.filter(m => !m.email_sent);
+        }
+
+        if (filteredMails.length === 0) {
+            alert("No emails to process based on the selected filter.");
+            return;
+        }
+
+        // --- Logica Comune (pre-elaborazione) ---
+        // (Questa logica è necessaria per entrambe le piattaforme)
+
+        // Otteniamo tutti gli URL unici per scaricarli una sola volta
+        const uniqueUrls = [...new Set(filteredMails.map(m => m.cv_url))];
+        const fileCache = {}; // Cache per i dati base64
+        const urlToVar = {}; // Mappa da URL a nome variabile (es. CV_0)
+
+        // Mostra un indicatore di caricamento (suggerito)
+        // es. setLoading(true, "Downloading attachments...");
+
+        try {
+            // Scarichiamo ogni CV una sola volta
+            for (const [i, url] of uniqueUrls.entries()) {
+                const data = await getFileFromFirebase(url);
+                fileCache[url] = data.base64.split(",").pop(); // Rimuove il prefisso "data:..."
+                urlToVar[url] = `CV_${i}`;
+            }
+        } catch (error) {
+            console.error("Failed to download attachments:", error);
+            alert("Error downloading attachments. Please check console.");
+            // es. setLoading(false);
+            return;
+        }
+        // es. setLoading(false);
+
+
+        // Prepariamo il payload per l'API
+        const companyIds = filteredMails.map(m => m.companyId);
+        const companyIdsJson = JSON.stringify({ ids: companyIds, userId });
+
+        let content = "";
+        let blobType = "text/plain";
+        let fileName = "send-mails.txt";
+
+        // --- Logica Specifica per Piattaforma ---
+
+        if (platform === "darwin") {
+            // --- macOS (Bash + AppleScript) ---
+
+            blobType = "text/x-sh";
+            fileName = "send-mails.command";
+
+            const lines = [
+                "#!/usr/bin/env bash",
+                "set -e",
+                "cleanup() { rm -rf /tmp/email_attach_* 2>/dev/null || true; }",
+                "trap cleanup EXIT",
+                ""
+            ];
+
+            // API Call
+            lines.push(`# Send company ID list to server`);
+            lines.push(`
+status=$(curl -s -o /dev/null -w "%{http_code}" \\
+  -X POST -H "Content-Type: application/json" \\
+  -d '${companyIdsJson}' \\
+  "${process.env.NEXT_PUBLIC_DOMAIN}/api/protected/sent_emails")
+
+if [ "$status" -eq 200 ]; then
+  echo "✔️  Email sent status successfully registered."
+else
+  echo "❌  Error while registering email sent status (HTTP $status)."
+fi
+`.trim());
+            lines.push("");
+
+            // Definiamo le variabili base64 in bash
+            for (const url of uniqueUrls) {
+                const varName = urlToVar[url];
+                lines.push(`${varName}="${fileCache[url]}"`);
+            }
+            lines.push("");
+
+            // Creiamo le mail
+            for (let i = 0; i < filteredMails.length; i++) {
+                const m = filteredMails[i];
+                m.from = emailFrom; // Assicura che 'from' sia impostato
+
+                const varName = urlToVar[m.cv_url];
+                const tempFolder = `/tmp/email_attach_${i}`;
+                const tempPath = `${tempFolder}/cv.pdf`;
+
+                lines.push(`mkdir -p "${tempFolder}"`);
+                lines.push(`echo "$${varName}" | base64 --decode > "${tempPath}"`);
+
+                lines.push(`osascript <<'EOF'`);
+                lines.push(`tell application "Mail"`);
+                lines.push(
+                    `set msg to make new outgoing message with properties {subject:"${escapeAppleScript(m.subject)}", content:"${escapeAppleScript(m.body)}", sender:"${escapeAppleScript(m.from || "")}"}`
+                );
+                lines.push(`  tell msg`);
+                lines.push(
+                    `make new to recipient at end of to recipients with properties {address:"${m.email_address}"}`
+                );
+                lines.push(
+                    `make new attachment with properties {file name:POSIX file "${tempPath}"} at after the last paragraph`
+                );
+                lines.push(`    set visible to true`);
+                lines.push(`  end tell`);
+                lines.push(`  activate`);
+                lines.push(`end tell`);
+                lines.push(`EOF`);
+            }
+
+            content = lines.join("\n");
+
+        } else if (platform === "win32") {
+            // --- Windows (PowerShell + Outlook COM) ---
+
+            blobType = "text/x-powershell";
+            fileName = "send-mails.ps1";
+
+            const lines = [
+                "# Imposta la preferenza di errore per fermare lo script in caso di problemi",
+                "Set-ErrorActionPreference -ErrorAction Stop",
+                "$ErrorCount = 0",
+                "try {",
+                "    # 1. Chiamata API per registrare gli invii",
+                "    Write-Host 'Registrazione dello stato di invio sul server...'",
+                `    $companyIdsJson = '${companyIdsJson}'`,
+                `    $uri = "${process.env.NEXT_PUBLIC_DOMAIN}/api/protected/sent_emails"`,
+                "    try {",
+                `        $response = Invoke-WebRequest -Method POST -Uri $uri -Body $companyIdsJson -ContentType "application/json"`,
+                `        $status = $response.StatusCode`,
+                `        if ($status -eq 200) { Write-Host "✔️  Email sent status successfully registered." }`,
+                `        else { Write-Host "❌  Error while registering email sent status (HTTP $status)." }`,
+                "    } catch {",
+                `        Write-Warning "❌  Errore durante la chiamata API: $_"`,
+                "    }",
+                "",
+                "    # 2. Definizioni delle variabili Base64 per i CV",
+            ];
+
+            for (const url of uniqueUrls) {
+                const varName = urlToVar[url];
+                lines.push(`    $${varName} = "${fileCache[url]}"`);
+            }
+            lines.push("");
+
+            lines.push("    # 3. Creazione delle email in Outlook");
+            lines.push("    Write-Host 'Avvio di Outlook...'");
+            lines.push(`    $outlook = New-Object -ComObject "Outlook.Application"`);
+            lines.push("");
+
+            for (let i = 0; i < filteredMails.length; i++) {
+                const m = filteredMails[i];
+                m.from = emailFrom; // Assicura che 'from' sia impostato
+
+                const varName = urlToVar[m.cv_url];
+                const tempFolder = `(Join-Path $env:TEMP "email_attach_${i}")`;
+                const tempPath = `(Join-Path ${tempFolder} "cv.pdf")`;
+
+                lines.push(`    # --- Preparazione Email ${i + 1} per ${m.email_address} ---`);
+                lines.push("    try {");
+                lines.push(`        New-Item -ItemType Directory -Path ${tempFolder} -Force -ErrorAction SilentlyContinue | Out-Null`);
+                lines.push(`        [Convert]::FromBase64String($${varName}) | Set-Content -Path ${tempPath} -Encoding Byte`);
+                lines.push("");
+                lines.push(`        $mail = $outlook.CreateItem(0) # 0 = olMailItem`);
+
+                // Imposta l'account "From" se esiste in Outlook
+                const fromEmail = m.from || "";
+                if (fromEmail) {
+                    lines.push(`        $fromEmail = '${escapePowerShell(fromEmail)}'`);
+                    lines.push(`        $account = $outlook.Session.Accounts | Where-Object { $_.SmtpAddress -eq $fromEmail }`);
+                    lines.push(`        if ($null -ne $account) { $mail.SendUsingAccount = $account }`);
+                    lines.push(`        else { Write-Warning "Account '$fromEmail' non trovato in Outlook. Verrà usato l'account predefinito." }`);
+                }
+
+                // Imposta destinatario, oggetto e corpo
+                lines.push(`        $mail.To = '${m.email_address}'`);
+                lines.push(`        $mail.Subject = '${escapePowerShell(m.subject)}'`);
+                lines.push(`        $mail.Body = '${escapePowerShell(m.body)}'`);
+
+                // Aggiungi allegato
+                lines.push(`        $mail.Attachments.Add(${tempPath})`);
+
+                // Mostra l'email all'utente
+                lines.push(`        $mail.Display()`);
+                lines.push(`        Write-Host "✔️  Email per ${m.email_address} pronta."`);
+                lines.push("    } catch {");
+                lines.push(`        Write-Error "❌  Errore nella creazione email per ${m.email_address}: $_"`);
+                lines.push("        $ErrorCount++");
+                lines.push("    }");
+                lines.push("");
+            }
+
+            lines.push("} finally {");
+            lines.push(`    # 4. Pulizia dei file temporanei`);
+            lines.push(`    Write-Host "Pulizia dei file temporanei..."`);
+            lines.push(`    Remove-Item -Path (Join-Path $env:TEMP "email_attach_*") -Recurse -Force -ErrorAction SilentlyContinue`);
+            lines.push("}");
+            lines.push("");
+            lines.push(`if ($ErrorCount -gt 0) { Write-Warning "$ErrorCount errori riscontrati durante la creazione delle email." }`);
+            lines.push(`else { Write-Host "Tutte le email sono state processate con successo." }`);
+            lines.push(`Write-Host "Script terminato. Premi Invio per chiudere."`);
+            lines.push(`Read-Host`); // Pausa per permettere all'utente di leggere l'output
+
+            content = lines.join("\r\n"); // Windows usa CRLF
+
+        } else {
+            alert(`Platform "${platform}" is not supported.`);
+            return;
+        }
+
+        // --- Download dello Script Generato ---
+        const blob = new Blob([content], { type: blobType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    return (
+        <div className="mx-auto p-6 rounded-xl shadow-md space-y-4">
+            <Input
+                type="email"
+                placeholder="Sender Email Address"
+                value={emailFrom}
+                onChange={(e) => setEmailFrom(e.target.value)}
+            />
+
+            <div className="flex items-center space-x-2">
+                <Checkbox
+                    id="sentInclude"
+                    checked={sentInclude}
+                    onCheckedChange={(e) => setSentInclude(e)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-400"
+                />
+                <label htmlFor="sentInclude" className="text-gray-700 select-none">
+                    Include sent emails in the script
+                </label>
+            </div>
+            <Separator />
+
+            <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                    <Button
+                        onClick={() => generateMailExecutable("win32")}
+                    >
+                        Generate Windows script
+                    </Button>
+                    <p>powershell -ExecutionPolicy Bypass -File .\send-mails.ps1</p>
+                </div>
+                <div className="flex-1">
+                    <Button
+                        onClick={() => generateMailExecutable("darwin")}
+                    >
+                        Generate MacOS script
+                    </Button>
+                    <p>chmod +x send_mails.command && ./send_mails.command</p>
+                </div>
+            </div>
+
+            <div className="text-sm text-gray-500 space-y-1">
+
+
+            </div>
+        </div>
+    );
+};
+
+const EmailsFull = ({ mails, onSendEmails, onUnsendEmail, userId }) => {
     const [emails, setEmails] = useState(mails);
     const [filter, setFilter] = useState('all'); // 'all', 'unsent', 'sent', 'date'
     const [dateFilter, setDateFilter] = useState({ after: '', before: '' });
@@ -175,9 +474,24 @@ export const Emails = ({ mails = mockMails, onSendEmails, onUnsendEmail }) => {
         return null;
     };
 
+    const [emailFrom, setEmailFrom] = useState("");
+    const [sentInclude, setSentInclude] = useState(false);
+
     const generateMailExecutable = async (platform = "darwin") => {
         function escapeAppleScript(str) {
-            return str.replace(/"/g, '\\"'); // scappa i doppi apici
+            return str.replace(/"/g, '\\"');
+        }
+
+        // ✅ Filter emails based on sentInclude
+        let filteredMails = emails;
+        console.log(filteredMails, filteredMails.length)
+        if (!sentInclude) {
+            filteredMails = mails.filter(m => !m.email_sent);
+        }
+
+        if (filteredMails.length === 0) {
+            alert("No emails to process based on the selected filter.");
+            return;
         }
 
         let content = "";
@@ -188,26 +502,61 @@ export const Emails = ({ mails = mockMails, onSendEmails, onUnsendEmail }) => {
                 "set -e",
                 "cleanup() { rm -f /tmp/email_attach_* 2>/dev/null || true; }",
                 "trap cleanup EXIT",
+                ""
             ];
 
-            // Usare for...of per aspettare ogni allegato
-            mails.push(mails[0])
-            for (let i = 0; i < mails.length; i++) {
-                const m = mails[i];
+            // 1) Company IDs list
+            const companyIds = filteredMails.map(m => m.companyId);
+            const companyIdsJson = JSON.stringify({ ids: companyIds, userId });
 
-                // Ottieni allegato da Firebase
-                const fileData = await getFileFromFirebase(
-                    "https://firebasestorage.googleapis.com/v0/b/candidai-1bda0.firebasestorage.app/o/cv%2FWGF1EmgNV2TT8TrgWVxNg7dWWcS2%2FCV.pdf?alt=media&token=70f9f6f2-d731-4b7a-a66c-34c34e4795e3"
-                );
+            // 2) Server notification
+            lines.push(`# Send company ID list to server`);
 
-                m.attached = fileData.base64;
-                m.to = "jusborucka@gmail.com";
-                m.from = "ifralex.business@gmail.com";
+            lines.push(`
+status=$(curl -s -o /dev/null -w "%{http_code}" \\
+  -X POST -H "Content-Type: application/json" \\
+  -d '${companyIdsJson}' \\
+  "${process.env.NEXT_PUBLIC_DOMAIN}/api/protected/sent_emails")
 
-                const base64 = m.attached.split(",").pop(); // togli prefisso data:
-                const path = `/tmp/email_attach_${i}.pdf`;
+if [ "$status" -eq 200 ]; then
+  echo "✔️  Email sent status successfully registered."
+else
+  echo "❌  Error while registering email sent status (HTTP $status)."
+fi
+`.trim());
+            lines.push("");
 
-                lines.push(`echo "${base64}" | base64 --decode > "${path}"`);
+            const uniqueUrls = [...new Set(filteredMails.map(m => m.cv_url))];
+            const fileCache = {};
+            const urlToVar = {};
+
+            // Download CVs
+            for (const [i, url] of uniqueUrls.entries()) {
+                const data = await getFileFromFirebase(url);
+                fileCache[url] = data.base64.split(",").pop();
+                urlToVar[url] = `CV_${i}`;
+            }
+
+            // Base64 variables
+            for (const url of uniqueUrls) {
+                const varName = urlToVar[url];
+                lines.push(`${varName}="${fileCache[url]}"`);
+            }
+            lines.push("");
+
+            // Duplicate first email (your existing logic)
+            filteredMails.push(filteredMails[0]);
+
+            for (let i = 0; i < filteredMails.length; i++) {
+                const m = filteredMails[i];
+                m.from = emailFrom;
+
+                const varName = urlToVar[m.cv_url];
+                // keep unique temp file but rename attachment as cv.pdf
+                const tempPath = `/tmp/email_attach_${i}.pdf`;
+                const attachmentName = "cv.pdf";
+
+                lines.push(`echo "$${varName}" | base64 --decode > "${tempPath}"`);
                 lines.push(`osascript <<'EOF'`);
                 lines.push(`tell application "Mail"`);
                 lines.push(
@@ -215,10 +564,11 @@ export const Emails = ({ mails = mockMails, onSendEmails, onUnsendEmail }) => {
                 );
                 lines.push(`  tell msg`);
                 lines.push(
-                    `    make new to recipient at end of to recipients with properties {address:"${m.to}"}`
+                    `make new to recipient at end of to recipients with properties {address:"${m.email_address}"}`
                 );
+                // qui cambiamo solo il nome dell’allegato
                 lines.push(
-                    `    make new attachment with properties {file name:POSIX file "${path}"} at after the last paragraph`
+                    `make new attachment with properties {file name:POSIX file "${tempPath}", name:"${attachmentName}"} at after the last paragraph`
                 );
                 lines.push(`    set visible to true`);
                 lines.push(`  end tell`);
@@ -230,7 +580,7 @@ export const Emails = ({ mails = mockMails, onSendEmails, onUnsendEmail }) => {
             content = lines.join("\n");
         }
 
-        // Creazione blob e download
+        // Download script
         const blob = new Blob([content], { type: platform === "darwin" ? "text/x-sh" : "text/x-powershell" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -241,8 +591,14 @@ export const Emails = ({ mails = mockMails, onSendEmails, onUnsendEmail }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 p-6">
-            <div className="max-w-7xl mx-auto">
+        <div className="">
+            {console.log(emails)}
+            <Input type="email" placeholder="Sender Email Address" value={emailFrom} onChange={(e) => setEmailFrom(e.target.value)} />
+            <Checkbox checked={sentInclude} onCheckedChange={setSentInclude}>Include sent emails in the script</Checkbox>
+            <Button onClick={() => generateMailExecutable("windows")}>Generate Windows script</Button>
+            <Button onClick={() => generateMailExecutable("darwin")}>Generate MacOS script</Button>
+            <p>chmod +x send_mails.command && ./send_mails.command</p>
+            {false && <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
@@ -640,7 +996,7 @@ export const Emails = ({ mails = mockMails, onSendEmails, onUnsendEmail }) => {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-            </div>
+            </div>}
         </div>
     );
 };

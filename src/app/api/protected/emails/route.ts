@@ -32,7 +32,8 @@ export async function GET(request) {
 
     return NextResponse.json({
       success: true,
-      data: userData
+      data: userData,
+      userId: decodedToken.uid
     });
 
   } catch (error) {

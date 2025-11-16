@@ -11,7 +11,7 @@ import { clientConfig, creditsInfo, plansData, serverConfig } from '@/config';
 import { adminStorage } from '@/lib/firebase-admin';
 
 async function startServer(userId: string) {
-    fetch(process.env.SERVER__RUNNER_URL || "", {
+    fetch(process.env.SERVER_RUNNER_URL || "", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"

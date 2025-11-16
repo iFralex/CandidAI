@@ -17,8 +17,8 @@ const Page = async () => {
 
     if (!data.success)
         throw new Error(data.error)
-
-    return <Emails mails={Object.values(data.data)} />
+console.log("emails", Object.entries(data.data).map(email => ({...email[1], companyId: email[0]})).length)
+    return <Emails mails={Object.entries(data.data).map(email => ({...email[1], companyId: email[0]}))} userId={data.userId} />
 }
 
 export default Page
