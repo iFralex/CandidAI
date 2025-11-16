@@ -207,6 +207,27 @@ fi
             blobType = "text/x-powershell";
             fileName = "send-mails.ps1";
 
+            /**
+             * [NUOVA FUNZIONE HELPER]
+             * Converte una stringa (anche UTF-8) in Base64
+             */
+            function stringAsBase64(str) {
+                try {
+                    const encoder = new TextEncoder(); // Codifica in UTF-8
+                    const data = encoder.encode(str || ""); // Gestisce stringhe null/undefined
+                    let binString = '';
+                    // Converte l'array di byte (Uint8Array) in una stringa binaria
+                    data.forEach((byte) => {
+                        binString += String.fromCharCode(byte);
+                    });
+                    // Codifica la stringa binaria in Base64
+                    return btoa(binString);
+                } catch (e) {
+                    console.error("Errore nella codifica Base64:", e);
+                    return btoa("Errore nella codifica"); // Fallback
+                }
+            }
+
             const lines = [
                 "# Imposta la preferenza di errore per fermare lo script in caso di problemi",
                 "Set-ErrorActionPreference -ErrorAction Stop",
@@ -238,6 +259,9 @@ fi
             lines.push("    Write-Host 'Avvio di Outlook...'");
             lines.push(`    $outlook = New-Object -ComObject "Outlook.Application"`);
             lines.push("");
+            // FIX: Definiamo l'encoding UTF-8 una sola volta
+            lines.push(`    $utf8 = [System.Text.Encoding]::UTF8`);
+            lines.push("");
 
             for (let i = 0; i < filteredMails.length; i++) {
                 const m = filteredMails[i];
@@ -247,16 +271,25 @@ fi
                 const tempFolder = `(Join-Path $env:TEMP "email_attach_${i}")`;
                 const tempPath = `(Join-Path ${tempFolder} "cv.pdf")`;
 
+                // FIX: Codifichiamo Subject e Body in Base64
+                const subjectB64 = stringAsBase64(m.subject);
+                const bodyB64 = stringAsBase64(m.body);
+
                 lines.push(`    # --- Preparazione Email ${i + 1} per ${m.email_address} ---`);
                 lines.push("    try {");
                 lines.push(`        New-Item -ItemType Directory -Path ${tempFolder} -Force -ErrorAction SilentlyContinue | Out-Null`);
                 lines.push(`        [Convert]::FromBase64String($${varName}) | Set-Content -Path ${tempPath} -Encoding Byte`);
                 lines.push("");
                 lines.push(`        $mail = $outlook.CreateItem(0) # 0 = olMailItem`);
+                
+                // FIX: Definiamo le variabili B64 nello script PS
+                lines.push(`        $subjectB64 = '${subjectB64}'`);
+                lines.push(`        $bodyB64 = '${bodyB64}'`);
 
                 // Imposta l'account "From" se esiste in Outlook
                 const fromEmail = m.from || "";
                 if (fromEmail) {
+                    // L'email "from" è sicura e può ancora usare escapePowerShell
                     lines.push(`        $fromEmail = '${escapePowerShell(fromEmail)}'`);
                     lines.push(`        $account = $outlook.Session.Accounts | Where-Object { $_.SmtpAddress -eq $fromEmail }`);
                     lines.push(`        if ($null -ne $account) { $mail.SendUsingAccount = $account }`);
@@ -264,9 +297,12 @@ fi
                 }
 
                 // Imposta destinatario, oggetto e corpo
-                lines.push(`        $mail.To = '${m.email_address}'`);
-                lines.push(`        $mail.Subject = '${escapePowerShell(m.subject)}'`);
-                lines.push(`        $mail.Body = '${escapePowerShell(m.body)}'`);
+                lines.push(`        $mail.To = '${m.email_address}'`); // L'email "To" è sicura
+                
+                // FIX: Decodifichiamo il Base64 per impostare Oggetto e Corpo
+                // Questo evita qualsiasi problema di parsing di caratteri speciali (&, $, ', ", ecc.)
+                lines.push(`        $mail.Subject = $utf8.GetString([System.Convert]::FromBase64String($subjectB64))`);
+                lines.push(`        $mail.Body = $utf8.GetString([System.Convert]::FromBase64String($bodyB64))`);
 
                 // Aggiungi allegato
                 lines.push(`        $mail.Attachments.Add(${tempPath})`);
