@@ -12,7 +12,6 @@ from candidai_script.database import (
 import logging
 import time
 
-
 def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
     """
     Esegue i task per generare blog, recruiter ed email in modalità automatica o manuale.
@@ -42,13 +41,6 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
 
     companies = [c for c in companies if c not in new_companies]
     print(companies,new_companies)
-
-    # Configura logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format="[%(asctime)s] %(levelname)s - %(message)s",
-        datefmt="%H:%M:%S",
-    )
 
     # Recupera lo stato attuale
     current_status = get_results_status(user_id)
