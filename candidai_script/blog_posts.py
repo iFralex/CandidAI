@@ -58,8 +58,9 @@ def init_driver(force_new=False):
         options.add_argument("--no-sandbox")
         options.add_argument("--use-gl=swiftshader")
         options.add_argument("--disable-dev-shm-usage")
-
+        logging.info("🚀 Launching undetected Chrome...")
         driver = uc.Chrome(options=options)
+        logging.info("✅ Driver created")
         return driver
 
     # Controllo se il driver è ancora vivo
