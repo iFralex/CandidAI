@@ -52,7 +52,7 @@ def init_driver(force_new=False):
 
     # Se non esiste, crealo
     if driver is None:
-        print("🟢 Creating new driver")
+        logging.info("🟢 Creating new driver")
         options = uc.ChromeOptions()
         options.headless = False
         options.add_argument("--no-sandbox")
@@ -65,10 +65,10 @@ def init_driver(force_new=False):
     # Controllo se il driver è ancora vivo
     try:
         _ = driver.title  # comando leggero
-        print("driver fun")
+        logging.info("driver fun")
         return driver      # driver funzionante
     except (WebDriverException, urllib3.exceptions.NewConnectionError):
-        print("🔴 Driver crashato! Ricreazione...")
+        logging.info("🔴 Driver crashato! Ricreazione...")
         return init_driver(force_new=True)
 
 
@@ -93,13 +93,13 @@ def get_html(
     try:
         current_url = driver.current_url
         if current_url == url:
-            print(f"URL già caricato: '{url}', restituisco HTML corrente senza ricaricare.")
+            logging.info(f"URL già caricato: '{url}', restituisco HTML corrente senza ricaricare.")
             return driver.page_source
     except Exception:
         # Se il driver non ha ancora una current_url valida, continuiamo normalmente
         pass
 
-    print(f"Navigating to URL: '{url}'")
+    logging.info(f"Navigating to URL: '{url}'")
     driver.get(url)
     time.sleep(wait_time)
 
@@ -312,7 +312,7 @@ def ai_chat(
         
         if count <= 2:
             # Step 1-2: Solo attesa
-            print(f"⏳ Rate limit (429) - Step 1: Attesa {retry_after}s... (Occorrenza {count})")
+            logging.info(f"⏳ Rate limit (429) - Step 1: Attesa {retry_after}s... (Occorrenza {count})")
             time.sleep(retry_after)
             return True, retry_after
         
@@ -320,7 +320,7 @@ def ai_chat(
             # Step 3-4: Cambio API key
             old_idx = current_api_key_idx
             current_api_key_idx = (current_api_key_idx + 1) % len(API_KEYS)
-            print(f"⏳ Rate limit (429) - Step 2: Cambio API key [{old_idx}→{current_api_key_idx}] + attesa {retry_after}s...")
+            logging.info(f"⏳ Rate limit (429) - Step 2: Cambio API key [{old_idx}→{current_api_key_idx}] + attesa {retry_after}s...")
             time.sleep(retry_after)
             return True, retry_after
         
@@ -329,7 +329,7 @@ def ai_chat(
             old_model = FALLBACK_MODELS[current_model_idx]
             current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
             new_model = FALLBACK_MODELS[current_model_idx]
-            print(f"⏳ Rate limit (429) - Step 3: Cambio modello [{old_model}→{new_model}] + attesa {retry_after}s...")
+            logging.info(f"⏳ Rate limit (429) - Step 3: Cambio modello [{old_model}→{new_model}] + attesa {retry_after}s...")
             time.sleep(retry_after)
             
             # Reset counter se abbiamo provato tutti i modelli
@@ -354,14 +354,14 @@ def ai_chat(
             # Step 1: Cambio API key immediato
             old_idx = current_api_key_idx
             current_api_key_idx = (current_api_key_idx + 1) % len(API_KEYS)
-            print(f"🔑 Auth error (401) - Step 1: Cambio API key [{old_idx}→{current_api_key_idx}]")
+            logging.info(f"🔑 Auth error (401) - Step 1: Cambio API key [{old_idx}→{current_api_key_idx}]")
             return True
         
         elif count <= 3:
             # Step 2-3: Cambio API key + attesa
             old_idx = current_api_key_idx
             current_api_key_idx = (current_api_key_idx + 1) % len(API_KEYS)
-            print(f"🔑 Auth error (401) - Step 2: Cambio API key [{old_idx}→{current_api_key_idx}] + attesa 2s...")
+            logging.info(f"🔑 Auth error (401) - Step 2: Cambio API key [{old_idx}→{current_api_key_idx}] + attesa 2s...")
             time.sleep(2)
             return True
         
@@ -370,12 +370,12 @@ def ai_chat(
             old_model = FALLBACK_MODELS[current_model_idx]
             current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
             new_model = FALLBACK_MODELS[current_model_idx]
-            print(f"🔑 Auth error (401) - Step 3: Cambio modello [{old_model}→{new_model}]")
+            logging.info(f"🔑 Auth error (401) - Step 3: Cambio modello [{old_model}→{new_model}]")
             time.sleep(1)
             
             # Se abbiamo provato tutte le combinazioni, ferma
             if current_model_idx == 0 and count > len(API_KEYS) * len(FALLBACK_MODELS):
-                print("❌ Tutte le API key fallite su tutti i modelli")
+                logging.info("❌ Tutte le API key fallite su tutti i modelli")
                 return False
             
             return True
@@ -397,7 +397,7 @@ def ai_chat(
             old_model = FALLBACK_MODELS[current_model_idx]
             current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
             new_model = FALLBACK_MODELS[current_model_idx]
-            print(f"🔧 Bad Gateway (502) - Step 1: Cambio modello [{old_model}→{new_model}]")
+            logging.info(f"🔧 Bad Gateway (502) - Step 1: Cambio modello [{old_model}→{new_model}]")
             return True
         
         elif count <= 3:
@@ -406,7 +406,7 @@ def ai_chat(
             current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
             new_model = FALLBACK_MODELS[current_model_idx]
             wait_time = INITIAL_BACKOFF * count
-            print(f"🔧 Bad Gateway (502) - Step 2: Cambio modello [{old_model}→{new_model}] + attesa {wait_time}s...")
+            logging.info(f"🔧 Bad Gateway (502) - Step 2: Cambio modello [{old_model}→{new_model}] + attesa {wait_time}s...")
             time.sleep(wait_time)
             return True
         
@@ -414,14 +414,14 @@ def ai_chat(
             # Step 4+: Attiva proxy
             if not use_proxy:
                 use_proxy = True
-                print(f"🔧 Bad Gateway (502) - Step 3: Attivazione proxy")
+                logging.info(f"🔧 Bad Gateway (502) - Step 3: Attivazione proxy")
                 time.sleep(2)
             else:
                 # Continua a cambiare modello con proxy attivo
                 old_model = FALLBACK_MODELS[current_model_idx]
                 current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
                 new_model = FALLBACK_MODELS[current_model_idx]
-                print(f"🔧 Bad Gateway (502) - Step 3: Cambio modello con proxy [{old_model}→{new_model}]")
+                logging.info(f"🔧 Bad Gateway (502) - Step 3: Cambio modello con proxy [{old_model}→{new_model}]")
                 time.sleep(3)
             
             return True
@@ -440,14 +440,14 @@ def ai_chat(
         
         if count == 1:
             # Step 1: Attesa breve
-            print(f"⏸️ Service Unavailable (503) - Step 1: Attesa 3s...")
+            logging.info(f"⏸️ Service Unavailable (503) - Step 1: Attesa 3s...")
             time.sleep(3)
             return True
         
         elif count == 2:
             # Step 2: Attiva proxy
             use_proxy = True
-            print(f"⏸️ Service Unavailable (503) - Step 2: Attivazione proxy + attesa 5s...")
+            logging.info(f"⏸️ Service Unavailable (503) - Step 2: Attivazione proxy + attesa 5s...")
             time.sleep(5)
             return True
         
@@ -456,7 +456,7 @@ def ai_chat(
             old_model = FALLBACK_MODELS[current_model_idx]
             current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
             new_model = FALLBACK_MODELS[current_model_idx]
-            print(f"⏸️ Service Unavailable (503) - Step 3: Cambio modello con proxy [{old_model}→{new_model}]")
+            logging.info(f"⏸️ Service Unavailable (503) - Step 3: Cambio modello con proxy [{old_model}→{new_model}]")
             time.sleep(4)
             return True
     
@@ -474,14 +474,14 @@ def ai_chat(
         
         if count == 1:
             # Step 1: Retry immediato
-            print(f"⏱️ Timeout - Step 1: Retry immediato")
+            logging.info(f"⏱️ Timeout - Step 1: Retry immediato")
             time.sleep(1)
             return True
         
         elif count == 2:
             # Step 2: Attiva proxy
             use_proxy = True
-            print(f"⏱️ Timeout - Step 2: Attivazione proxy")
+            logging.info(f"⏱️ Timeout - Step 2: Attivazione proxy")
             time.sleep(2)
             return True
         
@@ -490,7 +490,7 @@ def ai_chat(
             old_model = FALLBACK_MODELS[current_model_idx]
             current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
             new_model = FALLBACK_MODELS[current_model_idx]
-            print(f"⏱️ Timeout - Step 3: Cambio modello con proxy [{old_model}→{new_model}]")
+            logging.info(f"⏱️ Timeout - Step 3: Cambio modello con proxy [{old_model}→{new_model}]")
             time.sleep(2)
             return True
     
@@ -509,13 +509,13 @@ def ai_chat(
         if count == 1:
             # Step 1: Attiva proxy
             use_proxy = True
-            print(f"🔌 Connection Error - Step 1: Attivazione proxy")
+            logging.info(f"🔌 Connection Error - Step 1: Attivazione proxy")
             time.sleep(2)
             return True
         
         elif count == 2:
             # Step 2: Attesa con proxy
-            print(f"🔌 Connection Error - Step 2: Attesa 5s con proxy...")
+            logging.info(f"🔌 Connection Error - Step 2: Attesa 5s con proxy...")
             time.sleep(5)
             return True
         
@@ -524,7 +524,7 @@ def ai_chat(
             old_model = FALLBACK_MODELS[current_model_idx]
             current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
             new_model = FALLBACK_MODELS[current_model_idx]
-            print(f"🔌 Connection Error - Step 3: Cambio modello [{old_model}→{new_model}]")
+            logging.info(f"🔌 Connection Error - Step 3: Cambio modello [{old_model}→{new_model}]")
             time.sleep(3)
             return True
     
@@ -543,13 +543,13 @@ def ai_chat(
         if count == 1:
             # Step 1: Disabilita proxy
             use_proxy = False
-            print(f"🚫 Proxy Error - Step 1: Disabilitazione proxy")
+            logging.info(f"🚫 Proxy Error - Step 1: Disabilitazione proxy")
             time.sleep(1)
             return True
         
         elif count == 2:
             # Step 2: Attesa
-            print(f"🚫 Proxy Error - Step 2: Attesa 3s senza proxy...")
+            logging.info(f"🚫 Proxy Error - Step 2: Attesa 3s senza proxy...")
             time.sleep(3)
             return True
         
@@ -558,7 +558,7 @@ def ai_chat(
             old_model = FALLBACK_MODELS[current_model_idx]
             current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
             new_model = FALLBACK_MODELS[current_model_idx]
-            print(f"🚫 Proxy Error - Step 3: Cambio modello [{old_model}→{new_model}]")
+            logging.info(f"🚫 Proxy Error - Step 3: Cambio modello [{old_model}→{new_model}]")
             time.sleep(2)
             return True
     
@@ -597,8 +597,8 @@ def ai_chat(
                 log_ai_interaction("./candidai_script/ai_log.json", prompt, result)
                 output = result.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
                 
-                print(f"✅ Richiesta completata con successo!")
-                print(f"   API Key: {current_api_key_idx}, Modello: {FALLBACK_MODELS[current_model_idx]}, Proxy: {use_proxy}")
+                logging.info(f"✅ Richiesta completata con successo!")
+                logging.info(f"   API Key: {current_api_key_idx}, Modello: {FALLBACK_MODELS[current_model_idx]}, Proxy: {use_proxy}")
                 
                 if format == "json":
                     return parse_json(output)
@@ -606,7 +606,7 @@ def ai_chat(
             
             # Gestione errori con strategie multi-step
             elif response.status_code == 400:
-                print(f"⚠️ Errore 400: Bad Request. Parametri non validi.")
+                logging.info(f"⚠️ Errore 400: Bad Request. Parametri non validi.")
                 return None
             
             elif response.status_code == 401:
@@ -615,13 +615,13 @@ def ai_chat(
                 continue
             
             elif response.status_code == 403:
-                print(f"⚠️ Errore 403: Input moderato. Impossibile procedere.")
+                logging.info(f"⚠️ Errore 403: Input moderato. Impossibile procedere.")
                 return None
             
             elif response.status_code == 408:
                 error_counters[408] += 1
                 wait_time = INITIAL_BACKOFF * (2 ** min(error_counters[408], 4))
-                print(f"⏱️ Timeout (408) - Attesa {wait_time}s... (Occorrenza {error_counters[408]})")
+                logging.info(f"⏱️ Timeout (408) - Attesa {wait_time}s... (Occorrenza {error_counters[408]})")
                 time.sleep(wait_time)
                 continue
             
@@ -638,7 +638,7 @@ def ai_chat(
                 continue
             
             else:
-                print(f"⚠️ Errore HTTP {response.status_code}: {response.text[:200]}")
+                logging.info(f"⚠️ Errore HTTP {response.status_code}: {response.text[:200]}")
                 time.sleep(INITIAL_BACKOFF)
                 continue
         
@@ -655,22 +655,22 @@ def ai_chat(
             continue
         
         except requests.exceptions.RequestException as e:
-            print(f"⚠️ Errore nella richiesta: {e}")
+            logging.info(f"⚠️ Errore nella richiesta: {e}")
             time.sleep(INITIAL_BACKOFF)
             continue
         
         except json.JSONDecodeError as e:
-            print(f"⚠️ Errore parsing JSON: {e}")
+            logging.info(f"⚠️ Errore parsing JSON: {e}")
             continue
         
         except Exception as e:
-            print(f"❌ Errore inaspettato: {e}")
+            logging.info(f"❌ Errore inaspettato: {e}")
             time.sleep(INITIAL_BACKOFF)
             continue
     
-    print(f"❌ Falliti tutti i {MAX_RETRIES} tentativi.")
-    print(f"   Configurazione finale: API Key {current_api_key_idx}, Modello {FALLBACK_MODELS[current_model_idx]}, Proxy {use_proxy}")
-    print(f"   Errori per tipo: {error_counters}")
+    logging.info(f"❌ Falliti tutti i {MAX_RETRIES} tentativi.")
+    logging.info(f"   Configurazione finale: API Key {current_api_key_idx}, Modello {FALLBACK_MODELS[current_model_idx]}, Proxy {use_proxy}")
+    logging.info(f"   Errori per tipo: {error_counters}")
     return None
 
 # 1. Estrai tutti i link dal sorgente HTML
@@ -729,7 +729,7 @@ def search_on_google(query, exclude_url="", num_results=3):
         data = response.json()
         return data.get("items", [])[:num_results]
     except Exception as e:
-        print(f"Errore nella ricerca Google: {e}")
+        logging.info(f"Errore nella ricerca Google: {e}")
         return []
 
 import json
@@ -773,7 +773,7 @@ def get_blog_links_ranked(company, target_position_description, exclude_link = "
         if not isinstance(keywords, list) or not all(isinstance(k, str) for k in keywords):
             raise ValueError("Formato non valido per le keywords.")
     except Exception as e:
-        print(f"Errore estrazione keywords: {e}")
+        logging.info(f"Errore estrazione keywords: {e}")
         keywords = ["blog"]
 
     results = []
@@ -800,7 +800,7 @@ def get_blog_links_ranked(company, target_position_description, exclude_link = "
                     "snippet": item.get("snippet", "")
                 })
     else:
-        print("Nessun risultato trovato per la query principale.")
+        logging.info("Nessun risultato trovato per la query principale.")
 
     # --- 3️⃣ Ricerche per ogni keyword individuale ---
     for word in keywords:
@@ -827,7 +827,7 @@ def get_blog_links_ranked(company, target_position_description, exclude_link = "
             unique_results.append(item)
 
     if not unique_results:
-        print("Nessun risultato complessivo trovato.")
+        logging.info("Nessun risultato complessivo trovato.")
         return []
 
     results = unique_results
@@ -876,7 +876,7 @@ and how RELEVANT it is to this target position.
             raise ValueError("La lista deve contenere solo numeri")
 
     except Exception as e:
-        print(f"Errore chiamata AI o parsing JSON: {e}")
+        logging.info(f"Errore chiamata AI o parsing JSON: {e}")
         return []
 
     # --- 7️⃣ Aggiungi gli score ai risultati ---
@@ -888,7 +888,7 @@ and how RELEVANT it is to this target position.
                 result["score"] = score
                 scored_results.append(result)
         except Exception as e:
-            print(f"Errore processing score item: {e}")
+            logging.info(f"Errore processing score item: {e}")
             continue
 
 
@@ -961,9 +961,9 @@ Answer strictly according to these instructions.
 
     def check_category(link, position_desc):
         link = urljoin(url, link) if link.startswith("/") else link
-        print("Checking category link:", link)
+        logging.info("Checking category link:", link)
         html = get_html(link)
-        print("Fetched HTML length:", len(html) if html else "None")
+        logging.info("Fetched HTML length:", len(html) if html else "None")
         if html is None:
             return False
 
@@ -1020,7 +1020,7 @@ IMPORTANT:
         try:
             result = ai_chat(ai_prompt)
             score = int(result.strip())
-            print(link, score, texts)
+            logging.info(link, score, texts)
             return score >= 6
         except Exception:
             return False
@@ -1055,7 +1055,7 @@ IMPORTANT:
     try:
         prompt = create_prompt(links_json, target_position_description)
         link = ai_chat(prompt)
-        print(len(links), link)
+        logging.info(len(links), link)
         if not link or link == "None":
             return None
         
@@ -1067,13 +1067,13 @@ IMPORTANT:
             prompt = create_prompt(json.dumps(links, ensure_ascii=False), target_position_description)
             
             link = ai_chat(prompt)
-            print("no checked", len(links), link)
+            logging.info("no checked", len(links), link)
             if not link or link == "None":
                 return None
 
         return urljoin(url, link) if link.startswith("/") else link
     except Exception as e:
-        print(f"Errore durante la chiamata API: {e}")
+        logging.info(f"Errore durante la chiamata API: {e}")
         return None
     
 import re
@@ -1099,7 +1099,7 @@ def get_all_blog_pages(start_url, articles_num):
     # Estrai articoli dalla prima pagina
     first_page_articles = extract_articles_with_deepseek(start_url, articles_num)
     all_articles.extend(first_page_articles)
-    print("first_page_articles", len(first_page_articles), first_page_articles)
+    logging.info("first_page_articles", len(first_page_articles), first_page_articles)
 
     # Se la prima pagina non ha articoli, restituisci solo l'URL iniziale
     if not first_page_articles:
@@ -1107,7 +1107,7 @@ def get_all_blog_pages(start_url, articles_num):
     
     # Cerca la seconda pagina
     second_page_url = find_next_page(start_url)
-    print("second_page_url", second_page_url)
+    logging.info("second_page_url", second_page_url)
 
     # Se non è stata trovata una seconda pagina, restituisci solo l'URL iniziale
     if not second_page_url:
@@ -1115,13 +1115,13 @@ def get_all_blog_pages(start_url, articles_num):
     
     # Verifica la validità della seconda pagina estraendo articoli
     second_page_articles = extract_articles_with_deepseek(second_page_url, len(all_articles) + articles_num)
-    print("second_page_articles", len(second_page_articles), second_page_articles)
+    logging.info("second_page_articles", len(second_page_articles), second_page_articles)
 
     # Controlla se la seconda pagina è valida
     if (not second_page_articles or 
         second_page_url == start_url or 
         is_404_error(second_page_url)):
-        print(second_page_url == start_url, is_404_error(second_page_url))
+        logging.info(second_page_url == start_url, is_404_error(second_page_url))
         return all_articles
     
     # La seconda pagina è valida, aggiungi alla lista
@@ -1135,7 +1135,7 @@ def get_all_blog_pages(start_url, articles_num):
     while len(all_articles) < MAX_ARTICLES - articles_num:
         # Usa deepseek per indovinare la prossima pagina basandosi sul pattern tra prima e seconda pagina
         next_page_url = predict_next_page_with_deepseek(start_url, second_page_url, current_page_url)
-        print("next_page_url", next_page_url)
+        logging.info("next_page_url", next_page_url)
 
         # Se non è stata trovata una pagina successiva, interrompi
         if not next_page_url or next_page_url == current_page_url:
@@ -1143,7 +1143,7 @@ def get_all_blog_pages(start_url, articles_num):
         
         # Verifica la validità della pagina successiva estraendo articoli
         next_page_articles = extract_articles_with_deepseek(next_page_url, len(all_articles) + articles_num)
-        print("next_page_articles", len(next_page_articles), next_page_articles)
+        logging.info("next_page_articles", len(next_page_articles), next_page_articles)
 
         # Controlla se la pagina successiva è valida
         if (not next_page_articles or 
@@ -1286,7 +1286,7 @@ If no "next page" link is found, return '0'.
 """
         ).strip()
 
-        print(ai_response, links_representation)
+        logging.info(ai_response, links_representation)
 
         if ai_response and ai_response != "0":
             try:
@@ -1312,7 +1312,7 @@ If no "next page" link is found, return '0'.
 
                 driver = init_driver()
                 try:
-                    print(f"Navigating to URL: '{url}'")
+                    logging.info(f"Navigating to URL: '{url}'")
                     driver.get(url)
                     time.sleep(2)
                     # Trova il link specifico da cliccare
@@ -1330,7 +1330,7 @@ If no "next page" link is found, return '0'.
                         if new_url != prev_url:
                             return new_url
                 finally:
-                    print("Closing the browser...")
+                    logging.info("Closing the browser...")
             else:
                 # Se è un link normale, risolvi normalmente
                 return urljoin(url, href)
@@ -1672,7 +1672,7 @@ def extract_articles_with_deepseek(base_url, articles_num, html=None, batch_size
     
     # Verifica se ci sono almeno 3 article
     if len(articles) >= 3:
-        print(f"Trovati {len(articles)} tag article nella pagina")
+        logging.info(f"Trovati {len(articles)} tag article nella pagina")
         
         article_links = []
         
@@ -1729,7 +1729,7 @@ def extract_articles_with_deepseek(base_url, articles_num, html=None, batch_size
         
         # Stampa i risultati
         for link_info in article_links:
-            print(f"Article {link_info['title']} -> {link_info['href']}")
+            logging.info(f"Article {link_info['title']} -> {link_info['href']}")
         
         if len(article_links) > len(articles) / 2:
             return article_links
@@ -1841,15 +1841,15 @@ Data:
                 # Aggiungi all'elenco degli articoli quelli con punteggio > 5
                 for i, score in enumerate(scores):
                     if score >= 6:
-                        print("score", score, batch[i]["title"])
+                        logging.info("score", score, batch[i]["title"])
                         articles.append({
                             "href": batch[i]["href"],
                             "title": batch[i]["title"]
                         })
             else:
-                print(f"Lunghezza risposta non corrisponde al batch: {len(scores)} vs {len(batch)}")
+                logging.info(f"Lunghezza risposta non corrisponde al batch: {len(scores)} vs {len(batch)}")
         except json.JSONDecodeError:
-            print(f"Errore nella decodifica della risposta JSON: {response_text}")
+            logging.info(f"Errore nella decodifica della risposta JSON: {response_text}")
     
         # Pausa tra richieste per evitare limiti di rate
         time.sleep(0.5)
@@ -1875,20 +1875,20 @@ def save_articles_to_file(articles, filename="articles.json", folder="output"):
     try:
         # Verifica se esiste già un file con lo stesso nome della cartella
         if os.path.isfile(folder):
-            print(f"ERRORE: '{folder}' esiste già come file. Specificare un altro nome per la cartella.")
+            logging.info(f"ERRORE: '{folder}' esiste già come file. Specificare un altro nome per la cartella.")
             return False
         
         # Crea la sottocartella se non esiste
         try:
             os.makedirs(folder, exist_ok=True)
         except FileExistsError:
-            print(f"AVVISO: Non è possibile creare la cartella '{folder}' perché esiste già un file con lo stesso nome.")
+            logging.info(f"AVVISO: Non è possibile creare la cartella '{folder}' perché esiste già un file con lo stesso nome.")
             # Usa un nome alternativo aggiungendo un numero
             i = 1
             while os.path.exists(f"{folder}_{i}"):
                 i += 1
             folder = f"{folder}_{i}"
-            print(f"Utilizzo della cartella alternativa: '{folder}'")
+            logging.info(f"Utilizzo della cartella alternativa: '{folder}'")
             os.makedirs(folder, exist_ok=True)
         
         # Costruisci il percorso completo
@@ -1899,10 +1899,10 @@ def save_articles_to_file(articles, filename="articles.json", folder="output"):
             # Utilizzo indent=2 e sort_keys=True per una formattazione leggibile
             json.dump(articles, f, ensure_ascii=False, indent=2, sort_keys=True)
         
-        print(f"File salvato correttamente in: {file_path}")
+        logging.info(f"File salvato correttamente in: {file_path}")
         return True
     except Exception as e:
-        print(f"Errore durante il salvataggio del file: {e}")
+        logging.info(f"Errore durante il salvataggio del file: {e}")
         return False
 import time
 import undetected_chromedriver as uc
@@ -1934,7 +1934,7 @@ def get_articles_with_load_more(start_url, articles_num, max_clicks=5):
         # Carica la pagina iniziale
         driver.get(start_url)
         time.sleep(1)  # Aspetta il caricamento iniziale
-        print("started")
+        logging.info("started")
 
         # Trova e premi il pulsante "Load More" fino a raggiungere il limite
         clicks = 0
@@ -1944,7 +1944,7 @@ def get_articles_with_load_more(start_url, articles_num, max_clicks=5):
             # Estrai articoli dalla pagina corrente, escludendo quelli già trovati
             page_source = driver.page_source
             new_articles = extract_articles_with_deepseek(current_url, len(all_articles) + articles_num, page_source)
-            print("new_articles", len(new_articles), new_articles)
+            logging.info("new_articles", len(new_articles), new_articles)
 
             # Se non ci sono nuovi articoli, interrompi
             if not new_articles and not first:
@@ -1960,7 +1960,7 @@ def get_articles_with_load_more(start_url, articles_num, max_clicks=5):
             
             # Cerca pulsante "Load More" 
             load_more_button = find_load_more_button(driver)
-            print("load_more_button", load_more_button)
+            logging.info("load_more_button", load_more_button)
             
             # Se non trova un pulsante, interrompi
             if not load_more_button:
@@ -1971,7 +1971,7 @@ def get_articles_with_load_more(start_url, articles_num, max_clicks=5):
                 try_close_overlays(driver)
                 load_more_button = find_load_more_button(driver)
                 try:
-                    print("b", load_more_button.tag_name, load_more_button.text)
+                    logging.info("b", load_more_button.tag_name, load_more_button.text)
 
                     # Scrolla fino al pulsante per assicurarsi che sia visibile
                     driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", load_more_button)
@@ -1981,7 +1981,7 @@ def get_articles_with_load_more(start_url, articles_num, max_clicks=5):
                     load_more_button.click()
                 except StaleElementReferenceException:
                     load_more_button = find_load_more_button(driver)
-                    print("b", load_more_button.tag_name, load_more_button.text)
+                    logging.info("b", load_more_button.tag_name, load_more_button.text)
 
                     # Scrolla fino al pulsante per assicurarsi che sia visibile
                     driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", load_more_button)
@@ -2002,7 +2002,7 @@ def get_articles_with_load_more(start_url, articles_num, max_clicks=5):
                     visited_urls.append(current_url)
                 
             except Exception as e:
-                print(f"Errore nel cliccare il pulsante: {e}")
+                logging.info(f"Errore nel cliccare il pulsante: {e}")
                 # Prova un approccio alternativo con JavaScript
                 try:
                     driver.execute_script("arguments[0].click();", load_more_button)
@@ -2019,7 +2019,7 @@ def get_articles_with_load_more(start_url, articles_num, max_clicks=5):
         return all_articles
         
     except Exception as e:
-        print(f"Errore durante il recupero degli articoli: {e}")
+        logging.info(f"Errore durante il recupero degli articoli: {e}")
         return all_articles
         
 from selenium.webdriver.common.by import By
@@ -2047,7 +2047,7 @@ def try_close_overlays(driver, similarity_threshold=0.40):
         overlays = driver.find_elements(By.XPATH, xpath)
 
         for overlay in overlays:
-            print("Found overlay:", overlay)
+            logging.info("Found overlay:", overlay)
             if not overlay.is_displayed():
                 continue
 
@@ -2059,13 +2059,13 @@ def try_close_overlays(driver, similarity_threshold=0.40):
                 # Prima i button, poi gli <a>
                 elements = overlay.find_elements(By.XPATH, ".//button") + \
                            overlay.find_elements(By.XPATH, ".//a")
-                print(elements)
+                logging.info(elements)
                 for el in elements:
                     if not el.is_displayed() or not el.is_enabled():
                         continue
 
                     text = el.text.strip().lower()
-                    print("Overlay button text:", text)
+                    logging.info("Overlay button text:", text)
                     if not text or len(text) > 60:
                         continue
 
@@ -2074,11 +2074,11 @@ def try_close_overlays(driver, similarity_threshold=0.40):
 
                     # Similarità con tutte le keyword
                     sims = util.cos_sim(el_embed, kw_embeds)[0].cpu().tolist()
-                    print(sims)
+                    logging.info(sims)
                     best_sim = max(sims)
 
                     # Debug (se vuoi)
-                    # print(f"[DEBUG] '{text}' sim={best_sim:.3f}")
+                    # logging.info(f"[DEBUG] '{text}' sim={best_sim:.3f}")
 
                     if best_sim >= similarity_threshold:
                         try:
@@ -2208,7 +2208,7 @@ def find_load_more_button(driver: WebDriver) -> Optional[WebElement]:
     ]
     for element, text, similarity in candidates:
         tag_name = element.tag_name  # Ottiene il nome del tag per WebElement
-        print(f"Tag: {tag_name}, Testo: {text}, Similarità: {similarity}")
+        logging.info(f"Tag: {tag_name}, Testo: {text}, Similarità: {similarity}")
     
     if len(candidates) != 1:
         # Ordina per similarità decrescente
@@ -2517,7 +2517,7 @@ Example output: [8, 3, 5, 7, 9, 1, 2, ...]
         return sorted_articles[:3]
 
     except Exception as e:
-        print(f"AI response parsing error: {e}. Falling back to first 2 articles.")
+        logging.info(f"AI response parsing error: {e}. Falling back to first 2 articles.")
         return articles_list[:3]
 
 from typing import List, Dict, Any, Callable
@@ -2692,7 +2692,7 @@ def _extract_standard_content(soup: BeautifulSoup, url: str) -> Dict[str, Any]:
     Returns:
         Dizionario con titolo e contenuto markdown
     """
-    print("standard")
+    logging.info("standard")
     markdown_content = ""
     
     # Estrai il titolo
@@ -2833,7 +2833,7 @@ def _extract_medium_content(soup: BeautifulSoup, url: str) -> Dict[str, Any]:
     Returns:
         Dizionario con titolo e contenuto markdown
     """
-    print("medium")
+    logging.info("medium")
     # In Medium, il titolo è spesso in un h1 con un tag section genitore
     title_elem = soup.find('h1')
     title = title_elem.get_text(strip=True) if title_elem else None
@@ -2881,7 +2881,7 @@ def _extract_wordpress_content(soup: BeautifulSoup, url: str) -> Dict[str, Any]:
     Returns:
         Dizionario con titolo e contenuto markdown
     """
-    print("wordp")
+    logging.info("wordp")
     # In WordPress, il titolo è spesso in un elemento h1.entry-title
     title_elem = soup.find('h1', class_='entry-title')
     if not title_elem:
@@ -2929,7 +2929,7 @@ def _extract_blogger_content(soup: BeautifulSoup, url: str) -> Dict[str, Any]:
     Returns:
         Dizionario con titolo e contenuto markdown
     """
-    print("blog")
+    logging.info("blog")
     # In Blogger, il titolo è spesso in h3.post-title
     title_elem = soup.find('h3', class_='post-title')
     if not title_elem:
@@ -2981,7 +2981,7 @@ def _extract_hacker_news_content(soup: BeautifulSoup, url: str) -> Dict[str, Any
     Returns:
         Dizionario con titolo e contenuto markdown
     """
-    print("news")
+    logging.info("news")
     # Per Hacker News, se è una discussione cerchiamo il commento principale
     title = None
     title_elem = soup.find('span', class_='titleline')
@@ -3126,7 +3126,7 @@ def _extract_about_page_content(soup: BeautifulSoup, url: str) -> Dict[str, Any]
     Returns:
         Dizionario con titolo e contenuto markdown
     """
-    print("about page")
+    logging.info("about page")
     markdown_content = ""
     
     # Estrai il titolo
@@ -3523,7 +3523,7 @@ def get_linkedin_description(company):
     # Descrizione principale
     p_tag = section.find("p")
     if p_tag:
-        print(p_tag.get_text(strip=True))
+        logging.info(p_tag.get_text(strip=True))
         markdown += f"**Descrizione aziendale**:\n\n{p_tag.get_text(strip=True)}\n\n"
 
     # Dettagli (dt = titolo, dd = contenuto)
@@ -3569,7 +3569,7 @@ def get_about_page_link_with_google(company):
     results_raw = search_on_google(f"{company} about us")
     
     if not results_raw:
-        print("Nessun risultato trovato.")
+        logging.info("Nessun risultato trovato.")
         return None
     
     # Format the results
@@ -3613,7 +3613,7 @@ def get_about_page_link_with_google(company):
         deepseek_response = ai_chat(prompt).strip()
         selected_index = int(deepseek_response)
     except Exception as e:
-        print(f"Errore chiamata DeepSeek o conversione numero: {e}")
+        logging.info(f"Errore chiamata DeepSeek o conversione numero: {e}")
         return None
     
     if 1 <= selected_index <= len(results):
@@ -3644,13 +3644,13 @@ def get_all_articles(company, target_position_description):
 
     while len(article_links) < MAX_ARTICLES and times < 2:
         blog_link = blog_links[times]["link"] if times < len(blog_links) else None
-        print("blog_link", blog_link)
+        logging.info("blog_link", blog_link)
         
         if blog_link:
             blogs_analyzed += 1  # 🔹 Conta ogni blog trovato
 
             category_link = find_relevant_category_link_with_ai(blog_link, target_position_description)
-            print("Link categoria Ingegneria:", category_link)
+            logging.info("Link categoria Ingegneria:", category_link)
             
             if category_link:
                 blog_link = category_link
@@ -3670,9 +3670,9 @@ def get_all_articles(company, target_position_description):
 
             article_links.extend(unique_new_articles)
 
-            print(f"Articoli trovati per {company}: {len(article_links)} (blogs analizzati: {blogs_analyzed})")
+            logging.info(f"Articoli trovati per {company}: {len(article_links)} (blogs analizzati: {blogs_analyzed})")
         else:
-            print("Nessun blog trovato.")
+            logging.info("Nessun blog trovato.")
             break
         
         save_articles_to_file(article_links, f"articles-{company}.json")
@@ -3916,7 +3916,7 @@ def get_linkedin_profile_data(profile_url):
 
                 total_traffic = bytes_sent + bytes_received + overhead
 
-                print(f"Traffico totale stimato: {total_traffic} byte")
+                logging.info(f"Traffico totale stimato: {total_traffic} byte")
 
                 return total_traffic
 
@@ -3977,7 +3977,7 @@ def get_linkedin_profile_data(profile_url):
             try:
                 json_response = resp.json()  # <-- qui converti in dict
             except ValueError:
-                print(f"Tentativo {attempt + 1} - Risposta non valida")
+                logging.info(f"Tentativo {attempt + 1} - Risposta non valida")
                 continue  # passa al prossimo tentativo
 
             # Check for successful response
@@ -3985,7 +3985,7 @@ def get_linkedin_profile_data(profile_url):
                 record = json_response['data']
                 return record
 
-            print(f"Tentativo {attempt + 1} - Errore PDL:", json_response.get("message", "Unknown error"))
+            logging.info(f"Tentativo {attempt + 1} - Errore PDL:", json_response.get("message", "Unknown error"))
 
         # Se dopo 3 tentativi non va a buon fine
         return {}
@@ -4413,7 +4413,7 @@ def get_tech_recruiter_emails(company_name: str):
         results_raw = search_on_google(company, "", 10)
         
         if not results_raw:
-            print("Nessun risultato trovato.")
+            logging.info("Nessun risultato trovato.")
             return None
         
         # Mantieni solo il primo risultato per ogni dominio (ordine originale)
@@ -4456,7 +4456,7 @@ def get_tech_recruiter_emails(company_name: str):
             deepseek_response = ai_chat(prompt).strip()
             selected_index = int(deepseek_response)
         except Exception as e:
-            print(f"Errore chiamata DeepSeek o conversione numero: {e}")
+            logging.info(f"Errore chiamata DeepSeek o conversione numero: {e}")
             return None
         
         if 1 <= selected_index <= len(domains):
@@ -4479,7 +4479,7 @@ def get_tech_recruiter_emails(company_name: str):
         raise Exception(f"Errore {response.status_code}: {response.text}")
 
     data = response.json()
-    #print("Hunter.io response:", data)
+    #logging.info("Hunter.io response:", data)
     emails = data.get("data", {}).get("emails", [])
 
     entries = []
@@ -4500,7 +4500,7 @@ def get_tech_recruiter_emails(company_name: str):
         for email in emails
         if email.get("position") and any(kw in email["position"].lower() for kw in keywords)
     ]
-    print("Filtered emails:", filtered_emails)
+    logging.info("Filtered emails:", filtered_emails)
     return filtered_emails
 
 import math
@@ -4531,7 +4531,7 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
         """Execute a single search with given parameters"""
         query = build_query(mandatory_params, optional_params)
         if search_type:
-            print(f"Executing {search_type} search with {len(optional_params)} optional params")
+            logging.info(f"Executing {search_type} search with {len(optional_params)} optional params")
         
         return execute_search(query)
 
@@ -4564,7 +4564,7 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
             return profiles
             
         except requests.RequestException as e:
-            print(f"Error executing search: {e}")
+            logging.info(f"Error executing search: {e}")
             return []
 
     def build_query(mandatory, optional_params):
@@ -4691,7 +4691,7 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
             return scores
             
         except Exception as e:
-            print(f"Error in batch superficial AI scoring: {e}")
+            logging.info(f"Error in batch superficial AI scoring: {e}")
             # Return default scores for all profiles
             return {profile.get('id'): 5 for profile in profiles}
 
@@ -4710,7 +4710,7 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
         if len(temp_profiles) < 3 and not force_evaluation:
             return []  # Wait for more profiles (reduced from 5 to 3)
         
-        print(f"Processing batch of {len(temp_profiles)} profiles...")
+        logging.info(f"Processing batch of {len(temp_profiles)} profiles...")
         
         # Step 1: Batch superficial evaluation
         batch_superficial_scores = get_batch_superficial_ai_scores([p['profile'] for p in temp_profiles])
@@ -4738,9 +4738,9 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
             if superficial_score >= 5:
                 qualified_profiles.append(temp_profile)
             else:
-                print(f"  Filtered out profile (superficial score: {superficial_score} < 5)")
+                logging.info(f"  Filtered out profile (superficial score: {superficial_score} < 5)")
         
-        print(f"  {len(qualified_profiles)}/{len(temp_profiles)} profiles passed superficial filter (score >= 5)")
+        logging.info(f"  {len(qualified_profiles)}/{len(temp_profiles)} profiles passed superficial filter (score >= 5)")
         
         if not qualified_profiles:
             return []
@@ -4749,7 +4749,7 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
         qualified_profiles.sort(key=lambda x: x['initial_score'], reverse=True)
         
         # Step 4: Deep evaluation in smaller batches (2-3 profiles at a time)
-        print(f"  Performing deep evaluation on {len(qualified_profiles)} qualified profiles in small batches...")
+        logging.info(f"  Performing deep evaluation on {len(qualified_profiles)} qualified profiles in small batches...")
         evaluated_profiles = get_batch_deep_evaluations_optimized(qualified_profiles, azienda)
         
         return evaluated_profiles
@@ -4816,7 +4816,7 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
                 return None
                 
             except Exception as e:
-                print(f"Error in search_and_get_linkedin_profile for {profile_name}: {e}")
+                logging.info(f"Error in search_and_get_linkedin_profile for {profile_name}: {e}")
                 return None
 
         def select_best_linkedin_profile(profile_name, linkedin_links):
@@ -4858,7 +4858,7 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
                     return None
                     
             except Exception as e:
-                print(f"Error in select_best_linkedin_profile: {e}")
+                logging.info(f"Error in select_best_linkedin_profile: {e}")
                 return None
 
         def is_currently_working_at_company(linkedin_data, target_company):
@@ -4907,7 +4907,7 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
             # Continuiamo finché non abbiamo processato tutti i profili o raggiunto il target.
             while current_profile_index < num_profiles and len(excellent_profiles) < n_profiles:
                 
-                print(f"\nBuilding new deep evaluation batch (Target size: {SMALL_BATCH_SIZE})...")
+                logging.info(f"\nBuilding new deep evaluation batch (Target size: {SMALL_BATCH_SIZE})...")
                 
                 # Questo batch conterrà solo profili con dati LinkedIn validi.
                 valid_batch_profiles = []
@@ -4923,40 +4923,40 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
                     linkedin_url = profile.get('linkedin_url')
                     linkedin_data = None
                     
-                    print(f"  Checking profile {current_profile_index}/{num_profiles}: {profile.get('name', 'Unknown')}")
+                    logging.info(f"  Checking profile {current_profile_index}/{num_profiles}: {profile.get('name', 'Unknown')}")
                     
                     try:
                         linkedin_data = get_linkedin_profile_data(linkedin_url)
                     except Exception as e:
-                        print(f"    - Error getting LinkedIn data, attempting search fallback...")
+                        logging.info(f"    - Error getting LinkedIn data, attempting search fallback...")
                         try:
                             profile_name = profile.get('name', '')
                             if profile_name:
                                 linkedin_data = search_and_get_linkedin_profile(profile_name)
                         except Exception as search_e:
-                            print(f"    - LinkedIn search fallback failed: {search_e}")
+                            logging.info(f"    - LinkedIn search fallback failed: {search_e}")
                     
                     # Se abbiamo dati LinkedIn E il profilo lavora attualmente nell'azienda...
                     if linkedin_data and is_currently_working_at_company(linkedin_data, azienda):
-                        print(f"    ✓ Valid profile. Adding to batch ({len(valid_batch_profiles) + 1}/{SMALL_BATCH_SIZE}).")
+                        logging.info(f"    ✓ Valid profile. Adding to batch ({len(valid_batch_profiles) + 1}/{SMALL_BATCH_SIZE}).")
                         valid_batch_profiles.append({
                             'original_ranked_profile': ranked_profile,
                             'linkedin_data': linkedin_data
                         })
                     else:
                         # Profilo non valido (non lavora più lì o dati non trovati).
-                        print(f"    ✗ Invalid profile or not current employee. Using superficial score.")
+                        logging.info(f"    ✗ Invalid profile or not current employee. Using superficial score.")
                         ranked_profile['final_ai_score'] = ranked_profile['superficial_ai_score']
                         ranked_profile['deep_evaluated'] = True
                         all_evaluated.append(ranked_profile)
                 
                 # Se, dopo aver cercato, non abbiamo trovato nessun profilo valido per il batch, continuiamo.
                 if not valid_batch_profiles:
-                    print("Could not form a valid batch from remaining profiles.")
+                    logging.info("Could not form a valid batch from remaining profiles.")
                     continue
 
                 # Ora che abbiamo un batch pieno (o con tutti i profili validi rimasti), lo processiamo.
-                print(f"Processing batch of {len(valid_batch_profiles)} valid profiles...")
+                logging.info(f"Processing batch of {len(valid_batch_profiles)} valid profiles...")
                 
                 # Costruisci il prompt per il batch corrente
                 profiles_data = []
@@ -5040,7 +5040,7 @@ This criterion measures the alignment between the recruiter's experience and the
                             
                             if score >= 7:
                                 excellent_profiles.append(ranked_profile)
-                                print(f"  ✓ EXCELLENT profile found (score: {score}) - Total: {len(excellent_profiles)}/{n_profiles}")
+                                logging.info(f"  ✓ EXCELLENT profile found (score: {score}) - Total: {len(excellent_profiles)}/{n_profiles}")
                     except (ValueError, TypeError):
                         continue
                 
@@ -5049,7 +5049,7 @@ This criterion measures the alignment between the recruiter's experience and the
             # Se usciamo dal loop perché abbiamo esaurito i profili, ma ne restano alcuni non processati
             # nella lista originale, li marchiamo come valutati superficialmente.
             if current_profile_index < num_profiles:
-                print("🎯 TARGET REACHED! Stopping deep evaluation.")
+                logging.info("🎯 TARGET REACHED! Stopping deep evaluation.")
                 for i in range(current_profile_index, num_profiles):
                     remaining_profile = profiles_with_linkedin[i]
                     remaining_profile['final_ai_score'] = remaining_profile['superficial_ai_score']
@@ -5059,7 +5059,7 @@ This criterion measures the alignment between the recruiter's experience and the
             return all_evaluated
             
         except Exception as e:
-            print(f"Error in batch deep evaluation: {e}")
+            logging.info(f"Error in batch deep evaluation: {e}")
             for ranked_profile in ranked_profiles:
                 if ranked_profile['final_ai_score'] is None:
                     ranked_profile['final_ai_score'] = ranked_profile['superficial_ai_score']
@@ -5074,9 +5074,9 @@ This criterion measures the alignment between the recruiter's experience and the
     parametri_opzionali = parametri.copy() if parametri else []
     evaluated_names = set()
 
-    print(f"=== CASCADING BATCH SEARCH FOR {n_profiles} EXCELLENT RECRUITERS ===")
-    print(f"Target: Profiles with AI score >= 7")
-    print("Using optimized batch evaluation with 3-profile threshold and 2-profile LinkedIn batches")
+    logging.info(f"=== CASCADING BATCH SEARCH FOR {n_profiles} EXCELLENT RECRUITERS ===")
+    logging.info(f"Target: Profiles with AI score >= 7")
+    logging.info("Using optimized batch evaluation with 3-profile threshold and 2-profile LinkedIn batches")
     
     # Prepare query parameters
     # Replaced: base_mandatory_params logic
@@ -5116,10 +5116,10 @@ This criterion measures the alignment between the recruiter's experience and the
         current_restriction_level = len(current_optional)
         query_precision_score = min(10, (len(current_optional) + 1) * 2)
         
-        print(f"\n=== QUERY LEVEL {query_level} ===")
-        print(f"Restriction level: {current_restriction_level} optional parameters (precision: {query_precision_score})")
-        print(f"Current excellent profiles: {len(excellent_profiles)}/{n_profiles}")
-        print(f"Temp batch size: {len(temp_profiles_batch)}")
+        logging.info(f"\n=== QUERY LEVEL {query_level} ===")
+        logging.info(f"Restriction level: {current_restriction_level} optional parameters (precision: {query_precision_score})")
+        logging.info(f"Current excellent profiles: {len(excellent_profiles)}/{n_profiles}")
+        logging.info(f"Temp batch size: {len(temp_profiles_batch)}")
         
         # Execute department-based search
         dept_results = execute_single_search(dept_mandatory_params, current_optional, "department-based")
@@ -5139,11 +5139,11 @@ This criterion measures the alignment between the recruiter's experience and the
                 temp_profiles_batch.append(temp_profile)
                 new_dept_profiles += 1
         
-        print(f"Department search: {new_dept_profiles} new profiles")
+        logging.info(f"Department search: {new_dept_profiles} new profiles")
         
         # Process department batch if threshold reached (reduced to 3)
         if len(temp_profiles_batch) >= 3 or (len(temp_profiles_batch) > 0 and len(excellent_profiles) + len(temp_profiles_batch) >= n_profiles):
-            print(f"\n🔄 Processing department batch (size: {len(temp_profiles_batch)})...")
+            logging.info(f"\n🔄 Processing department batch (size: {len(temp_profiles_batch)})...")
             evaluated_profiles = process_and_evaluate_batch(temp_profiles_batch, query_precision_score)
             
             # Add to main list (excellent profiles already added in get_batch_deep_evaluations_optimized)
@@ -5154,7 +5154,7 @@ This criterion measures the alignment between the recruiter's experience and the
             
             # Check if target reached after department processing
             if len(excellent_profiles) >= n_profiles:
-                print(f"\n🎯 TARGET REACHED after department search! Found {len(excellent_profiles)} excellent profiles")
+                logging.info(f"\n🎯 TARGET REACHED after department search! Found {len(excellent_profiles)} excellent profiles")
                 break
         
         # Execute title-based search only if we still need more profiles
@@ -5176,12 +5176,12 @@ This criterion measures the alignment between the recruiter's experience and the
                     temp_profiles_batch.append(temp_profile)
                     new_title_profiles += 1
             
-            print(f"Title search: {new_title_profiles} new profiles")
-            print(f"Total temp batch size: {len(temp_profiles_batch)}")
+            logging.info(f"Title search: {new_title_profiles} new profiles")
+            logging.info(f"Total temp batch size: {len(temp_profiles_batch)}")
             
             # Process title batch if threshold reached (reduced to 3)
             if len(temp_profiles_batch) >= 3 or (len(temp_profiles_batch) > 0 and len(excellent_profiles) + len(temp_profiles_batch) >= n_profiles):
-                print(f"\n🔄 Processing title batch (size: {len(temp_profiles_batch)})...")
+                logging.info(f"\n🔄 Processing title batch (size: {len(temp_profiles_batch)})...")
                 evaluated_profiles = process_and_evaluate_batch(temp_profiles_batch, query_precision_score)
                 
                 # Add to main list (excellent profiles already added in get_batch_deep_evaluations_optimized)
@@ -5192,7 +5192,7 @@ This criterion measures the alignment between the recruiter's experience and the
                 
                 # Check if target reached
                 if len(excellent_profiles) >= n_profiles:
-                    print(f"\n🎯 TARGET REACHED after title search! Found {len(excellent_profiles)} excellent profiles")
+                    logging.info(f"\n🎯 TARGET REACHED after title search! Found {len(excellent_profiles)} excellent profiles")
                     break
         
         # Check if no new profiles found in this query level
@@ -5202,11 +5202,11 @@ This criterion measures the alignment between the recruiter's experience and the
             if current_optional:
                 # Remove least important parameter
                 removed_param = current_optional.pop()
-                print(f"No new profiles found. Removing parameter: {removed_param}")
+                logging.info(f"No new profiles found. Removing parameter: {removed_param}")
                 continue
             else:
                 # Try management levels fallback
-                print("No optional parameters left. Trying management levels fallback...")
+                logging.info("No optional parameters left. Trying management levels fallback...")
                 fallback_params = base_mandatory_params.copy()
                 fallback_params['management_levels'] = ['Founder/Owner', 'C-Level', 'Vice President', 'Head']
                 
@@ -5226,39 +5226,39 @@ This criterion measures the alignment between the recruiter's experience and the
                         temp_profiles_batch.append(temp_profile)
                         new_fallback_profiles += 1
                 
-                print(f"Management fallback: {new_fallback_profiles} new profiles")
+                logging.info(f"Management fallback: {new_fallback_profiles} new profiles")
                 
                 if new_fallback_profiles == 0:
                     queries_exhausted = True
-                    print("All query possibilities exhausted.")
+                    logging.info("All query possibilities exhausted.")
                     break
         else:
             # Move to next restriction level if current_optional is not empty
             if current_optional:
                 removed_param = current_optional.pop()
-                print(f"\nMoving to next restriction level. Removing parameter: {removed_param}")
+                logging.info(f"\nMoving to next restriction level. Removing parameter: {removed_param}")
             else:
                 queries_exhausted = True
                 
     # Process any remaining profiles in temp batch
     if temp_profiles_batch and len(excellent_profiles) < n_profiles:
-        print(f"\n🔄 Processing final batch of {len(temp_profiles_batch)} profiles...")
+        logging.info(f"\n🔄 Processing final batch of {len(temp_profiles_batch)} profiles...")
         evaluated_profiles = process_and_evaluate_batch(temp_profiles_batch, query_precision_score, force_evaluation=True)
         
         # Add to main list (excellent profiles already added in get_batch_deep_evaluations_optimized)
         all_deep_evaluated.extend(evaluated_profiles)
     
     # Final results determination
-    print(f"\n=== FINAL RESULTS ===")
+    logging.info(f"\n=== FINAL RESULTS ===")
     
     if len(excellent_profiles) >= n_profiles:
         # Success scenario: return excellent profiles
-        print(f"🎯 SUCCESS: Found {len(excellent_profiles)} excellent profiles (score >= 7)")
+        logging.info(f"🎯 SUCCESS: Found {len(excellent_profiles)} excellent profiles (score >= 7)")
         final_results = excellent_profiles[:n_profiles]
     else:
         # Fallback scenario: return best evaluated profiles
-        print(f"⚠️  FALLBACK: Only {len(excellent_profiles)} excellent profiles found")
-        print(f"Returning top {n_profiles} from {len(all_deep_evaluated)} evaluated profiles")
+        logging.info(f"⚠️  FALLBACK: Only {len(excellent_profiles)} excellent profiles found")
+        logging.info(f"Returning top {n_profiles} from {len(all_deep_evaluated)} evaluated profiles")
         
         # Sort all deep evaluated profiles by final score
         all_deep_evaluated.sort(key=lambda x: x['final_ai_score'], reverse=True)
@@ -5276,8 +5276,8 @@ This criterion measures the alignment between the recruiter's experience and the
         }
         output_results.append(profile_data)
     
-    print(f"Returning {len(output_results)} profiles with AI scoring")
-    print(f"Total profiles evaluated: {len(all_deep_evaluated)}")
+    logging.info(f"Returning {len(output_results)} profiles with AI scoring")
+    logging.info(f"Total profiles evaluated: {len(all_deep_evaluated)}")
     return output_results
 
 def generate_recruitment_email(articles_content, about_md, linkedin_md, user_info, recruiter_info):
@@ -5554,11 +5554,11 @@ def get_blog_posts(user_id, ids, companies, user_info, target_position_descripti
 
         end_time_company = time.time()
         company_durations[company] = end_time_company - start_time_company
-        print(f"Tempo per {company}: {company_durations[company]:.2f} secondi")
+        logging.info(f"Tempo per {company}: {company_durations[company]:.2f} secondi")
 
     end_time_total = time.time()
     total_duration = end_time_total - start_time_total
-    print(f"\nTempo totale: {total_duration:.2f} secondi")
+    logging.info(f"\nTempo totale: {total_duration:.2f} secondi")
     close_driver()
 
     return results
