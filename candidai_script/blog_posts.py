@@ -1,3 +1,4 @@
+import os
 import re
 from bs4 import BeautifulSoup
 from bs4 import Tag
@@ -52,12 +53,30 @@ def init_driver(force_new=False):
 
     # Se non esiste, crealo
     if driver is None:
+        def ensure_xvfb():
+            # Controlla se Xvfb è già avviato
+            running = os.popen("pgrep -f 'Xvfb :99'").read().strip()
+
+            if running:
+                print("Xvfb already running.")
+            else:
+                print("Starting Xvfb...")
+                os.system("Xvfb :99 -ac -screen 0 1920x1080x24 &")
+        
+        ensure_xvfb()
+        os.environ["DISPLAY"] = ":99"
+
         logging.info("🟢 Creating new driver")
         options = uc.ChromeOptions()
         options.headless = False
         options.add_argument("--no-sandbox")
-        options.add_argument("--use-gl=swiftshader")
         options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--disable-software-rasterizer")
+        options.add_argument("--use-gl=swiftshader")
+        options.add_argument("--disable-gpu-sandbox")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+
         logging.info("🚀 Launching undetected Chrome...")
         driver = uc.Chrome(options=options)
         logging.info("✅ Driver created")
@@ -133,7 +152,6 @@ def close_driver():
 
 from pathlib import Path
 import json
-import os
 
 # Variabile globale per tracciare se un nuovo oggetto è già stato creato in questa sessione
 SESSION_OBJECT_CREATED = False
