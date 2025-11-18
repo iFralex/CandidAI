@@ -5556,9 +5556,6 @@ MAX_ARTICLES = 35
 from candidai_script.database import save_articles
 
 def get_blog_posts(user_id, ids, companies, user_info, target_position_description):
-    a = get_html("https://apple.com")
-    logging.info(f"Test HTML fetch length: {len(a)} {a}")   
-    raise Exception("Test Exception for logging")
     results = {}
     start_time_total = time.time()
     company_durations = {}
