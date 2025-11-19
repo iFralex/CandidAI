@@ -7,6 +7,228 @@ from typing import List, Dict, Optional, Any
 from candidai_script import db
 from candidai_script.database import get_account_data, save_recruiter_and_query, save_company_info, get_custom_queries
 
+def get_pdl_data(params):
+    # --- CONFIGURAZIONE FLOPPYDATA ---
+    STORE_FILE="store_pdl.json"
+    PROXY_USER = "o9EmEnfT9h3fCMAH"
+    PROXY_PASS = os.environ.get("PROXY_PASS")
+    PROXY_HOST = "geo.g-w.info"
+    PROXY_PORT = "10443"
+    
+    STORE_FILE = "store_pdl.json"
+    SIGMA = 0.25
+    TIME_WEIGHT = 0.5
+    DEFAULT_CAP = 100  # Quota iniziale se non definita
+    PDL_URL = "https://api.peopledatalabs.com/v5/company/enrich"
+    
+    def load_store():
+        if os.path.exists(STORE_FILE):
+            with open(STORE_FILE) as f:
+                try:
+                    return json.load(f)
+                except Exception:
+                    pass
+        return {"data": {}, "usage": {}}
+
+    def save_store(store):
+        with open(STORE_FILE, "w") as f:
+            json.dump(store, f, indent=2)
+
+    def build_floppy_proxy(api_key_config, session_id):
+        """Costruisce l'URL del proxy parametrico FloppyData."""
+        country = api_key_config.get("country", "US") # Default US se manca
+        city = api_key_config.get("city")
+        
+        # Base params
+        proxy_params = f"user-{PROXY_USER}-country-{country}-type-residential-session-{session_id}-rotation-0"
+        
+        # Aggiungi city se presente (sostituisce spazi con underscore come da guida)
+        if city:
+            safe_city = city.replace(" ", "_")
+            proxy_params += f"-city-{safe_city}"
+            
+        return f"http://{proxy_params}:{PROXY_PASS}@{PROXY_HOST}:{PROXY_PORT}"
+
+    def check_and_reset_credits(usage_entry):
+        """
+        Controlla se è arrivata la data di rinnovo. 
+        Se sì, ripristina i crediti al CAP iniziale.
+        Restituisce True se ci sono crediti disponibili, False altrimenti.
+        """
+        now_utc = datetime.now(timezone.utc)
+        
+        reset_date_str = usage_entry.get("reset_date")
+        credits_remaining = usage_entry.get("credits_remaining", DEFAULT_CAP)
+        
+        # Logica di Reset basata sulla data salvata dagli header precedenti
+        if reset_date_str:
+            try:
+                reset_dt = date_parser.parse(reset_date_str)
+                # Assicuriamoci che reset_dt sia timezone-aware per il confronto
+                if reset_dt.tzinfo is None:
+                    reset_dt = reset_dt.replace(tzinfo=timezone.utc)
+                
+                # Se abbiamo superato la data di reset, ripristina a 100 (o al cap definito)
+                if now_utc > reset_dt:
+                    usage_entry["credits_remaining"] = DEFAULT_CAP
+                    usage_entry["reset_date"] = None # Pulisci, verrà aggiornato alla prossima chiamata
+                    return True
+            except (ValueError, TypeError):
+                pass # Se la data è corrotta, ignoriamo il reset automatico e ci fidiamo dei crediti attuali
+        
+        # Se crediti <= 0 e non è ancora ora di reset, chiave non disponibile
+        if credits_remaining <= 0:
+            return False
+            
+        return True
+
+    def choose(items, usage):
+        # Logica di selezione pesata originale mantenuta
+        now = time.time()
+        times = [now - usage.get(i, {}).get("last_called", 0) for i in items]
+        calls = [usage.get(i, {}).get("call_count", 0) for i in items]
+        
+        if not times: return items[0] # Fallback
+
+        tn = [(t - min(times)) / (max(times) - min(times) + 1e-9) for t in times]
+        cn = [(c - min(calls)) / (max(calls) - min(calls) + 1e-9) for c in calls]
+
+        ms = [TIME_WEIGHT * t + (1 - TIME_WEIGHT) * (1 - c) for t, c in zip(tn, cn)]
+        weights = [math.exp(-((1 - m) ** 2) / (2 * SIGMA ** 2)) for m in ms]
+
+        r, s = random.random() * sum(weights), 0
+        for i, w in zip(items, weights):
+            s += w
+            if r <= s:
+                return i
+        return items[-1]
+
+    def is_key_available(api_key, data, usage):
+        """Controlla orari, giorni bloccati e, soprattutto, i crediti residui."""
+        entry = data[api_key]
+        usage_entry = usage.setdefault(api_key, {})
+        
+        # 1. Controllo Crediti e Rinnovo
+        if not check_and_reset_credits(usage_entry):
+            return False
+
+        # 2. Controlli Temporali (Timezone, Giorni, Ore)
+        tzname = entry.get("timezone")
+        tz = pytz.timezone(tzname) if tzname else pytz.UTC
+        now = datetime.now(tz)
+
+        if "days_blocked" in entry and entry["days_blocked"]:
+            if now.isoweekday() in entry["days_blocked"]:
+                return False
+
+        if "hours" in entry and entry["hours"]:
+            start, end = entry["hours"]
+            if not (start <= now.hour <= end):
+                return False
+
+        return True
+
+    # --- FLUSSO PRINCIPALE ---
+    
+    store = load_store()
+    data, usage = store["data"], store["usage"]
+    
+    # Filtra le chiavi disponibili
+    valid_keys = [k for k in data if is_key_available(k, data, usage)]
+    
+    if not valid_keys:
+        # Salviamo lo store nel caso check_and_reset_credits abbia resettato qualcosa
+        save_store(store)
+        print("Nessuna API key disponibile (crediti esauriti o fuori orario).")
+        return {}
+
+    # Sceglie la chiave migliore
+    selected_api_key = choose(valid_keys, usage)
+    api_config = data[selected_api_key]
+    usage_entry = usage[selected_api_key]
+
+    # Gestione Sessione Sticky per FloppyData
+    # Se non esiste una sessione per questa chiave, creane una univoca e salvala
+    if "proxy_session_id" not in usage_entry:
+        usage_entry["proxy_session_id"] = str(uuid.uuid4())[:8] # Short UUID
+
+    session_id = usage_entry["proxy_session_id"]
+    
+    # Costruzione URL Proxy Parametrico
+    proxy_url = build_floppy_proxy(api_config, session_id)
+    
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "x-api-key": selected_api_key,
+    }
+    proxies = {"http": proxy_url, "https": proxy_url}
+
+    print(f"Usando API Key: ...{selected_api_key[-5:]} con Sessione Proxy: {session_id}")
+
+    # Tentativi di richiesta
+    for attempt in range(3):
+        try:
+            # Aggiorna timestamp chiamata
+            usage_entry["last_called"] = time.time()
+            usage_entry["call_count"] = usage_entry.get("call_count", 0) + 1
+            save_store(store) # Salva pre-chiamata
+
+            resp = requests.get(
+                PDL_URL,
+                params=params,
+                headers=headers,
+                proxies=proxies,
+                timeout=30,
+                verify=False # A volte necessario con certi proxy, valuta se rimuoverlo
+            )
+            
+            # --- PARSING HEADERS PDL PER AGGIORNAMENTO CREDITI ---
+            # Esempio header: x-ratelimit-reset: 2025-11-19 07:18:54
+            pdl_remaining = resp.headers.get("x-totallimit-remaining") or resp.headers.get("x-ratelimit-remaining-minute")
+            pdl_reset_date = resp.headers.get("x-ratelimit-reset")
+
+            # Aggiorna i dati nello store se presenti negli headers
+            if pdl_remaining is not None:
+                try:
+                    usage_entry["credits_remaining"] = int(pdl_remaining)
+                except ValueError:
+                    pass
+            
+            if pdl_reset_date:
+                usage_entry["reset_date"] = pdl_reset_date
+
+            # Salva immediatamente lo stato aggiornato dei crediti
+            save_store(store)
+
+            # Gestione Risposta
+            try:
+                json_response = resp.json()
+            except ValueError:
+                print(f"Tentativo {attempt + 1} - Risposta non valida (JSON errato)")
+                continue
+
+            if resp.status_code == 200:
+                return json_response
+            elif resp.status_code == 404:
+                 # Profilo non trovato, ma chiamata valida (crediti spesi)
+                print("Profilo non trovato su PDL.")
+                return {}
+            elif resp.status_code == 429:
+                print("Rate limit superato (anche se il check locale diceva ok).")
+                # Forziamo crediti a 0 per evitare loop immediato
+                usage_entry["credits_remaining"] = 0
+                save_store(store)
+                break # O continue se vuoi provare un'altra chiave (richiederebbe refactoring loop esterno)
+            else:
+                print(f"Errore API {resp.status_code}: {json_response.get('message', 'Unknown')}")
+
+        except Exception as e:
+            print(f"Tentativo {attempt + 1} fallito: {str(e)}")
+            time.sleep(1)
+
+    return {}
+
 def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None, n_profiles: int = 1) -> List[Dict]:
     """
     Trova n_profiles recruiters per un'azienda specifica eseguendo queries progressive.
@@ -459,12 +681,6 @@ def get_companies_info(user_id: str, ids: Dict[str, str], new_companies: List[Di
     In caso di ConnectionError, la richiesta viene ritentata fino a 10 volte
     con una pausa di 10 secondi tra i tentativi.
     """
-    API_KEY = os.environ.get("PEOPLE_DATA_API_KEY")
-    PDL_URL = "https://api.peopledatalabs.com/v5/company/enrich"
-    HEADERS = {
-        "Content-Type": "application/json",
-        "x-api-key": API_KEY
-    }
 
     if not API_KEY:
         print("🛑 Errore: Variabile d'ambiente PEOPLE_DATA_API_KEY non trovata.")
@@ -507,10 +723,9 @@ def get_companies_info(user_id: str, ids: Dict[str, str], new_companies: List[Di
             # 🔁 Tentativi con retry per ConnectionError
             for attempt in range(1, 11):  # massimo 10 tentativi
                 try:
-                    response = requests.get(PDL_URL, headers=HEADERS, params=params, timeout=15)
-                    data = response.json()
+                    data = get_pdl_data(params)
 
-                    if response.status_code == 200 and data.get("status") == 200 and data.get("name"):
+                    if data and data.get("name"):
                         company_info = data
                         save_company_info(user_id, unique_id, company_info)
                         print(f"✅ Info azienda {name} salvate con successo usando: {list(params.keys())}")
