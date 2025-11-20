@@ -2122,5 +2122,19 @@
     "completion-tokens": 16372,
     "total-tokens": 22738,
     "cost": 0.027741000000000002
+  },
+  {
+    "input": [
+      "\n    Extract 2-5 key topic keywords from this job position description that would be relevant for finding a company blog.\n    Focus on the main domain/field (e.g., \"engineering\", \"marketing\", \"data science\", \"product design\").\n    Respond ONLY with a valid JSON array of strings, no explanation.\n    \n    Example:\n    [\"engineering\", \"innovation\", \"AI research\"]\n    \n    Position description:\n    I want to be a software engineer\n    ",
+      "# Company Blog Homepage Scoring Task\n\nScore each search result based on how likely it is to be the official company blog HOMEPAGE for 'Apple'\nand how RELEVANT it is to this target position.\n\n**Target Position Description:**\nI want to be a software engineer\n\n## CRITICAL REQUIREMENTS\n- ONLY score blog HOMEPAGES (main blog index pages like /blog, /insights, /stories)\n- DO NOT score individual blog articles or internal blog posts\n- Look for URLs that end with /blog, /insights, /news, or similar homepage patterns\n- Avoid URLs with dates, article titles, or specific post paths (e.g., /blog/article-name, /blog/2024/01/post)\n\n## Scoring Criteria (0-100 points)\n- **Is it a HOMEPAGE?** (0-40 points)\n- **Relevance to Position** (0-40 points)\n- **Official Company Blog** (0-20 points)\n\n## Instructions\n- Evaluate each result and assign a score from 0 to 100\n- Respond ONLY with a valid JSON array with ONLY the scores in order\n- Example format: [85, 72, 40, 0]\n\n## Search Results\n\n1. Latest News - Apple Developer\n   URL: https://developer.apple.com/news/\n   Snippet: 6 hours ago ... 4.7: Clarifies that HTML5 and JavaScript mini apps and mini games are in scope of the guideline. 4.7.2: Clarifies that apps offering software ...\n\n2. Kalzumeus Software - Podcast - Apple Podcasts\n   URL: https://podcasts.apple.com/gb/podcast/kalzumeus-software/id560734474\n   Snippet: Patrick McKenzie (patio11) blogs on software development, marketing, and general business topics. Latest Episode. Follow. Episodes.\n\n3. Best software engineering/development podcast EPISODES? : r ...\n   URL: https://www.reddit.com/r/ExperiencedDevs/comments/z8usx2/best_software_engineeringdevelopment_podcast/\n   Snippet: 30 Nov 2022 ... Oh damn, I literally have a half-finished blog post that is just a ... Anyone with experience getting featured on Apple Podcasts? 15 ...\n\n4. Leaving My Apple Engineering Job in 2020 | by Jake Spracher ...\n   URL: https://jakespracher.medium.com/leaving-my-apple-engineering-job-in-2020-268da94533b4\n   Snippet: 5 Dec 2020 ... Blog · Technology · Careers. 168. 168 ... Startup CTO | Ex-Apple Software Engineer. Follow. Responses (2). To ...\n\n5. Blog - Apple Security Research\n   URL: https://security.apple.com/blog/\n   Snippet: Memory Integrity Enforcement (MIE) is the culmination of an unprecedented design and engineering ... software binaries and source code of key PCC ...\n\n6. Apple extends its privacy leadership with new updates across its ...\n   URL: https://www.apple.com/ie/newsroom/2024/06/apple-extends-its-privacy-leadership-with-new-updates-across-its-platforms/\n   Snippet: 10 Jun 2024 ... ... Software Engineering. “We've extended iPhone's industry-leading ... More details on Private Cloud Compute can be found at security.apple.com/blog/ ...\n\n7. Apple Developer\n   URL: https://developer.apple.com/\n   Snippet: ... Apple Watch, Apple TV, and Apple Vision Pro. You'll also get access to beta software, advanced app capabilities, extensive beta testing tools, and app analytics ...\n"
+    ],
+    "output": [
+      "[\"software engineering\", \"software development\"]",
+      "\n\n[100,0,0,0,90,0,40]"
+    ],
+    "prompt-tokens": 889,
+    "completion-tokens": 5737,
+    "total-tokens": 6626,
+    "cost": 0.00905
   }
 ]

@@ -6,14 +6,20 @@ import requests
 from typing import List, Dict, Optional, Any
 from candidai_script import db
 from candidai_script.database import get_account_data, save_recruiter_and_query, save_company_info, get_custom_queries
+from datetime import datetime, timezone
+import pytz
+import math
+import random
+import uuid
+from dateutil import parser as date_parser
 
 def get_pdl_data(params):
     # --- CONFIGURAZIONE FLOPPYDATA ---
     STORE_FILE="store_pdl.json"
-    PROXY_USER = "o9EmEnfT9h3fCMAH"
+    PROXY_USER = "9081P161DdU541pP"
     PROXY_PASS = os.environ.get("PROXY_PASS")
     PROXY_HOST = "geo.g-w.info"
-    PROXY_PORT = "10443"
+    PROXY_PORT = "10080"
     
     STORE_FILE = "store_pdl.json"
     SIGMA = 0.25
@@ -28,6 +34,7 @@ def get_pdl_data(params):
                     return json.load(f)
                 except Exception:
                     pass
+        print("⚠️ Store non trovato o corrotto, ne creo uno nuovo.")
         return {"data": {}, "usage": {}}
 
     def save_store(store):
@@ -105,9 +112,10 @@ def get_pdl_data(params):
 
     def is_key_available(api_key, data, usage):
         """Controlla orari, giorni bloccati e, soprattutto, i crediti residui."""
+        print(f"⏱ Verifica disponibilità API Key: ...{api_key[-5:]}")
         entry = data[api_key]
         usage_entry = usage.setdefault(api_key, {})
-        
+        print(f"   Crediti residui: {usage_entry.get('credits_remaining', DEFAULT_CAP)}")
         # 1. Controllo Crediti e Rinnovo
         if not check_and_reset_credits(usage_entry):
             return False
@@ -132,7 +140,7 @@ def get_pdl_data(params):
     
     store = load_store()
     data, usage = store["data"], store["usage"]
-    
+    print(data, usage)
     # Filtra le chiavi disponibili
     valid_keys = [k for k in data if is_key_available(k, data, usage)]
     
@@ -682,10 +690,6 @@ def get_companies_info(user_id: str, ids: Dict[str, str], new_companies: List[Di
     con una pausa di 10 secondi tra i tentativi.
     """
 
-    if not API_KEY:
-        print("🛑 Errore: Variabile d'ambiente PEOPLE_DATA_API_KEY non trovata.")
-        return
-
     for company in new_companies:
         name = company.get("name")
         domain = company.get("domain")
@@ -724,7 +728,7 @@ def get_companies_info(user_id: str, ids: Dict[str, str], new_companies: List[Di
             for attempt in range(1, 11):  # massimo 10 tentativi
                 try:
                     data = get_pdl_data(params)
-
+                    print(f"📡 Tentativo {attempt} per {name} con parametri: {params}")
                     if data and data.get("name"):
                         company_info = data
                         save_company_info(user_id, unique_id, company_info)

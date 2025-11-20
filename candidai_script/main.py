@@ -1,4 +1,4 @@
-from candidai_script.recruiter import find_recruiters_for_user, get_companies_info
+from candidai_script.recruiter import find_recruiters_for_user, get_companies_info, get_pdl_data
 from candidai_script.blog_posts import get_blog_posts
 from candidai_script.email_generator import generate_email
 from candidai_script.database import (
@@ -35,9 +35,12 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
     user_instructions = account.get("customizations", {}).get("instructions", "")
     
     # Crea o recupera ID univoci per ogni azienda
+    print("a", changed_companies)
     companies, ids, new_companies = save_companies_to_results(user_id, companies, changed_companies)
+    logging.info(f"🏢 Nuove aziende aggiunte: {[c['name'] for c in new_companies]}"  )
     if len(new_companies) > 0:
         get_companies_info(user_id, ids, new_companies)
+    logging.info(f"🏢 Aziende da processare: {[c['name'] for c in companies]}"  )
 
     companies = [c for c in companies if c not in new_companies]
     print(companies,new_companies)
