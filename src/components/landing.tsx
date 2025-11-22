@@ -121,7 +121,7 @@ const StatsSection = () => {
     const stats = [
         { number: "10,000+", label: "Emails Generated", icon: <Mail className="w-8 h-8" /> },
         { number: "87%", label: "Response Rate", icon: <TrendingUp className="w-8 h-8" /> },
-        { number: "2,500+", label: "Happy Job Seekers", icon: <Users className="w-8 h-8" /> },
+        { number: "700+", label: "Happy Job Seekers", icon: <Users className="w-8 h-8" /> },
         { number: "24hrs", label: "Average Processing", icon: <Clock className="w-8 h-8" /> }
     ];
 
