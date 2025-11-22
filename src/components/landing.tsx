@@ -57,7 +57,7 @@ const HeroSection = () => {
     return (
         <section className="relative min-h-screen flex items-center justify-center px-6 lg:px-8">
             <AnimatedBackground />
-            <div className="relative z-10 text-center max-w-5xl mx-auto">
+            <div className="relative z-10 text-center max-w-5xl mx-auto mt-[80px]">
                 <Badge variant="primary" className="mb-6 inline-flex items-center space-x-2">
                     <Sparkles className="w-4 h-4" />
                     <span>Revolutionary AI-Powered Recruitment</span>
