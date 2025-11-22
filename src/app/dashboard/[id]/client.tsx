@@ -156,15 +156,19 @@ function CompanyHeader({ data }: { data: any }) {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-4 flex gap-6 w-full"
+      className="flex flex-col sm:flex-row gap-6 w-full space-y-4 sm:space-y-0"
     >
-      <motion.div variants={itemVariants} className="w-48">
+      {/* Logo */}
+      <motion.div variants={itemVariants} className="w-48 flex-shrink-0 mx-auto sm:mx-0">
         <CompanyLogo company={data.company.domain || data.company.name} maxSize={40} />
       </motion.div>
-      <div className="w-full">
-        <div className="flex flex-wrap gap-6">
-          <div className="flex-1 mb-4">
-            <div className="w-full flex items-center space-x-4">
+
+      {/* Contenuti */}
+      <div className="w-full flex flex-col gap-6">
+        {/* Header */}
+        <div className="flex flex-row flex-wrap gap-6 items-start sm:items-center">
+          <div className="flex-1 mb-4 sm:mb-0">
+            <div className="w-full flex flex-wrap items-center gap-4">
               <motion.div variants={itemVariants} className="flex-1">
                 <h1 className="text-4xl font-semibold text-white">{data.company.name}</h1>
               </motion.div>
@@ -191,21 +195,23 @@ function CompanyHeader({ data }: { data: any }) {
             </div>
           </div>
         </div>
+
+        {/* Progress bar e step */}
         <motion.div variants={itemVariants} className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="flex-1">
+            <div className="flex-1 w-full">
               <ProgressBar progress={progress} />
             </div>
             <motion.span
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="text-lg font-semibold text-white text-right"
+              className="text-lg font-semibold text-white text-right sm:text-left"
             >
               {progress}%
             </motion.span>
           </div>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-4">
             <Step
               title="Recruiter Found"
               status={recruiterStatus === 'completed' ? 'completed' : inProgressStep === 'recruiter' ? 'in-progress' : 'pending'}
@@ -239,17 +245,29 @@ function BlogCard({ article }) {
     <motion.div
       variants={cardVariants}
       whileHover={{ y: -5, transition: { duration: 0.2 } }}
-      className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors"
+      className="bg-white/5 hover:bg-white/10 rounded-lg p-4 sm:p-6 border border-white/10 transition-colors flex flex-col"
     >
-      <article>
-        <h2 className="text-2xl font-bold text-white mb-3 line-clamp-3">{article.title}</h2>
-        <p className="text-gray-400 mb-4 line-clamp-6">{article.markdown}</p>
-        <Link href={article.url} className="inline-flex items-center text-gray-200 hover:text-blue-800 font-semibold transition-colors group">
-          Read more
-          <motion.div animate={{ x: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </motion.div>
-        </Link>
+      <article className="flex flex-col h-full">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 line-clamp-3 sm:line-clamp-4">
+          {article.title}
+        </h2>
+        <p className="text-gray-400 mb-4 line-clamp-4 sm:line-clamp-6">
+          {article.markdown}
+        </p>
+        <div className="mt-auto">
+          <Link
+            href={article.url}
+            className="inline-flex items-center text-gray-200 hover:text-blue-800 font-semibold transition-colors group"
+          >
+            Read more
+            <motion.div
+              animate={{ x: [0, 5, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+            >
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </motion.div>
+          </Link>
+        </div>
       </article>
     </motion.div>
   );
@@ -472,63 +490,85 @@ const RecruiterSummary = ({ originalData, customStrategy }: { data: any }) => {
 
   return (
     <motion.div variants={cardVariants} initial="hidden" animate="visible">
-      <Card className="p-6">
-        <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
-          <User className="w-5 h-5 mr-2 text-violet-400" /> Recruiter Summary
+      <Card className="p-4 sm:p-6">
+        <h3 className="text-xl sm:text-2xl font-semibold text-white mb-6 flex items-center">
+          <User className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-violet-400" /> Recruiter Summary
         </h3>
+
         <div className={(inProgress ? "bg-gray-800 " : "") + "relative rounded-md"}>
-          {inProgress && <Overlay content={getStepStatus(originalData, "recruiter_summary") === "completed" && <motion.div
+          {inProgress && (
+            <Overlay
+              content={
+                getStepStatus(originalData, "recruiter_summary") === "completed" && (
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid grid-cols-1 sm:grid-cols-4 gap-8 sm:gap-16 p-2"
+                  >
+                    <motion.div
+                      variants={itemVariants}
+                      className="col-span-1 sm:col-span-4 flex flex-col items-center justify-center text-center py-6 sm:py-10"
+                    >
+                      <div className="border border-dashed border-gray-700 rounded-2xl p-6 sm:p-10 w-full max-w-xl bg-gray-900/40 backdrop-blur-sm">
+                        <p className="text-lg font-semibold text-white mb-3">
+                          No Recruiter, Founder, or Employee Found with an email
+                        </p>
+                        <p className="text-sm text-gray-400 mb-5">
+                          We couldn’t identify any relevant profiles for this search.
+                          Try adjusting your filters or search criteria.
+                        </p>
+                        <Separator className="my-5 w-1/2 mx-auto" />
+                        <p className="text-xs text-gray-500">
+                          If you believe this is an error, please check the source data or contact support.
+                        </p>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )
+              }
+            />
+          )}
+
+          <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-4 gap-16 p-2"
+            className="grid grid-cols-1 sm:grid-cols-4 gap-6 sm:gap-16 p-2"
           >
-            <motion.div
-              variants={itemVariants}
-              className="col-span-4 flex flex-col items-center justify-center text-center py-10"
-            >
-              <div className="border border-dashed border-gray-700 rounded-2xl p-10 w-full max-w-xl bg-gray-900/40 backdrop-blur-sm">
-                <p className="text-lg font-semibold text-white mb-3">
-                  No Recruiter, Founder, or Employee Found with an email
-                </p>
-                <p className="text-sm text-gray-400 mb-5">
-                  We couldn’t identify any relevant profiles for this search.
-                  Try adjusting your filters or search criteria.
-                </p>
-                <Separator className="my-5 w-1/2 mx-auto" />
-                <p className="text-xs text-gray-500">
-                  If you believe this is an error, please check the source data or contact support.
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-          } />}
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-4 gap-16 p-2">
-            <motion.div variants={itemVariants} className="col-span-1">
-              <div><RecruiterProfileCard data={data} defaultStrategy={customStrategy} inProgress={inProgress} /></div>
+            {/* Left Column */}
+            <motion.div variants={itemVariants} className="col-span-1 flex flex-col">
+              <RecruiterProfileCard data={data} defaultStrategy={customStrategy} inProgress={inProgress} />
               <Separator className="my-5" />
-              <motion.div variants={itemVariants} className="col-span-1">
+              <motion.div variants={itemVariants}>
                 <p className="text-sm text-gray-400 mb-3">Key Skills</p>
                 <SkillsListBase skills={data.recruiter_summary.skills} editable={false} />
               </motion.div>
             </motion.div>
-            <motion.div variants={itemVariants} className="col-span-3">
+
+            {/* Right Column */}
+            <motion.div variants={itemVariants} className="col-span-1 sm:col-span-3 flex flex-col gap-5">
               <div>
                 <p className="text-sm text-gray-400 mb-3">Experience</p>
-                <ul className="grid grid-cols-3 gap-4">
+                <ul className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <ExperienceList experience={data.recruiter_summary.experience} />
                 </ul>
               </div>
               <Separator className="my-5" />
               <div>
                 <p className="text-sm text-gray-400 mb-3">Education</p>
-                <ul className="grid grid-cols-3 gap-4"><EducationList education={data.recruiter_summary.education} /></ul>
+                <ul className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <EducationList education={data.recruiter_summary.education} />
+                </ul>
               </div>
             </motion.div>
           </motion.div>
+
           <div className="p-2">
             <Separator className="my-5" />
-            <p className="text-sm text-gray-400 mb-3">{data.recruiter_summary.name} matches this criteria - {data.query?.name}</p>
+            <p className="text-sm text-gray-400 mb-3">
+              {data.recruiter_summary.name} matches this criteria - {data.query?.name}
+            </p>
             <CriteriaDisplay criteria={data.query?.criteria} />
           </div>
         </div>
@@ -1048,20 +1088,21 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
 
   return (
     <motion.div variants={cardVariants} initial="hidden" animate="visible">
-      <Card className="p-6">
-        <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
-          <Mail className="w-5 h-5 mr-2 text-violet-400" /> Email Generated
+      <Card className="p-4 sm:p-6">
+        <h3 className="text-xl sm:text-2xl font-semibold text-white mb-6 flex items-center">
+          <Mail className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-violet-400" /> Email Generated
         </h3>
 
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className={(inProgress ? "bg-gray-900 " : "") + "rounded-md relative grid grid-cols-5 gap-4"}
+          className={`${inProgress ? "bg-gray-900 " : ""} rounded-md relative grid grid-cols-1 sm:grid-cols-5 gap-4`}
         >
           {inProgress && <Overlay />}
 
-          <div className="col-span-4 space-y-3">
+          {/* Colonna principale con input */}
+          <div className="col-span-1 sm:col-span-4 space-y-3">
             <motion.div variants={itemVariants}>
               <label className="text-gray-300 text-sm font-medium mb-2 block">Subject</label>
               <Input
@@ -1083,46 +1124,44 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
 
             <Separator />
 
-            <motion.div variants={itemVariants} className="w-full flex items-center justify-end flex-wrap gap-3">
+            <motion.div variants={itemVariants} className="w-full flex flex-wrap justify-end gap-3">
               <CreditsDialog unlocked={email.prompt} contentType="prompt">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button size={"sm"} variant={"outline"}>View Prompt</Button>
+                    <Button size="sm" variant="outline">View Prompt</Button>
                   </DialogTrigger>
-                  {!inProgress && email.prompt && <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>
-                        Prompt used for the email
-                      </DialogTitle>
-                    </DialogHeader>
-                    <ScrollArea className="max-h-[calc(100vh-200px)] w-full">
-                      <div className="w-full max-w-md">
-                        {email.prompt
-                          .split(/\n/)
-                          .map((line, i) =>
-                            line.trim() === "" ? (
-                              <br key={i} /> // se la riga è vuota, aggiunge spazio verticale
-                            ) : (
-                              <p key={i}>{line}</p>
-                            )
+                  {!inProgress && email.prompt && (
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Prompt used for the email</DialogTitle>
+                      </DialogHeader>
+                      <ScrollArea className="max-h-[calc(100vh-200px)] w-full">
+                        <div className="w-full max-w-md">
+                          {email.prompt.split(/\n/).map((line, i) =>
+                            line.trim() === "" ? <br key={i} /> : <p key={i}>{line}</p>
                           )}
-                      </div>
-                    </ScrollArea>
-                    <DialogFooter>
-                      <Button variant={"outline"} icon={<Download />} onClick={() => downloadTextFile("prompt", email.prompt)}>Download</Button>
-                      <Button variant={"outline"} icon={<Copy />} onClick={() => navigator.clipboard.writeText(email.prompt)}>Copy</Button>
-                    </DialogFooter>
-                  </DialogContent>}
+                        </div>
+                      </ScrollArea>
+                      <DialogFooter>
+                        <Button variant="outline" icon={<Download />} onClick={() => downloadTextFile("prompt", email.prompt)}>Download</Button>
+                        <Button variant="outline" icon={<Copy />} onClick={() => navigator.clipboard.writeText(email.prompt)}>Copy</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  )}
                 </Dialog>
               </CreditsDialog>
-              {data.email && (email.body !== data.email.body || email.subject !== data.email.subject) && <>
-                <Button size={"sm"} variant={"outline"} onClick={() => setEmail(data.email || {})} disabled={isEmailSubmitting}>Reset to default</Button>
-                <Button size={"sm"} onClick={() => handleUpdateEmail()} disabled={isEmailSubmitting}>Update</Button>
-              </>}
+
+              {data.email && (email.body !== data.email.body || email.subject !== data.email.subject) && (
+                <>
+                  <Button size="sm" variant="outline" onClick={() => setEmail(data.email || {})} disabled={isEmailSubmitting}>Reset to default</Button>
+                  <Button size="sm" onClick={() => handleUpdateEmail()} disabled={isEmailSubmitting}>Update</Button>
+                </>
+              )}
             </motion.div>
           </div>
 
-          <motion.div variants={itemVariants} className="col-span-1 space-y-4">
+          {/* Colonna laterale */}
+          <motion.div variants={itemVariants} className="col-span-1 space-y-4 mt-4 sm:mt-0">
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               {!email.email_sent ? (
                 <EmailDialog
@@ -1140,11 +1179,7 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
                   onClick={handleEmailSent}
                   disabled={isEmailSubmitting || emailSentSuccess}
                 >
-                  {isEmailSubmitting
-                    ? "Sending..."
-                    : emailSentSuccess
-                      ? "Email sent ✓"
-                      : "Email Sent"}
+                  {isEmailSubmitting ? "Sending..." : emailSentSuccess ? "Email sent ✓" : "Email Sent"}
                 </Button>
               )}
             </motion.div>
@@ -1153,43 +1188,38 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
             <CreditsDialog contentType="generate-email" unlocked={defaultInstructions !== null} className="w-full">
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full" disabled={loading}>
-                    Generate another
-                  </Button>
+                  <Button variant="outline" className="w-full" disabled={loading}>Generate another</Button>
                 </DialogTrigger>
-                {defaultInstructions !== null && <DialogContent className="sm:max-w-4xl w-4xl max-h-screen">
-                  {isSubmitting && <Overlay />}
-                  <DialogHeader>
-                    <DialogTitle className="flex">Define Custom Instructions</DialogTitle>
-                  </DialogHeader>
-                  <ScrollArea className="max-h-[calc(100vh-200px)]">
-                    <div className="p-1">
-                      <Textarea rows={5} value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} />
-                    </div>
-                  </ScrollArea>
-                  <DialogFooter>
-                    <DialogClose>
-                      <Button variant="ghost">Close</Button>
-                    </DialogClose>
-                    <Button
-                      variant="outline"
-                      onClick={handleSetRightInstructions}
-                      disabled={customInstructions === rightInstructions}
-                    >
-                      Reset to default
-                    </Button>
-                    <Button onClick={handleGenerate} disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Generating email...
-                        </>
-                      ) : (
-                        "Generate the new email with the new instructions"
-                      )}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>}
+                {defaultInstructions !== null && (
+                  <DialogContent className="sm:max-w-4xl w-full max-h-screen">
+                    {isSubmitting && <Overlay />}
+                    <DialogHeader>
+                      <DialogTitle className="flex">Define Custom Instructions</DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[calc(100vh-200px)]">
+                      <div className="p-1">
+                        <Textarea rows={5} value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} />
+                      </div>
+                    </ScrollArea>
+                    <DialogFooter className="flex flex-wrap gap-2 justify-end">
+                      <DialogClose>
+                        <Button variant="ghost">Close</Button>
+                      </DialogClose>
+                      <Button variant="outline" onClick={handleSetRightInstructions} disabled={customInstructions === rightInstructions}>
+                        Reset to default
+                      </Button>
+                      <Button onClick={handleGenerate} disabled={isSubmitting}>
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating email...
+                          </>
+                        ) : (
+                          "Generate the new email with the new instructions"
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                )}
               </Dialog>
             </CreditsDialog>
 
@@ -1216,37 +1246,85 @@ const BlogPostsSection = ({ data }: { data: any }) => {
   const inProgress = getStepStatus(data, "blog_articles") !== "completed"
   return (
     <motion.div variants={cardVariants} initial="hidden" animate="visible">
-      <Card className="p-6">
-        <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
-          <Newspaper className="w-5 h-5 mr-2 text-violet-400" /> Blog Articles Selected
+      <Card className="p-4 sm:p-6">
+        <h3 className="text-xl sm:text-2xl font-semibold text-white mb-6 flex items-center">
+          <Newspaper className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-violet-400" /> Blog Articles Selected
         </h3>
+
         <div className={(inProgress ? "bg-gray-900 " : "") + "relative rounded-md"}>
           {inProgress && <Overlay />}
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-3 gap-4">
-            {inProgress ?
-              Array.from({ length: 3 }).map((_, i) => <BlogCard key={i} />)
-              : data.blog_articles.content.map(article => (
+
+          {/* BLOG CARDS */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            {inProgress
+              ? Array.from({ length: 3 }).map((_, i) => <BlogCard key={i} />)
+              : data.blog_articles.content.map((article) => (
                 <BlogCard key={article.url} article={article} />
               ))}
           </motion.div>
+
           <Separator className="my-5" />
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-5">
+
+          {/* STATS */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-5"
+          >
             {[
-              { label: 'Posts found', value: data.blog_articles?.articles_found || 0, icon: Search, color: 'blue' },
-              { label: 'Posts Deeply Analyzed', value: data.blog_articles?.content.length || 0, icon: Brain, color: 'blue' },
-              { label: 'Blogs found', value: data.blog_articles?.blogs_analized || 0, icon: CheckCircle2, color: 'blue' }
+              {
+                label: "Posts found",
+                value: data.blog_articles?.articles_found || 0,
+                icon: Search,
+                color: "blue",
+              },
+              {
+                label: "Posts Deeply Analyzed",
+                value: data.blog_articles?.content.length || 0,
+                icon: Brain,
+                color: "blue",
+              },
+              {
+                label: "Blogs found",
+                value: data.blog_articles?.blogs_analized || 0,
+                icon: CheckCircle2,
+                color: "blue",
+              },
             ].map((stat, i) => (
-              <motion.div key={i} custom={i} variants={statsVariants} whileHover={{ y: -5, transition: { duration: 0.2 } }}>
-                <Card className="p-6 backdrop-blur-none" /* gradient prop is not standard, assuming custom component */>
+              <motion.div
+                key={i}
+                custom={i}
+                variants={statsVariants}
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+              >
+                <Card className="p-4 sm:p-6 backdrop-blur-none">
                   <div className="flex items-center justify-between">
+                    {/* TEXT */}
                     <div>
                       <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
-                      <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.15 + 0.3 }} className="text-2xl font-bold text-white">
+                      <motion.p
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.15 + 0.3 }}
+                        className="text-2xl sm:text-3xl font-bold text-white"
+                      >
                         {stat.value}
                       </motion.p>
                     </div>
-                    <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.5 }} className={`w-12 h-12 bg-${stat.color}-500/20 rounded-xl flex items-center justify-center`}>
-                      <stat.icon className={`w-6 h-6 text-${stat.color}-400`} />
+
+                    {/* ICON */}
+                    <motion.div
+                      whileHover={{ rotate: 360 }}
+                      transition={{ duration: 0.5 }}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 bg-${stat.color}-500/20 rounded-xl flex items-center justify-center`}
+                    >
+                      <stat.icon className={`w-5 h-5 sm:w-6 sm:h-6 text-${stat.color}-400`} />
                     </motion.div>
                   </div>
                 </Card>
@@ -1302,437 +1380,7 @@ const formatCurrency = (amount) => {
 };
 
 const CompanyCard = ({ company }) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="w-full"
-    >
-      <Card className="relative overflow-hidden">
-        {/* Animated background effects */}
-        <motion.div
-          className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{ duration: 8, repeat: Infinity }}
-        />
-        <motion.div
-          className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.5, 0.3, 0.5],
-          }}
-          transition={{ duration: 8, repeat: Infinity, delay: 1 }}
-        />
-
-        {/* Content */}
-        <div className="relative z-10 p-8">
-          {/* Header Section */}
-          <div className="flex items-start gap-8 mb-8">
-            {/* Logo */}
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ duration: 0.6, delay: 0.2, type: "spring" }}
-            >
-              <CompanyLogo company={company.website || company.name} />
-            </motion.div>
-
-            {/* Company Info */}
-            <div className="flex-1">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="flex items-start gap-4"
-              >
-                <div className="flex-1">
-                  <h2 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent">
-                    {company.display_name || company.name}
-                  </h2>
-
-                  {/* Alternative names */}
-                  {company.alternative_names && company.alternative_names.length > 0 && (
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs text-gray-500 uppercase tracking-wider">Also known as:</span>
-                      <div className="flex flex-wrap gap-1">
-                        {company.alternative_names.slice(0, 3).map((name, idx) => (
-                          <span key={idx} className="text-xs text-gray-400 bg-gray-800/50 px-2 py-0.5 rounded">
-                            {name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-
-              {company.headline && (
-                <motion.p
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  className="text-gray-300 text-lg mb-4"
-                >
-                  {company.headline}
-                </motion.p>
-              )}
-
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="flex flex-wrap items-center gap-6 text-sm"
-              >
-                {company.website && (
-                  <div className="flex items-center gap-2 text-blue-400 group">
-                    <Globe className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                    <span>{company.website}</span>
-                  </div>
-                )}
-                {company.location && (
-                  <div className="flex items-center gap-2 text-emerald-400">
-                    <MapPin className="w-4 h-4" />
-                    <span>
-                      {company.location.name}
-                      {company.location.continent && ` • ${company.location.continent}`}
-                    </span>
-                  </div>
-                )}
-                {company.founded && (
-                  <div className="flex items-center gap-2 text-amber-400">
-                    <Calendar className="w-4 h-4" />
-                    <span>Founded {company.founded} ({new Date().getFullYear() - company.founded} years)</span>
-                  </div>
-                )}
-              </motion.div>
-
-              {/* Alternative domains */}
-              {company.alternative_domains && company.alternative_domains.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.6 }}
-                  className="mt-3 flex items-center gap-2 text-xs"
-                >
-                  <span className="text-gray-500">Other domains:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {company.alternative_domains.slice(0, 4).map((domain, idx) => (
-                      <span key={idx} className="text-gray-400 bg-gray-800/30 px-2 py-0.5 rounded">
-                        {domain}
-                      </span>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </div>
-
-            {/* Status Badges */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-              className="flex flex-col gap-3"
-            >
-              {company.type && (
-                <div className="px-4 py-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/30 rounded-full text-blue-300 text-sm font-semibold backdrop-blur-sm flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  {company.type.charAt(0).toUpperCase() + company.type.slice(1)}
-                </div>
-              )}
-              {company.ticker && (
-                <div className="px-4 py-2 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-400/30 rounded-full text-emerald-300 text-sm font-bold font-mono backdrop-blur-sm flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  {company.ticker}
-                </div>
-              )}
-            </motion.div>
-          </div>
-
-          {/* Stats Grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
-            className="grid grid-cols-5 gap-4 mb-6"
-          >
-            {company.employee_count && (
-              <StatCard
-                icon={<Users className="w-5 h-5" />}
-                label="EMPLOYEES"
-                value={formatNumber(company.employee_count)}
-                subtitle={company.size}
-                color="blue"
-                delay={0.8}
-              />
-            )}
-
-            {company.industry_v2 && (
-              <StatCard
-                icon={<Building2 className="w-5 h-5" />}
-                label="INDUSTRY"
-                value={company.industry_v2}
-                color="purple"
-                delay={0.9}
-              />
-            )}
-
-            {company.total_funding_raised && (
-              <StatCard
-                icon={<TrendingUp className="w-5 h-5" />}
-                label="FUNDING"
-                value={formatCurrency(company.total_funding_raised)}
-                color="emerald"
-                delay={1.0}
-              />
-            )}
-
-            {company.tags && company.tags.length > 0 && (
-              <StatCard
-                icon={<Target className="w-5 h-5" />}
-                label="SPECIALTIES"
-                value={company.tags.length}
-                subtitle="Focus areas"
-                color="pink"
-                delay={1.2}
-              />
-            )}
-
-            {company.naics && company.naics.length > 0 && (
-              <StatCard
-                icon={<BarChart3 className="w-5 h-5" />}
-                label="NAICS SECTORS"
-                value={company.naics.length}
-                subtitle="Classifications"
-                color="indigo"
-                delay={1.3}
-              />
-            )}
-          </motion.div>
-
-          {/* Summary */}
-          {company.summary && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 1.4 }}
-              className="bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm rounded-xl p-6 mb-6 border border-white/10"
-            >
-              <div className="flex items-center gap-2 text-gray-400 text-xs mb-3 uppercase tracking-wider">
-                <Zap className="w-4 h-4" />
-                Company Overview
-              </div>
-              <p className="text-gray-200 text-base leading-relaxed">
-                {company.summary}
-              </p>
-            </motion.div>
-          )}
-
-          {/* NAICS Details */}
-          {company.naics && company.naics.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 1.5 }}
-              className="bg-gradient-to-br from-indigo-500/10 to-violet-500/10 backdrop-blur-sm rounded-xl p-5 mb-6 border border-indigo-400/20"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 text-indigo-300 text-xs uppercase tracking-wider font-semibold">
-                  <Layers className="w-4 h-4" />
-                  Industry Classification (NAICS)
-                </div>
-                <span className="text-xs text-indigo-400/60 bg-indigo-500/10 px-2 py-1 rounded">
-                  {company.naics.length} {company.naics.length === 1 ? 'Classification' : 'Classifications'}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {company.naics.map((naics, idx) => {
-                  // Raccogli i campi base
-                  const fields = [
-                    { label: "Code", value: naics.naics_code, color: "text-indigo-200" },
-                    { label: "Sector", value: naics.sector, color: "text-white" },
-                    { label: "Sub-sector", value: naics.sub_sector, color: "text-gray-200" },
-                    { label: "Industry Group", value: naics.industry_group, color: "text-gray-300" },
-                    { label: "Industry", value: naics.naics_industry, color: "text-gray-400" },
-                  ].filter((f) => f.value);
-
-                  // Crea la catena gerarchica rimuovendo duplicati consecutivi
-                  const hierarchy = fields
-                    .slice(1) // escludi il codice
-                    .map((f) => f.value)
-                    .filter((v, i, arr) => v !== arr[i - 1]); // rimuove duplicati consecutivi
-
-                  return (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.4, delay: 0.3 + idx * 0.1 }}
-                      className="bg-white/5 rounded-lg p-3 border border-indigo-400/10 hover:border-indigo-400/20 transition-all"
-                    >
-                      <HoverCard>
-                        <HoverCardTrigger asChild>
-                          <div className="cursor-pointer">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {hierarchy.map((level, i) => (
-                                <React.Fragment key={i}>
-                                  <span className="text-xs text-indigo-300/80 bg-indigo-500/10 px-2 py-1 rounded">
-                                    {level}
-                                  </span>
-                                  {i < hierarchy.length - 1 && (
-                                    <span className="text-indigo-400/40">→</span>
-                                  )}
-                                </React.Fragment>
-                              ))}
-                            </div>
-                          </div>
-                        </HoverCardTrigger>
-
-                        {/* HoverCard con informazioni complete */}
-                        <HoverCardContent>
-                          <div className="flex gap-4">
-                            <div className="space-y-1">
-                              {fields.map((f, i) => (
-                                <div key={i} className="text-xs">
-                                  <span className="text-indigo-300/70 font-medium mr-1">
-                                    {f.label}:
-                                  </span>
-                                  <span className={f.color}>{f.value}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </HoverCardContent>
-                      </HoverCard>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Tags and Employee Distribution */}
-          <div className="grid grid-cols-2 gap-6">
-            {/* Tags */}
-            {company.tags && company.tags.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 1.6 }}
-                className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-xl p-5 border border-blue-400/20"
-              >
-                <div className="text-xs text-blue-300 mb-3 uppercase tracking-wider font-semibold flex items-center gap-2">
-                  <Award className="w-4 h-4" />
-                  Specialties & Expertise
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {company.tags.slice(0, 10).map((tag, idx) => (
-                    <motion.span
-                      key={idx}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.3, delay: 1.7 + idx * 0.05 }}
-                      className="px-3 py-1.5 bg-blue-500/20 text-blue-200 rounded-lg text-sm font-medium border border-blue-400/30"
-                    >
-                      {tag}
-                    </motion.span>
-                  ))}
-                  {company.tags.length > 10 && (
-                    <span className="px-3 py-1.5 text-gray-400 text-sm">
-                      +{company.tags.length - 10} more
-                    </span>
-                  )}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Employee Distribution */}
-            {company.employee_count_by_country && Object.keys(company.employee_count_by_country).length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 1.6 }}
-                className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 backdrop-blur-sm rounded-xl p-5 border border-emerald-400/20 relative overflow-hidden"
-              >
-                {/* Animated globe background */}
-                <motion.div
-                  className="absolute top-0 right-0 w-32 h-32 opacity-5"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                >
-                  <svg viewBox="0 0 100 100" fill="currentColor" className="text-emerald-300">
-                    <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="1" />
-                    <path d="M50 5 Q70 50 50 95 Q30 50 50 5" fill="none" stroke="currentColor" strokeWidth="1" />
-                    <path d="M5 50 Q50 30 95 50 Q50 70 5 50" fill="none" stroke="currentColor" strokeWidth="1" />
-                    <line x1="5" y1="50" x2="95" y2="50" stroke="currentColor" strokeWidth="1" />
-                  </svg>
-                </motion.div>
-
-                <div className="text-xs text-emerald-300 mb-4 uppercase tracking-wider font-semibold flex items-center gap-2 relative z-10">
-                  <MapPin className="w-4 h-4" />
-                  Global Workforce Distribution
-                </div>
-                <div className="space-y-3 relative z-10">
-                  {Object.entries(company.employee_count_by_country)
-                    .sort(([, a], [, b]) => b - a)
-                    .slice(0, 5)
-                    .map(([country, count], idx) => {
-                      const totalEmployees = Object.values(company.employee_count_by_country).reduce((a, b) => a + b, 0);
-                      const percentage = ((count / totalEmployees) * 100).toFixed(1);
-
-                      return (
-                        <motion.div
-                          key={country}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.4, delay: 1.7 + idx * 0.1 }}
-                          className="relative"
-                        >
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-gray-200 text-sm font-medium">
-                              {country?.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-emerald-300 font-bold text-sm">
-                                {formatNumber(count)}
-                              </span>
-                              <span className="text-emerald-400/60 text-xs font-mono">
-                                {percentage}%
-                              </span>
-                            </div>
-                          </div>
-                          {/* Progress bar */}
-                          <div className="h-1.5 bg-emerald-950/40 rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${percentage}%` }}
-                              transition={{ duration: 1, delay: 1.8 + idx * 0.1, ease: "easeOut" }}
-                              className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full relative"
-                            />
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                </div>
-              </motion.div>
-            )}
-          </div>
-        </div>
-
-        {/* Shine effect */}
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none"
-          initial={{ x: '-100%' }}
-          animate={{ x: '200%' }}
-          transition={{ duration: 3, repeat: Infinity, repeatDelay: 5 }}
-        />
-      </Card>
-    </motion.div>
-  );
+  
 };
 
 const StatCard = ({ icon, label, value, subtitle, color, delay }) => {
