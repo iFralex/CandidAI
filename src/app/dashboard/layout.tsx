@@ -1,7 +1,7 @@
 // components/DashboardLayout.tsx (rimane un Server Component per la struttura)
 // Non usare 'use client'
 
-import { Activity, BarChart3, FileText, Home, LogOut, Settings, Sparkles, Menu, Zap } from 'lucide-react'; // Importa le icone
+import { Activity, BarChart3, FileText, Home, LogOut, Settings, Sparkles, Menu, Zap, Bell } from 'lucide-react'; // Importa le icone
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
