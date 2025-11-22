@@ -27,8 +27,7 @@ interface DashboardLayoutProps {
 const navigationItems = [
     { name: 'Dashboard', icon: <Home className="w-5 h-5" />, href: '/dashboard', active: true },
     { name: 'Send All', icon: <Activity className="w-5 h-5" />, href: '/dashboard/send-all' },
-    { name: 'Templates', icon: <FileText className="w-5 h-5" />, href: '/templates' },
-    { name: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, href: '/analytics' },
+    { name: 'Follow Ups', icon: <Bell className="w-5 h-5" />, href: '/dashboard/follow-ups' },
     { name: 'Settings', icon: <Settings className="w-5 h-5" />, href: '/settings' }
 ];
 
