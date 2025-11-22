@@ -1,12 +1,15 @@
 "use client";
 
+import { motion } from 'framer-motion';
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Sparkles, Target, Zap, Users, Mail, ArrowRight, Check, Star, Play, X, Menu, Clock, TrendingUp, Shield, Award, MessageSquare, BarChart3, Filter, Brain, Eye, Send, Calendar, MapPin, Briefcase } from 'lucide-react';
+import { ChevronDown, Sparkles, Target, Zap, Users, Mail, ArrowRight, Check, Star, Play, X, Menu, Clock, TrendingUp, Shield, Award, MessageSquare, BarChart3, Filter, Brain, Eye, Send, Calendar, MapPin, Briefcase, Crown, Infinity, CircleQuestionMark, TrendingDown, Bot, AlertTriangle, FileX, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 import { Review, reviews } from './reviews';
+import { billingOptions, plansInfo } from '@/config';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 const Badge = ({ children, variant = 'default', className = '' }) => {
     const variants = {
@@ -145,6 +148,298 @@ const StatsSection = () => {
     );
 };
 
+
+const JobMarketCrisisSections = () => {
+  const crisisStats = [
+    {
+      icon: <TrendingDown className="w-12 h-12" />,
+      number: "-35%",
+      label: "Entry-level tech positions since 2020",
+      color: "text-red-400"
+    },
+    {
+      icon: <Bot className="w-12 h-12" />,
+      number: "54%",
+      label: "Banking roles at high risk of automation",
+      color: "text-orange-400"
+    },
+    {
+      icon: <Users className="w-12 h-12" />,
+      number: "50%",
+      label: "Entry-level roles could disappear",
+      color: "text-yellow-400"
+    },
+    {
+      icon: <AlertTriangle className="w-12 h-12" />,
+      number: "39%",
+      label: "Companies already cutting junior positions",
+      color: "text-red-400"
+    }
+  ];
+
+  const failedStrategies = [
+    {
+      icon: <Send className="w-8 h-8" />,
+      title: "LinkedIn Applications",
+      problem: "Drowning in Competition",
+      stats: [
+        { label: "Response Rate", value: "10-20%", bad: true },
+        { label: "Applications per Position", value: "10,000+", bad: true },
+        { label: "Time Investment", value: "High", bad: true }
+      ],
+      description: "Your resume gets lost among thousands of applicants. Unless you're in the top 1%, you're practically invisible."
+    },
+    {
+      icon: <Target className="w-8 h-8" />,
+      title: "Company Career Pages",
+      problem: "Slightly Better, Still Failing",
+      stats: [
+        { label: "Competition Level", value: "High", bad: true },
+        { label: "Success Rate", value: "Very Low", bad: true },
+        { label: "Time per Application", value: "30-45 min", bad: false }
+      ],
+      description: "Better than LinkedIn, but you're still competing with hundreds of candidates who also went the extra mile."
+    },
+    {
+      icon: <FileX className="w-8 h-8" />,
+      title: "Generic Applications",
+      problem: "The Fastest Way to Rejection",
+      stats: [
+        { label: "Personalization", value: "None", bad: true },
+        { label: "Recruiter Engagement", value: "0%", bad: true },
+        { label: "Standing Out", value: "Impossible", bad: true }
+      ],
+      description: "Without personalization, your application is just another number in the system. Automated rejections await."
+    }
+  ];
+
+  return (
+    <>
+      {/* Sezione 1: The Changing Job Market */}
+      <section className="relative py-24 px-6 lg:px-8 bg-gradient-to-b from-black to-red-950/20">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-red-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent">
+                The Job Market Has Changed Forever
+              </h2>
+              <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                Industries that were thriving just years ago are now nearly impossible to break into. AI isn't just changing the game—it's closing the door on entry-level opportunities.
+              </p>
+            </motion.div>
+          </div>
+
+          {/* Statistics Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+            {crisisStats.map((stat, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <Card className="p-6 text-center h-full">
+                  <div className={`${stat.color} mb-4 flex justify-center`}>
+                    {stat.icon}
+                  </div>
+                  <div className="text-3xl md:text-4xl font-bold text-white mb-2">
+                    {stat.number}
+                  </div>
+                  <div className="text-gray-400 text-sm leading-tight">
+                    {stat.label}
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Key Points */}
+          <div className="grid md:grid-cols-2 gap-8">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <Card className="p-8 h-full" gradient={true}>
+                <Bot className="w-12 h-12 text-violet-400 mb-4" />
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  AI is Replacing Junior Roles
+                </h3>
+                <p className="text-gray-300 leading-relaxed mb-4">
+                  Tasks that were once the domain of entry-level employees—data analysis, report writing, basic coding—are now automated by AI. Major tech companies have slashed junior hiring by 25%, while financial institutions see 54% of banking roles at risk.
+                </p>
+                <p className="text-gray-400 text-sm italic">
+                  Tech giants like Microsoft, Meta, and Amazon have frozen or drastically reduced junior developer hiring.
+                </p>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <Card className="p-8 h-full" gradient={true}>
+                <TrendingDown className="w-12 h-12 text-red-400 mb-4" />
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  The Entry-Level Crisis
+                </h3>
+                <p className="text-gray-300 leading-relaxed mb-4">
+                  Software engineering job openings hit a five-year low, with a 35% drop since 2020. The traditional career ladder is breaking—entry-level positions that once served as stepping stones are vanishing entirely.
+                </p>
+                <p className="text-gray-400 text-sm italic">
+                  Without intervention, unemployment could spike to levels not seen since the sovereign debt crisis.
+                </p>
+              </Card>
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="mt-12 text-center"
+          >
+            <Card className="p-8 bg-gradient-to-r from-red-600/20 to-orange-600/20">
+              <AlertTriangle className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+              <p className="text-xl text-gray-200 font-semibold mb-2">
+                Traditional job search strategies aren't just ineffective anymore—they're obsolete.
+              </p>
+              <p className="text-gray-400">
+                The methods that worked for previous generations no longer give you a fighting chance in today's AI-dominated market.
+              </p>
+            </Card>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Sezione 2: Why Traditional Methods Fail */}
+      <section className="relative py-24 px-6 lg:px-8 bg-black">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                Why Traditional Methods Don't Work Anymore
+              </h2>
+              <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+                You're doing everything "right"—sending applications, customizing your resume, following up. So why aren't you getting interviews?
+              </p>
+            </motion.div>
+          </div>
+
+          {/* Failed Strategies Grid */}
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            {failedStrategies.map((strategy, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+              >
+                <Card className="p-8 h-full flex flex-col">
+                  <div className="text-violet-400 mb-4">
+                    {strategy.icon}
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    {strategy.title}
+                  </h3>
+                  <p className="text-red-400 font-semibold mb-4 text-sm">
+                    {strategy.problem}
+                  </p>
+
+                  <div className="space-y-3 mb-6 flex-grow">
+                    {strategy.stats.map((stat, idx) => (
+                      <div key={idx} className="flex justify-between items-center">
+                        <span className="text-gray-400 text-sm">{stat.label}:</span>
+                        <span className={`font-semibold ${stat.bad ? 'text-red-400' : 'text-gray-300'}`}>
+                          {stat.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-4 border-t border-white/10">
+                    <p className="text-gray-400 text-sm leading-relaxed">
+                      {strategy.description}
+                    </p>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* The Real Problem */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <Card className="p-8 md:p-12" gradient={true}>
+              <div className="max-w-4xl mx-auto">
+                <div className="flex items-start gap-6 mb-8">
+                  <div className="bg-red-500/20 p-4 rounded-xl flex-shrink-0">
+                    <XCircle className="w-10 h-10 text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                      The Brutal Truth: Volume Doesn't Equal Results
+                    </h3>
+                    <p className="text-gray-300 text-lg leading-relaxed mb-6">
+                      Sending 100 applications through LinkedIn or company portals means you're competing with <span className="text-violet-400 font-semibold">tens of thousands</span> of other candidates for each position. Unless you're in the top 1% of applicants, you're essentially invisible.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mb-8">
+                  <div className="bg-black/30 rounded-lg p-6">
+                    <Clock className="w-8 h-8 text-orange-400 mb-3" />
+                    <h4 className="text-white font-semibold mb-2">Time Investment</h4>
+                    <p className="text-gray-400 text-sm">
+                      Spending 20-30 minutes per application × 100 applications = <span className="text-red-400 font-semibold">50+ hours</span> for minimal results
+                    </p>
+                  </div>
+                  <div className="bg-black/30 rounded-lg p-6">
+                    <Users className="w-8 h-8 text-yellow-400 mb-3" />
+                    <h4 className="text-white font-semibold mb-2">Competition Level</h4>
+                    <p className="text-gray-400 text-sm">
+                      Every quality position receives <span className="text-red-400 font-semibold">1,000-10,000+</span> applications. You're a needle in a haystack.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-violet-600/20 to-purple-600/20 rounded-lg p-6 border border-violet-500/30">
+                  <p className="text-white text-lg font-semibold mb-2">
+                    What Actually Works?
+                  </p>
+                  <p className="text-gray-300">
+                    Direct contact with recruiters bypasses the competition entirely. But crafting a single personalized outreach email takes 1-2 hours—making it impossible to scale. <span className="text-violet-400 font-semibold">Until now.</span>
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+      </section>
+    </>
+  );
+};
+
 // Time & Cost Savings Section
 const SavingsSection = () => {
     return (
@@ -155,7 +450,7 @@ const SavingsSection = () => {
                         Stop Wasting Time & Money
                     </h2>
                     <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-                        See how RecruiterAI transforms your job search economics
+                        See how CandidAI transforms your job search economics
                     </p>
                 </div>
 
@@ -165,11 +460,11 @@ const SavingsSection = () => {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center py-3 border-b border-white/10">
                                 <span className="text-gray-300">Research per company</span>
-                                <span className="text-white font-semibold">2-3 hours</span>
+                                <span className="text-white font-semibold">40-60 mins</span>
                             </div>
                             <div className="flex justify-between items-center py-3 border-b border-white/10">
                                 <span className="text-gray-300">Find recruiter contacts</span>
-                                <span className="text-white font-semibold">1-2 hours</span>
+                                <span className="text-white font-semibold">30-45 mins</span>
                             </div>
                             <div className="flex justify-between items-center py-3 border-b border-white/10">
                                 <span className="text-gray-300">Write personalized email</span>
@@ -181,13 +476,13 @@ const SavingsSection = () => {
                             </div>
                             <div className="flex justify-between items-center py-3 pt-4 border-t border-red-500/30">
                                 <span className="text-red-400 font-semibold">Total per company</span>
-                                <span className="text-red-400 font-bold text-lg">4+ hours + €60/mo</span>
+                                <span className="text-red-400 font-bold text-lg">2+ hours + €60/mo</span>
                             </div>
                         </div>
                     </Card>
 
                     <Card className="p-8" gradient>
-                        <h3 className="text-2xl font-bold text-green-400 mb-6 text-center">✅ RecruiterAI</h3>
+                        <h3 className="text-2xl font-bold text-green-400 mb-6 text-center">✅ CandidAI</h3>
                         <div className="space-y-4">
                             <div className="flex justify-between items-center py-3 border-b border-white/10">
                                 <span className="text-gray-300">AI research & analysis</span>
@@ -203,11 +498,11 @@ const SavingsSection = () => {
                             </div>
                             <div className="flex justify-between items-center py-3 border-b border-white/10">
                                 <span className="text-gray-300">Your setup time</span>
-                                <span className="text-white font-semibold">2 minutes</span>
+                                <span className="text-white font-semibold">5 minutes</span>
                             </div>
                             <div className="flex justify-between items-center py-3 pt-4 border-t border-green-500/30">
                                 <span className="text-green-400 font-semibold">Total per company</span>
-                                <span className="text-green-400 font-bold text-lg">2 mins + €0.25-0.60</span>
+                                <span className="text-green-400 font-bold text-lg">5 mins + €1.00-1.20</span>
                             </div>
                         </div>
                     </Card>
@@ -215,12 +510,12 @@ const SavingsSection = () => {
 
                 <div className="mt-12 text-center">
                     <Card className="p-8 max-w-3xl mx-auto" gradient>
-                        <h3 className="text-2xl font-bold text-white mb-4">💰 Your Savings with RecruiterAI</h3>
+                        <h3 className="text-2xl font-bold text-white mb-4">💰 Your Savings with CandidAI</h3>
                         <div className="grid md:grid-cols-2 gap-8">
                             <div>
                                 <div className="text-3xl font-bold text-green-400 mb-2">120+ Hours</div>
                                 <div className="text-gray-300">Saved per month</div>
-                                <div className="text-sm text-gray-400 mt-1">(for 25 companies)</div>
+                                <div className="text-sm text-gray-400 mt-1">(for 50 companies)</div>
                             </div>
                             <div>
                                 <div className="text-3xl font-bold text-green-400 mb-2">€1,800+</div>
@@ -258,16 +553,17 @@ const FeaturesSection = () => {
             title: "Personalized Email Generation",
             description: "Each email is uniquely crafted with company insights, role-specific messaging, and your personal brand story."
         },
+
+        {
+            icon: <Mail className="w-8 h-8" />,
+            title: "One-Click Sending",
+            description: "Review and send your personalized emails directly from your pc with just one click, depending on your operating system and your email client."
+        },
         {
             icon: <Calendar className="w-8 h-8" />,
             title: "Follow-up Automation",
             description: "AI-powered follow-up sequences with perfect timing notifications to maximize your response rates."
         },
-        {
-            icon: <BarChart3 className="w-8 h-8" />,
-            title: "Advanced Analytics",
-            description: "Track open rates, responses, and engagement with detailed analytics to optimize your job search strategy."
-        }
     ];
 
     return (
@@ -322,7 +618,7 @@ const ProcessSection = () => {
         {
             step: "04",
             title: "AI Processing",
-            description: "Our AI researches companies, analyzes recruiters, and generates personalized emails. Takes 24hrs-7 days.",
+            description: "Our AI researches companies, analyzes recruiters, and generates personalized emails. Takes 24hrs maximum.",
             icon: <Zap className="w-6 h-6" />
         },
         {
@@ -344,7 +640,7 @@ const ProcessSection = () => {
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                        How RecruiterAI Works
+                        How CandidAI Works
                     </h2>
                     <p className="text-xl text-gray-400 max-w-2xl mx-auto">
                         From setup to success in 6 simple steps. Let AI handle the heavy lifting while you focus on interviews.
@@ -441,6 +737,9 @@ const EmailExamplesSection = () => {
                                 <p className="text-gray-500 text-xs">To: {example.recruiter}</p>
                             </Card>
                         ))}
+                        <p className="mt-2 text-sm text-gray-400 italic leading-relaxed">
+                            * Some names and personal details have been adjusted to protect privacy and ensure compliance.
+                        </p>
                     </div>
 
                     <div className="lg:col-span-2">
@@ -483,160 +782,326 @@ const EmailExamplesSection = () => {
 
 // Pricing Section Component
 const PricingSection = () => {
-    const [isAnnual, setIsAnnual] = useState(false);
-    const [couponCode, setCouponCode] = useState('');
+    const [billingType, setBillingType] = useState('quintennial');
 
-    const plans = [
-        {
-            name: "Base",
-            price: 25,
-            description: "Perfect for targeted job search",
-            features: [
-                "25 companies maximum",
-                "10 recruiters analyzed per company",
-                "3 detailed recruiter profiles",
-                "1 personalized email per company",
-                "Basic company intelligence",
-                "Email support"
-            ],
-            limits: "25 companies",
-            popular: false
-        },
-        {
-            name: "Pro",
-            price: 59,
-            description: "For serious job seekers",
-            features: [
-                "100 companies maximum",
-                "25 recruiters analyzed per company",
-                "10 detailed recruiter profiles",
-                "2 personalized emails per company",
-                "1 additional search filter",
-                "Follow-up email automation",
-                "Advanced company intelligence",
-                "Priority support"
-            ],
-            limits: "100 companies",
-            popular: true
-        },
-        {
-            name: "Ultra",
-            price: 119,
-            description: "Maximum job search power",
-            features: [
-                "200 companies maximum",
-                "100 recruiters analyzed per company",
-                "25 detailed recruiter profiles",
-                "3 personalized emails per company",
-                "3 additional search filters",
-                "AI company recommendations",
-                "Company name search (no URLs needed)",
-                "Follow-up email automation",
-                "Premium company intelligence",
-                "Dedicated support"
-            ],
-            limits: "200 companies",
-            popular: false
+    const splitFeature = (feature) => {
+        const numMatch = feature.match(/(\d[\d.,]*)/);
+        if (numMatch) {
+            const num = numMatch[0];
+            const base = feature.replace(num, "").replace(/\s+/g, " ").trim().toLowerCase();
+            return { base, variant: feature, hasNumber: true, number: num };
         }
-    ];
+        return { base: feature.trim().toLowerCase(), variant: feature, hasNumber: false };
+    };
+
+    // Calcolo di tutte le feature presenti in almeno un piano (escluso Free)
+    const paidPlans = plansInfo.slice(1);
+    const allFeatures = Array.from(new Set(paidPlans.flatMap(p => p.features)));
+
+    // Raggruppa le feature per "base"
+    const groupsMap = allFeatures.reduce((acc, feat) => {
+        const { base, variant } = splitFeature(feat);
+        if (!acc[base]) acc[base] = new Set();
+        acc[base].add(variant);
+        return acc;
+    }, {});
+
+    const groupedFeatures = Object.entries(groupsMap).map(([base, variantsSet]) => {
+        const variants = Array.from(variantsSet);
+        return { base, variants };
+    });
+
+    const freePlan = plansInfo[0];
+
+    const getCurrentPrice = (plan) => {
+        if (billingType === 'monthly') return plan.price * 0.8;
+        if (billingType === 'biennial') return plan.price * 0.9 * 0.8;
+        if (billingType === 'quintennial') return plan.price * 0.85 * 0.8;
+        return plan.pricesLifetime * 0.8;
+    };
+
+    const getDiscount = () => {
+        const option = billingOptions.find(opt => opt.value === billingType);
+        return option?.discount || null;
+    };
+
+    const getBillingSubtext = () => {
+        const option = billingOptions.find(opt => opt.value === billingType);
+        if (billingType === 'monthly') return 'Recurring monthly payment';
+        return `${option?.sublabel} with ${option?.discount} discount`;
+    };
+
+    const activeIndex = billingOptions.findIndex(opt => opt.value === billingType);
 
     return (
-        <section id="pricing" className="relative py-24 px-6 lg:px-8">
+        <section id="pricing" className="relative py-24 px-6 lg:px-8 bg-black">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                    <motion.h2
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent"
+                    >
                         Choose Your Success Plan
-                    </h2>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-8">
+                    </motion.h2>
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        className="text-xl text-gray-400 max-w-2xl mx-auto"
+                    >
                         All plans include AI-powered personalization and our signature email crafting. Start with a free test!
-                    </p>
-
-                    <div className="flex items-center justify-center space-x-4 mb-8">
-                        <span className={`${!isAnnual ? 'text-white' : 'text-gray-400'}`}>Monthly</span>
-                        <button
-                            onClick={() => setIsAnnual(!isAnnual)}
-                            className={`relative w-14 h-7 rounded-full transition-colors ${isAnnual ? 'bg-violet-500' : 'bg-gray-600'
-                                }`}
-                        >
-                            <div
-                                className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${isAnnual ? 'translate-x-8' : 'translate-x-1'
-                                    }`}
-                            />
-                        </button>
-                        <span className={`${isAnnual ? 'text-white' : 'text-gray-400'}`}>Annual</span>
-                        {isAnnual && (
-                            <Badge variant="success">Save 20%</Badge>
-                        )}
-                    </div>
+                    </motion.p>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-8 mb-12">
-                    {plans.map((plan, index) => (
-                        <Card
-                            key={index}
-                            className={`p-8 relative ${plan.popular ? 'ring-2 ring-violet-500' : ''
-                                }`}
-                            gradient={plan.popular}
-                            hover={false}
-                        >
-                            {plan.popular && (
-                                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                                    <Badge variant="primary">Most Popular</Badge>
+                {/* Piano Free - Banner Orizzontale */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                    className="mb-12"
+                >
+                    <Card className="p-8" gradient={false} hover={true}>
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="flex items-center gap-6 flex-1">
+                                <div className="bg-violet-500/20 p-4 rounded-xl">
+                                    <Zap className="w-8 h-8 text-violet-400" />
                                 </div>
-                            )}
-
-                            <div className="text-center mb-8">
-                                <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                                <p className="text-gray-400 mb-4">{plan.description}</p>
-                                <div className="mb-4">
-                                    <span className="text-4xl font-bold text-white">
-                                        €{isAnnual ? Math.round(plan.price * 0.8) : plan.price}
-                                    </span>
-                                    <span className="text-gray-400">/mo</span>
+                                <div className="text-left">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h3 className="text-2xl font-bold text-white">{freePlan.name}</h3>
+                                        <Badge variant="success">Free</Badge>
+                                    </div>
+                                    <p className="text-gray-400 mb-2">{freePlan.description}</p>
+                                    <p className="text-sm text-violet-400">{freePlan.limits}</p>
                                 </div>
-                                <p className="text-sm text-violet-400">{plan.limits}</p>
                             </div>
 
-                            <ul className="space-y-4 mb-8">
-                                {plan.features.map((feature, fIndex) => (
-                                    <li key={fIndex} className="flex items-start space-x-3">
-                                        <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                                        <span className="text-gray-300 text-sm">{feature}</span>
-                                    </li>
-                                ))}
-                            </ul>
+                            <div className="flex flex-col md:flex-row items-center gap-6">
+                                <ul className="space-y-2">
+                                    {freePlan.features.slice(0, 3).map((feature, idx) => (
+                                        <motion.li
+                                            key={idx}
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ duration: 0.3, delay: 0.5 + idx * 0.1 }}
+                                            className="flex items-center gap-2 text-sm text-gray-300"
+                                        >
+                                            <Check className="w-4 h-4 text-green-400" />
+                                            {feature}
+                                        </motion.li>
+                                    ))}
+                                </ul>
 
-                            <Button
-                                variant={plan.popular ? "primary" : "secondary"}
-                                className="w-full"
-                                size="md"
-                            >
-                                Start with Free Test
-                            </Button>
-                        </Card>
-                    ))}
+                                <Button variant="primary" size="lg" className="whitespace-nowrap">
+                                    Start Free Test
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                </motion.div>
+
+                {/* Selettore tipo di billing */}
+                <div className="mb-12 flex flex-col items-center">
+                    <div className="relative w-full max-w-4xl">
+                        {/* Cavo di connessione */}
+                        <div className="absolute top-[60px] left-0 right-0 h-1 px-20">
+                            <div className="relative w-full h-full bg-gray-800 rounded-full overflow-hidden" />
+                        </div>
+
+                        {/* Pulsanti */}
+                        <div className="relative grid grid-cols-2 md:grid-cols-4 gap-4 px-4">
+                            {billingOptions.map((option, idx) => {
+                                const isActive = billingType === option.value;
+
+                                return (
+                                    <div key={option.value} className="relative flex flex-col items-center h-full">
+                                        {/* Pulsante */}
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => setBillingType(option.value)}
+                                            className="relative w-full h-full"
+                                        >
+                                            <div className={`
+                        h-full px-4 py-4 rounded-xl border-2 transition-all duration-300
+                        ${isActive
+                                                    ? `bg-gradient-to-br from-purple-600 to-violet-500 border-transparent shadow-lg shadow-purple-500/30`
+                                                    : 'bg-gray-900 border-gray-700 hover:border-gray-600'
+                                                }
+                      `}>
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <div className="text-center">
+                                                        <div className={`font-bold text-sm ${isActive ? 'text-white' : 'text-gray-300'}`}>
+                                                            {option.label}
+                                                        </div>
+                                                        <div className={`text-xs mt-1 ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
+                                                            {option.months}
+                                                        </div>
+
+                                                        {option.discount && (
+                                                            <div className={`text-xs font-bold mt-2 px-2 py-1 rounded-full inline-block ${isActive
+                                                                ? 'bg-white/20 text-white'
+                                                                : 'bg-green-500/20 text-green-400'
+                                                                }`}>
+                                                                Save {option.discount}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </motion.button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <motion.div
+                        key={billingType}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className="text-center mt-8"
+                    >
+                        <Tooltip >
+                            <TooltipTrigger>
+                                <p className="text-gray-400 text-sm font-medium">{getBillingSubtext()}
+                                    <CircleQuestionMark className="w-4 h-4 inline-block ml-1" />
+                                </p>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" align="center">
+                                <div className="max-w-xs text-sm text-gray-300">
+                                    {billingType === 'monthly' &&
+                                        'Billed monthly until canceled.'}
+
+                                    {billingType === 'biennial' &&
+                                        'Billed once every 2 years. During the 2-year period, you can activate your subscription in any 3 separate months — useful if you change jobs and need coverage at different moments.'}
+
+                                    {billingType === 'quintennial' &&
+                                        'Billed once every 5 years. During the 5-year period, you can activate your subscription in any 5 separate months, giving you flexibility if you switch jobs multiple times.'}
+
+                                    {billingType === 'lifetime' &&
+                                        'One-time payment for lifetime access. Each year, you can activate your subscription for 1 month whenever you need it.'}
+                                </div>
+                            </TooltipContent>
+                        </Tooltip>
+                    </motion.div>
                 </div>
 
-                {/*<div className="max-w-md mx-auto">
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 text-center">Have a coupon code?</h3>
-            <div className="flex space-x-3">
-              <Input
-                placeholder="Enter coupon code"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                className="flex-1"
-              />
-              <Button variant="primary" size="sm">
-                Apply
-              </Button>
-            </div>
-          </Card>
-        </div>*/}
+                {/* Piani a pagamento */}
+                <div className="grid md:grid-cols-3 gap-8 mb-12">
+                    {paidPlans.map((plan, index) => (
+                        <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.5 + index * 0.1 }}
+                        >
+                            <Card
+                                className={`flex flex-col p-8 relative h-full ${plan.popular ? "ring-2 ring-violet-500" : ""}`}
+                                gradient={plan.popular}
+                                hover={false}
+                            >
+                                {plan.popular && (
+                                    <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
+                                        className="absolute -top-4 left-1/2 transform -translate-x-1/2"
+                                    >
+                                        <Badge variant="primary">Most Popular</Badge>
+                                    </motion.div>
+                                )}
+
+                                <div className="text-center mb-8">
+                                    <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                                    <p className="text-gray-400 mb-4">{plan.description}</p>
+
+                                    <motion.div
+                                        key={billingType + plan.name}
+                                        initial={{ scale: 0.9, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ duration: 0.3 }}
+                                        className="mb-4"
+                                    >
+                                        <span className="text-4xl font-bold text-white">
+                                            {new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(getCurrentPrice(plan))}
+                                        </span>
+                                        <span className="text-gray-400">/mo</span>
+                                        {getDiscount() && (
+                                            <motion.div
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                                className="inline-block ml-2"
+                                            >
+                                                <Badge variant="success">-{getDiscount()}</Badge>
+                                            </motion.div>
+                                        )}
+                                        <motion.div
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            className="inline-block ml-2"
+                                        >
+                                            <Badge variant="success">-20%</Badge>
+                                        </motion.div>
+                                    </motion.div>
+
+                                    <p className="text-sm text-violet-400">{plan.limits}</p>
+                                </div>
+
+                                <ul className="space-y-4 mb-8">
+                                    {groupedFeatures.map(({ base, variants }, fIndex) => {
+                                        const includedVariant = plan.features.find(f => splitFeature(f).base === base);
+                                        const included = Boolean(includedVariant);
+
+                                        let displayedText;
+                                        if (included) {
+                                            displayedText = includedVariant;
+                                        } else {
+                                            const representative = variants[0];
+                                            const { hasNumber } = splitFeature(representative);
+                                            displayedText = hasNumber
+                                                ? representative.replace(/(\d[\d.,]*)/, "X")
+                                                : representative;
+                                        }
+
+                                        return (
+                                            <li key={fIndex} className="flex items-start space-x-3">
+                                                {included ? (
+                                                    <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-green-400" />
+                                                ) : (
+                                                    <X className="w-5 h-5 flex-shrink-0 mt-0.5 text-gray-600 opacity-30" />
+                                                )}
+
+                                                <span
+                                                    className={`text-sm ${included ? "text-gray-300" : "text-gray-600 line-through opacity-60"
+                                                        }`}
+                                                >
+                                                    {displayedText}
+                                                </span>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+
+                                <div className="flex-1" />
+                                <Button
+                                    variant={plan.popular ? "primary" : "secondary"}
+                                    className="w-full"
+                                    size="md"
+                                >
+                                    Start with Free Test
+                                </Button>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </div>
             </div>
         </section>
     );
-};
+}
 
 // Reviews Section Component
 const ReviewsSection = () => {
@@ -648,7 +1113,7 @@ const ReviewsSection = () => {
                         Success Stories
                     </h2>
                     <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                        Real people, real results. See how RecruiterAI transformed their job search journey.
+                        Real people, real results. See how CandidAI transformed their job search journey.
                     </p>
                 </div>
 
@@ -728,7 +1193,7 @@ const FAQSection = () => {
                         Frequently Asked Questions
                     </h2>
                     <p className="text-xl text-gray-400">
-                        Everything you need to know about RecruiterAI
+                        Everything you need to know about CandidAI
                     </p>
                 </div>
 
@@ -799,7 +1264,7 @@ const CTASection = () => {
                         </div>
                         <div className="flex items-center space-x-2">
                             <Clock className="w-4 h-4 text-green-400" />
-                            <span>Setup in 2 minutes</span>
+                            <span>Setup in 5 minutes</span>
                         </div>
                     </div>
                 </Card>
@@ -820,7 +1285,7 @@ const Footer = () => {
                                 <Sparkles className="w-5 h-5 text-white" />
                             </div>
                             <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
-                                RecruiterAI
+                                CandidAI
                             </span>
                         </div>
                         <p className="text-gray-400 max-w-md">
@@ -851,7 +1316,7 @@ const Footer = () => {
 
                 <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-white/10">
                     <div className="text-gray-400 mb-4 md:mb-0">
-                        &copy; 2024 RecruiterAI. All rights reserved.
+                        &copy; 2024 CandidAI. All rights reserved.
                     </div>
 
                     <div className="flex items-center space-x-6">
@@ -872,6 +1337,7 @@ const LandingPage = () => {
         <div className="min-h-screen bg-black text-white">
             <HeroSection />
             <StatsSection />
+            <JobMarketCrisisSections />
             <SavingsSection />
             <FeaturesSection />
             <ProcessSection />

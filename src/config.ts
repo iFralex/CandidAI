@@ -1,5 +1,3 @@
-import { Crown, Gift, Rocket, Target } from "lucide-react";
-
 export const serverConfig = {
   cookieName: process.env.AUTH_COOKIE_NAME!,
   cookieSignatureKeys: [process.env.AUTH_COOKIE_SIGNATURE_KEY_CURRENT!, process.env.AUTH_COOKIE_SIGNATURE_KEY_PREVIOUS!],
@@ -47,91 +45,185 @@ export const creditsInfo = {
   },
 }
 
+export const plansData = {
+  free_trial: {
+    credits: 0,
+    maxCompanies: 1,
+    customInstructions: false,
+    recruiterStrategy: false,
+    followUpAutomation: false,
+    companyConfirmationCalls: false,
+    deepDiveReports: false,
+    aiRecommendations: false,
+    generationPriority: false
+  },
+  base: {
+    credits: 0,
+    maxCompanies: 20,
+    customInstructions: false,
+    recruiterStrategy: false,
+    followUpAutomation: false,
+    companyConfirmationCalls: false,
+    deepDiveReports: false,
+    aiRecommendations: false,
+    generationPriority: false
+  },
+  pro: {
+    credits: 1000,
+    maxCompanies: 50,
+    customInstructions: true,
+    recruiterStrategy: 30,
+    followUpAutomation: true,
+    companyConfirmationCalls: false,
+    deepDiveReports: false,
+    aiRecommendations: false,
+    generationPriority: false
+  },
+  ultra: {
+    credits: 2500,
+    maxCompanies: 100,
+    customInstructions: true,
+    recruiterStrategy: 50,
+    followUpAutomation: true,
+    companyConfirmationCalls: true,
+    deepDiveReports: true,
+    aiRecommendations: true,
+    generationPriority: true
+  }
+};
+
+// --------------------------
+//  GENERATORE DI TESTO (solo nel file, non a runtime)
+// --------------------------
+
+function buildFeatures(data) {
+  const features = [
+    `${data.maxCompanies} companies maximum`,
+  ];
+
+  if (data.credits > 0)
+    features.push(`${data.credits} credits included`);
+
+  if (data.customInstructions)
+    features.push("Custom Instructions");
+
+  if (data.recruiterStrategy)
+    features.push(
+      `Custom strategy for recruiter search with ${data.recruiterStrategy} criteria`
+    );
+
+  if (data.followUpAutomation)
+    features.push("Follow-up email automation");
+
+  if (data.companyConfirmationCalls)
+    features.push("Company confirmation calls");
+
+  if (data.deepDiveReports)
+    features.push("Company information deep-dive reports");
+
+  if (data.aiRecommendations)
+    features.push("AI company recommendations");
+
+  if (data.generationPriority)
+    features.push("Generation priority");
+
+  return features;
+}
+
+// --------------------------
+//  FEATURES STATICHE PRE-GENERATE
+// --------------------------
+
+const staticFeatures = {
+  free_trial: buildFeatures(plansData.free_trial),
+  base: buildFeatures(plansData.base),
+  pro: buildFeatures(plansData.pro),
+  ultra: buildFeatures(plansData.ultra)
+};
+
+// --------------------------
+//  plansInfo con features STATICHE
+// --------------------------
+
 export const plansInfo = [
   {
-    id: 'free_trial',
+    id: "free_trial",
     name: "Free Trial",
     price: 0,
+    pricesLifetime: 0,
     description: "Try with one company",
-    features: [
-      "1 company analysis",
-      "1 recruiter match",
-      "1 personalized email",
-      "Basic company research"
-    ],
+    features: staticFeatures.free_trial,
     highlight: "Perfect to test our AI",
-    icon: Gift,
+    icon: "Gift",
     color: "from-green-500 to-emerald-600"
   },
   {
-    id: 'base',
+    id: "base",
     name: "Base",
-    price: 25,
+    price: 30,
+    pricesLifetime: 199,
     description: "Perfect for targeted job search",
-    features: [
-      "25 companies maximum",
-      "10 recruiters analyzed per company",
-      "3 detailed recruiter profiles",
-      "1 personalized email per company",
-      "Basic company intelligence"
-    ],
+    features: staticFeatures.base,
     highlight: "Great for focused search",
-    icon: Target,
+    icon: "Target",
     color: "from-blue-500 to-cyan-600"
   },
   {
-    id: 'pro',
+    id: "pro",
     name: "Pro",
-    price: 59,
+    price: 69,
+    pricesLifetime: 399,
     description: "For serious job seekers",
-    features: [
-      "50 companies maximum",
-      "25 recruiters analyzed per company",
-      "10 detailed recruiter profiles",
-      "2 personalized emails per company",
-      "1 additional search filter",
-      "Follow-up email automation"
-    ],
+    features: staticFeatures.pro,
     highlight: "Most Popular",
-    icon: Rocket,
-    color: "from-violet-500 to-purple-600",
-    popular: true
+    popular: true,
+    icon: "Rocket",
+    color: "from-violet-500 to-purple-600"
   },
   {
-    id: 'ultra',
+    id: "ultra",
     name: "Ultra",
-    price: 119,
+    price: 139,
+    pricesLifetime: 799,
     description: "Maximum job search power",
-    features: [
-      "100 companies maximum",
-      "100 recruiters analyzed per company",
-      "25 detailed recruiter profiles",
-      "3 personalized emails per company",
-      "3 additional search filters",
-      "AI company recommendations",
-      "Company name search"
-    ],
+    features: staticFeatures.ultra,
     highlight: "Ultimate power",
-    icon: Crown,
+    icon: "Crown",
     color: "from-yellow-500 to-orange-600"
   }
 ];
 
-export const plansData = {
-  free_trial: {
-    credits: 0,
-    maxCompanies: 1
+export const billingOptions = [
+  {
+    value: 'monthly',
+    label: 'Monthly',
+    sublabel: 'Recurring',
+    months: 'Pay monthly',
+    discount: null,
+    color: 'from-blue-500 to-cyan-500'
   },
-  base: {
-    credits: 0,
-    maxCompanies: 25
+  {
+    value: 'biennial',
+    label: '2 Years',
+    sublabel: '3 months active',
+    months: '3 mo / 2yr',
+    discount: '10%',
+    color: 'from-purple-500 to-pink-500'
   },
-  pro: {
-    credits: 1000,
-    maxCompanies: 50
+  {
+    value: 'quintennial',
+    label: '5 Years',
+    sublabel: '5 months active',
+    months: '5 mo / 5yr',
+    discount: '15%',
+    color: 'from-orange-500 to-red-500'
   },
-  ultra: {
-    credits: 2500,
-    maxCompanies: 100
+  {
+    value: 'lifetime',
+    label: 'Lifetime',
+    sublabel: '1 month/year',
+    months: '1 mo / year',
+    discount: ' ∞ %',
+    color: 'from-emerald-500 to-teal-500'
   }
-}
+];

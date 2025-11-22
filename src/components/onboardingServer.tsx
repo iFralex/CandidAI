@@ -7,7 +7,7 @@ import { ProfileAnalysisClient } from '@/components/onboarding';
 import { completeOnboarding, submitQueries } from '@/actions/onboarding-actions'
 import { Button } from '@/components/ui/button'
 import { cookies } from 'next/headers'
-import { plansData } from '@/config';
+import { plansData, plansInfo } from '@/config';
 
 interface SetupCompleteServerProps {
     userId: string
@@ -223,82 +223,12 @@ interface PlanSelectionServerProps {
 }
 
 export function PlanSelectionServer({ userId }: PlanSelectionServerProps) {
-    const plans = [
-        {
-            id: 'free_trial',
-            name: "Free Trial",
-            price: 0,
-            description: "Try with one company",
-            features: [
-                "1 company analysis",
-                "1 recruiter match",
-                "1 personalized email",
-                "Basic company research"
-            ],
-            highlight: "Perfect to test our AI",
-            icon: 'Gift',
-            color: "from-green-500 to-emerald-600"
-        },
-        {
-            id: 'base',
-            name: "Base",
-            price: 25,
-            description: "Perfect for targeted job search",
-            features: [
-                "25 companies maximum",
-                "10 recruiters analyzed per company",
-                "3 detailed recruiter profiles",
-                "1 personalized email per company",
-                "Basic company intelligence"
-            ],
-            highlight: "Great for focused search",
-            icon: 'Target',
-            color: "from-blue-500 to-cyan-600"
-        },
-        {
-            id: 'pro',
-            name: "Pro",
-            price: 59,
-            description: "For serious job seekers",
-            features: [
-                "100 companies maximum",
-                "25 recruiters analyzed per company",
-                "10 detailed recruiter profiles",
-                "2 personalized emails per company",
-                "1 additional search filter",
-                "Follow-up email automation"
-            ],
-            highlight: "Most Popular",
-            icon: 'Rocket',
-            color: "from-violet-500 to-purple-600",
-            popular: true
-        },
-        {
-            id: 'ultra',
-            name: "Ultra",
-            price: 119,
-            description: "Maximum job search power",
-            features: [
-                "200 companies maximum",
-                "100 recruiters analyzed per company",
-                "25 detailed recruiter profiles",
-                "3 personalized emails per company",
-                "3 additional search filters",
-                "AI company recommendations",
-                "Company name search"
-            ],
-            highlight: "Ultimate power",
-            icon: 'Crown',
-            color: "from-yellow-500 to-orange-600"
-        }
-    ]
-
     return (
         <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
                 <div className="inline-flex items-center space-x-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-2 mb-6">
                     <Wand2 className="w-5 h-5 text-violet-400" />
-                    <span className="text-gray-300">Welcome to RecruiterAI</span>
+                    <span className="text-gray-300">Welcome to CandidAI</span>
                 </div>
 
                 <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white via-violet-200 to-purple-200 bg-clip-text text-transparent">
@@ -309,7 +239,7 @@ export function PlanSelectionServer({ userId }: PlanSelectionServerProps) {
                 </p>
             </div>
 
-            <PlanSelectionClient userId={userId} plans={plans} />
+            <PlanSelectionClient userId={userId} plans={plansInfo} />
         </div>
     )
 }

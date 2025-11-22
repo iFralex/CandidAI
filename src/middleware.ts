@@ -6,6 +6,18 @@ import { clientConfig, serverConfig } from "./config";
 const PUBLIC_PATHS = ['/register', '/login', "/"];
 
 export async function middleware(request: NextRequest) {
+  // Add cookie for referral tracking
+  const url = request.nextUrl.clone();
+  const referralCode = url.searchParams.get('ref');
+  
+  if (referralCode) {
+    const response = NextResponse.next();
+    response.cookies.set('referral', referralCode, {
+      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    });
+    return response;
+  }
+
   return authMiddleware(request, {
     loginPath: "/api/login",
     logoutPath: "/api/logout",

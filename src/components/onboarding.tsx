@@ -4554,6 +4554,13 @@ export function PlanSelectionClient({ userId, plans }: PlanSelectionClientProps)
         },
     }
 
+    const iconsMap = {
+        Gift,
+        Target,
+        Rocket,
+        Crown
+    };
+
     const handleSubmit = () => {
         if (!selectedPlan) return
 

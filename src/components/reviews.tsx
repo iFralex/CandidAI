@@ -7,7 +7,7 @@ export const reviews = [
         role: "Software Engineer",
         company: "Google",
         rating: 5,
-        text: "RecruiterAI helped me land my dream job at Google! The personalized emails were so well-crafted that I got responses from 8 out of 10 companies I targeted.",
+        text: "CandidAI helped me land my dream job at Google! The personalized emails were so well-crafted that I got responses from 8 out of 10 companies I targeted.",
         avatar: "SM"
     },
     {
