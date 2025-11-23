@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { motion, AnimatePresence } from "framer-motion"
 import { selectPlan } from '@/actions/onboarding-actions'
 import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare } from 'lucide-react'
@@ -209,25 +209,174 @@ export function SetupCompleteClient({ userId }: SetupCompleteClientProps) {
     )
 }
 
-export const PaymentStepClient = ({ userId, serverResponse }) => {
-    useEffect(() => {
-        XPay.init();
+export const PaymentStepClient = ({ serverResponse }) => {
+    const cardRef = useRef(null);
 
-        
+    useEffect(() => {
+        if (!window.XPay) return;
+
+        XPay.init();
         XPay.setConfig(serverResponse);
 
+        console.log("XPay Configured");
 
-    console.log("XPay Configured")
-}, []);
+        // Stile interno XPay (solo colore, font, placeholder)
+        const style = {
+            common: {
+                color: "#ffffff",
+                fontSize: "16px",
+            },
+            "::placeholder": {
+                color: "rgba(255,255,255,0.3)"
+            },
+            ":focus": {
+                color: "#ffffff",
+            },
+            error: {
+                color: "#ff0000",
+                fontFamily: "Arial, monospace"
+            },
+            correct: {
+                color: "white"
+            }
+        };
 
-return (
-    <>
-        <script
-            src={"https://int-ecommerce.nexi.it/ecomm/XPayBuild/js?alias=" + process.env.NEXI_ALIAS}>
-        </script>
-    </>
-)
-}
+        const accepted = [
+            XPay.CardBrand.MASTERCARD,
+            XPay.CardBrand.VISA,
+            XPay.CardBrand.MAESTRO
+        ];
+
+        // Creazione SPLIT_CARD
+        const card = XPay.create(
+            XPay.OPERATION_TYPES.SPLIT_CARD,
+            style,
+            accepted
+        );
+
+        cardRef.current = card;
+
+        // Mount dei 3 campi negli ID dei div wrapper
+        card.mount("xpay-pan", "xpay-expiry", "xpay-cvv");
+
+        // Eventi XPay
+        window.addEventListener("XPay_Ready", (e) =>
+            console.log("XPay Ready", e.detail)
+        );
+
+        window.addEventListener("XPay_Card_Error", (event) => {
+            const el = document.getElementById("xpay-card-errors");
+            el.textContent = event.detail.errorMessage || "";
+        });
+
+        window.addEventListener("XPay_Payment_Started", (event) => {
+            console.log("Metodo selezionato:", event.detail);
+        });
+
+        window.addEventListener("XPay_Nonce", async (event) => {
+            const response = event.detail;
+
+            if (response.esito === "OK") {
+                try {
+                    const result = await fetch("/api/protected/nexi-payment", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            xpayNonce: response.xpayNonce,
+                            xpayIdOperazione: response.idOperazione,
+                            xpayTimeStamp: response.timeStamp,
+                            amount: serverResponse.paymentParams.amount,
+                            transactionId: serverResponse.paymentParams.transactionId
+                        })
+                    });
+
+                    const esitoPagamento = await result.json();
+
+                    if (esitoPagamento.esito === "OK") {
+                        alert("Pagamento riuscito! Codice autorizzazione: " + esitoPagamento.codiceAutorizzazione);
+                    } else {
+                        document.getElementById("xpay-card-errors").textContent =
+                            "[" + (esitoPagamento.errore?.codice || "") + "] " +
+                            (esitoPagamento.errore?.messaggio || "Errore generico");
+                    }
+                } catch (err) {
+                    document.getElementById("xpay-card-errors").textContent = "Errore server: " + err;
+                } finally {
+                    document.getElementById("pagaBtn").disabled = false;
+                }
+            } else {
+                document.getElementById("xpay-card-errors").textContent =
+                    "[" + response.errore.codice + "] " + response.errore.messaggio;
+                document.getElementById("pagaBtn").disabled = false;
+            }
+        });
+
+    }, [serverResponse]);
+
+    const handlePay = (e) => {
+        e.preventDefault();
+        document.getElementById("pagaBtn").disabled = true;
+
+        // 👉 Aggiungi queste righe
+        const infoSicurezza = { transType: "01" }; // 3D Secure 2.2
+        XPay.setInformazioniSicurezza(infoSicurezza);
+
+        // Creazione nonce
+        XPay.createNonce("payment-form", cardRef.current);
+    };
+
+    return (
+        <>
+            <script
+                src={`https://ecommerce.nexi.it/ecomm/XPayBuild/js?alias=${process.env.NEXI_ALIAS}`}
+                strategy="afterInteractive"
+            />
+
+            <form id="payment-form" className="space-y-4">
+
+                {/* PAN */}
+                <div className="relative w-full">
+                    <div className="p-4 bg-white/10 border border-white/20 rounded-full focus-within:ring-2 focus-within:ring-violet-500 transition-all duration-300">
+                        <div id="xpay-pan"></div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    {/* Expiry */}
+                    <div className="relative w-full">
+                        <div className="p-4 bg-white/10 border border-white/20 rounded-full focus-within:ring-2 focus-within:ring-violet-500 transition-all duration-300">
+                            <div id="xpay-expiry" />
+                        </div>
+                    </div>
+
+                    {/* CVV */}
+                    <div className="relative w-full">
+                        <div className="p-4 bg-white/10 border border-white/20 rounded-full focus-within:ring-2 focus-within:ring-violet-500 transition-all duration-300">
+                            <div id="xpay-cvv"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="xpay-card-errors" className="text-red-500 mt-2"></div>
+
+                {/* Hidden input per nonce */}
+                <input type="hidden" id="xpayNonce" name="xpayNonce" />
+                <input type="hidden" id="xpayIdOperazione" name="xpayIdOperazione" />
+                <input type="hidden" id="xpayTimeStamp" name="xpayTimeStamp" />
+                <input type="hidden" id="xpayEsito" name="xpayEsito" />
+                <input type="hidden" id="xpayMac" name="xpayMac" />
+
+                <Button
+                    id="pagaBtn"
+                    onClick={handlePay}
+                    className="w-full"
+                >
+                    Paga ora
+                </Button>
+            </form>
+        </>
+    );
+};
 
 interface AdvancedFiltersClientProps {
     userId: string
@@ -4143,6 +4292,7 @@ import { ScrollArea, ScrollBar } from './ui/scroll-area'
 import { MultiSelect } from './multi-select'
 import { Separator } from './ui/separator'
 import SkillsListBase, { EducationList, ExperienceList } from '@/components/detailsServer'
+import Script from 'next/script'
 
 /**
  * Tipo risultato Brandfetch-like

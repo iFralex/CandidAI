@@ -39,12 +39,7 @@ interface PaymentSetupServerProps {
 }
 
 export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
-    function calcolaMac(codTrans, divisa, importo, chiave) {
-        const str = `codTrans=${codTrans}divisa=${divisa}importo=${importo}${chiave}`;
-        return crypto.createHash("sha1").update(str).digest("hex");
-    }
-
-    const amount = 1000; // centesimi
+    const amount = 1; // centesimi
     const transactionId = "TXN" + Date.now();
     const divisa = 978;
     const secret = process.env.NEXT_PUBLIC_NEXI_SECRET_KEY;
@@ -55,7 +50,7 @@ export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
     const serverResponse = {
         baseConfig: {
             apiKey: process.env.NEXT_PUBLIC_NEXI_ALIAS,
-            environment: "INTEG"
+            environment: "PROD"
         },
         paymentParams: {
             amount: amount,
