@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 
+const csp = `
+  default-src 'self' 'unsafe-inline' 'unsafe-eval' https:;
+  img-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:;
+  frame-ancestors https:;
+`;
+
 const nextConfig: NextConfig = {
   // Header globali
   async headers() {
@@ -8,9 +14,13 @@ const nextConfig: NextConfig = {
         source: '/(.*)',
         headers: [
           {
+            key: 'Content-Security-Policy',
+            value: csp.replace(/\n/g, ' ')
+          },
+          {
             key: 'Permissions-Policy',
             value: 'payment=(self "https://acs.revolut.com")'
-          }
+          },
         ],
       },
     ];
