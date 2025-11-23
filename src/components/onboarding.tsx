@@ -370,7 +370,7 @@ export const PaymentStepClient = ({ serverResponse }) => {
     return (
         <>
             <script
-                src={`https://ecommerce.nexi.it/ecomm/XPayBuild/js?alias=${process.env.NEXI_ALIAS}`}
+                src={`https://ecommerce.nexi.it/ecomm/XPayBuild/js?alias=${process.env.NEXT_PUBLIC_NEXI_ALIAS}`}
                 strategy="afterInteractive"
             />
 
