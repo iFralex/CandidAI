@@ -2,7 +2,7 @@ import { getServerUser } from '@/lib/server-auth'
 import { redirect } from 'next/navigation'
 import { CheckCircle, CreditCard, Wand2 } from 'lucide-react'
 import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, PaymentStepClient } from '@/components/onboarding'
-
+import crypto from "crypto";
 import { ProfileAnalysisClient } from '@/components/onboarding';
 import { completeOnboarding, submitQueries } from '@/actions/onboarding-actions'
 import { Button } from '@/components/ui/button'
@@ -39,6 +39,38 @@ interface PaymentSetupServerProps {
 }
 
 export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
+    function calcolaMac(codTrans, divisa, importo, chiave) {
+        const str = `codTrans=${codTrans}divisa=${divisa}importo=${importo}${chiave}`;
+        return crypto.createHash("sha1").update(str).digest("hex");
+    }
+
+    const amount = 1000; // centesimi
+    const transactionId = "TXN" + Date.now();
+    const divisa = 978;
+    const secret = process.env.NEXT_PUBLIC_NEXI_SECRET_KEY;
+
+    const stringa = `codTrans=${transactionId}divisa=${divisa}importo=${amount}${secret}`;
+    const mac = crypto.createHash("sha1").update(stringa).digest("hex");
+
+    const serverResponse = {
+        baseConfig: {
+            apiKey: process.env.NEXT_PUBLIC_NEXI_ALIAS,
+            environment: "INTEG"
+        },
+        paymentParams: {
+            amount: amount,
+            transactionId: transactionId,
+            currency: 978,
+            timeStamp: Date.now(),
+            mac: mac,
+            url: process.env.NEXT_PUBLIC_DOMAIN + "/dashboard?callback",
+            urlBack: process.env.NEXT_PUBLIC_DOMAIN + "/dashboard?callback",
+            urlPost: process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/nexi-payment",
+        },
+        customParams: {},
+        language: "ENG",
+    }
+
     return (
         <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
@@ -54,7 +86,7 @@ export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
                 </p>
             </div>
 
-            <PaymentStepClient userId={userId} />
+            <PaymentStepClient userId={userId} serverResponse={serverResponse}/>
         </div>
     )
 }
