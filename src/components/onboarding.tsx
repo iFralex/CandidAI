@@ -21,6 +21,7 @@ import {
     Trash2, MapPin, Clock, Users, Mail, Shield
 } from 'lucide-react'
 import { completeOnboarding } from '@/actions/onboarding-actions'
+import crypto from "crypto";
 
 interface SetupCompleteClientProps {
     userId: string
@@ -205,6 +206,49 @@ export function SetupCompleteClient({ userId }: SetupCompleteClientProps) {
                     </div>
                 </div>
             </motion.div>
+        </>
+    )
+}
+
+export const PaymentStepClient = ({ userId }) => {
+    useEffect(() => {
+        function calcolaMac(codTrans, divisa, importo, chiaveSegreta) {
+            const stringa = `codTrans=${codTrans}divisa=${divisa}importo=${importo}${chiaveSegreta}`;
+            return crypto.createHash("sha1").update(stringa).digest("hex");
+        }
+        XPay.init();
+
+        const amount = "100"
+        const currency = "EUR";
+        const transactionId = "TXN" + new Date().getTime();
+
+        XPay.setConfig({
+            baseConfig: {
+                apiKey: process.env.NEXT_PUBLIC_NEXI_ALIAS,
+                environment: "INTEG"
+            },
+            paymentParams: {
+                amount,
+                transactionId,
+                currency,
+                timeStamp: new Date().getTime(),
+                mac: calcolaMac(transactionId, currency, amount, process.env.NEXT_PUBLIC_NEXI_SECRET_KEY),
+                url: process.env.NEXT_PUBLIC_DOMAIN + "/dashboard?payment-callback",
+                url_back: process.env.NEXT_PUBLIC_DOMAIN + "/dashboard?payment-callback",
+                urlPost: process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/nexi-payment",
+            },
+            customParams: {},
+            language: "ENG"
+        });
+
+        console.log("XPay Configured")
+    }, []);
+
+    return (
+        <>
+            <script
+                src={"https://int-ecommerce.nexi.it/ecomm/XPayBuild/js?alias=" + process.env.NEXI_ALIAS}>
+            </script>
         </>
     )
 }
