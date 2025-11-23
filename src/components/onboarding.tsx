@@ -247,7 +247,9 @@ export const PaymentStepClient = ({ serverResponse }) => {
             XPay.CardBrand.MAESTRO
         ];
 
-        // Creazione SPLIT_CARD
+        // --------------------------------------------------------
+        // 👉 STEP 1: CREAZIONE CAMPI CARTA
+        // --------------------------------------------------------
         const card = XPay.create(
             XPay.OPERATION_TYPES.SPLIT_CARD,
             style,
@@ -256,10 +258,22 @@ export const PaymentStepClient = ({ serverResponse }) => {
 
         cardRef.current = card;
 
-        // Mount dei 3 campi negli ID dei div wrapper
         card.mount("xpay-pan", "xpay-expiry", "xpay-cvv");
 
-        // Eventi XPay
+        // --------------------------------------------------------
+        // 👉 STEP 2: CREAZIONE METODI DI PAGAMENTO ALTERNATIVI
+        // --------------------------------------------------------
+        const buttons = XPay.create(
+            XPay.OPERATION_TYPES.PAYMENT_BUTTON,
+            []   // <= array vuoto = mostra tutti i metodi disponibili
+        );
+
+        buttons.mount("xpay-btn");
+
+
+        // --------------------------------------------------------
+        // EVENTI XPay
+        // --------------------------------------------------------
         window.addEventListener("XPay_Ready", (e) =>
             console.log("XPay Ready", e.detail)
         );
@@ -273,6 +287,25 @@ export const PaymentStepClient = ({ serverResponse }) => {
             console.log("Metodo selezionato:", event.detail);
         });
 
+        // --------------------------------------------------------
+        // 👉 RISPOSTE APM (Google Pay, Apple Pay, PayPal, APM)
+        // --------------------------------------------------------
+        window.addEventListener("XPay_Payment_Result", async (event) => {
+            console.log("APM RESULT =>", event.detail);
+
+            const response = event.detail;
+
+            if (response.esito === "OK") {
+                alert("Pagamento completato con successo!");
+            } else {
+                document.getElementById("xpay-card-errors").textContent =
+                    "[" + response.errore?.codice + "] " + response.errore?.messaggio;
+            }
+        });
+
+        // --------------------------------------------------------
+        // EVENTO NONCE PER PAGAMENTO CON CARTA
+        // --------------------------------------------------------
         window.addEventListener("XPay_Nonce", async (event) => {
             const response = event.detail;
 
@@ -293,14 +326,16 @@ export const PaymentStepClient = ({ serverResponse }) => {
                     const esitoPagamento = await result.json();
 
                     if (esitoPagamento.esito === "OK") {
-                        alert("Pagamento riuscito! Codice autorizzazione: " + esitoPagamento.codiceAutorizzazione);
+                        alert("Pagamento riuscito! Codice autorizzazione: " +
+                              esitoPagamento.codiceAutorizzazione);
                     } else {
                         document.getElementById("xpay-card-errors").textContent =
                             "[" + (esitoPagamento.errore?.codice || "") + "] " +
                             (esitoPagamento.errore?.messaggio || "Errore generico");
                     }
                 } catch (err) {
-                    document.getElementById("xpay-card-errors").textContent = "Errore server: " + err;
+                    document.getElementById("xpay-card-errors").textContent =
+                        "Errore server: " + err;
                 } finally {
                     document.getElementById("pagaBtn").disabled = false;
                 }
@@ -313,18 +348,25 @@ export const PaymentStepClient = ({ serverResponse }) => {
 
     }, [serverResponse]);
 
+
+    // --------------------------------------------------------
+    // FUNZIONE PAGAMENTO CARTA
+    // --------------------------------------------------------
     const handlePay = (e) => {
         e.preventDefault();
         document.getElementById("pagaBtn").disabled = true;
 
-        // 👉 Aggiungi queste righe
-        const infoSicurezza = { transType: "01" }; // 3D Secure 2.2
+        // 3DS 2.2
+        const infoSicurezza = { transType: "01" };
         XPay.setInformazioniSicurezza(infoSicurezza);
 
-        // Creazione nonce
         XPay.createNonce("payment-form", cardRef.current);
     };
 
+
+    // --------------------------------------------------------
+    // RENDER COMPONENTE
+    // --------------------------------------------------------
     return (
         <>
             <script
@@ -333,6 +375,9 @@ export const PaymentStepClient = ({ serverResponse }) => {
             />
 
             <form id="payment-form" className="space-y-4">
+
+                {/* 👉 DIV DEI METODI DI PAGAMENTO ALTERNATIVI */}
+                <div id="xpay-btn" className="my-6"></div>
 
                 {/* PAN */}
                 <div className="relative w-full">
@@ -359,24 +404,18 @@ export const PaymentStepClient = ({ serverResponse }) => {
 
                 <div id="xpay-card-errors" className="text-red-500 mt-2"></div>
 
-                {/* Hidden input per nonce */}
-                <input type="hidden" id="xpayNonce" name="xpayNonce" />
-                <input type="hidden" id="xpayIdOperazione" name="xpayIdOperazione" />
-                <input type="hidden" id="xpayTimeStamp" name="xpayTimeStamp" />
-                <input type="hidden" id="xpayEsito" name="xpayEsito" />
-                <input type="hidden" id="xpayMac" name="xpayMac" />
-
                 <Button
                     id="pagaBtn"
                     onClick={handlePay}
                     className="w-full"
                 >
-                    Paga ora
+                    Paga con carta
                 </Button>
             </form>
         </>
     );
 };
+
 
 interface AdvancedFiltersClientProps {
     userId: string
