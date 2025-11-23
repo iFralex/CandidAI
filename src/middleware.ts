@@ -1,40 +1,24 @@
+
 import { NextRequest, NextResponse } from "next/server";
-import { authMiddleware, redirectToLogin } from "next-firebase-auth-edge";
+import { authMiddleware, redirectToHome, redirectToLogin } from "next-firebase-auth-edge";
 import { clientConfig, serverConfig } from "./config";
 
 const PUBLIC_PATHS = ['/register', '/login', "/"];
 
-function applyCSP(response) {
-  response.headers.set(
-    "Content-Security-Policy",
-    `
-      default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://ecommerce.nexi.it https://xpay.nexi.it;
-      connect-src 'self' https://ecommerce.nexi.it https://xpay.nexi.it;
-      img-src 'self' data: https://ecommerce.nexi.it https://xpay.nexi.it;
-      style-src 'self' 'unsafe-inline';
-
-      frame-src 'self' https://3dserver.nexi.it https://ecommerce.nexi.it https://xpay.nexi.it;
-      frame-ancestors 'self' https://3dserver.nexi.it https://ecommerce.nexi.it https://xpay.nexi.it;
-    `.replace(/\n/g, " ").trim()
-  );
-}
-
-export async function middleware(request) {
-
+export async function middleware(request: NextRequest) {
+  // Add cookie for referral tracking
   const url = request.nextUrl.clone();
-
   const referralCode = url.searchParams.get('ref');
+  
   if (referralCode) {
-    const res = NextResponse.next();
-    res.cookies.set('referral', referralCode, {
-      expires: new Date(Date.now() + 30 * 24*60*60*1000),
+    const response = NextResponse.next();
+    response.cookies.set('referral', referralCode, {
+      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
     });
-    applyCSP(res);
-    return res;
+    return response;
   }
 
-  const response = await authMiddleware(request, {
+  return authMiddleware(request, {
     loginPath: "/api/login",
     logoutPath: "/api/logout",
     apiKey: clientConfig.apiKey,
@@ -43,20 +27,35 @@ export async function middleware(request) {
     cookieSerializeOptions: serverConfig.cookieSerializeOptions,
     serviceAccount: serverConfig.serviceAccount,
     handleValidToken: async ({ token, decodedToken }, headers) => {
-      const res = NextResponse.next({ request: { headers } });
-      applyCSP(res);
-      return res;
-    },
-    handleInvalidToken: async () => {
-      return redirectToLogin(request, { path: "/login", publicPaths: PUBLIC_PATHS });
-    },
-    handleError: async () => {
-      return redirectToLogin(request, { path: "/login", publicPaths: PUBLIC_PATHS });
-    },
-  });
+      if (PUBLIC_PATHS.includes(request.nextUrl.pathname)) {
+        // NON redirezionare se è la callback del login
+        return NextResponse.next();
+      }
 
-  applyCSP(response);
-  return response;
+
+      return NextResponse.next({
+        request: {
+          headers
+        }
+      });
+    },
+    handleInvalidToken: async (reason) => {
+      console.info('Missing or malformed credentials', { reason });
+
+      return redirectToLogin(request, {
+        path: '/login',
+        publicPaths: PUBLIC_PATHS
+      });
+    },
+    handleError: async (error) => {
+      console.error('Unhandled authentication error', { error });
+
+      return redirectToLogin(request, {
+        path: '/login',
+        publicPaths: PUBLIC_PATHS
+      });
+    }
+  });
 }
 
 export const config = {
