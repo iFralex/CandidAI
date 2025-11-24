@@ -1,44 +1,93 @@
 // app/api/create-subscription/route.js
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { billingData } from "@/config";
+import { getReferralDiscount } from "@/lib/utils";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-16" });
 
 export async function POST(req) {
-  const { email, payment_method_id } = await req.json();
+    const { payment_method_id } = await req.json();
 
-  try {
-    // 1. Crea o recupera il Customer
-    const customer = await stripe.customers.create({
-      email,
-      payment_method: payment_method_id,
-      invoice_settings: { default_payment_method: payment_method_id },
-    });
+    try {
+        const res = await fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/user", {
+            credentials: "include",
+            cache: "no-cache",
+            headers: {
+                cookie: await cookies()
+            }
+        });
 
-    // 2. Crea Price dinamico (25€ ogni 2 anni)
-    const product = await stripe.products.create({ name: "Abbonamento biennale" });
+        if (!res.ok) {
+            throw new Error(res.status);
+        }
+        const data = await res.json();
 
-    const price = await stripe.prices.create({
-      unit_amount: 10000,
-      currency: "eur",
-      recurring: { interval: "year", interval_count: 2 },
-      product: product.id,
-    });
+        if (!data.success)
+            throw new Error(data.error)
 
-    // 3. Crea Subscription
-    const subscription = await stripe.subscriptions.create({
-      customer: customer.id,
-      items: [{ price: price.id }],
-      expand: ["latest_invoice.payment_intent"],
-      payment_behavior: "default_incomplete", // necessario per completare il pagamento con PaymentIntent
-    });
+        const user = data.user
+        if (!user)
+            throw new Error("Utente non autenticato");
 
-    // 4. Restituisci client_secret per completare il pagamento lato client
-    const paymentIntent = subscription.latest_invoice.payment_intent;
+        // 1. Crea o recupera il Customer
+        // Cerca customer tramite metadata.userId
+        const searchResult = await stripe.customers.search({
+            query: `metadata['userId']:'${user.uid}'`
+        });
 
-    return NextResponse.json({ client_secret: paymentIntent.client_secret, subscriptionId: subscription.id });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+        let customer = searchResult.data[0];
+
+        if (!customer) {
+            customer = await stripe.customers.create({
+                email: user.email, // non univoca, ma utile
+                payment_method: payment_method_id,
+                invoice_settings: {
+                    default_payment_method: payment_method_id
+                },
+                metadata: { userId: user.uid }  // <– questo è il campo principale
+            });
+        }
+
+        const computePriceInCents = (planId, billingType, refDiscount) => {
+            const plan = getPlanById(planId);
+            if (!plan) return 0;
+        
+            // Basic pricing rules: monthly price * months in billing period * (1 - discount%)
+            const baseCents = Math.round(plan.price * 100);
+            const option = billingData[billingType] || billingData.monthly;
+            const months = option.activableTimes || 1;
+            const discount = option.discount || 0
+        
+            const total = Math.round(baseCents * months * (1 - discount / 100) * (1 - refDiscount / 100));
+            return total;
+        };
+
+        // 2. Crea Price dinamico (25€ ogni 2 anni)
+        const product = await stripe.products.create({ name: "Abbonamento biennale" });
+
+        const price = await stripe.prices.create({
+            unit_amount: await computePriceInCents(user.plan, user.billingType, await getReferralDiscount()),
+            currency: "eur",
+            recurring: { interval: "year", interval_count: 2 },
+            product: product.id,
+        });
+
+        // 3. Crea Subscription
+        const subscription = await stripe.subscriptions.create({
+            customer: customer.id,
+            items: [{ price: price.id }],
+            expand: ["latest_invoice.payment_intent"],
+            payment_behavior: "default_incomplete", // necessario per completare il pagamento con PaymentIntent
+        });
+
+        // 4. Restituisci client_secret per completare il pagamento lato client
+        const paymentIntent = subscription.latest_invoice.payment_intent;
+
+        return NextResponse.json({ client_secret: paymentIntent.client_secret, subscriptionId: subscription.id });
+    } catch (err) {
+        console.error(err);
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
 }

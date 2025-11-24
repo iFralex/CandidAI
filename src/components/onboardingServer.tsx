@@ -8,6 +8,8 @@ import { completeOnboarding, submitQueries } from '@/actions/onboarding-actions'
 import { Button } from '@/components/ui/button'
 import { cookies } from 'next/headers'
 import { plansData, plansInfo } from '@/config';
+import { get } from 'http';
+import { getReferralDiscount } from '@/lib/utils';
 
 interface SetupCompleteServerProps {
     userId: string
@@ -121,10 +123,7 @@ export function PaymentRedirectServer({ userId }) {
 }
 
 export async function PaymentStripeServer({ userId, billingType, plan }) {
-    const ref = await (await cookies()).get('referral');
-    let refDiscount = 0
-    if (ref) refDiscount = 20
-
+    const refDiscount = await getReferralDiscount();
     return (
         <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">

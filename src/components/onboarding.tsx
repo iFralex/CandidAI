@@ -636,7 +636,7 @@ function CheckoutFormCore({ email, planId, billingType, refDiscount, onSuccess }
             const res = await fetch('/api/create-subscription', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, payment_method_id: paymentMethod.id, plan: planId, billingType }),
+                body: JSON.stringify({ payment_method_id: paymentMethod.id }),
             });
             const data = await res.json();
             if (data.error) {
