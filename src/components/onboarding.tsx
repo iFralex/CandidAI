@@ -492,7 +492,7 @@ function BillingSummary({ planId, billingType, refDiscount }) {
 
                 <div className="w-full">
                     <h4 className="text-white gap-2 flex items-center flex-wrap">
-                        <span className="text-2xl font-semibold">{plan.name} x{option.activableTimes}</span>
+                        <span className="text-2xl font-semibold">{plan.name}{billingType !== "lifetime" ? "x" + option.activableTimes : ""}</span>
                         {option.savings && (
                             <Badge>-{option.discount}%</Badge>
                         )}
@@ -524,7 +524,7 @@ function StripeCardInputs({ elementOptions }) {
         <div className="space-y-3">
             <label className="block">
                 <div className="text-sm text-gray-300 mb-2">Card number</div>
-                <div className="p-3 bg-white/6 rounded-xl border border-white/12 focus-within:ring-2 focus-within:ring-violet-500">
+                <div className="p-3 bg-white/6 rounded-full border border-white/12 focus-within:ring-2 focus-within:ring-violet-500">
                     <CardNumberElement options={elementOptions} />
                 </div>
             </label>
@@ -532,14 +532,14 @@ function StripeCardInputs({ elementOptions }) {
             <div className="grid grid-cols-2 gap-3">
                 <label>
                     <div className="text-sm text-gray-300 mb-2">Expiry</div>
-                    <div className="p-3 bg-white/6 rounded-xl border border-white/12 focus-within:ring-2 focus-within:ring-violet-500">
+                    <div className="p-3 bg-white/6 rounded-full border border-white/12 focus-within:ring-2 focus-within:ring-violet-500">
                         <CardExpiryElement options={elementOptions} />
                     </div>
                 </label>
 
                 <label>
                     <div className="text-sm text-gray-300 mb-2">CVC</div>
-                    <div className="p-3 bg-white/6 rounded-xl border border-white/12 focus-within:ring-2 focus-within:ring-violet-500">
+                    <div className="p-3 bg-white/6 rounded-full border border-white/12 focus-within:ring-2 focus-within:ring-violet-500">
                         <CardCvcElement options={elementOptions} />
                     </div>
                 </label>
@@ -744,46 +744,44 @@ function CheckoutFormCore({ email, planId, billingType, refDiscount, onSuccess }
             />
 
             {/* Card input */}
-            <div className="p-4 bg-gradient-to-b from-white/4 to-black/10 rounded-2xl border border-white/6">
+            <div className="space-y-4">
                 <StripeCardInputs elementOptions={elementOptions} />
+
+                {/* Errori */}
+                {error && <div className="text-red-400 text-sm">{error}</div>}
             </div>
 
-            {/* Errori */}
-            {error && <div className="text-red-400 text-sm">{error}</div>}
+            <Separator />
 
             {/* Breakdown prezzi */}
             <div>
                 {breakdownItems.map(([label, value], i, self) => {
-    const isLast = i === self.length - 1;
+                    const isLast = i === self.length - 1;
 
-    return (
-        <div
-            key={label}
-            className={`flex items-center justify-between mb-2 ${
-                isLast ? "mt-4" : ""
-            }`}
-        >
-            <div
-                className={`text-sm ${
-                    isLast ? "text-white font-semibold text-base" : "text-gray-400"
-                }`}
-            >
-                {label}
-            </div>
+                    return (
+                        <div
+                            key={label}
+                            className={`flex items-center justify-between mb-2 ${isLast ? "mt-4" : ""
+                                }`}
+                        >
+                            <div
+                                className={`text-sm ${isLast ? "text-white font-semibold text-base" : "text-gray-400"
+                                    }`}
+                            >
+                                {label}
+                            </div>
 
-            <div
-                className={`${
-                    isLast
-                        ? "text-white font-bold text-lg"
-                        : "text-gray-300 font-medium text-sm"
-                }`}
-            >
-                {formatPrice(value)}
-            </div>
-        </div>
-    );
-})}
-
+                            <div
+                                className={`${isLast
+                                    ? "text-white font-bold text-lg"
+                                    : "text-gray-300 font-medium text-sm"
+                                    }`}
+                            >
+                                {formatPrice(value)}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Bottoni */}
