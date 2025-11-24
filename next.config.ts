@@ -3,12 +3,33 @@ import type { NextConfig } from "next";
 // Aggiunti i domini Nexi (*.nexi.it) e le direttive necessarie
 const csp = `
   default-src 'self' 'unsafe-inline' 'unsafe-eval' https:;
-  img-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:;
-  frame-ancestors https:;
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://ecommerce.nexi.it https://int-ecommerce.nexi.it;
-  connect-src 'self' https://ecommerce.nexi.it https://int-ecommerce.nexi.it;
-  frame-src 'self' https://ecommerce.nexi.it https://int-ecommerce.nexi.it https://acs.nexi.it;
+  img-src 'self' https: data:;
+  frame-ancestors https: https://3dserver.nexi.it;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval'
+    https://ecommerce.nexi.it
+    https://int-ecommerce.nexi.it
+    https://apis.google.com
+    https://www.gstatic.com
+    https://www.googletagmanager.com
+    https://www.google-analytics.com;
+  connect-src 'self'
+    https://ecommerce.nexi.it
+    https://int-ecommerce.nexi.it
+    https://identitytoolkit.googleapis.com
+    https://securetoken.googleapis.com
+    https://firestore.googleapis.com
+    https://www.googleapis.com
+    https://firebaseinstallations.googleapis.com
+    https://firebase-settings.crashlytics.com
+    https://analytics.google.com
+    https://www.google-analytics.com;
+  frame-src 'self'
+    https://ecommerce.nexi.it
+    https://int-ecommerce.nexi.it
+    https://acs.nexi.it
+    https://apis.google.com;
 `;
+
 
 const nextConfig: NextConfig = {
   async headers() {
