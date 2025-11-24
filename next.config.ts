@@ -4,7 +4,12 @@ import type { NextConfig } from "next";
 const csp = `
   default-src 'self' 'unsafe-inline' 'unsafe-eval' https:;
   img-src 'self' https: data:;
-  frame-ancestors https: https://3dserver.nexi.it;
+  frame-ancestors
+  'self'
+  https://ecommerce.nexi.it
+  https://int-ecommerce.nexi.it
+  https://acs.nexi.it
+  https://3dserver.nexi.it;
   script-src 'self' 'unsafe-inline' 'unsafe-eval'
     https://ecommerce.nexi.it
     https://int-ecommerce.nexi.it
