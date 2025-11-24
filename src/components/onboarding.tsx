@@ -352,7 +352,7 @@ export const PaymentStepClient = ({ serverResponse }) => {
     // --------------------------------------------------------
     return (
         <>
-            <Script
+            <cript
                 src={`https://ecommerce.nexi.it/ecomm/XPayBuild/js?alias=${process.env.NEXT_PUBLIC_NEXI_ALIAS}`}
                 strategy="afterInteractive"
                 onLoad={initXPay} // <--- Qui avviene la magia
@@ -400,6 +400,37 @@ export const PaymentStepClient = ({ serverResponse }) => {
     );
 };
 
+export function PaymentRedirectClient({ payload }) {
+    const handleSubmit = () => {
+        document.getElementById("nexiForm").submit();
+    };
+
+    return (
+        <div className="p-6 bg-gray-900 rounded-xl shadow-lg">
+            <p className="text-gray-300 mb-4">
+                Verrai reindirizzato al sistema di pagamento sicuro Nexi.
+            </p>
+
+            <form
+                id="nexiForm"
+                method="POST"
+                action="https://ecommerce.nexi.it/ecomm/ecomm/DispatcherServlet"
+                acceptCharset="ISO-8859-1"
+            >
+                {Object.entries(payload).map(([key, value]) => (
+                    <input key={key} type="hidden" name={key} value={value} />
+                ))}
+            </form>
+
+            <button
+                onClick={handleSubmit}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white mt-4"
+            >
+                Paga ora 💳
+            </button>
+        </div>
+    );
+}
 
 interface AdvancedFiltersClientProps {
     userId: string

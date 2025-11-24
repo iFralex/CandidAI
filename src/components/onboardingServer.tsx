@@ -1,7 +1,7 @@
 import { getServerUser } from '@/lib/server-auth'
 import { redirect } from 'next/navigation'
 import { CheckCircle, CreditCard, Wand2 } from 'lucide-react'
-import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, PaymentStepClient } from '@/components/onboarding'
+import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, PaymentStepClient, PaymentRedirectClient } from '@/components/onboarding'
 import crypto from "crypto";
 import { ProfileAnalysisClient } from '@/components/onboarding';
 import { completeOnboarding, submitQueries } from '@/actions/onboarding-actions'
@@ -84,6 +84,40 @@ export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
             <PaymentStepClient userId={userId} serverResponse={serverResponse}/>
         </div>
     )
+}
+
+export function PaymentRedirectServer({ userId }) {
+    const amount = 5000; // = 50€
+    const codTrans = "TXN" + Date.now();
+    const divisa = "EUR";
+    const secret = process.env.NEXT_PUBLIC_NEXI_SECRET_KEY;
+
+    // Calcolo MAC secondo documentazione
+    const macString =
+        `codTrans=${codTrans}divisa=${divisa}importo=${amount}${secret}`;
+
+    const mac = crypto.createHash("sha1").update(macString).digest("hex");
+
+    const payload = {
+        alias: process.env.NEXT_PUBLIC_NEXI_ALIAS,
+        importo: amount,
+        divisa: divisa,
+        codTrans: codTrans,
+        url: process.env.NEXT_PUBLIC_DOMAIN + "/payment/result",
+        url_back: process.env.NEXT_PUBLIC_DOMAIN + "/payment/cancel",
+        urlpost: process.env.NEXT_PUBLIC_DOMAIN + "/api/payment-confirm",
+        mac: mac,
+        mail: "cliente@example.com",
+        languageId: "ITA",
+        descrizione: "Pagamento ordine #" + codTrans,
+    };
+
+    return (
+        <div className="max-w-xl mx-auto">
+            <h2 className="text-2xl font-bold text-white mb-4">Checkout Nexi</h2>
+            <PaymentRedirectClient payload={payload} />
+        </div>
+    );
 }
 
 interface AdvancedFiltersServerProps {
@@ -326,7 +360,7 @@ export default async function OnboardingPage({ user, currentStep }) {
             )}
 
             {currentStep === 6 && (
-                <PaymentStepServer userId={user.uid} />
+                <PaymentRedirectServer userId={user.uid} />
             )}
         </div>
     )
