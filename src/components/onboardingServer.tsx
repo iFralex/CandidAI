@@ -39,7 +39,7 @@ interface PaymentSetupServerProps {
 }
 
 export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
-    const amount = 1; // centesimi
+    const amount = 1000; // centesimi
     const transactionId = "TXN" + Date.now();
     const divisa = 978;
     const secret = process.env.NEXT_PUBLIC_NEXI_SECRET_KEY;
