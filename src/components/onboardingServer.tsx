@@ -87,7 +87,7 @@ export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
 }
 
 export function PaymentRedirectServer({ userId }) {
-    const amount = 10; // = 50€
+    const amount = 100; // = 50€
     const codTrans = "TXN" + Date.now();
     const divisa = "EUR";
     const secret = process.env.NEXT_PUBLIC_NEXI_SECRET_KEY;
