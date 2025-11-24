@@ -1,7 +1,7 @@
 import { getServerUser } from '@/lib/server-auth'
 import { redirect } from 'next/navigation'
 import { CheckCircle, CreditCard, Wand2 } from 'lucide-react'
-import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, PaymentStepClient, PaymentRedirectClient } from '@/components/onboarding'
+import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, PaymentStepClient, PaymentRedirectClient, CheckoutForm, SubscribeWrapper } from '@/components/onboarding'
 import crypto from "crypto";
 import { ProfileAnalysisClient } from '@/components/onboarding';
 import { completeOnboarding, submitQueries } from '@/actions/onboarding-actions'
@@ -118,6 +118,28 @@ export function PaymentRedirectServer({ userId }) {
             <PaymentRedirectClient payload={payload} />
         </div>
     );
+}
+
+export function PaymentStripeServer({ userId }: PaymentSetupServerProps) {
+
+    return (
+        <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+                <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CreditCard className="w-10 h-10 text-white" />
+                </div>
+
+                <h2 className="text-3xl font-bold text-white mb-4">
+                    Payment Setup 💳
+                </h2>
+                <p className="text-lg text-gray-400">
+                    Perfect! Before processing payments, let’s configure your preferred payment methods and billing options.
+                </p>
+            </div>
+
+            <SubscribeWrapper email="ifralex.business@gmail.com"/>
+        </div>
+    )
 }
 
 interface AdvancedFiltersServerProps {
@@ -360,7 +382,7 @@ export default async function OnboardingPage({ user, currentStep }) {
             )}
 
             {currentStep === 6 && (
-                <PaymentRedirectServer userId={user.uid} />
+                <PaymentStripeServer userId={user.uid} />
             )}
         </div>
     )

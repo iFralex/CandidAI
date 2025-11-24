@@ -1,5 +1,7 @@
 'use client'
 
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, CardElement, useStripe, useElements, CardNumberElement, CardExpiryElement, CardCvcElement, PaymentRequestButtonElement } from "@stripe/react-stripe-js";
 import { useRef, useState, useTransition } from 'react'
 import { motion, AnimatePresence } from "framer-motion"
 import { selectPlan } from '@/actions/onboarding-actions'
@@ -429,6 +431,188 @@ export function PaymentRedirectClient({ payload }) {
                 Paga ora 💳
             </button>
         </div>
+    );
+}
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+
+function CheckoutForm({ email }: { email: string }) {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const handlePay = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (!stripe || !elements) return;
+        setLoading(true);
+
+        setError("");
+
+        // 1. Crea PaymentMethod
+        const cardNumberElement = elements.getElement(CardNumberElement);
+        if (!cardNumberElement) return;
+
+        const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
+            type: "card",
+            card: cardNumberElement,
+            billing_details: { email },
+        });
+
+        if (pmError) {
+            setError(pmError.message || "Errore nel metodo di pagamento");
+            setLoading(false);
+            return;
+        }
+
+        // 2. Chiama API per creare subscription
+        const res = await fetch("/api/create-subscription", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, payment_method_id: paymentMethod.id }),
+        });
+
+        const data = await res.json();
+        if (data.error) {
+            setError(data.error);
+            setLoading(false);
+            return;
+        }
+
+        // 3. Conferma il pagamento lato client
+        const { error: confirmError } = await stripe.confirmCardPayment(data.client_secret);
+        if (confirmError) {
+            setError(confirmError.message);
+            setLoading(false);
+            return;
+        }
+
+        setLoading(false);
+        alert("Abbonamento attivato con successo!");
+    };
+
+    // Opzioni di stile per Elements
+    const elementOptions = {
+        style: {
+            base: {
+                color: "#fff",
+                fontSize: "16px",
+                fontFamily: "Inter, sans-serif",
+                "::placeholder": { color: "#a1a1aa" },
+            },
+            invalid: { color: "#f87171", iconColor: "#f87171" },
+        },
+    };
+
+    return (
+        <form id="payment-form" className="space-y-4">
+            {/* Payment Request Button (Apple/Google Pay) */}
+            <div id="xpay-btn" className="my-6">
+                <PaymentRequestButton email={email} amount={2500} />
+            </div>
+
+            {/* Card Elements come prima */}
+            <div className="relative w-full">
+                <div className="p-4 bg-white/10 border border-white/20 rounded-full focus-within:ring-2 focus-within:ring-violet-500 transition-all duration-300">
+                    <CardNumberElement options={elementOptions} />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="relative w-full">
+                    <div className="p-4 bg-white/10 border border-white/20 rounded-full focus-within:ring-2 focus-within:ring-violet-500 transition-all duration-300">
+                        <CardExpiryElement options={elementOptions} />
+                    </div>
+                </div>
+
+                <div className="relative w-full">
+                    <div className="p-4 bg-white/10 border border-white/20 rounded-full focus-within:ring-2 focus-within:ring-violet-500 transition-all duration-300">
+                        <CardCvcElement options={elementOptions} />
+                    </div>
+                </div>
+            </div>
+
+            <div id="xpay-card-errors" className="text-red-500 mt-2">{error}</div>
+
+            <Button id="pagaBtn" onClick={handlePay} className="w-full" disabled={loading}>
+                {loading ? "Elaborazione..." : "Paga con carta"}
+            </Button>
+        </form>
+    );
+}
+
+function PaymentRequestButton({ email, amount }) {
+    const stripe = useStripe();
+    const [paymentRequest, setPaymentRequest] = useState(null);
+    const [canMakePayment, setCanMakePayment] = useState(false);
+
+    useEffect(() => {
+        if (!stripe) return;
+
+        const pr = stripe.paymentRequest({
+            country: "IT",
+            currency: "eur",
+            total: {
+                label: "Abbonamento biennale",
+                amount: amount, // in centesimi, es. 2500
+            },
+            requestPayerName: true,
+            requestPayerEmail: true,
+        });
+
+        // Controlla se il browser supporta Apple/Google Pay
+        pr.canMakePayment().then((result) => {
+            if (result) setCanMakePayment(true);
+        });
+
+        // Quando l’utente completa il pagamento
+        pr.on("paymentmethod", async (ev) => {
+            try {
+                const res = await fetch("/api/create-subscription", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, payment_method_id: ev.paymentMethod.id }),
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    ev.complete("fail");
+                    alert(data.error);
+                    return;
+                }
+
+                const { error: confirmError } = await stripe.confirmCardPayment(
+                    data.client_secret,
+                    { payment_method: ev.paymentMethod.id },
+                    { handleActions: true }
+                );
+
+                if (confirmError) {
+                    ev.complete("fail");
+                    alert(confirmError.message);
+                } else {
+                    ev.complete("success");
+                    alert("Abbonamento attivato con successo!");
+                }
+            } catch (err) {
+                ev.complete("fail");
+                alert(err.message);
+            }
+        });
+
+        setPaymentRequest(pr);
+    }, [stripe]);
+
+    if (!canMakePayment || !paymentRequest) return null;
+
+    return <PaymentRequestButtonElement options={{ paymentRequest }} />;
+}
+
+export function SubscribeWrapper({ email }: { email: string }) {
+    return (
+        <Elements stripe={stripePromise}>
+            <CheckoutForm email={email} />
+        </Elements>
     );
 }
 
