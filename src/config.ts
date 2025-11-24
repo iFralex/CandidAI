@@ -227,3 +227,42 @@ export const billingOptions = [
     color: 'from-emerald-500 to-teal-500'
   }
 ];
+
+export const billingData = {
+  monthly: {
+    label: 'Monthly',
+    duration: '1 month',
+    discount: 0,
+    durationM: 1,
+    activableTimes: 1,
+    description: 'Billed monthly, cancel anytime',
+    savings: null
+  },
+  biennial: {
+    label: 'Biennial',
+    duration: '2 years',
+    discount: 10,
+    durationM: 24,
+    activableTimes: 3,
+    description: 'Billed once every 2 years',
+    savings: 'Save 10% compared to monthly'
+  },
+  quintennial: {
+    label: 'Quintennial',
+    duration: '5 years',
+    discount: 15,
+    durationM: 60,
+    activableTimes: 5,
+    description: 'Billed once every 5 years',
+    savings: 'Save 15% compared to monthly'
+  },
+  lifetime: {
+    label: 'Lifetime',
+    duration: 'Forever',
+    discount: 100,
+    durationM: 12,
+    activableTimes: 1,
+    description: 'One-time payment for lifetime access',
+    savings: 'Save Infinity with lifetime access'
+  }
+};

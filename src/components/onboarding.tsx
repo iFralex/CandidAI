@@ -5,7 +5,7 @@ import { Elements, CardElement, useStripe, useElements, CardNumberElement, CardE
 import { useRef, useState, useTransition } from 'react'
 import { motion, AnimatePresence } from "framer-motion"
 import { selectPlan } from '@/actions/onboarding-actions'
-import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare } from 'lucide-react'
+import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard } from 'lucide-react'
 import { submitCompanies } from '@/actions/onboarding-actions'
 import { Building, Plus, X, Wand2 } from 'lucide-react'
 import { Card } from './ui/card'
@@ -63,7 +63,7 @@ export function SetupCompleteClient({ userId }: SetupCompleteClientProps) {
 
     const handleStartGeneration = () => {
         startTransition(async () => {
-            await completeOnboarding(userId, customizations)
+            await completeOnboarding(customizations)
         })
     }
 
@@ -424,195 +424,332 @@ export function PaymentRedirectClient({ payload }) {
                 ))}
             </form>
 
-            <button
+            <Button
                 onClick={handleSubmit}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white mt-4"
             >
-                Paga ora 💳
-            </button>
+                Pay Now
+            </Button>
         </div>
     );
 }
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
-function CheckoutForm({ email }: { email: string }) {
-    const stripe = useStripe();
-    const elements = useElements();
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
 
-    const handlePay = async (e: React.MouseEvent) => {
-        e.preventDefault();
-        if (!stripe || !elements) return;
-        setLoading(true);
+const formatPrice = (cents) => `€${(cents / 100).toFixed(2)}`;
 
-        setError("");
+const getPlanById = (id) => plansInfo.find((p) => p.id === id) || plansInfo[1];
 
-        // 1. Crea PaymentMethod
-        const cardNumberElement = elements.getElement(CardNumberElement);
-        if (!cardNumberElement) return;
+const computePriceInCents = (planId, billingType, refDiscount = 0, applyDiscounts = true) => {
+    const plan = getPlanById(planId);
+    if (!plan) return 0;
 
-        const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
-            type: "card",
-            card: cardNumberElement,
-            billing_details: { email },
-        });
+    // Basic pricing rules: monthly price * months in billing period * (1 - discount%)
+    const baseCents = Math.round(plan.price * 100);
+    const option = billingData[billingType] || billingData.monthly;
+    const months = option.activableTimes || 1;
+    const discount = applyDiscounts ? option.discount || 0 : 0;
+    refDiscount = applyDiscounts ? refDiscount || 0 : 0;
 
-        if (pmError) {
-            setError(pmError.message || "Errore nel metodo di pagamento");
-            setLoading(false);
-            return;
-        }
+    const total = Math.round(baseCents * months * (1 - discount / 100) * (1 - refDiscount / 100));
+    return total;
+};
 
-        // 2. Chiama API per creare subscription
-        const res = await fetch("/api/create-subscription", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, payment_method_id: paymentMethod.id }),
-        });
-
-        const data = await res.json();
-        if (data.error) {
-            setError(data.error);
-            setLoading(false);
-            return;
-        }
-
-        // 3. Conferma il pagamento lato client
-        const { error: confirmError } = await stripe.confirmCardPayment(data.client_secret);
-        if (confirmError) {
-            setError(confirmError.message);
-            setLoading(false);
-            return;
-        }
-
-        setLoading(false);
-        alert("Abbonamento attivato con successo!");
-    };
-
-    // Opzioni di stile per Elements
-    const elementOptions = {
-        style: {
-            base: {
-                color: "#fff",
-                fontSize: "16px",
-                fontFamily: "Inter, sans-serif",
-                "::placeholder": { color: "#a1a1aa" },
-            },
-            invalid: { color: "#f87171", iconColor: "#f87171" },
-        },
-    };
+// -------------------- Small presentational components --------------------
+function BillingSummary({ planId, billingType, refDiscount }) {
+    const plan = getPlanById(planId);
+    const totalCents = computePriceInCents(planId, billingType, refDiscount);
+    const option = billingData[billingType] || billingData.monthly;
+    const Icon = iconMap[plan.icon]
 
     return (
-        <form id="payment-form" className="space-y-4">
-            {/* Payment Request Button (Apple/Google Pay) */}
-            <div id="xpay-btn" className="my-6">
-                <PaymentRequestButton email={email} amount={2500} />
-            </div>
-
-            {/* Card Elements come prima */}
-            <div className="relative w-full">
-                <div className="p-4 bg-white/10 border border-white/20 rounded-full focus-within:ring-2 focus-within:ring-violet-500 transition-all duration-300">
-                    <CardNumberElement options={elementOptions} />
-                </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-                <div className="relative w-full">
-                    <div className="p-4 bg-white/10 border border-white/20 rounded-full focus-within:ring-2 focus-within:ring-violet-500 transition-all duration-300">
-                        <CardExpiryElement options={elementOptions} />
+        <Card className="p-4 space-y-4">
+            <div className="flex items-start gap-4">
+                <div>
+                    <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${plan.color} flex items-center justify-center text-white`}>
+                        <Icon className="w-6 h-6" />
                     </div>
                 </div>
 
-                <div className="relative w-full">
-                    <div className="p-4 bg-white/10 border border-white/20 rounded-full focus-within:ring-2 focus-within:ring-violet-500 transition-all duration-300">
-                        <CardCvcElement options={elementOptions} />
-                    </div>
+                <div className="w-full">
+                    <h4 className="text-white gap-2 flex items-center flex-wrap">
+                        <span className="text-2xl font-semibold">{plan.name} x{option.activableTimes}</span>
+                        {option.savings && (
+                            <Badge>-{option.discount}%</Badge>
+                        )}
+                    </h4>
+                    <p className="text-sm text-gray-400">{option.description ?? billingData[billingType].description}</p>
                 </div>
             </div>
 
-            <div id="xpay-card-errors" className="text-red-500 mt-2">{error}</div>
-
-            <Button id="pagaBtn" onClick={handlePay} className="w-full" disabled={loading}>
-                {loading ? "Elaborazione..." : "Paga con carta"}
-            </Button>
-        </form>
+            <ul className="space-y-2">
+                {plan.features.map((feature, idx) => (
+                    <motion.li
+                        key={idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: 0.5 + idx * 0.1 }}
+                        className="flex items-center gap-2 text-sm text-gray-300"
+                    >
+                        <Check className="w-4 h-4 text-green-400" />
+                        {feature}
+                    </motion.li>
+                ))}
+            </ul>
+        </Card>
     );
 }
 
-function PaymentRequestButton({ email, amount }) {
+function StripeCardInputs({ elementOptions }) {
+    return (
+        <div className="space-y-3">
+            <label className="block">
+                <div className="text-sm text-gray-300 mb-2">Card number</div>
+                <div className="p-3 bg-white/6 rounded-xl border border-white/12 focus-within:ring-2 focus-within:ring-violet-500">
+                    <CardNumberElement options={elementOptions} />
+                </div>
+            </label>
+
+            <div className="grid grid-cols-2 gap-3">
+                <label>
+                    <div className="text-sm text-gray-300 mb-2">Expiry</div>
+                    <div className="p-3 bg-white/6 rounded-xl border border-white/12 focus-within:ring-2 focus-within:ring-violet-500">
+                        <CardExpiryElement options={elementOptions} />
+                    </div>
+                </label>
+
+                <label>
+                    <div className="text-sm text-gray-300 mb-2">CVC</div>
+                    <div className="p-3 bg-white/6 rounded-xl border border-white/12 focus-within:ring-2 focus-within:ring-violet-500">
+                        <CardCvcElement options={elementOptions} />
+                    </div>
+                </label>
+            </div>
+        </div>
+    );
+}
+
+// -------------------- PaymentRequestButton (Apple/Google Pay) --------------------
+function PaymentRequest({ email, amountCents, onSubscriptionCreated }) {
     const stripe = useStripe();
     const [paymentRequest, setPaymentRequest] = useState(null);
-    const [canMakePayment, setCanMakePayment] = useState(false);
+    const [supported, setSupported] = useState(false);
 
     useEffect(() => {
         if (!stripe) return;
 
         const pr = stripe.paymentRequest({
-            country: "IT",
-            currency: "eur",
-            total: {
-                label: "Abbonamento biennale",
-                amount: amount, // in centesimi, es. 2500
-            },
-            requestPayerName: true,
+            country: 'IT',
+            currency: 'eur',
+            total: { label: 'Subscription', amount: amountCents },
             requestPayerEmail: true,
         });
 
-        // Controlla se il browser supporta Apple/Google Pay
-        pr.canMakePayment().then((result) => {
-            if (result) setCanMakePayment(true);
+        pr.canMakePayment().then((res) => {
+            if (res) setSupported(true);
         });
 
-        // Quando l’utente completa il pagamento
-        pr.on("paymentmethod", async (ev) => {
+        pr.on('paymentmethod', async (ev) => {
             try {
-                const res = await fetch("/api/create-subscription", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                const res = await fetch('/api/create-subscription', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, payment_method_id: ev.paymentMethod.id }),
                 });
                 const data = await res.json();
-
                 if (data.error) {
-                    ev.complete("fail");
-                    alert(data.error);
+                    ev.complete('fail');
                     return;
                 }
 
-                const { error: confirmError } = await stripe.confirmCardPayment(
-                    data.client_secret,
-                    { payment_method: ev.paymentMethod.id },
-                    { handleActions: true }
-                );
-
+                const { error: confirmError } = await stripe.confirmCardPayment(data.client_secret, { payment_method: ev.paymentMethod.id }, { handleActions: true });
                 if (confirmError) {
-                    ev.complete("fail");
-                    alert(confirmError.message);
+                    ev.complete('fail');
                 } else {
-                    ev.complete("success");
-                    alert("Abbonamento attivato con successo!");
+                    ev.complete('success');
+                    onSubscriptionCreated?.(data);
                 }
             } catch (err) {
-                ev.complete("fail");
-                alert(err.message);
+                ev.complete('fail');
             }
         });
 
         setPaymentRequest(pr);
+
+        // cleanup
+        return () => {
+            try { pr?.off && pr.off('paymentmethod'); } catch (e) { }
+        };
     }, [stripe]);
 
-    if (!canMakePayment || !paymentRequest) return null;
+    if (!supported || !paymentRequest) return null;
 
-    return <PaymentRequestButtonElement options={{ paymentRequest }} />;
+    return (
+        <div className="mb-4">
+            <PaymentRequestButtonElement options={{ paymentRequest }} />
+            <div className="flex items-center gap-2 text-sm text-gray-400 mt-2">
+                <Apple className="w-4 h-4" />
+                <span>Pay with Apple / Google Pay</span>
+            </div>
+        </div>
+    );
 }
 
-export function SubscribeWrapper({ email }: { email: string }) {
+// -------------------- Main Checkout form + helper sections --------------------
+function CheckoutFormCore({ email, planId, billingType, refDiscount, onSuccess }) {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const amountCents = computePriceInCents(planId, billingType, refDiscount);
+
+    const elementOptions = {
+        style: {
+            base: { color: '#fff', fontSize: '16px', fontFamily: 'Inter, sans-serif', '::placeholder': { color: '#9ca3af' } },
+            invalid: { color: '#f87171', iconColor: '#f87171' },
+        },
+    };
+
+    const handlePay = async (e) => {
+        e?.preventDefault?.();
+        if (!stripe || !elements) return;
+        setLoading(true);
+        setError('');
+
+        const cardNumberElement = elements.getElement(CardNumberElement);
+        if (!cardNumberElement) {
+            setError('Card element non disponibile');
+            setLoading(false);
+            return;
+        }
+
+        const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({ type: 'card', card: cardNumberElement, billing_details: { email } });
+        if (pmError) {
+            setError(pmError.message || 'Errore nel metodo di pagamento');
+            setLoading(false);
+            return;
+        }
+
+        // Create subscription server-side
+        try {
+            const res = await fetch('/api/create-subscription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, payment_method_id: paymentMethod.id, plan: planId, billingType }),
+            });
+            const data = await res.json();
+            if (data.error) {
+                setError(data.error);
+                setLoading(false);
+                return;
+            }
+
+            const { error: confirmError } = await stripe.confirmCardPayment(data.client_secret);
+            if (confirmError) {
+                setError(confirmError.message);
+                setLoading(false);
+                return;
+            }
+
+            setLoading(false);
+            onSuccess?.(data);
+        } catch (err) {
+            setError(err.message || 'Errore imprevisto');
+            setLoading(false);
+        }
+    };
+
     return (
-        <Elements stripe={stripePromise}>
-            <CheckoutForm email={email} />
-        </Elements>
+        <form className="space-y-6" onSubmit={handlePay}>
+            <div>
+                <PaymentRequest email={email} amountCents={amountCents} onSubscriptionCreated={onSuccess} />
+            </div>
+
+            <div className="p-4 bg-gradient-to-b from-white/4 to-black/10 rounded-2xl border border-white/6">
+                <StripeCardInputs elementOptions={elementOptions} />
+            </div>
+
+            {error && <div className="text-red-400 text-sm">{error}</div>}
+
+            <div className="">
+                {[["Original Price x" + billingData[billingType].activableTimes, computePriceInCents(planId, billingType, refDiscount, false)], ["Discount -" + billingData[billingType].discount + "%", -billingData[billingType].discount * getPlanById(planId).price * billingData[billingType].activableTimes], ["Referral Discount -" + refDiscount + "%", -refDiscount * (getPlanById(planId).price * billingData[billingType].activableTimes * (1 - billingData[billingType].discount / 100))], ["Total", amountCents],].map(item => (<div className="flex items-center justify-between mb-2">
+                    <div className="text-sm text-gray-400">{item[0]}</div>
+                    <div className="text-sm text-gray-300 font-medium">{formatPrice(item[1])}</div>
+                </div>))}
+            </div>
+            <div className="flex items-center gap-3">
+                <Button className="flex-1" onClick={handlePay} disabled={loading}>
+                    {loading ? (
+                        <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Elaborazione...</span>
+                    ) : (
+                        <span className="flex items-center gap-2">Pay Now <ArrowRight className="w-4 h-4" /></span>
+                    )}
+                </Button>
+
+                <Button variant="ghost" className="px-4 py-2" disabled>
+                    <span className="text-sm">{formatPrice(amountCents)}</span>
+                </Button>
+            </div>
+        </form>
+    );
+}
+
+// -------------------- Wrapper component (export default) --------------------
+export function SubscribeWrapper({ userId, plan = 'pro', billingType = 'biennial', refDiscount, email = '' }) {
+    const [successPayload, setSuccessPayload] = useState(null);
+
+    return (
+        <div className="max-w-4xl mx-auto py-12 px-4">
+            <Elements stripe={stripePromise}>
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="grid md:grid-cols-3 gap-8">
+
+                    <div className="md:col-span-1">
+                        <BillingSummary planId={plan} billingType={billingType} refDiscount={refDiscount} />
+
+                        <Card className="mt-6 p-4">
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-gray-300">Payment method</div>
+                                <Badge className="bg-slate-700/30">Secure</Badge>
+                            </div>
+
+                            <div className="mt-4 text-sm text-gray-400">Card details are processed securely by Stripe — we never see full card numbers.</div>
+                        </Card>
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <Card className="p-6">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <h3 className="text-xl font-semibold text-white mb-1">Complete your subscription</h3>
+                                    <p className="text-sm text-gray-400">{getPlanById(plan).description}</p>
+                                </div>
+
+                                <div className="text-sm text-gray-300">{billingData[billingType].label}</div>
+                            </div>
+
+                            <div className="mt-6">
+                                <CheckoutFormCore email={email} planId={plan} billingType={billingType} refDiscount={refDiscount} onSuccess={(payload) => setSuccessPayload(payload)} />
+                            </div>
+                        </Card>
+
+                        {successPayload && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6">
+                                <Card className="p-4 bg-emerald-900/10 border-emerald-700">
+                                    <div className="flex items-center gap-3">
+                                        <CheckCircle className="w-6 h-6 text-emerald-400" />
+                                        <div>
+                                            <div className="text-sm text-white">Subscription active</div>
+                                            <div className="text-xs text-gray-300">Thank you! We sent a receipt to {email}</div>
+                                        </div>
+                                    </div>
+                                </Card>
+                            </motion.div>
+                        )}
+                    </div>
+                </motion.div>
+            </Elements>
+        </div>
     );
 }
 
@@ -4531,6 +4668,8 @@ import { MultiSelect } from './multi-select'
 import { Separator } from './ui/separator'
 import SkillsListBase, { EducationList, ExperienceList } from '@/components/detailsServer'
 import Script from 'next/script'
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { billingData, plansInfo } from "@/config";
 
 /**
  * Tipo risultato Brandfetch-like
@@ -4934,161 +5073,360 @@ interface PlanSelectionClientProps {
     plans: Plan[]
 }
 
-export function PlanSelectionClient({ userId, plans }: PlanSelectionClientProps) {
-    const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
-    const [isPending, startTransition] = useTransition()
+export function PlanSelectionClient({ userId = 'user123' }) {
+    const [selectedPlan, setSelectedPlan] = useState(null);
+    const [billingType, setBillingType] = useState('quintennial');
+    const [isPending, startTransition] = useTransition();
 
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.15, // animazione sequenziale a cascata
-            },
-        },
-    }
+    const iconMap = { Gift, Target, Rocket, Crown };
 
-    const cardVariants = {
-        hidden: { opacity: 0, y: 30, scale: 0.95 },
-        show: {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            transition: {
-                type: "spring",
-                stiffness: 120,
-                damping: 15,
-            },
-        },
-    }
+    const splitFeature = (feature) => {
+        const numMatch = feature.match(/(\d[\d.,]*)/);
+        if (numMatch) {
+            const num = numMatch[0];
+            const base = feature.replace(num, "").replace(/\s+/g, " ").trim().toLowerCase();
+            return { base, variant: feature, hasNumber: true, number: num };
+        }
+        return { base: feature.trim().toLowerCase(), variant: feature, hasNumber: false };
+    };
 
-    const iconsMap = {
-        Gift,
-        Target,
-        Rocket,
-        Crown
+    const paidPlans = plansInfo.slice(1);
+    const allFeatures = Array.from(new Set(paidPlans.flatMap(p => p.features)));
+
+    const groupsMap = allFeatures.reduce((acc, feat) => {
+        const { base, variant } = splitFeature(feat);
+        if (!acc[base]) acc[base] = new Set();
+        acc[base].add(variant);
+        return acc;
+    }, {});
+
+    const groupedFeatures = Object.entries(groupsMap).map(([base, variantsSet]) => {
+        const variants = Array.from(variantsSet);
+        return { base, variants };
+    });
+
+    const freePlan = plansInfo[0];
+
+    const getCurrentPrice = (plan) => {
+        if (billingType === 'monthly') return plan.price * 0.8;
+        if (billingType === 'biennial') return plan.price * 0.9 * 0.8;
+        if (billingType === 'quintennial') return plan.price * 0.85 * 0.8;
+        return plan.pricesLifetime * 0.8;
+    };
+
+    const getDiscount = () => {
+        const option = billingOptions.find(opt => opt.value === billingType);
+        return option?.discount || null;
+    };
+
+    const getBillingSubtext = () => {
+        const option = billingOptions.find(opt => opt.value === billingType);
+        if (billingType === 'monthly') return 'Recurring monthly payment';
+        return `${option?.sublabel} with ${option?.discount} discount`;
     };
 
     const handleSubmit = () => {
-        if (!selectedPlan) return
+        if (!selectedPlan) return;
 
         startTransition(async () => {
-            await selectPlan(userId, selectedPlan)
-        })
-    }
+            await selectPlan(selectedPlan, billingType)
+        });
+    };
 
     return (
-        <>
-            <motion.div
-                className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-            >
-                {plans.map((plan) => {
-                    const Icon = iconMap[plan.icon as keyof typeof iconMap]
-                    const isSelected = selectedPlan === plan.id
-
-                    return (
-                        <motion.div
-                            key={plan.id}
-                            variants={cardVariants}
-                            onClick={() => setSelectedPlan(plan.id)}
-                            className={`p-6 flex flex-col cursor-pointer transition-all duration-300 relative rounded-xl border ${isSelected
-                                ? "ring-2 ring-violet-500 bg-white/10 border-violet-500"
-                                : plan.popular
-                                    ? "ring-2 ring-violet-500/50 bg-violet-500/30 border-violet-500/30"
-                                    : "bg-white/5 border-white/10 hover:bg-white/10"
-                                }`}
-                            whileHover={{ scale: 1.03 }} // leggero zoom al passaggio
-                            whileTap={{ scale: 0.97 }}   // leggera pressione al click
-                        >
-                            {plan.popular && (
-                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                                    <span className="bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                        {plan.highlight}
-                                    </span>
-                                </div>
-                            )}
-
-                            <div className="text-center mb-6">
-                                <div
-                                    className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${plan.color} flex items-center justify-center mx-auto mb-4 text-white`}
-                                >
-                                    <Icon className="w-8 h-8" />
-                                </div>
-
-                                <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
-                                <p className="text-gray-400 text-sm mb-4">{plan.description}</p>
-
-                                <div className="mb-2">
-                                    {plan.price === 0 ? (
-                                        <span className="text-3xl font-bold text-green-400">FREE</span>
-                                    ) : (
-                                        <>
-                                            <span className="text-3xl font-bold text-white">€{plan.price}</span>
-                                            <span className="text-gray-400">/mo</span>
-                                        </>
-                                    )}
-                                </div>
-
-                                {!plan.popular && plan.price > 0 && (
-                                    <p className="text-sm text-violet-400">{plan.highlight}</p>
-                                )}
-                            </div>
-
-                            <ul className="space-y-3 mb-6">
-                                {plan.features.map((feature, index) => (
-                                    <li key={index} className="flex items-start space-x-2 text-sm">
-                                        <Check className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                                        <span className="text-gray-300">{feature}</span>
-                                    </li>
-                                ))}
-                            </ul>
-
-                            <div className="mt-auto">
-                                {isSelected && (
-                                    <div className="flex items-center justify-center space-x-2 text-violet-400 mb-3">
-                                        <CheckCircle className="w-4 h-4" />
-                                        <span className="text-sm">Selected</span>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    )
-                })}
-            </motion.div>
-
-            <motion.div
-                className="text-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8, duration: 0.6, ease: "easeOut" }}
-            >
-                <button
-                    onClick={handleSubmit}
-                    disabled={!selectedPlan || isPending}
-                    className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2"
+        <div className="min-h-screen">
+            <div className="">
+                {/* Free Plan Banner */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                    className="mb-12"
                 >
-                    {isPending ? (
-                        <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span>Loading...</span>
-                        </>
-                    ) : (
-                        <>
-                            <span>{selectedPlan === "free_trial" ? "Start Free Trial" : "Continue Setup"}</span>
-                            <ArrowRight className="w-5 h-5" />
-                        </>
-                    )}
-                </button>
+                    <Card className="p-8" gradient={false} hover={true}>
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="flex items-center gap-6 flex-1">
+                                <div className="bg-violet-500/20 p-4 rounded-xl">
+                                    <Zap className="w-8 h-8 text-violet-400" />
+                                </div>
+                                <div className="text-left">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h3 className="text-2xl font-bold text-white">{freePlan.name}</h3>
+                                        <Badge variant="success">Free</Badge>
+                                    </div>
+                                    <p className="text-gray-400 mb-2">{freePlan.description}</p>
+                                    <p className="text-sm text-violet-400">{freePlan.limits}</p>
+                                </div>
+                            </div>
 
-                <p className="text-sm text-gray-500 mt-4">
-                    {selectedPlan === "free_trial"
-                        ? "No credit card required • Perfect for testing our AI"
-                        : "You can change or cancel your plan anytime"}
-                </p>
-            </motion.div>
-        </>
-    )
+                            <div className="flex flex-col md:flex-row items-center gap-6">
+                                <ul className="space-y-2">
+                                    {freePlan.features.slice(0, 3).map((feature, idx) => (
+                                        <motion.li
+                                            key={idx}
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ duration: 0.3, delay: 0.5 + idx * 0.1 }}
+                                            className="flex items-center gap-2 text-sm text-gray-300"
+                                        >
+                                            <Check className="w-4 h-4 text-green-400" />
+                                            {feature}
+                                        </motion.li>
+                                    ))}
+                                </ul>
+
+                                <Button
+                                    variant="primary"
+                                    size="lg"
+                                    className="whitespace-nowrap"
+                                    onClick={() => setSelectedPlan(freePlan.id)}
+                                >
+                                    {selectedPlan === freePlan.id ? (
+                                        <span className="flex items-center gap-2">
+                                            <CheckCircle className="w-5 h-5" />
+                                            Selected
+                                        </span>
+                                    ) : (
+                                        'Start Free Test'
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                </motion.div>
+
+                {/* Billing Selector */}
+                <div className="mb-12 flex flex-col items-center">
+                    <div className="relative w-full max-w-4xl">
+                        <div className="absolute top-[60px] left-0 right-0 h-1 px-20">
+                            <div className="relative w-full h-full bg-gray-800 rounded-full overflow-hidden" />
+                        </div>
+
+                        <div className="relative grid grid-cols-2 md:grid-cols-4 gap-4 px-4">
+                            {billingOptions.map((option) => {
+                                const isActive = billingType === option.value;
+
+                                return (
+                                    <div key={option.value} className="relative flex flex-col items-center h-full">
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => setBillingType(option.value)}
+                                            className="relative w-full h-full"
+                                        >
+                                            <div className={`
+                        h-full px-4 py-4 rounded-xl border-2 transition-all duration-300
+                        ${isActive
+                                                    ? 'bg-gradient-to-br from-purple-600 to-violet-500 border-transparent shadow-lg shadow-purple-500/30'
+                                                    : 'bg-gray-900 border-gray-700 hover:border-gray-600'
+                                                }
+                      `}>
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <div className="text-center">
+                                                        <div className={`font-bold text-sm ${isActive ? 'text-white' : 'text-gray-300'}`}>
+                                                            {option.label}
+                                                        </div>
+                                                        <div className={`text-xs mt-1 ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
+                                                            {option.months}
+                                                        </div>
+
+                                                        {option.discount && (
+                                                            <div className={`text-xs font-bold mt-2 px-2 py-1 rounded-full inline-block ${isActive ? 'bg-white/20 text-white' : 'bg-green-500/20 text-green-400'
+                                                                }`}>
+                                                                Save {option.discount}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </motion.button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <motion.div
+                        key={billingType}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className="text-center mt-8"
+                    >
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <p className="text-gray-400 text-sm font-medium">
+                                    {getBillingSubtext()}
+                                    <CircleHelp className="w-4 h-4 inline-block ml-1" />
+                                </p>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <div className="max-w-xs text-sm text-gray-300">
+                                    {billingType === 'monthly' && 'Billed monthly until canceled.'}
+                                    {billingType === 'biennial' && 'Billed once every 2 years. During the 2-year period, you can activate your subscription in any 3 separate months.'}
+                                    {billingType === 'quintennial' && 'Billed once every 5 years. During the 5-year period, you can activate your subscription in any 5 separate months.'}
+                                    {billingType === 'lifetime' && 'One-time payment for lifetime access. Each year, you can activate your subscription for 1 month whenever you need it.'}
+                                </div>
+                            </TooltipContent>
+                        </Tooltip>
+                    </motion.div>
+                </div>
+
+                {/* Paid Plans Grid */}
+                <div className="grid md:grid-cols-3 gap-8 mb-12">
+                    {paidPlans.map((plan, index) => {
+                        const Icon = iconMap[plan.icon];
+                        const isSelected = selectedPlan === plan.id;
+
+                        return (
+                            <motion.div
+                                key={plan.id}
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.6, delay: 0.5 + index * 0.1 }}
+                                onClick={() => setSelectedPlan(plan.id)}
+                            >
+                                <Card
+                                    className={`flex flex-col p-8 relative h-full cursor-pointer ${isSelected ? 'ring-2 ring-violet-500 bg-violet-500/20' : plan.popular ? 'ring-2 ring-violet-500/50' : ''
+                                        }`}
+                                    gradient={plan.popular}
+                                    hover={false}
+                                >
+                                    {plan.popular && (
+                                        <motion.div
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
+                                            className="absolute -top-4 left-1/2 transform -translate-x-1/2"
+                                        >
+                                            <Badge>{plan.highlight}</Badge>
+                                        </motion.div>
+                                    )}
+
+                                    <div
+                                        className="text-center mb-8"
+                                        onClick={() => setSelectedPlan(plan.id)}
+                                    >
+                                        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${plan.color} flex items-center justify-center mx-auto mb-4 text-white`}>
+                                            <Icon className="w-8 h-8" />
+                                        </div>
+
+                                        <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                                        <p className="text-gray-400 mb-4">{plan.description}</p>
+
+                                        <motion.div
+                                            key={billingType + plan.name}
+                                            initial={{ scale: 0.9, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="flex"
+                                        >
+                                            <div>
+                                                <span className="text-6xl font-bold text-white">
+                                                    €{getCurrentPrice(plan).toFixed(2)}
+                                                </span>
+                                                <span className="text-gray-400">/mo</span>
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-1">
+                                                {getDiscount() && (
+                                                    <motion.div
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        className="inline-block ml-2"
+                                                    >
+                                                        <Badge>-{getDiscount()}</Badge>
+                                                    </motion.div>
+                                                )}
+                                                <motion.div
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                    className="inline-block ml-2"
+                                                >
+                                                    <Badge>-20%</Badge>
+                                                </motion.div>
+                                            </div>
+                                        </motion.div>
+
+                                        <p className="text-sm text-violet-400">{plan.limits}</p>
+                                    </div>
+
+                                    <ul className="space-y-4 mb-8">
+                                        {groupedFeatures.map(({ base, variants }, fIndex) => {
+                                            const includedVariant = plan.features.find(f => splitFeature(f).base === base);
+                                            const included = Boolean(includedVariant);
+
+                                            let displayedText;
+                                            if (included) {
+                                                displayedText = includedVariant;
+                                            } else {
+                                                const representative = variants[0];
+                                                const { hasNumber } = splitFeature(representative);
+                                                displayedText = hasNumber
+                                                    ? representative.replace(/(\d[\d.,]*)/, "X")
+                                                    : representative;
+                                            }
+
+                                            return (
+                                                <li key={fIndex} className="flex items-start space-x-3">
+                                                    {included ? (
+                                                        <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-green-400" />
+                                                    ) : (
+                                                        <X className="w-5 h-5 flex-shrink-0 mt-0.5 text-gray-600 opacity-30" />
+                                                    )}
+
+                                                    <span className={`text-sm ${included ? "text-gray-300" : "text-gray-600 line-through opacity-60"}`}>
+                                                        {displayedText}
+                                                    </span>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+
+                                    <div className="flex-1" />
+
+                                    {isSelected && (
+                                        <div className="flex items-center justify-center space-x-2 text-violet-400">
+                                            <CheckCircle className="w-4 h-4" />
+                                            <span className="text-sm">Selected</span>
+                                        </div>
+                                    )}
+                                </Card>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+
+                {/* Submit Button */}
+                <motion.div
+                    className="text-center"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8, duration: 0.6, ease: "easeOut" }}
+                >
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={!selectedPlan || isPending}
+                    >
+                        {isPending ? (
+                            <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <span>Loading...</span>
+                            </>
+                        ) : (
+                            <>
+                                <span>{selectedPlan === "free_trial" ? "Start Free Trial" : "Continue Setup"}</span>
+                                <ArrowRight className="w-5 h-5" />
+                            </>
+                        )}
+                    </Button>
+
+                    <p className="text-sm text-gray-500 mt-4">
+                        {selectedPlan === "free_trial"
+                            ? "No credit card required • Perfect for testing our AI"
+                            : "You can change or cancel your plan anytime"}
+                    </p>
+                </motion.div>
+            </div>
+        </div>
+    );
 }

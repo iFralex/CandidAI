@@ -120,7 +120,10 @@ export function PaymentRedirectServer({ userId }) {
     );
 }
 
-export function PaymentStripeServer({ userId }: PaymentSetupServerProps) {
+export async function PaymentStripeServer({ userId, billingType, plan }) {
+    const ref = await (await cookies()).get('referral');
+    let refDiscount = 0
+    if (ref) refDiscount = 20
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -137,7 +140,7 @@ export function PaymentStripeServer({ userId }: PaymentSetupServerProps) {
                 </p>
             </div>
 
-            <SubscribeWrapper email="ifralex.business@gmail.com"/>
+            <SubscribeWrapper userId={userId} plan={plan} billingType={billingType} refDiscount={refDiscount}/>
         </div>
     )
 }
@@ -382,7 +385,7 @@ export default async function OnboardingPage({ user, currentStep }) {
             )}
 
             {currentStep === 6 && (
-                <PaymentStripeServer userId={user.uid} />
+                <PaymentStripeServer userId={user.uid} billingType={user.billingType} plan={user.plan}/>
             )}
         </div>
     )

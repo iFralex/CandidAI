@@ -10,7 +10,9 @@ import { getTokens } from 'next-firebase-auth-edge';
 import { clientConfig, creditsInfo, plansData, serverConfig } from '@/config';
 import { adminStorage } from '@/lib/firebase-admin';
 
-async function startServer(userId: string) {
+async function startServer() {
+    const userId = await checkAuth()
+
     fetch(process.env.SERVER_RUNNER_URL || "", {
         method: "POST",
         headers: {
@@ -20,21 +22,26 @@ async function startServer(userId: string) {
     })
 }
 
-export async function selectPlan(userId: string, planId: string) {
+export async function selectPlan(planId: string, billingType: string) {
+    const userId = await checkAuth()
+
     // Salva nel database
     const ref = doc(db, "users", userId);
 
     await updateDoc(ref, {
         "onboardingStep": 2,
         "plan": planId,
-        "credits": plansData[planId].credits || 0
+        "credits": plansData[planId].credits || 0,
+        "billingType": billingType
     });
 
     // Revalida la pagina per mostrare il nuovo step
     revalidatePath('/dashboard')
 }
 
-export async function submitCompanies(userId: string, companies: { name: string, domain: string }[]) {
+export async function submitCompanies(companies: { name: string, domain: string }[]) {
+    const userId = await checkAuth()
+
     await setDoc(doc(db, "users", userId, "data", "account"), { companies }, { merge: true });
     await updateDoc(doc(db, "users", userId), { onboardingStep: 3 });
 
@@ -42,11 +49,12 @@ export async function submitCompanies(userId: string, companies: { name: string,
 }
 
 export async function submitProfile(
-    userId: string,
     plan: string,
     profileData: any,
     cv?: File | null
 ) {
+    const userId = await checkAuth()
+
     let cvUrl = profileData.cvUrl || null;
 
     if (cv) {
@@ -66,7 +74,9 @@ export async function submitProfile(
     revalidatePath("/dashboard");
 }
 
-export async function submitQueries(userId: string, queries: any) {
+export async function submitQueries(queries: any) {
+    const userId = await checkAuth()
+
     await updateDoc(doc(db, "users", userId, "data", "account"), { queries: queries });
     await updateDoc(doc(db, "users", userId), { onboardingStep: 5 });
 
@@ -76,24 +86,18 @@ export async function submitQueries(userId: string, queries: any) {
         redirect("/dashboard")
 }
 
-export async function completeOnboarding(userId: string, customizations: any) {
+export async function completeOnboarding(customizations: any) {
+    const userId = await checkAuth()
+
     await updateDoc(doc(db, "users", userId, "data", "account"), { customizations });
-    await updateDoc(doc(db, "users", userId), { onboardingStep: 50 });
-    await startServer(userId)
+    await updateDoc(doc(db, "users", userId), { onboardingStep: 6 });
+    //await startServer(userId)
     // Reindirizza alla dashboard dopo il completamento
     redirect('/dashboard')
 }
 
 export async function refindRecruiter(companyId: string, strategy: any, name, linkedinUrl) {
-    const tokens = await getTokens(await cookies(), {
-        apiKey: clientConfig.apiKey,
-        cookieName: serverConfig.cookieName,
-        cookieSignatureKeys: serverConfig.cookieSignatureKeys,
-        serviceAccount: serverConfig.serviceAccount,
-    });
-
-    const decodedToken = tokens?.decodedToken
-    const userId = decodedToken?.uid
+    const userId = await checkAuth()
 
     strategy = strategy.map(item => {
         const newCriteria = [...item.criteria]; // copia array
@@ -157,15 +161,7 @@ export async function refindRecruiter(companyId: string, strategy: any, name, li
 }
 
 export async function regenerateEmail(companyId: string, instructions: string) {
-    const tokens = await getTokens(await cookies(), {
-        apiKey: clientConfig.apiKey,
-        cookieName: serverConfig.cookieName,
-        cookieSignatureKeys: serverConfig.cookieSignatureKeys,
-        serviceAccount: serverConfig.serviceAccount,
-    });
-
-    const decodedToken = tokens?.decodedToken
-    const userId = decodedToken?.uid
+    const userId = await checkAuth()
 
     const resultsRef = doc(db, "users", userId, "data", "results");
     const detailsRef = doc(db, "users", userId, "data", "results", companyId, "details");
@@ -205,15 +201,11 @@ export async function regenerateEmail(companyId: string, instructions: string) {
 }
 
 export async function confirmCompany(selections: Object, strategies: Object, instructions) {
-    const tokens = await getTokens(await cookies(), {
-        apiKey: clientConfig.apiKey,
-        cookieName: serverConfig.cookieName,
-        cookieSignatureKeys: serverConfig.cookieSignatureKeys,
-        serviceAccount: serverConfig.serviceAccount,
-    });
-
-    const userId = tokens?.decodedToken?.uid;
-    if (!userId) {
+    let userId = "";
+    try {
+        userId = await checkAuth()
+    }
+    catch {
         return { success: false, error: "User not authenticated" };
     }
 
@@ -304,15 +296,7 @@ export async function getFileFromFirebase(publicUrl: string) {
 
 export async function submitEmailSent(companyId: string, sent: boolean) {
     // Ottieni i token dell'utente autenticato
-    const tokens = await getTokens(await cookies(), {
-        apiKey: clientConfig.apiKey,
-        cookieName: serverConfig.cookieName,
-        cookieSignatureKeys: serverConfig.cookieSignatureKeys,
-        serviceAccount: serverConfig.serviceAccount,
-    });
-
-    const userId = tokens?.decodedToken?.uid;
-    if (!userId) throw new Error("Utente non autenticato");
+    const userId = await checkAuth()
 
     // Valore da salvare: false o timestamp server
     const value = sent ? serverTimestamp() : false;
@@ -341,15 +325,7 @@ export async function submitUpdateEmail(companyId: string, subject: string | nul
     // Ottieni i token dell'utente autenticato
     if (subject === null && body === null) return
 
-    const tokens = await getTokens(await cookies(), {
-        apiKey: clientConfig.apiKey,
-        cookieName: serverConfig.cookieName,
-        cookieSignatureKeys: serverConfig.cookieSignatureKeys,
-        serviceAccount: serverConfig.serviceAccount,
-    });
-
-    const userId = tokens?.decodedToken?.uid;
-    if (!userId) throw new Error("Utente non autenticato");
+    const userId = await checkAuth()
 
     // Crea batch Firestore
     const batch = writeBatch(db);
@@ -380,24 +356,7 @@ export async function submitUpdateEmail(companyId: string, subject: string | nul
 
 export async function payCredits(companyId: string, contentKey: string) {
     try {
-        const tokens = await getTokens(await cookies(), {
-            apiKey: clientConfig.apiKey,
-            cookieName: serverConfig.cookieName,
-            cookieSignatureKeys: serverConfig.cookieSignatureKeys,
-            serviceAccount: serverConfig.serviceAccount,
-        });
-
-        const userId = tokens?.decodedToken?.uid;
-        if (!userId) {
-            return { success: false, error: "User not authenticated" };
-        }
-
-        const userRef = doc(db, "users", userId);
-        const userSnap = await getDoc(userRef);
-
-        if (!userSnap.exists()) {
-            return { success: false, error: "User not found" };
-        }
+        const userId = await checkAuth()
 
         const currentCredits = userSnap.data().credits || 0;
         const amount = creditsInfo[contentKey]?.cost || 0;
@@ -427,4 +386,18 @@ const deleteCreditsPaid = async (userId, companyId, contentKey) => {
     await updateDoc(doc(db, "users", userId, "data", "results", companyId, "unlocked"), {
         [contentKey]: deleteField()
     })
+}
+
+const checkAuth = async () => {
+    const tokens = await getTokens(await cookies(), {
+        apiKey: clientConfig.apiKey,
+        cookieName: serverConfig.cookieName,
+        cookieSignatureKeys: serverConfig.cookieSignatureKeys,
+        serviceAccount: serverConfig.serviceAccount,
+    });
+
+    const userId = tokens?.decodedToken?.uid;
+    if (!userId) throw new Error("Utente non autenticato");
+
+    return userId;
 }
