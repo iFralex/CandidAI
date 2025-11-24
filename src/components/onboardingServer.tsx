@@ -59,8 +59,8 @@ export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
             timeStamp: Date.now(),
             mac: mac,
             url: process.env.NEXT_PUBLIC_DOMAIN + "/dashboard?callback",
-            urlBack: process.env.NEXT_PUBLIC_DOMAIN + "/dashboard?callback",
-            urlPost: process.env.NEXT_PUBLIC_DOMAIN + "/api/payment-confirm",
+            url_back: process.env.NEXT_PUBLIC_DOMAIN + "/dashboard?callback",
+            urlpost: process.env.NEXT_PUBLIC_DOMAIN + "/api/payment-confirm",
         },
         customParams: {},
         language: "ENG",
@@ -87,7 +87,7 @@ export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
 }
 
 export function PaymentRedirectServer({ userId }) {
-    const amount = 5000; // = 50€
+    const amount = 10; // = 50€
     const codTrans = "TXN" + Date.now();
     const divisa = "EUR";
     const secret = process.env.NEXT_PUBLIC_NEXI_SECRET_KEY;
