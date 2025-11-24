@@ -1,13 +1,16 @@
 import type { NextConfig } from "next";
 
+// Aggiunti i domini Nexi (*.nexi.it) e le direttive necessarie
 const csp = `
   default-src 'self' 'unsafe-inline' 'unsafe-eval' https:;
   img-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:;
   frame-ancestors https:;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://ecommerce.nexi.it https://int-ecommerce.nexi.it;
+  connect-src 'self' https://ecommerce.nexi.it https://int-ecommerce.nexi.it;
+  frame-src 'self' https://ecommerce.nexi.it https://int-ecommerce.nexi.it https://acs.nexi.it;
 `;
 
 const nextConfig: NextConfig = {
-  // Header globali
   async headers() {
     return [
       {
@@ -17,9 +20,10 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: csp.replace(/\n/g, ' ')
           },
+          // Permissions-Policy è ok, ma assicurati che payment includa self
           {
             key: 'Permissions-Policy',
-            value: 'payment=(self "https://acs.revolut.com")'
+            value: 'payment=(self "https://acs.revolut.com")' // Aggiungi altri domini se necessario
           },
         ],
       },

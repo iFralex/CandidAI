@@ -211,34 +211,23 @@ export function SetupCompleteClient({ userId }: SetupCompleteClientProps) {
 
 export const PaymentStepClient = ({ serverResponse }) => {
     const cardRef = useRef(null);
+    const [isSdkReady, setIsSdkReady] = useState(false);
 
-    useEffect(() => {
+    // Questa funzione viene chiamata SOLO quando lo script è carico
+    const initXPay = useCallback(() => {
         if (!window.XPay) return;
 
+        console.log("Inizializzazione XPay...");
         XPay.init();
         XPay.setConfig(serverResponse);
 
-        console.log("XPay Configured");
-
-        // Stile interno XPay (solo colore, font, placeholder)
+        // Stile
         const style = {
-            common: {
-                color: "#ffffff",
-                fontSize: "16px",
-            },
-            "::placeholder": {
-                color: "rgba(255,255,255,0.3)"
-            },
-            ":focus": {
-                color: "#ffffff",
-            },
-            error: {
-                color: "#ff0000",
-                fontFamily: "Arial, monospace"
-            },
-            correct: {
-                color: "white"
-            }
+            common: { color: "#ffffff", fontSize: "16px" },
+            "::placeholder": { color: "rgba(255,255,255,0.3)" },
+            ":focus": { color: "#ffffff" },
+            error: { color: "#ff0000", fontFamily: "Arial, monospace" },
+            correct: { color: "white" }
         };
 
         const accepted = [
@@ -247,29 +236,21 @@ export const PaymentStepClient = ({ serverResponse }) => {
             XPay.CardBrand.MAESTRO
         ];
 
-        // --------------------------------------------------------
-        // 👉 STEP 1: CREAZIONE CAMPI CARTA
-        // --------------------------------------------------------
-        const card = XPay.create(
-            XPay.OPERATION_TYPES.SPLIT_CARD,
-            style,
-            accepted
-        );
-
+        // Creazione Campi
+        const card = XPay.create(XPay.OPERATION_TYPES.SPLIT_CARD, style, accepted);
         cardRef.current = card;
-
         card.mount("xpay-pan", "xpay-expiry", "xpay-cvv");
 
-        // --------------------------------------------------------
-        // 👉 STEP 2: CREAZIONE METODI DI PAGAMENTO ALTERNATIVI
-        // --------------------------------------------------------
-        const buttons = XPay.create(
-            XPay.OPERATION_TYPES.PAYMENT_BUTTON,
-            []   // <= array vuoto = mostra tutti i metodi disponibili
-        );
-
+        // Bottoni APM
+        const buttons = XPay.create(XPay.OPERATION_TYPES.PAYMENT_BUTTON, []);
         buttons.mount("xpay-btn");
 
+        setIsSdkReady(true);
+    }, [serverResponse]);
+
+    // Setup Event Listeners (puoi tenerlo in un useEffect che dipende da isSdkReady)
+    useEffect(() => {
+        if (!isSdkReady) return;
 
         // --------------------------------------------------------
         // EVENTI XPay
@@ -308,7 +289,6 @@ export const PaymentStepClient = ({ serverResponse }) => {
         // --------------------------------------------------------
         window.addEventListener("XPay_Nonce", async (event) => {
             const response = event.detail;
-
             if (response.esito === "OK") {
                 try {
                     const result = await fetch("/api/protected/nexi-payment", {
@@ -327,7 +307,7 @@ export const PaymentStepClient = ({ serverResponse }) => {
 
                     if (esitoPagamento.esito === "OK") {
                         alert("Pagamento riuscito! Codice autorizzazione: " +
-                              esitoPagamento.codiceAutorizzazione);
+                            esitoPagamento.codiceAutorizzazione);
                     } else {
                         document.getElementById("xpay-card-errors").textContent =
                             "[" + (esitoPagamento.errore?.codice || "") + "] " +
@@ -346,7 +326,10 @@ export const PaymentStepClient = ({ serverResponse }) => {
             }
         });
 
-    }, [serverResponse]);
+        return () => {
+            window.removeEventListener("XPay_Nonce", handleNonce);
+        }
+    }, [serverResponse, isSdkReady]);
 
 
     // --------------------------------------------------------
@@ -369,9 +352,10 @@ export const PaymentStepClient = ({ serverResponse }) => {
     // --------------------------------------------------------
     return (
         <>
-            <script
+            <Script
                 src={`https://ecommerce.nexi.it/ecomm/XPayBuild/js?alias=${process.env.NEXT_PUBLIC_NEXI_ALIAS}`}
                 strategy="afterInteractive"
+                onLoad={initXPay} // <--- Qui avviene la magia
             />
 
             <form id="payment-form" className="space-y-4">

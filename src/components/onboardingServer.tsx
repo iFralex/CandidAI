@@ -39,7 +39,7 @@ interface PaymentSetupServerProps {
 }
 
 export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
-    const amount = 1000; // centesimi
+    const amount = 1; // centesimi
     const transactionId = "TXN" + Date.now();
     const divisa = 978;
     const secret = process.env.NEXT_PUBLIC_NEXI_SECRET_KEY;
@@ -60,7 +60,7 @@ export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
             mac: mac,
             url: process.env.NEXT_PUBLIC_DOMAIN + "/dashboard?callback",
             urlBack: process.env.NEXT_PUBLIC_DOMAIN + "/dashboard?callback",
-            urlPost: process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/nexi-payment",
+            urlPost: process.env.NEXT_PUBLIC_DOMAIN + "/api/payment-confirm",
         },
         customParams: {},
         language: "ENG",
