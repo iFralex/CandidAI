@@ -266,3 +266,7 @@ export const billingData = {
     savings: 'Save Infinity with lifetime access'
   }
 };
+
+export const referralCodes = {
+  "afk": 20
+}
