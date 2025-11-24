@@ -444,15 +444,34 @@ const computePriceInCents = (planId, billingType, refDiscount = 0, applyDiscount
     const plan = getPlanById(planId);
     if (!plan) return 0;
 
-    // Basic pricing rules: monthly price * months in billing period * (1 - discount%)
+    // ---------------------------
+    // ⭐ Caso lifetime (one-time)
+    // ---------------------------
+    if (billingType === "lifetime") {
+        const baseCents = Math.round(plan.pricesLifetime * 100);
+
+        // Applica solo refDiscount se consentito
+        const finalRefDiscount = applyDiscounts ? refDiscount || 0 : 0;
+
+        return Math.round(baseCents * (1 - finalRefDiscount / 100));
+    }
+
+    // ----------------------------------------
+    // ⭐ Caso normale (ricorrente)
+    // ----------------------------------------
     const baseCents = Math.round(plan.price * 100);
     const option = billingData[billingType] || billingData.monthly;
+
     const months = option.activableTimes || 1;
     const discount = applyDiscounts ? option.discount || 0 : 0;
-    refDiscount = applyDiscounts ? refDiscount || 0 : 0;
+    const finalRefDiscount = applyDiscounts ? refDiscount || 0 : 0;
 
-    const total = Math.round(baseCents * months * (1 - discount / 100) * (1 - refDiscount / 100));
-    return total;
+    return Math.round(
+        baseCents *
+        months *
+        (1 - discount / 100) *
+        (1 - finalRefDiscount / 100)
+    );
 };
 
 // -------------------- Small presentational components --------------------
