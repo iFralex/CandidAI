@@ -49,7 +49,7 @@ const nextConfig: NextConfig = {
           // Permissions-Policy è ok, ma assicurati che payment includa self
           {
             key: 'Permissions-Policy',
-            value: 'payment=(self "https://acs.revolut.com")' // Aggiungi altri domini se necessario
+            value: 'payment=(self)'
           },
         ],
       },
