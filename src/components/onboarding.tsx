@@ -606,10 +606,6 @@ function PaymentRequest({ email, amountCents, onSubscriptionCreated }) {
     return (
         <div className="mb-4">
             <PaymentRequestButtonElement options={{ paymentRequest }} />
-            <div className="flex items-center gap-2 text-sm text-gray-400 mt-2">
-                <Apple className="w-4 h-4" />
-                <span>Pay with Apple / Google Pay</span>
-            </div>
         </div>
     );
 }
@@ -621,6 +617,7 @@ function CheckoutFormCore({ email, planId, billingType, refDiscount, onSuccess }
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const plan = getPlanById(planId);
     const amountCents = computePriceInCents(planId, billingType, refDiscount);
 
     const elementOptions = {
@@ -633,6 +630,7 @@ function CheckoutFormCore({ email, planId, billingType, refDiscount, onSuccess }
     const handlePay = async (e) => {
         e?.preventDefault?.();
         if (!stripe || !elements) return;
+
         setLoading(true);
         setError('');
 
@@ -643,20 +641,25 @@ function CheckoutFormCore({ email, planId, billingType, refDiscount, onSuccess }
             return;
         }
 
-        const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({ type: 'card', card: cardNumberElement, billing_details: { email } });
+        const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
+            type: 'card',
+            card: cardNumberElement,
+            billing_details: { email },
+        });
+
         if (pmError) {
             setError(pmError.message || 'Errore nel metodo di pagamento');
             setLoading(false);
             return;
         }
 
-        // Create subscription server-side
         try {
             const res = await fetch('/api/create-subscription', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ payment_method_id: paymentMethod.id }),
             });
+
             const data = await res.json();
             if (data.error) {
                 setError(data.error);
@@ -679,35 +682,122 @@ function CheckoutFormCore({ email, planId, billingType, refDiscount, onSuccess }
         }
     };
 
+    // ---------------------------------------------------
+    //  PRICE BREAKDOWN (condizionale + refactoring)
+    // ---------------------------------------------------
+    const breakdownItems = [];
+
+    if (billingType === "lifetime") {
+        // Prezzo originale lifetime
+        breakdownItems.push([
+            "Original Price",
+            plan.pricesLifetime * 100 // convertito dopo dal formatter
+        ]);
+
+        // Referral discount (solo se > 0)
+        if (refDiscount > 0) {
+            breakdownItems.push([
+                `Referral Discount -${refDiscount}%`,
+                -Math.round((plan.pricesLifetime * 100) * (refDiscount / 100))
+            ]);
+        }
+    } else {
+        const option = billingData[billingType];
+        const months = option.activableTimes || 1;
+
+        const basePrice = plan.price * months * 100;
+
+        // Prezzo base * numero mesi
+        breakdownItems.push([
+            `Original Price x${months}`,
+            Math.round(basePrice)
+        ]);
+
+        // Sconto del billing (if > 0)
+        if (option.discount > 0) {
+            breakdownItems.push([
+                `Discount -${option.discount}%`,
+                -Math.round(basePrice * (option.discount / 100))
+            ]);
+        }
+
+        // Referral discount (if > 0)
+        const refBase = basePrice * (1 - option.discount / 100);
+        if (refDiscount > 0) {
+            breakdownItems.push([
+                `Referral Discount -${refDiscount}%`,
+                -Math.round(refBase * (refDiscount / 100))
+            ]);
+        }
+    }
+
+    // Totale finale
+    breakdownItems.push(["Total", amountCents]);
+
     return (
         <form className="space-y-6" onSubmit={handlePay}>
-            <div>
-                <PaymentRequest email={email} amountCents={amountCents} onSubscriptionCreated={onSuccess} />
-            </div>
+            {/* Apple Pay / Google Pay */}
+            <PaymentRequest
+                email={email}
+                amountCents={amountCents}
+                onSubscriptionCreated={onSuccess}
+            />
 
+            {/* Card input */}
             <div className="p-4 bg-gradient-to-b from-white/4 to-black/10 rounded-2xl border border-white/6">
                 <StripeCardInputs elementOptions={elementOptions} />
             </div>
 
+            {/* Errori */}
             {error && <div className="text-red-400 text-sm">{error}</div>}
 
-            <div className="">
-                {[["Original Price x" + billingData[billingType].activableTimes, computePriceInCents(planId, billingType, refDiscount, false)], ["Discount -" + billingData[billingType].discount + "%", -billingData[billingType].discount * getPlanById(planId).price * billingData[billingType].activableTimes], ["Referral Discount -" + refDiscount + "%", -refDiscount * (getPlanById(planId).price * billingData[billingType].activableTimes * (1 - billingData[billingType].discount / 100))], ["Total", amountCents],].map(item => (<div className="flex items-center justify-between mb-2">
-                    <div className="text-sm text-gray-400">{item[0]}</div>
-                    <div className="text-sm text-gray-300 font-medium">{formatPrice(item[1])}</div>
-                </div>))}
+            {/* Breakdown prezzi */}
+            <div>
+                {breakdownItems.map(([label, value], i, self) => {
+    const isLast = i === self.length - 1;
+
+    return (
+        <div
+            key={label}
+            className={`flex items-center justify-between mb-2 ${
+                isLast ? "mt-4" : ""
+            }`}
+        >
+            <div
+                className={`text-sm ${
+                    isLast ? "text-white font-semibold text-base" : "text-gray-400"
+                }`}
+            >
+                {label}
             </div>
+
+            <div
+                className={`${
+                    isLast
+                        ? "text-white font-bold text-lg"
+                        : "text-gray-300 font-medium text-sm"
+                }`}
+            >
+                {formatPrice(value)}
+            </div>
+        </div>
+    );
+})}
+
+            </div>
+
+            {/* Bottoni */}
             <div className="flex items-center gap-3">
                 <Button className="flex-1" onClick={handlePay} disabled={loading}>
                     {loading ? (
-                        <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Elaborazione...</span>
+                        <span className="flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" /> Elaborazione...
+                        </span>
                     ) : (
-                        <span className="flex items-center gap-2">Pay Now <ArrowRight className="w-4 h-4" /></span>
+                        <span className="flex items-center gap-2">
+                            Pay Now <ArrowRight className="w-4 h-4" />
+                        </span>
                     )}
-                </Button>
-
-                <Button variant="ghost" className="px-4 py-2" disabled>
-                    <span className="text-sm">{formatPrice(amountCents)}</span>
                 </Button>
             </div>
         </form>
