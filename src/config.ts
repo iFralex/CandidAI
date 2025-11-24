@@ -247,13 +247,13 @@ export const billingData = {
     description: 'Billed once every 2 years',
     savings: 'Save 10% compared to monthly'
   },
-  quintennial: {
-    label: 'Quintennial',
-    duration: '5 years',
+  triennial: {
+    label: 'Triennial',
+    duration: '3 years',
     discount: 15,
-    durationM: 60,
-    activableTimes: 5,
-    description: 'Billed once every 5 years',
+    durationM: 36,
+    activableTimes: 4,
+    description: 'Billed once every 3 years',
     savings: 'Save 15% compared to monthly'
   },
   lifetime: {

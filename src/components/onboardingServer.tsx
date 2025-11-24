@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { cookies } from 'next/headers'
 import { plansData, plansInfo } from '@/config';
 import { get } from 'http';
-import { getReferralDiscount } from '@/lib/utils';
+import { getReferralDiscount } from '@/lib/utils-server';
 
 interface SetupCompleteServerProps {
     userId: string

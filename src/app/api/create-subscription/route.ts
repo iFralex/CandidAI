@@ -2,8 +2,8 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { billingData } from "@/config";
-import { getReferralDiscount } from "@/lib/utils";
+import { billingData, plansInfo } from "@/config";
+import { getReferralDiscount } from "@/lib/utils-server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-16" });
 
@@ -42,6 +42,7 @@ export async function POST(req) {
         if (!customer) {
             customer = await stripe.customers.create({
                 email: user.email, // non univoca, ma utile
+                business_name: user.name || undefined,
                 payment_method: payment_method_id,
                 invoice_settings: {
                     default_payment_method: payment_method_id
@@ -51,7 +52,7 @@ export async function POST(req) {
         }
 
         const computePriceInCents = (planId, billingType, refDiscount) => {
-            const plan = getPlanById(planId);
+            const plan = plansInfo.find((p) => p.id === planId)
             if (!plan) return 0;
         
             // Basic pricing rules: monthly price * months in billing period * (1 - discount%)
@@ -70,7 +71,7 @@ export async function POST(req) {
         const price = await stripe.prices.create({
             unit_amount: await computePriceInCents(user.plan, user.billingType, await getReferralDiscount()),
             currency: "eur",
-            recurring: { interval: "year", interval_count: 2 },
+            recurring: { interval: "month", interval_count: billingData[user.billingType]?.durationM },
             product: product.id,
         });
 
