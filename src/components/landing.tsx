@@ -11,7 +11,7 @@ import { Review, reviews } from './reviews';
 import { billingData, billingOptions, plansInfo } from '@/config';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { get } from 'http';
-import { computePriceInCents, formatPrice, getReferralDiscount } from '@/lib/utils';
+import { computePriceInCents, formatPrice } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import Link from 'next/link';
 
@@ -774,7 +774,7 @@ const EmailExamplesSection = () => {
 // Pricing Section Component
 const PricingSection = () => {
     const [billingType, setBillingType] = useState('triennial');
-    const [refDiscount, setRefDiscount] = useState(getReferralDiscount());
+    const [refDiscount, setRefDiscount] = useState(0)//getReferralDiscount());
 
     const iconMap = { Gift, Target, Rocket, Crown };
 
