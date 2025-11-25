@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import { AnimatedResults, ConfirmCompanies } from "@/components/dashboard";
 import { calculateProgress } from "@/components/detailsServer";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 function Card({ children, className, hover = true, gradient = false, ...props }: CardProps) {
     const baseClasses = "bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl transition-all duration-300"
@@ -112,6 +113,21 @@ console.log(data.data)
     return <>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+           <Dialog open>
+  <DialogContent className="p-8 flex flex-col items-center text-center space-y-4">
+    <h2 className="text-2xl font-semibold">Thank you for your purchase! 🎉</h2>
+
+    <p className="text-muted-foreground text-base">
+      We’ve successfully received your order.<br />
+      Your emails will be ready within a few hours.
+    </p>
+
+    <p className="text-sm text-muted-foreground">
+      We’ll notify you as soon as everything is available.
+    </p>
+  </DialogContent>
+</Dialog>
+
             <Card className="p-6" gradient>
                 <div className="flex items-center justify-between">
                     <div>

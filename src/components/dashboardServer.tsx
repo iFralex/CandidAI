@@ -16,7 +16,7 @@ import { confirmCompany } from "@/actions/onboarding-actions";
 
 export const Results = ({ results }) => {
     if (!results || results.length === 0) {
-        return <p className="text-center text-gray-400">No campaigns found.</p>;
+        return <p className="text-center text-gray-400">No companies found.</p>;
     }
 
     return (
