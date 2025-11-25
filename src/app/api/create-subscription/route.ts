@@ -3,7 +3,10 @@ import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { billingData, plansInfo } from "@/config";
-import { getReferralDiscount } from "@/lib/utils";
+import { getReferralDiscountServer } from "@/lib/utils-server";
+import { adminDb } from "@/lib/firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
+import { startServer } from "@/actions/onboarding-actions";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-16" });
 
@@ -19,9 +22,7 @@ export async function POST(req) {
             }
         });
 
-        if (!res.ok) {
-            throw new Error(res.status);
-        }
+        if (!res.ok) throw new Error(res.status);
 
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
@@ -29,7 +30,7 @@ export async function POST(req) {
         const user = data.user;
         if (!user) throw new Error("Utente non autenticato");
 
-        // 1. Crea o recupera il Customer
+        // 1️⃣ Crea o recupera il Customer
         const searchResult = await stripe.customers.search({
             query: `metadata['userId']:'${user.uid}'`
         });
@@ -48,7 +49,6 @@ export async function POST(req) {
             });
         }
 
-        // Funzione per calcolare i prezzi ricorrenti
         const computePriceInCents = (planId, billingType, refDiscount) => {
             const plan = plansInfo.find((p) => p.id === planId);
             if (!plan) return 0;
@@ -63,29 +63,42 @@ export async function POST(req) {
             );
         };
 
-        const refDiscount = await getReferralDiscount();
+        const refDiscount = await getReferralDiscountServer();
 
-        // ------------------------------------------------------------------
-        // ⭐ LOGICA PER PAGAMENTO UNA TANTUM (LIFETIME)
-        // ------------------------------------------------------------------
+        // -----------------------------
+        // LIFETIME / ONE-TIME PAYMENT
+        // -----------------------------
         if (user.billingType === "lifetime") {
             const plan = plansInfo.find(p => p.id === user.plan);
             if (!plan) throw new Error("Piano non valido");
 
             const lifetimeBaseCents = Math.round(plan.pricesLifetime * 100);
+            const lifetimeFinalCents = Math.round(lifetimeBaseCents * (1 - refDiscount / 100));
 
-            const lifetimeFinalCents = Math.round(
-                lifetimeBaseCents * (1 - refDiscount / 100)
-            );
-
-            // Crea payment intent singolo
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: lifetimeFinalCents,
                 currency: "eur",
                 customer: customer.id,
                 payment_method: payment_method_id,
-                confirm: false,  // Il client lo conferma
+                confirm: false,
             });
+
+            // ✅ Salva info pagamento in Firestore
+            await adminDb
+                .collection("users")
+                .doc(user.uid)
+                .collection("payments")
+                .doc(paymentIntent.id)
+                .set({
+                    type: "one_time",
+                    amount: lifetimeFinalCents,
+                    currency: "eur",
+                    status: paymentIntent.status,
+                    payment_method: payment_method_id,
+                    createdAt: new Date(),
+                    planId: user.plan,
+                    billingType: user.billingType,
+                });
 
             return NextResponse.json({
                 client_secret: paymentIntent.client_secret,
@@ -94,10 +107,9 @@ export async function POST(req) {
             });
         }
 
-        // ------------------------------------------------------------------
-        // ⭐ LOGICA STANDARD ABBONAMENTO
-        // ------------------------------------------------------------------
-
+        // -----------------------------
+        // RECURRING / SUBSCRIPTION
+        // -----------------------------
         const product = await stripe.products.create({ name: "Abbonamento biennale" });
 
         const price = await stripe.prices.create({
@@ -118,6 +130,57 @@ export async function POST(req) {
         });
 
         const paymentIntent = subscription.latest_invoice.payment_intent;
+
+        // ✅ Salva info pagamento solo se completato, in batch
+        if (paymentIntent.status === "succeeded") {
+            const batch = adminDb.batch();
+
+            const paymentRef = adminDb
+                .collection("users")
+                .doc(user.uid)
+                .collection("payments")
+                .doc(subscription.id);
+
+            const userRef = adminDb
+                .collection("users")
+                .doc(user.uid);
+
+            let endDate: Date;
+
+            if (user.billingType === "lifetime") {
+                endDate = new Date(Date.now() + 20 * 365 * 24 * 60 * 60 * 1000); // 20 anni
+            } else {
+                const months = billingData[user.billingType]?.durationM;
+                if (!months) throw new Error("Durata abbonamento non definita");
+
+                endDate = new Date();
+                endDate.setMonth(endDate.getMonth() + months);
+            }
+
+            // Aggiornamenti batch
+            batch.set(paymentRef, {
+                type: "recurring",
+                subscriptionId: subscription.id,
+                priceId: price.id,
+                amount: paymentIntent.amount,
+                currency: paymentIntent.currency,
+                status: paymentIntent.status,
+                payment_method: payment_method_id,
+                createdAt: new Date(),
+                planId: user.plan,
+                billingType: user.billingType,
+            });
+
+            batch.update(userRef, {
+                expirate: Timestamp.fromDate(endDate),
+                onboardingStep: 50
+            });
+
+            // Esegui batch
+            await batch.commit();
+
+            await startServer()
+        }
 
         return NextResponse.json({
             client_secret: paymentIntent.client_secret,

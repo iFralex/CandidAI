@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { cookies } from 'next/headers'
 import { plansData, plansInfo } from '@/config';
 import { get } from 'http';
-import { getReferralDiscount } from '@/lib/utils';
+import { getReferralDiscountServer } from '@/lib/utils-server';
 
 interface SetupCompleteServerProps {
     userId: string
@@ -123,7 +123,7 @@ export function PaymentRedirectServer({ userId }) {
 }
 
 export async function PaymentStripeServer({ userId, billingType, plan }) {
-    const refDiscount = await getReferralDiscount();
+    const refDiscount = await getReferralDiscountServer();
     return (
         <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">

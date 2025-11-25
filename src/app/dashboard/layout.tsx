@@ -122,12 +122,14 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
     });
 
     if (!res.ok) {
-        throw new Error(res.status);
+        return redirect('/login')
+        //throw new Error(res.status);
     }
     const data = await res.json();
 
     if (!data.success)
-        throw new Error(data.error)
+        return redirect('/login')
+        //throw new Error(data.error)
 
     const user = data.user
     if (!user)

@@ -5,7 +5,7 @@ import { Elements, CardElement, useStripe, useElements, CardNumberElement, CardE
 import { useRef, useState, useTransition } from 'react'
 import { motion, AnimatePresence } from "framer-motion"
 import { selectPlan } from '@/actions/onboarding-actions'
-import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark } from 'lucide-react'
+import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark, Lock } from 'lucide-react'
 import { submitCompanies } from '@/actions/onboarding-actions'
 import { Building, Plus, X, Wand2 } from 'lucide-react'
 import { Card } from './ui/card'
@@ -759,6 +759,16 @@ function CheckoutFormCore({ email, planId, billingType, refDiscount, onSuccess }
                     )}
                 </Button>
             </div>
+
+            {billingData[billingType] !== "lifetime" && <div className={`flex items-center justify-between mb-2 mt-4"}`}>
+                <div className={`text-sm text-white font-semibold text-base"}`}>
+                    Next Payment {new Date(new Date().setMonth(new Date().getMonth() + billingData[billingType].durationM)).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                </div>
+
+                <div className={`text-white font-bold text-lg"`}>
+                    {formatPrice(amountCents)}
+                </div>
+            </div>}
         </form>
     );
 }
@@ -766,6 +776,12 @@ function CheckoutFormCore({ email, planId, billingType, refDiscount, onSuccess }
 // -------------------- Wrapper component (export default) --------------------
 export function SubscribeWrapper({ userId, plan = 'pro', billingType = 'biennial', refDiscount, email = '' }) {
     const [successPayload, setSuccessPayload] = useState(null);
+    const router = useRouter()
+
+    const handleSuccess = payload => {
+        setSuccessPayload(payload)
+        router.refresh()
+    }
 
     return (
         <div className="max-w-4xl mx-auto py-12 px-4">
@@ -778,7 +794,7 @@ export function SubscribeWrapper({ userId, plan = 'pro', billingType = 'biennial
                         <Card className="mt-6 p-4">
                             <div className="flex items-center justify-between">
                                 <div className="text-sm text-gray-300">Payment method</div>
-                                <Badge className="bg-slate-700/30">Secure</Badge>
+                                <Badge className="bg-slate-700/30">Secure <Lock /></Badge>
                             </div>
 
                             <div className="mt-4 text-sm text-gray-400">Card details are processed securely by Stripe — we never see full card numbers.</div>
@@ -797,7 +813,7 @@ export function SubscribeWrapper({ userId, plan = 'pro', billingType = 'biennial
                             </div>
 
                             <div className="mt-6">
-                                <CheckoutFormCore email={email} planId={plan} billingType={billingType} refDiscount={refDiscount} onSuccess={(payload) => setSuccessPayload(payload)} />
+                                <CheckoutFormCore email={email} planId={plan} billingType={billingType} refDiscount={refDiscount} onSuccess={handleSuccess} />
                             </div>
                         </Card>
 
@@ -4739,6 +4755,7 @@ import Script from 'next/script'
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { billingData, plansInfo } from "@/config";
 import { computePriceInCents, formatPrice, getPlanById, getReferralDiscount } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 /**
  * Tipo risultato Brandfetch-like
@@ -5360,18 +5377,6 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                                     gradient={plan.popular}
                                     hover={false}
                                 >
-                                    {/* Popular Badge */}
-                                    {plan.popular && (
-                                        <motion.div
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
-                                            className="absolute -top-4 -left-4 transform "
-                                        >
-                                            <Badge>Most Popular</Badge>
-                                        </motion.div>
-                                    )}
-
                                     {/* Discount Badges */}
                                     <div className="absolute top-2 right-2 flex items-center gap-2">
                                         {billingData[billingType].discount !== 0 && (
@@ -5381,26 +5386,38 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                                         {refDiscount !== 0 && <Badge>-{refDiscount}%</Badge>}
                                     </div>
 
-                                    <div className="text-center mb-8">
+                                    <div className="text-center">
                                         <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${plan.color} flex items-center justify-center mx-auto mb-4 text-white`}>
                                             <Icon className="w-8 h-8" />
                                         </div>
                                         <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
                                         <p className="text-gray-400 mb-4">{plan.description}</p>
 
-                                        <motion.div
-                                            key={billingType + plan.name}
-                                            initial={{ scale: 0.9, opacity: 0 }}
-                                            animate={{ scale: 1, opacity: 1 }}
-                                            transition={{ duration: 0.3 }}
-                                            className="mb-4"
-                                        >
-                                            <span className="text-4xl font-bold text-white">
-                                                {formatPrice(computePriceInCents(plan.id, billingType) / billingData[billingType].activableTimes)}
-                                                {billingType !== "lifetime" && billingType !== "monthly" && <span className="text-violet-300"> x{billingData[billingType].activableTimes}</span>}
-                                            </span>
-                                            {billingType !== "lifetime" && <span className="text-gray-400">/{billingType === "monthly" ? "mo" : billingData[billingType].durationM / 12 + "y"}</span>}
-                                        </motion.div>
+                                        <div className="mb-2 space-y-2">
+                                            <motion.div
+                                                key={billingType + plan.name}
+                                                initial={{ scale: 0.9, opacity: 0 }}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="relative"
+                                            >
+                                                <span className="text-4xl font-bold text-white">
+                                                    {formatPrice(computePriceInCents(plan.id, billingType) / billingData[billingType].activableTimes)}
+                                                    {billingType !== "lifetime" && billingType !== "monthly" && <span className="text-violet-300"> x{billingData[billingType].activableTimes}</span>}
+                                                </span>
+                                                {billingType !== "lifetime" && <span className="text-gray-400">/{billingType === "monthly" ? "mo" : billingData[billingType].durationM / 12 + "y"}</span>}
+                                            </motion.div>
+
+                                            {plan.popular ? (
+                                                <motion.div
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                    transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
+                                                >
+                                                    <Badge className="bg-violet-500/50">Most Popular</Badge>
+                                                </motion.div>
+                                            ) : <div className="mb-11" />}
+                                        </div>
                                     </div>
 
                                     {/* Features */}

@@ -996,17 +996,6 @@ const PricingSection = () => {
                                 gradient={plan.popular}
                                 hover={false}
                             >
-                                {plan.popular && (
-                                    <motion.div
-                                        initial={{ scale: 0 }}
-                                        animate={{ scale: 1 }}
-                                        transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
-                                        className="absolute -top-4 -left-4 transform "
-                                    >
-                                        <Badge>Most Popular</Badge>
-                                    </motion.div>
-                                )}
-
                                 <div className="absolute top-2 right-2 flex items-center gap-2">
                                     {billingData[billingType].discount !== 0 && (
                                         <motion.div
@@ -1037,7 +1026,7 @@ const PricingSection = () => {
                                     )}
                                 </div>
 
-                                <div className="text-center mb-8">
+                                <div className="text-center">
                                     <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${plan.color} flex items-center justify-center mx-auto mb-4 text-white`}>
                                         <Icon className="w-8 h-8" />
                                     </div>
@@ -1045,19 +1034,31 @@ const PricingSection = () => {
                                     <h3 className="text-4xl font-bold text-white mb-2">{plan.name}</h3>
                                     <p className="text-gray-400 mb-4">{plan.description}</p>
 
-                                    <motion.div
-                                        key={billingType + plan.name}
-                                        initial={{ scale: 0.9, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        transition={{ duration: 0.3 }}
-                                        className="mb-4"
-                                    >
-                                        <span className="text-4xl font-bold text-white">
-                                            {formatPrice(computePriceInCents(plan.id, billingType) / billingData[billingType].activableTimes)}
-                                            {billingType !== "lifetime" && billingType !== "monthly" && <span className="text-violet-300"> x{billingData[billingType].activableTimes}</span>}
-                                        </span>
-                                        {billingType !== "lifetime" && <span className="text-gray-400">/{billingType === "monthly" ? "mo" : billingData[billingType].durationM / 12 + "y"}</span>}
-                                    </motion.div>
+                                    <div className="mb-2 space-y-2">
+                                        <motion.div
+                                            key={billingType + plan.name}
+                                            initial={{ scale: 0.9, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="relative"
+                                        >
+                                            <span className="text-4xl font-bold text-white">
+                                                {formatPrice(computePriceInCents(plan.id, billingType) / billingData[billingType].activableTimes)}
+                                                {billingType !== "lifetime" && billingType !== "monthly" && <span className="text-violet-300"> x{billingData[billingType].activableTimes}</span>}
+                                            </span>
+                                            {billingType !== "lifetime" && <span className="text-gray-400">/{billingType === "monthly" ? "mo" : billingData[billingType].durationM / 12 + "y"}</span>}
+                                        </motion.div>
+
+                                        {plan.popular ? (
+                                            <motion.div
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                                transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
+                                            >
+                                                <Badge className="bg-violet-500/50">Most Popular</Badge>
+                                            </motion.div>
+                                        ) : <div className="mb-11" />}
+                                    </div>
                                 </div>
 
                                 <ul className="space-y-4 mb-8">

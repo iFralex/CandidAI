@@ -228,12 +228,14 @@ const Page = async () => {
     });
 
     if (!res.ok) {
-        throw new Error(res.status);
+        return redirect('/login')
+        //throw new Error(res.status);
     }
     let data = await res.json();
 
     if (!data.success)
-        throw new Error(data.error)
+        return redirect('/login')
+        //throw new Error(data.error)
 
     const user = data.user
     if (!user)
