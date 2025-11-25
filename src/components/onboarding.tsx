@@ -779,9 +779,11 @@ export function SubscribeWrapper({ userId, plan = 'pro', billingType = 'biennial
     const router = useRouter()
 
     const handleSuccess = payload => {
-        setSuccessPayload(payload)
-        router.refresh()
-    }
+        setSuccessPayload(payload);
+        setInterval(() => {
+            router.refresh();
+        }, 5000); // refresh ogni 5 secondi
+    };
 
     return (
         <div className="max-w-4xl mx-auto py-12 px-4">

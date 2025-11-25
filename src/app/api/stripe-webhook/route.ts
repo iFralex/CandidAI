@@ -10,7 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-
 
 export async function POST(req) {
   const body = await req.text();
-  const sig = headers().get("stripe-signature");
+  const sig = (await headers()).get("stripe-signature");
 
   let event;
   try {
@@ -21,6 +21,7 @@ export async function POST(req) {
   }
 
   try {
+    console.log(event)
     // --- PAYMENT SUCCEEDED (lifetime / one-time) ---
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object;
