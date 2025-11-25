@@ -9,8 +9,8 @@ export function cn(...inputs: ClassValue[]) {
 
 export function getReferralDiscount() {
   // CLIENT SIDE
-  if (!document) return
-  
+  /*if (!document) return
+
   const cookieString = document.cookie
     .split("; ")
     .find((c) => c.startsWith("referral="));
@@ -22,6 +22,8 @@ export function getReferralDiscount() {
   if (ref && referralCodes[ref]) return referralCodes[ref];
 
   return 0;
+  */
+ return 20
 }
 
 export const formatPrice = (cents) => `€${(cents / 100).toFixed(2)}`;

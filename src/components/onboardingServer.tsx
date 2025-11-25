@@ -1,14 +1,10 @@
-import { getServerUser } from '@/lib/server-auth'
-import { redirect } from 'next/navigation'
 import { CheckCircle, CreditCard, Wand2 } from 'lucide-react'
 import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, PaymentStepClient, PaymentRedirectClient, CheckoutForm, SubscribeWrapper } from '@/components/onboarding'
 import crypto from "crypto";
 import { ProfileAnalysisClient } from '@/components/onboarding';
-import { completeOnboarding, submitQueries } from '@/actions/onboarding-actions'
-import { Button } from '@/components/ui/button'
+import { submitQueries } from '@/actions/onboarding-actions'
 import { cookies } from 'next/headers'
 import { plansData, plansInfo } from '@/config';
-import { get } from 'http';
 import { getReferralDiscountServer } from '@/lib/utils-server';
 
 interface SetupCompleteServerProps {
