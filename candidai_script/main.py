@@ -13,6 +13,7 @@ import logging
 import time
 
 def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
+    return
     """
     Esegue i task per generare blog, recruiter ed email in modalità automatica o manuale.
 

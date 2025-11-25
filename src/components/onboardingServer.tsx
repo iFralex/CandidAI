@@ -122,6 +122,7 @@ export function PaymentRedirectServer({ userId }) {
 }
 
 export async function PaymentStripeServer({ userId, billingType, plan }) {
+    console.log(getPlanById(plan))
     if (getPlanById(plan).price === 0) {
         const userRef = adminDb.collection("users").doc(userId);
 
