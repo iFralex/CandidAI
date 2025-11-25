@@ -1,10 +1,10 @@
 import { RegisterForm } from "@/components/login-form"
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 export default async function RegisterPage() {
-  const email = (await headers()).get("x-email")
+  const email = (await cookies()).get("defaultEmail")?.value
   
   return (
-    <RegisterForm />
+    <RegisterForm defaultEmail={email}/>
   )
 }

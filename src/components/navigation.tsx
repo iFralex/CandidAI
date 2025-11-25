@@ -2,6 +2,7 @@
 
 import { Menu, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export const Navigation = () => {
     return (
@@ -19,13 +20,15 @@ export const Navigation = () => {
                     </div>
 
                     <div className="hidden md:flex items-center space-x-8">
-                        <a href="#features" className="text-gray-300 hover:text-white transition-colors">Features</a>
-                        <a href="#process" className="text-gray-300 hover:text-white transition-colors">How it Works</a>
-                        <a href="#pricing" className="text-gray-300 hover:text-white transition-colors">Pricing</a>
-                        <a href="#reviews" className="text-gray-300 hover:text-white transition-colors">Reviews</a>
-                        <Button variant="primary" size="sm">
-                            Get Started
-                        </Button>
+                        <Link href="#features" className="text-gray-300 hover:text-white transition-colors">Features</Link>
+                        <Link href="#process" className="text-gray-300 hover:text-white transition-colors">How it Works</Link>
+                        <Link href="#pricing" className="text-gray-300 hover:text-white transition-colors">Pricing</Link>
+                        <Link href="#reviews" className="text-gray-300 hover:text-white transition-colors">Reviews</Link>
+                        <Link href="/dashboard">
+                            <Button variant="primary" size="sm">
+                                Get Started
+                            </Button>
+                        </Link>
                     </div>
 
                     <button

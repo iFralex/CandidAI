@@ -77,9 +77,11 @@ const HeroSection = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                     />
-                    <Button formAction="submit" className='min-w-48' size="lg" icon={<ArrowRight className="w-5 h-5" />}>
-                        Start Free Test
-                    </Button>
+                    <Link href="/register">
+                        <Button formAction="submit" className='min-w-48' size="lg" icon={<ArrowRight className="w-5 h-5" />} onClick={() => { document.cookie = `defaultEmail=${email}; path=/; max-age=${60 * 60}` }}>
+                            Start Free Test
+                        </Button>
+                    </Link>
                 </form>
 
                 <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
@@ -775,7 +777,7 @@ const PricingSection = () => {
     const [refDiscount, setRefDiscount] = useState(getReferralDiscount());
 
     const iconMap = { Gift, Target, Rocket, Crown };
-    
+
     const splitFeature = (feature) => {
         const numMatch = feature.match(/(\d[\d.,]*)/);
         if (numMatch) {
@@ -879,9 +881,11 @@ const PricingSection = () => {
                                     ))}
                                 </ul>
 
-                                <Button variant="primary" size="lg" className="whitespace-nowrap" onClick={() => { document.cookie = `defaultPlan=${freePlan.id}|${billingType}; path=/; max-age=${60 * 60 * 12}` }}>
-                                    Start Free Test
-                                </Button>
+                                <Link href="/register">
+                                    <Button variant="primary" size="lg" className="whitespace-nowrap" onClick={() => { document.cookie = `defaultPlan=${freePlan.id}|${billingType}; path=/; max-age=${60 * 60 * 12}` }}>
+                                        Start Free Test
+                                    </Button>
+                                </Link>
                             </div>
                         </div>
                     </Card>
@@ -1257,9 +1261,11 @@ const CTASection = () => {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
-                        <Button size="lg" className='min-w-48' icon={<ArrowRight className="w-5 h-5" />}>
-                            Start Free Test
-                        </Button>
+                        <Link href={"/register"}>
+                            <Button size="lg" className='min-w-48' icon={<ArrowRight className="w-5 h-5" />} onClick={() => { document.cookie = `defaultEmail=${email}; path=/; max-age=${60 * 60}` }}>
+                                Start Free Test
+                            </Button>
+                        </Link>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
