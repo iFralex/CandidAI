@@ -26,6 +26,10 @@ export function getReferralDiscount() {
  return 20
 }
 
+export const aw = () => {
+  console.log(document.cookie)
+}
+
 export const formatPrice = (cents) => `€${(cents / 100).toFixed(2)}`;
 
 export const getPlanById = (id) => plansInfo.find((p) => p.id === id) || plansInfo[1];
