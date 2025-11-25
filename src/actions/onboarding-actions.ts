@@ -142,7 +142,7 @@ export async function submitQueries(queries: any) {
 
     await batch.commit();
 
-    revalidatePath("/dashboard");
+    redirect("/dashboard");
 }
 
 export async function completeOnboarding(customizations: any) {
