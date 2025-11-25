@@ -9,6 +9,8 @@ export function cn(...inputs: ClassValue[]) {
 
 export function getReferralDiscount() {
   // CLIENT SIDE
+  if (!document) return
+  
   const cookieString = document.cookie
     .split("; ")
     .find((c) => c.startsWith("referral="));
