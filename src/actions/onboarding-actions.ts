@@ -8,8 +8,9 @@ import { getTokens } from 'next-firebase-auth-edge';
 import { clientConfig, creditsInfo, plansData, serverConfig } from '@/config';
 import { FieldValue } from 'firebase-admin/firestore'
 
-export async function startServer() {
-    const userId = await checkAuth()
+export async function startServer(userId = null) {
+    if (!userId)
+        userId = await checkAuth()
 
     fetch(process.env.SERVER_RUNNER_URL || "", {
         method: "POST",

@@ -66,7 +66,7 @@ export async function POST(req) {
       });
 
       await batch.commit();
-      await startServer();
+      await startServer(userId);
     }
 
     // --- SUBSCRIPTION PAYMENT (ricorrente) ---
@@ -121,7 +121,7 @@ export async function POST(req) {
       });
 
       await batch.commit();
-      await startServer();
+      await startServer(userId);
     }
 
     return new Response("ok", { status: 200 });
