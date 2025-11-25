@@ -3688,7 +3688,7 @@ function EducationSection({ profileSummary, setProfileSummary }: any) {
         <div>
             <Dialog>
                 <div className="flex justify-start items-center mb-3 space-x-2">
-                    <p className="text-sm text-gray-400">Experience</p>
+                    <p className="text-sm text-gray-400">Education</p>
                     <DialogTrigger asChild>
                         <Button variant="ghost" size="sm" className="p-1" onClick={() => handleEdit(null)}>
                             <Plus className="w-4 h-4" />
