@@ -5,7 +5,7 @@ import { Elements, CardElement, useStripe, useElements, CardNumberElement, CardE
 import { useRef, useState, useTransition } from 'react'
 import { motion, AnimatePresence } from "framer-motion"
 import { selectPlan } from '@/actions/onboarding-actions'
-import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple } from 'lucide-react'
+import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark } from 'lucide-react'
 import { submitCompanies } from '@/actions/onboarding-actions'
 import { Building, Plus, X, Wand2 } from 'lucide-react'
 import { Card } from './ui/card'
@@ -435,49 +435,10 @@ export function PaymentRedirectClient({ payload }) {
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
-
-const formatPrice = (cents) => `€${(cents / 100).toFixed(2)}`;
-
-const getPlanById = (id) => plansInfo.find((p) => p.id === id) || plansInfo[1];
-
-const computePriceInCents = (planId, billingType, refDiscount = 0, applyDiscounts = true) => {
-    const plan = getPlanById(planId);
-    if (!plan) return 0;
-
-    // ---------------------------
-    // ⭐ Caso lifetime (one-time)
-    // ---------------------------
-    if (billingType === "lifetime") {
-        const baseCents = Math.round(plan.pricesLifetime * 100);
-
-        // Applica solo refDiscount se consentito
-        const finalRefDiscount = applyDiscounts ? refDiscount || 0 : 0;
-
-        return Math.round(baseCents * (1 - finalRefDiscount / 100));
-    }
-
-    // ----------------------------------------
-    // ⭐ Caso normale (ricorrente)
-    // ----------------------------------------
-    const baseCents = Math.round(plan.price * 100);
-    const option = billingData[billingType] || billingData.monthly;
-
-    const months = option.activableTimes || 1;
-    const discount = applyDiscounts ? option.discount || 0 : 0;
-    const finalRefDiscount = applyDiscounts ? refDiscount || 0 : 0;
-
-    return Math.round(
-        baseCents *
-        months *
-        (1 - discount / 100) *
-        (1 - finalRefDiscount / 100)
-    );
-};
-
 // -------------------- Small presentational components --------------------
 function BillingSummary({ planId, billingType, refDiscount }) {
     const plan = getPlanById(planId);
-    const totalCents = computePriceInCents(planId, billingType, refDiscount);
+    const totalCents = computePriceInCents(planId, billingType);
     const option = billingData[billingType] || billingData.monthly;
     const Icon = iconMap[plan.icon]
 
@@ -618,7 +579,7 @@ function CheckoutFormCore({ email, planId, billingType, refDiscount, onSuccess }
     const [loading, setLoading] = useState(false);
 
     const plan = getPlanById(planId);
-    const amountCents = computePriceInCents(planId, billingType, refDiscount);
+    const amountCents = computePriceInCents(planId, billingType);
 
     const elementOptions = {
         style: {
@@ -919,13 +880,13 @@ export function AdvancedFiltersClientOld({ userId, maxFilters }: AdvancedFilters
 
         startTransition(async () => {
             console.log(activeFilters)
-            await submitQueries(userId, activeFilters)
+            await submitQueries(activeFilters)
         })
     }
 
     const handleSkip = () => {
         startTransition(async () => {
-            await submitQueries(userId, {})
+            await submitQueries({})
         })
     }
 
@@ -2115,7 +2076,7 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
 
     const handleContinue = () => {
         startTransition(async () => {
-            await submitQueries(userId, strategy)
+            await submitQueries(strategy)
         })
     };
 
@@ -4467,7 +4428,7 @@ export function ProfileAnalysisClient({ userId, plan }: ProfileAnalysisClientPro
     const handleContinue = () => {
         if (!cvFile) return alert("Please upload your CV before continuing.")
         startTransition(async () => {
-            await submitProfile(userId, plan, {
+            await submitProfile(plan, {
                 linkedinUrl,
                 profileSummary,
             }, cvFile?.blob)
@@ -4777,6 +4738,7 @@ import SkillsListBase, { EducationList, ExperienceList } from '@/components/deta
 import Script from 'next/script'
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { billingData, plansInfo } from "@/config";
+import { computePriceInCents, formatPrice, getPlanById, getReferralDiscount } from "@/lib/utils";
 
 /**
  * Tipo risultato Brandfetch-like
@@ -5023,7 +4985,7 @@ export function CompanyInputClient({
             try {
                 console.log("Submitting:", companies);
                 // La tua logica di submit
-                await submitCompanies(userId, companies);
+                await submitCompanies(companies);
             } catch (err) {
                 console.error("Errore in submitCompanies", err);
             }
@@ -5182,7 +5144,8 @@ interface PlanSelectionClientProps {
 
 export function PlanSelectionClient({ userId = 'user123' }) {
     const [selectedPlan, setSelectedPlan] = useState(null);
-    const [billingType, setBillingType] = useState('quintennial');
+    const [billingType, setBillingType] = useState('triennial');
+    const [refDiscount, setRefDiscount] = useState(getReferralDiscount());
     const [isPending, startTransition] = useTransition();
 
     const iconMap = { Gift, Target, Rocket, Crown };
@@ -5207,43 +5170,49 @@ export function PlanSelectionClient({ userId = 'user123' }) {
         return acc;
     }, {});
 
-    const groupedFeatures = Object.entries(groupsMap).map(([base, variantsSet]) => {
-        const variants = Array.from(variantsSet);
-        return { base, variants };
-    });
+    const groupedFeatures = Object.entries(groupsMap).map(([base, variantsSet]) => ({
+        base,
+        variants: Array.from(variantsSet)
+    }));
 
     const freePlan = plansInfo[0];
 
-    const getCurrentPrice = (plan) => {
-        if (billingType === 'monthly') return plan.price * 0.8;
-        if (billingType === 'biennial') return plan.price * 0.9 * 0.8;
-        if (billingType === 'quintennial') return plan.price * 0.85 * 0.8;
-        return plan.pricesLifetime * 0.8;
-    };
+    // ----------------------- COOKIE DEFAULT -----------------------
+    useEffect(() => {
+        if (typeof document === "undefined") return;
+        const cookie = document.cookie.split("; ").find(c => c.startsWith("defaultPlan="));
+        if (cookie) {
+            const [plan, billing] = cookie.replace("defaultPlan=", "").split("|");
+            if (plan) setSelectedPlan(plan);
+            if (billing) setBillingType(billing);
+        }
+    }, []);
 
-    const getDiscount = () => {
-        const option = billingOptions.find(opt => opt.value === billingType);
-        return option?.discount || null;
+    // ----------------------- PREZZO CON SCONTI -----------------------
+    const computeFinalPrice = (planId) => {
+        const basePrice = computePriceInCents(planId, billingType) / billingData[billingType].activableTimes;
+        const billingDiscount = billingData[billingType].discount || 0;
+        const final = basePrice * (1 - billingDiscount / 100) * (1 - (refDiscount || 0) / 100);
+        return final;
     };
 
     const getBillingSubtext = () => {
-        const option = billingOptions.find(opt => opt.value === billingType);
-        if (billingType === 'monthly') return 'Recurring monthly payment';
-        return `${option?.sublabel} with ${option?.discount} discount`;
+        const option = billingData[billingType];
+        if (billingType === "monthly") return "Recurring monthly payment";
+        return `${option.sublabel} with ${option.discount}% discount`;
     };
 
     const handleSubmit = () => {
         if (!selectedPlan) return;
-
-        startTransition(async () => {
-            await selectPlan(selectedPlan, billingType)
-        });
+        startTransition(() => selectPlan(selectedPlan, billingType));
     };
 
+    // ----------------------- UI -----------------------
     return (
-        <div className="min-h-screen">
-            <div className="">
-                {/* Free Plan Banner */}
+        <section id="pricing" className="relative py-24 px-6 lg:px-8 bg-black min-h-screen">
+            <div className="max-w-7xl mx-auto">
+
+                {/* Free Plan */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -5285,7 +5254,6 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                                 <Button
                                     variant="primary"
                                     size="lg"
-                                    className="whitespace-nowrap"
                                     onClick={() => setSelectedPlan(freePlan.id)}
                                 >
                                     {selectedPlan === freePlan.id ? (
@@ -5293,9 +5261,7 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                                             <CheckCircle className="w-5 h-5" />
                                             Selected
                                         </span>
-                                    ) : (
-                                        'Start Free Test'
-                                    )}
+                                    ) : "Start Free Test"}
                                 </Button>
                             </div>
                         </div>
@@ -5310,44 +5276,40 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                         </div>
 
                         <div className="relative grid grid-cols-2 md:grid-cols-4 gap-4 px-4">
-                            {billingOptions.map((option) => {
-                                const isActive = billingType === option.value;
+                            {Object.keys(billingData).map((k) => {
+                                const option = billingData[k];
+                                const isActive = billingType === k;
 
                                 return (
-                                    <div key={option.value} className="relative flex flex-col items-center h-full">
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={() => setBillingType(option.value)}
-                                            className="relative w-full h-full"
-                                        >
-                                            <div className={`
-                        h-full px-4 py-4 rounded-xl border-2 transition-all duration-300
-                        ${isActive
-                                                    ? 'bg-gradient-to-br from-purple-600 to-violet-500 border-transparent shadow-lg shadow-purple-500/30'
-                                                    : 'bg-gray-900 border-gray-700 hover:border-gray-600'
-                                                }
-                      `}>
-                                                <div className="flex flex-col items-center gap-2">
-                                                    <div className="text-center">
-                                                        <div className={`font-bold text-sm ${isActive ? 'text-white' : 'text-gray-300'}`}>
-                                                            {option.label}
-                                                        </div>
-                                                        <div className={`text-xs mt-1 ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
-                                                            {option.months}
-                                                        </div>
-
-                                                        {option.discount && (
-                                                            <div className={`text-xs font-bold mt-2 px-2 py-1 rounded-full inline-block ${isActive ? 'bg-white/20 text-white' : 'bg-green-500/20 text-green-400'
-                                                                }`}>
-                                                                Save {option.discount}
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                    <motion.button
+                                        key={k}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => setBillingType(k)}
+                                        className="relative w-full"
+                                    >
+                                        <div className={`
+                                            h-full px-4 py-4 rounded-xl border-2 transition-all duration-300
+                                            ${isActive
+                                                ? 'bg-gradient-to-br from-purple-600 to-violet-500 border-transparent shadow-lg shadow-purple-500/30'
+                                                : 'bg-gray-900 border-gray-700 hover:border-gray-600'
+                                            }
+                                        `}>
+                                            <div className="flex flex-col items-center gap-2">
+                                                <div className={`font-bold text-sm ${isActive ? 'text-white' : 'text-gray-300'}`}>
+                                                    {option.label}
                                                 </div>
+                                                <div className={`text-xs mt-1 ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
+                                                    {option.months}
+                                                </div>
+                                                {option.discount !== 0 && (
+                                                    <div className={`text-xs font-bold mt-2 px-2 py-1 rounded-full inline-block ${isActive ? 'bg-white/20 text-white' : 'bg-green-500/20 text-green-400'}`}>
+                                                        Save {option.discount}%
+                                                    </div>
+                                                )}
                                             </div>
-                                        </motion.button>
-                                    </div>
+                                        </div>
+                                    </motion.button>
                                 );
                             })}
                         </div>
@@ -5364,22 +5326,22 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                             <TooltipTrigger>
                                 <p className="text-gray-400 text-sm font-medium">
                                     {getBillingSubtext()}
-                                    <CircleHelp className="w-4 h-4 inline-block ml-1" />
+                                    <CircleQuestionMark className="w-4 h-4 inline-block ml-1" />
                                 </p>
                             </TooltipTrigger>
-                            <TooltipContent>
+                            <TooltipContent side="top" align="center">
                                 <div className="max-w-xs text-sm text-gray-300">
                                     {billingType === 'monthly' && 'Billed monthly until canceled.'}
-                                    {billingType === 'biennial' && 'Billed once every 2 years. During the 2-year period, you can activate your subscription in any 3 separate months.'}
-                                    {billingType === 'quintennial' && 'Billed once every 5 years. During the 5-year period, you can activate your subscription in any 5 separate months.'}
-                                    {billingType === 'lifetime' && 'One-time payment for lifetime access. Each year, you can activate your subscription for 1 month whenever you need it.'}
+                                    {billingType === 'biennial' && 'Billed once every 2 years. Activate 3 separate months as needed.'}
+                                    {billingType === 'quintennial' && 'Billed once every 5 years. Activate 5 separate months as needed.'}
+                                    {billingType === 'lifetime' && 'One-time payment for lifetime access.'}
                                 </div>
                             </TooltipContent>
                         </Tooltip>
                     </motion.div>
                 </div>
 
-                {/* Paid Plans Grid */}
+                {/* Paid Plans */}
                 <div className="grid md:grid-cols-3 gap-8 mb-12">
                     {paidPlans.map((plan, index) => {
                         const Icon = iconMap[plan.icon];
@@ -5394,30 +5356,35 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                                 onClick={() => setSelectedPlan(plan.id)}
                             >
                                 <Card
-                                    className={`flex flex-col p-8 relative h-full cursor-pointer ${isSelected ? 'ring-2 ring-violet-500 bg-violet-500/20' : plan.popular ? 'ring-2 ring-violet-500/50' : ''
-                                        }`}
+                                    className={`flex flex-col p-8 relative h-full cursor-pointer ${isSelected ? "ring-2 ring-violet-500 bg-violet-500/20" : plan.popular ? "ring-2 ring-violet-500/50" : ""}`}
                                     gradient={plan.popular}
                                     hover={false}
                                 >
+                                    {/* Popular Badge */}
                                     {plan.popular && (
                                         <motion.div
                                             initial={{ scale: 0 }}
                                             animate={{ scale: 1 }}
                                             transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
-                                            className="absolute -top-4 left-1/2 transform -translate-x-1/2"
+                                            className="absolute -top-4 -left-4 transform "
                                         >
-                                            <Badge>{plan.highlight}</Badge>
+                                            <Badge>Most Popular</Badge>
                                         </motion.div>
                                     )}
 
-                                    <div
-                                        className="text-center mb-8"
-                                        onClick={() => setSelectedPlan(plan.id)}
-                                    >
+                                    {/* Discount Badges */}
+                                    <div className="absolute top-2 right-2 flex items-center gap-2">
+                                        {billingData[billingType].discount !== 0 && (
+                                            <Badge>-{billingData[billingType].discount}%</Badge>
+                                        )}
+                                        {billingData[billingType].discount !== 0 && refDiscount !== 0 && <span className="font-bold text-sm">+</span>}
+                                        {refDiscount !== 0 && <Badge>-{refDiscount}%</Badge>}
+                                    </div>
+
+                                    <div className="text-center mb-8">
                                         <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${plan.color} flex items-center justify-center mx-auto mb-4 text-white`}>
                                             <Icon className="w-8 h-8" />
                                         </div>
-
                                         <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
                                         <p className="text-gray-400 mb-4">{plan.description}</p>
 
@@ -5426,52 +5393,25 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                                             initial={{ scale: 0.9, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
                                             transition={{ duration: 0.3 }}
-                                            className="flex"
+                                            className="mb-4"
                                         >
-                                            <div>
-                                                <span className="text-6xl font-bold text-white">
-                                                    €{getCurrentPrice(plan).toFixed(2)}
-                                                </span>
-                                                <span className="text-gray-400">/mo</span>
-                                            </div>
-                                            <div className="grid grid-cols-1 gap-1">
-                                                {getDiscount() && (
-                                                    <motion.div
-                                                        initial={{ scale: 0 }}
-                                                        animate={{ scale: 1 }}
-                                                        className="inline-block ml-2"
-                                                    >
-                                                        <Badge>-{getDiscount()}</Badge>
-                                                    </motion.div>
-                                                )}
-                                                <motion.div
-                                                    initial={{ scale: 0 }}
-                                                    animate={{ scale: 1 }}
-                                                    className="inline-block ml-2"
-                                                >
-                                                    <Badge>-20%</Badge>
-                                                </motion.div>
-                                            </div>
+                                            <span className="text-4xl font-bold text-white">
+                                                {formatPrice(computePriceInCents(plan.id, billingType) / billingData[billingType].activableTimes)}
+                                                {billingType !== "lifetime" && billingType !== "monthly" && <span className="text-violet-300"> x{billingData[billingType].activableTimes}</span>}
+                                            </span>
+                                            {billingType !== "lifetime" && <span className="text-gray-400">/{billingType === "monthly" ? "mo" : billingData[billingType].durationM / 12 + "y"}</span>}
                                         </motion.div>
-
-                                        <p className="text-sm text-violet-400">{plan.limits}</p>
                                     </div>
 
+                                    {/* Features */}
                                     <ul className="space-y-4 mb-8">
                                         {groupedFeatures.map(({ base, variants }, fIndex) => {
                                             const includedVariant = plan.features.find(f => splitFeature(f).base === base);
                                             const included = Boolean(includedVariant);
 
-                                            let displayedText;
-                                            if (included) {
-                                                displayedText = includedVariant;
-                                            } else {
-                                                const representative = variants[0];
-                                                const { hasNumber } = splitFeature(representative);
-                                                displayedText = hasNumber
-                                                    ? representative.replace(/(\d[\d.,]*)/, "X")
-                                                    : representative;
-                                            }
+                                            let displayedText =
+                                                includedVariant ??
+                                                variants[0].replace(/(\d[\d.,]*)/, "X");
 
                                             return (
                                                 <li key={fIndex} className="flex items-start space-x-3">
@@ -5480,7 +5420,6 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                                                     ) : (
                                                         <X className="w-5 h-5 flex-shrink-0 mt-0.5 text-gray-600 opacity-30" />
                                                     )}
-
                                                     <span className={`text-sm ${included ? "text-gray-300" : "text-gray-600 line-through opacity-60"}`}>
                                                         {displayedText}
                                                     </span>
@@ -5489,12 +5428,11 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                                         })}
                                     </ul>
 
-                                    <div className="flex-1" />
-
+                                    {/* Selected Flag */}
                                     {isSelected && (
-                                        <div className="flex items-center justify-center space-x-2 text-violet-400">
+                                        <div className="flex items-center justify-center space-x-2 text-violet-400 mt-auto">
                                             <CheckCircle className="w-4 h-4" />
-                                            <span className="text-sm">Selected</span>
+                                            <span className="text-sm font-semibold">Selected</span>
                                         </div>
                                     )}
                                 </Card>
@@ -5513,6 +5451,8 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                     <Button
                         onClick={handleSubmit}
                         disabled={!selectedPlan || isPending}
+                        size="lg"
+                        variant="primary"
                     >
                         {isPending ? (
                             <>
@@ -5521,19 +5461,18 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                             </>
                         ) : (
                             <>
-                                <span>{selectedPlan === "free_trial" ? "Start Free Trial" : "Continue Setup"}</span>
+                                <span>{selectedPlan === freePlan.id ? "Start Free Test" : "Continue Setup"}</span>
                                 <ArrowRight className="w-5 h-5" />
                             </>
                         )}
                     </Button>
-
                     <p className="text-sm text-gray-500 mt-4">
-                        {selectedPlan === "free_trial"
+                        {selectedPlan === freePlan.id
                             ? "No credit card required • Perfect for testing our AI"
                             : "You can change or cancel your plan anytime"}
                     </p>
                 </motion.div>
             </div>
-        </div>
+        </section>
     );
 }

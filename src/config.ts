@@ -231,6 +231,7 @@ export const billingOptions = [
 export const billingData = {
   monthly: {
     label: 'Monthly',
+    sublabel: 'Recurring',
     duration: '1 month',
     discount: 0,
     durationM: 1,
@@ -240,6 +241,7 @@ export const billingData = {
   },
   biennial: {
     label: 'Biennial',
+    sublabel: '3 slots activable',
     duration: '2 years',
     discount: 10,
     durationM: 24,
@@ -249,6 +251,7 @@ export const billingData = {
   },
   triennial: {
     label: 'Triennial',
+    sublabel: '4 slots active',
     duration: '3 years',
     discount: 15,
     durationM: 36,
@@ -258,6 +261,7 @@ export const billingData = {
   },
   lifetime: {
     label: 'Lifetime',
+    sublabel: '1 slot/year',
     duration: 'Forever',
     discount: 100,
     durationM: 12,

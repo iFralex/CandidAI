@@ -2,29 +2,18 @@
 
 import { motion } from 'framer-motion';
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Sparkles, Target, Zap, Users, Mail, ArrowRight, Check, Star, Play, X, Menu, Clock, TrendingUp, Shield, Award, MessageSquare, BarChart3, Filter, Brain, Eye, Send, Calendar, MapPin, Briefcase, Crown, Infinity, CircleQuestionMark, TrendingDown, Bot, AlertTriangle, FileX, XCircle } from 'lucide-react';
+import { ChevronDown, Sparkles, Target, Zap, Users, Mail, ArrowRight, Check, Star, Play, X, Menu, Clock, TrendingUp, Shield, Award, MessageSquare, BarChart3, Filter, Brain, Eye, Send, Calendar, MapPin, Briefcase, Crown, Infinity, CircleQuestionMark, TrendingDown, Bot, AlertTriangle, FileX, XCircle, Gift, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 import { Review, reviews } from './reviews';
-import { billingOptions, plansInfo } from '@/config';
+import { billingData, billingOptions, plansInfo } from '@/config';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-
-const Badge = ({ children, variant = 'default', className = '' }) => {
-    const variants = {
-        default: "bg-white/10 text-gray-300",
-        primary: "bg-gradient-to-r from-violet-500 to-purple-500 text-white",
-        success: "bg-green-500/20 text-green-400",
-        warning: "bg-yellow-500/20 text-yellow-400"
-    };
-
-    return (
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${variants[variant]} ${className}`}>
-            {children}
-        </span>
-    );
-};
+import { get } from 'http';
+import { computePriceInCents, formatPrice, getReferralDiscount } from '@/lib/utils';
+import { Badge } from './ui/badge';
+import Link from 'next/link';
 
 // Animated Background Component
 const AnimatedBackground = () => {
@@ -150,294 +139,294 @@ const StatsSection = () => {
 
 
 const JobMarketCrisisSections = () => {
-  const crisisStats = [
-    {
-      icon: <TrendingDown className="w-12 h-12" />,
-      number: "-35%",
-      label: "Entry-level tech positions since 2020",
-      color: "text-red-400"
-    },
-    {
-      icon: <Bot className="w-12 h-12" />,
-      number: "54%",
-      label: "Banking roles at high risk of automation",
-      color: "text-orange-400"
-    },
-    {
-      icon: <Users className="w-12 h-12" />,
-      number: "50%",
-      label: "Entry-level roles could disappear",
-      color: "text-yellow-400"
-    },
-    {
-      icon: <AlertTriangle className="w-12 h-12" />,
-      number: "39%",
-      label: "Companies already cutting junior positions",
-      color: "text-red-400"
-    }
-  ];
+    const crisisStats = [
+        {
+            icon: <TrendingDown className="w-12 h-12" />,
+            number: "-35%",
+            label: "Entry-level tech positions since 2020",
+            color: "text-red-400"
+        },
+        {
+            icon: <Bot className="w-12 h-12" />,
+            number: "54%",
+            label: "Banking roles at high risk of automation",
+            color: "text-orange-400"
+        },
+        {
+            icon: <Users className="w-12 h-12" />,
+            number: "50%",
+            label: "Entry-level roles could disappear",
+            color: "text-yellow-400"
+        },
+        {
+            icon: <AlertTriangle className="w-12 h-12" />,
+            number: "39%",
+            label: "Companies already cutting junior positions",
+            color: "text-red-400"
+        }
+    ];
 
-  const failedStrategies = [
-    {
-      icon: <Send className="w-8 h-8" />,
-      title: "LinkedIn Applications",
-      problem: "Drowning in Competition",
-      stats: [
-        { label: "Response Rate", value: "10-20%", bad: true },
-        { label: "Applications per Position", value: "10,000+", bad: true },
-        { label: "Time Investment", value: "High", bad: true }
-      ],
-      description: "Your resume gets lost among thousands of applicants. Unless you're in the top 1%, you're practically invisible."
-    },
-    {
-      icon: <Target className="w-8 h-8" />,
-      title: "Company Career Pages",
-      problem: "Slightly Better, Still Failing",
-      stats: [
-        { label: "Competition Level", value: "High", bad: true },
-        { label: "Success Rate", value: "Very Low", bad: true },
-        { label: "Time per Application", value: "30-45 min", bad: false }
-      ],
-      description: "Better than LinkedIn, but you're still competing with hundreds of candidates who also went the extra mile."
-    },
-    {
-      icon: <FileX className="w-8 h-8" />,
-      title: "Generic Applications",
-      problem: "The Fastest Way to Rejection",
-      stats: [
-        { label: "Personalization", value: "None", bad: true },
-        { label: "Recruiter Engagement", value: "0%", bad: true },
-        { label: "Standing Out", value: "Impossible", bad: true }
-      ],
-      description: "Without personalization, your application is just another number in the system. Automated rejections await."
-    }
-  ];
+    const failedStrategies = [
+        {
+            icon: <Send className="w-8 h-8" />,
+            title: "LinkedIn Applications",
+            problem: "Drowning in Competition",
+            stats: [
+                { label: "Response Rate", value: "10-20%", bad: true },
+                { label: "Applications per Position", value: "10,000+", bad: true },
+                { label: "Time Investment", value: "High", bad: true }
+            ],
+            description: "Your resume gets lost among thousands of applicants. Unless you're in the top 1%, you're practically invisible."
+        },
+        {
+            icon: <Target className="w-8 h-8" />,
+            title: "Company Career Pages",
+            problem: "Slightly Better, Still Failing",
+            stats: [
+                { label: "Competition Level", value: "High", bad: true },
+                { label: "Success Rate", value: "Very Low", bad: true },
+                { label: "Time per Application", value: "30-45 min", bad: false }
+            ],
+            description: "Better than LinkedIn, but you're still competing with hundreds of candidates who also went the extra mile."
+        },
+        {
+            icon: <FileX className="w-8 h-8" />,
+            title: "Generic Applications",
+            problem: "The Fastest Way to Rejection",
+            stats: [
+                { label: "Personalization", value: "None", bad: true },
+                { label: "Recruiter Engagement", value: "0%", bad: true },
+                { label: "Standing Out", value: "Impossible", bad: true }
+            ],
+            description: "Without personalization, your application is just another number in the system. Automated rejections await."
+        }
+    ];
 
-  return (
-    <>
-      {/* Sezione 1: The Changing Job Market */}
-      <section className="relative py-24 px-6 lg:px-8 bg-gradient-to-b from-black to-red-950/20">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-red-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent">
-                The Job Market Has Changed Forever
-              </h2>
-              <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                Industries that were thriving just years ago are now nearly impossible to break into. AI isn't just changing the game—it's closing the door on entry-level opportunities.
-              </p>
-            </motion.div>
-          </div>
+    return (
+        <>
+            {/* Sezione 1: The Changing Job Market */}
+            <section className="relative py-24 px-6 lg:px-8 bg-gradient-to-b from-black to-red-950/20">
+                <div className="max-w-7xl mx-auto">
+                    <div className="text-center mb-16">
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.6 }}
+                        >
+                            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-red-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent">
+                                The Job Market Has Changed Forever
+                            </h2>
+                            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                                Industries that were thriving just years ago are now nearly impossible to break into. AI isn't just changing the game—it's closing the door on entry-level opportunities.
+                            </p>
+                        </motion.div>
+                    </div>
 
-          {/* Statistics Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-            {crisisStats.map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Card className="p-6 text-center h-full">
-                  <div className={`${stat.color} mb-4 flex justify-center`}>
-                    {stat.icon}
-                  </div>
-                  <div className="text-3xl md:text-4xl font-bold text-white mb-2">
-                    {stat.number}
-                  </div>
-                  <div className="text-gray-400 text-sm leading-tight">
-                    {stat.label}
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+                    {/* Statistics Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+                        {crisisStats.map((stat, index) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.5, delay: index * 0.1 }}
+                            >
+                                <Card className="p-6 text-center h-full">
+                                    <div className={`${stat.color} mb-4 flex justify-center`}>
+                                        {stat.icon}
+                                    </div>
+                                    <div className="text-3xl md:text-4xl font-bold text-white mb-2">
+                                        {stat.number}
+                                    </div>
+                                    <div className="text-gray-400 text-sm leading-tight">
+                                        {stat.label}
+                                    </div>
+                                </Card>
+                            </motion.div>
+                        ))}
+                    </div>
 
-          {/* Key Points */}
-          <div className="grid md:grid-cols-2 gap-8">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <Card className="p-8 h-full" gradient={true}>
-                <Bot className="w-12 h-12 text-violet-400 mb-4" />
-                <h3 className="text-2xl font-bold text-white mb-4">
-                  AI is Replacing Junior Roles
-                </h3>
-                <p className="text-gray-300 leading-relaxed mb-4">
-                  Tasks that were once the domain of entry-level employees—data analysis, report writing, basic coding—are now automated by AI. Major tech companies have slashed junior hiring by 25%, while financial institutions see 54% of banking roles at risk.
-                </p>
-                <p className="text-gray-400 text-sm italic">
-                  Tech giants like Microsoft, Meta, and Amazon have frozen or drastically reduced junior developer hiring.
-                </p>
-              </Card>
-            </motion.div>
+                    {/* Key Points */}
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <motion.div
+                            initial={{ opacity: 0, x: -30 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.6 }}
+                        >
+                            <Card className="p-8 h-full" gradient={true}>
+                                <Bot className="w-12 h-12 text-violet-400 mb-4" />
+                                <h3 className="text-2xl font-bold text-white mb-4">
+                                    AI is Replacing Junior Roles
+                                </h3>
+                                <p className="text-gray-300 leading-relaxed mb-4">
+                                    Tasks that were once the domain of entry-level employees—data analysis, report writing, basic coding—are now automated by AI. Major tech companies have slashed junior hiring by 25%, while financial institutions see 54% of banking roles at risk.
+                                </p>
+                                <p className="text-gray-400 text-sm italic">
+                                    Tech giants like Microsoft, Meta, and Amazon have frozen or drastically reduced junior developer hiring.
+                                </p>
+                            </Card>
+                        </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <Card className="p-8 h-full" gradient={true}>
-                <TrendingDown className="w-12 h-12 text-red-400 mb-4" />
-                <h3 className="text-2xl font-bold text-white mb-4">
-                  The Entry-Level Crisis
-                </h3>
-                <p className="text-gray-300 leading-relaxed mb-4">
-                  Software engineering job openings hit a five-year low, with a 35% drop since 2020. The traditional career ladder is breaking—entry-level positions that once served as stepping stones are vanishing entirely.
-                </p>
-                <p className="text-gray-400 text-sm italic">
-                  Without intervention, unemployment could spike to levels not seen since the sovereign debt crisis.
-                </p>
-              </Card>
-            </motion.div>
-          </div>
+                        <motion.div
+                            initial={{ opacity: 0, x: 30 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.6 }}
+                        >
+                            <Card className="p-8 h-full" gradient={true}>
+                                <TrendingDown className="w-12 h-12 text-red-400 mb-4" />
+                                <h3 className="text-2xl font-bold text-white mb-4">
+                                    The Entry-Level Crisis
+                                </h3>
+                                <p className="text-gray-300 leading-relaxed mb-4">
+                                    Software engineering job openings hit a five-year low, with a 35% drop since 2020. The traditional career ladder is breaking—entry-level positions that once served as stepping stones are vanishing entirely.
+                                </p>
+                                <p className="text-gray-400 text-sm italic">
+                                    Without intervention, unemployment could spike to levels not seen since the sovereign debt crisis.
+                                </p>
+                            </Card>
+                        </motion.div>
+                    </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-12 text-center"
-          >
-            <Card className="p-8 bg-gradient-to-r from-red-600/20 to-orange-600/20">
-              <AlertTriangle className="w-12 h-12 text-orange-400 mx-auto mb-4" />
-              <p className="text-xl text-gray-200 font-semibold mb-2">
-                Traditional job search strategies aren't just ineffective anymore—they're obsolete.
-              </p>
-              <p className="text-gray-400">
-                The methods that worked for previous generations no longer give you a fighting chance in today's AI-dominated market.
-              </p>
-            </Card>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Sezione 2: Why Traditional Methods Fail */}
-      <section className="relative py-24 px-6 lg:px-8 bg-black">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                Why Traditional Methods Don't Work Anymore
-              </h2>
-              <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-                You're doing everything "right"—sending applications, customizing your resume, following up. So why aren't you getting interviews?
-              </p>
-            </motion.div>
-          </div>
-
-          {/* Failed Strategies Grid */}
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
-            {failedStrategies.map((strategy, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-              >
-                <Card className="p-8 h-full flex flex-col">
-                  <div className="text-violet-400 mb-4">
-                    {strategy.icon}
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">
-                    {strategy.title}
-                  </h3>
-                  <p className="text-red-400 font-semibold mb-4 text-sm">
-                    {strategy.problem}
-                  </p>
-
-                  <div className="space-y-3 mb-6 flex-grow">
-                    {strategy.stats.map((stat, idx) => (
-                      <div key={idx} className="flex justify-between items-center">
-                        <span className="text-gray-400 text-sm">{stat.label}:</span>
-                        <span className={`font-semibold ${stat.bad ? 'text-red-400' : 'text-gray-300'}`}>
-                          {stat.value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-4 border-t border-white/10">
-                    <p className="text-gray-400 text-sm leading-relaxed">
-                      {strategy.description}
-                    </p>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* The Real Problem */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <Card className="p-8 md:p-12" gradient={true}>
-              <div className="max-w-4xl mx-auto">
-                <div className="flex items-start gap-6 mb-8">
-                  <div className="bg-red-500/20 p-4 rounded-xl flex-shrink-0">
-                    <XCircle className="w-10 h-10 text-red-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                      The Brutal Truth: Volume Doesn't Equal Results
-                    </h3>
-                    <p className="text-gray-300 text-lg leading-relaxed mb-6">
-                      Sending 100 applications through LinkedIn or company portals means you're competing with <span className="text-violet-400 font-semibold">tens of thousands</span> of other candidates for each position. Unless you're in the top 1% of applicants, you're essentially invisible.
-                    </p>
-                  </div>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.6, delay: 0.3 }}
+                        className="mt-12 text-center"
+                    >
+                        <Card className="p-8 bg-gradient-to-r from-red-600/20 to-orange-600/20">
+                            <AlertTriangle className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+                            <p className="text-xl text-gray-200 font-semibold mb-2">
+                                Traditional job search strategies aren't just ineffective anymore—they're obsolete.
+                            </p>
+                            <p className="text-gray-400">
+                                The methods that worked for previous generations no longer give you a fighting chance in today's AI-dominated market.
+                            </p>
+                        </Card>
+                    </motion.div>
                 </div>
+            </section>
 
-                <div className="grid md:grid-cols-2 gap-6 mb-8">
-                  <div className="bg-black/30 rounded-lg p-6">
-                    <Clock className="w-8 h-8 text-orange-400 mb-3" />
-                    <h4 className="text-white font-semibold mb-2">Time Investment</h4>
-                    <p className="text-gray-400 text-sm">
-                      Spending 20-30 minutes per application × 100 applications = <span className="text-red-400 font-semibold">50+ hours</span> for minimal results
-                    </p>
-                  </div>
-                  <div className="bg-black/30 rounded-lg p-6">
-                    <Users className="w-8 h-8 text-yellow-400 mb-3" />
-                    <h4 className="text-white font-semibold mb-2">Competition Level</h4>
-                    <p className="text-gray-400 text-sm">
-                      Every quality position receives <span className="text-red-400 font-semibold">1,000-10,000+</span> applications. You're a needle in a haystack.
-                    </p>
-                  </div>
-                </div>
+            {/* Sezione 2: Why Traditional Methods Fail */}
+            <section className="relative py-24 px-6 lg:px-8 bg-black">
+                <div className="max-w-7xl mx-auto">
+                    <div className="text-center mb-16">
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.6 }}
+                        >
+                            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                                Why Traditional Methods Don't Work Anymore
+                            </h2>
+                            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+                                You're doing everything "right"—sending applications, customizing your resume, following up. So why aren't you getting interviews?
+                            </p>
+                        </motion.div>
+                    </div>
 
-                <div className="bg-gradient-to-r from-violet-600/20 to-purple-600/20 rounded-lg p-6 border border-violet-500/30">
-                  <p className="text-white text-lg font-semibold mb-2">
-                    What Actually Works?
-                  </p>
-                  <p className="text-gray-300">
-                    Direct contact with recruiters bypasses the competition entirely. But crafting a single personalized outreach email takes 1-2 hours—making it impossible to scale. <span className="text-violet-400 font-semibold">Until now.</span>
-                  </p>
+                    {/* Failed Strategies Grid */}
+                    <div className="grid md:grid-cols-3 gap-8 mb-12">
+                        {failedStrategies.map((strategy, index) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, y: 30 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.6, delay: index * 0.1 }}
+                            >
+                                <Card className="p-8 h-full flex flex-col">
+                                    <div className="text-violet-400 mb-4">
+                                        {strategy.icon}
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">
+                                        {strategy.title}
+                                    </h3>
+                                    <p className="text-red-400 font-semibold mb-4 text-sm">
+                                        {strategy.problem}
+                                    </p>
+
+                                    <div className="space-y-3 mb-6 flex-grow">
+                                        {strategy.stats.map((stat, idx) => (
+                                            <div key={idx} className="flex justify-between items-center">
+                                                <span className="text-gray-400 text-sm">{stat.label}:</span>
+                                                <span className={`font-semibold ${stat.bad ? 'text-red-400' : 'text-gray-300'}`}>
+                                                    {stat.value}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="pt-4 border-t border-white/10">
+                                        <p className="text-gray-400 text-sm leading-relaxed">
+                                            {strategy.description}
+                                        </p>
+                                    </div>
+                                </Card>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* The Real Problem */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.6 }}
+                    >
+                        <Card className="p-8 md:p-12" gradient={true}>
+                            <div className="max-w-4xl mx-auto">
+                                <div className="flex items-start gap-6 mb-8">
+                                    <div className="bg-red-500/20 p-4 rounded-xl flex-shrink-0">
+                                        <XCircle className="w-10 h-10 text-red-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                                            The Brutal Truth: Volume Doesn't Equal Results
+                                        </h3>
+                                        <p className="text-gray-300 text-lg leading-relaxed mb-6">
+                                            Sending 100 applications through LinkedIn or company portals means you're competing with <span className="text-violet-400 font-semibold">tens of thousands</span> of other candidates for each position. Unless you're in the top 1% of applicants, you're essentially invisible.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid md:grid-cols-2 gap-6 mb-8">
+                                    <div className="bg-black/30 rounded-lg p-6">
+                                        <Clock className="w-8 h-8 text-orange-400 mb-3" />
+                                        <h4 className="text-white font-semibold mb-2">Time Investment</h4>
+                                        <p className="text-gray-400 text-sm">
+                                            Spending 20-30 minutes per application × 100 applications = <span className="text-red-400 font-semibold">50+ hours</span> for minimal results
+                                        </p>
+                                    </div>
+                                    <div className="bg-black/30 rounded-lg p-6">
+                                        <Users className="w-8 h-8 text-yellow-400 mb-3" />
+                                        <h4 className="text-white font-semibold mb-2">Competition Level</h4>
+                                        <p className="text-gray-400 text-sm">
+                                            Every quality position receives <span className="text-red-400 font-semibold">1,000-10,000+</span> applications. You're a needle in a haystack.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-gradient-to-r from-violet-600/20 to-purple-600/20 rounded-lg p-6 border border-violet-500/30">
+                                    <p className="text-white text-lg font-semibold mb-2">
+                                        What Actually Works?
+                                    </p>
+                                    <p className="text-gray-300">
+                                        Direct contact with recruiters bypasses the competition entirely. But crafting a single personalized outreach email takes 1-2 hours—making it impossible to scale. <span className="text-violet-400 font-semibold">Until now.</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </Card>
+                    </motion.div>
                 </div>
-              </div>
-            </Card>
-          </motion.div>
-        </div>
-      </section>
-    </>
-  );
+            </section>
+        </>
+    );
 };
 
 // Time & Cost Savings Section
@@ -782,8 +771,11 @@ const EmailExamplesSection = () => {
 
 // Pricing Section Component
 const PricingSection = () => {
-    const [billingType, setBillingType] = useState('quintennial');
+    const [billingType, setBillingType] = useState('triennial');
+    const [refDiscount, setRefDiscount] = useState(getReferralDiscount());
 
+    const iconMap = { Gift, Target, Rocket, Crown };
+    
     const splitFeature = (feature) => {
         const numMatch = feature.match(/(\d[\d.,]*)/);
         if (numMatch) {
@@ -813,22 +805,15 @@ const PricingSection = () => {
 
     const freePlan = plansInfo[0];
 
-    const getCurrentPrice = (plan) => {
-        if (billingType === 'monthly') return plan.price * 0.8;
-        if (billingType === 'biennial') return plan.price * 0.9 * 0.8;
-        if (billingType === 'quintennial') return plan.price * 0.85 * 0.8;
-        return plan.pricesLifetime * 0.8;
-    };
-
     const getDiscount = () => {
-        const option = billingOptions.find(opt => opt.value === billingType);
-        return option?.discount || null;
+        const option = billingData[billingType].discount
+        return option
     };
 
     const getBillingSubtext = () => {
-        const option = billingOptions.find(opt => opt.value === billingType);
+        const option = billingData[billingType];
         if (billingType === 'monthly') return 'Recurring monthly payment';
-        return `${option?.sublabel} with ${option?.discount} discount`;
+        return `${option?.sublabel} with ${option?.discount}% discount`;
     };
 
     const activeIndex = billingOptions.findIndex(opt => opt.value === billingType);
@@ -894,7 +879,7 @@ const PricingSection = () => {
                                     ))}
                                 </ul>
 
-                                <Button variant="primary" size="lg" className="whitespace-nowrap">
+                                <Button variant="primary" size="lg" className="whitespace-nowrap" onClick={() => { document.cookie = `defaultPlan=${freePlan.id}|${billingType}; path=/; max-age=${60 * 60 * 12}` }}>
                                     Start Free Test
                                 </Button>
                             </div>
@@ -912,8 +897,9 @@ const PricingSection = () => {
 
                         {/* Pulsanti */}
                         <div className="relative grid grid-cols-2 md:grid-cols-4 gap-4 px-4">
-                            {billingOptions.map((option, idx) => {
-                                const isActive = billingType === option.value;
+                            {Object.keys(billingData).map((k, idx) => {
+                                const option = billingData[k]
+                                const isActive = billingType === k;
 
                                 return (
                                     <div key={option.value} className="relative flex flex-col items-center h-full">
@@ -921,7 +907,7 @@ const PricingSection = () => {
                                         <motion.button
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
-                                            onClick={() => setBillingType(option.value)}
+                                            onClick={() => setBillingType(k)}
                                             className="relative w-full h-full"
                                         >
                                             <div className={`
@@ -940,12 +926,12 @@ const PricingSection = () => {
                                                             {option.months}
                                                         </div>
 
-                                                        {option.discount && (
+                                                        {option.discount != 0 && (
                                                             <div className={`text-xs font-bold mt-2 px-2 py-1 rounded-full inline-block ${isActive
                                                                 ? 'bg-white/20 text-white'
                                                                 : 'bg-green-500/20 text-green-400'
                                                                 }`}>
-                                                                Save {option.discount}
+                                                                Save {option.discount}%
                                                             </div>
                                                         )}
                                                     </div>
@@ -992,8 +978,10 @@ const PricingSection = () => {
 
                 {/* Piani a pagamento */}
                 <div className="grid md:grid-cols-3 gap-8 mb-12">
-                    {paidPlans.map((plan, index) => (
-                        <motion.div
+                    {paidPlans.map((plan, index) => {
+                        const Icon = iconMap[plan.icon];
+
+                        return <motion.div
                             key={index}
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -1009,14 +997,48 @@ const PricingSection = () => {
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
                                         transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
-                                        className="absolute -top-4 left-1/2 transform -translate-x-1/2"
+                                        className="absolute -top-4 -left-4 transform "
                                     >
-                                        <Badge variant="primary">Most Popular</Badge>
+                                        <Badge>Most Popular</Badge>
                                     </motion.div>
                                 )}
 
+                                <div className="absolute top-2 right-2 flex items-center gap-2">
+                                    {billingData[billingType].discount !== 0 && (
+                                        <motion.div
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                        >
+                                            <Badge>-{billingData[billingType].discount}%</Badge>
+                                        </motion.div>
+                                    )}
+
+                                    {/* + SOLO se entrambi esistono */}
+                                    {billingData[billingType].discount !== 0 && refDiscount !== 0 && (
+                                        <span className="font-bold text-sm">+</span>
+                                    )}
+
+                                    {refDiscount !== 0 && (
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <motion.div
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                >
+                                                    <Badge>-{refDiscount}%</Badge>
+                                                </motion.div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Referral Discount</TooltipContent>
+                                        </Tooltip>
+                                    )}
+                                </div>
+
                                 <div className="text-center mb-8">
-                                    <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${plan.color} flex items-center justify-center mx-auto mb-4 text-white`}>
+                                        <Icon className="w-8 h-8" />
+                                    </div>
+
+                                    <h3 className="text-4xl font-bold text-white mb-2">{plan.name}</h3>
                                     <p className="text-gray-400 mb-4">{plan.description}</p>
 
                                     <motion.div
@@ -1027,28 +1049,11 @@ const PricingSection = () => {
                                         className="mb-4"
                                     >
                                         <span className="text-4xl font-bold text-white">
-                                            {new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(getCurrentPrice(plan))}
+                                            {formatPrice(computePriceInCents(plan.id, billingType) / billingData[billingType].activableTimes)}
+                                            {billingType !== "lifetime" && billingType !== "monthly" && <span className="text-violet-300"> x{billingData[billingType].activableTimes}</span>}
                                         </span>
-                                        <span className="text-gray-400">/mo</span>
-                                        {getDiscount() && (
-                                            <motion.div
-                                                initial={{ scale: 0 }}
-                                                animate={{ scale: 1 }}
-                                                className="inline-block ml-2"
-                                            >
-                                                <Badge variant="success">-{getDiscount()}</Badge>
-                                            </motion.div>
-                                        )}
-                                        <motion.div
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            className="inline-block ml-2"
-                                        >
-                                            <Badge variant="success">-20%</Badge>
-                                        </motion.div>
+                                        {billingType !== "lifetime" && <span className="text-gray-400">/{billingType === "monthly" ? "mo" : billingData[billingType].durationM / 12 + "y"}</span>}
                                     </motion.div>
-
-                                    <p className="text-sm text-violet-400">{plan.limits}</p>
                                 </div>
 
                                 <ul className="space-y-4 mb-8">
@@ -1087,19 +1092,23 @@ const PricingSection = () => {
                                 </ul>
 
                                 <div className="flex-1" />
-                                <Button
-                                    variant={plan.popular ? "primary" : "secondary"}
-                                    className="w-full"
-                                    size="md"
-                                >
-                                    Start with Free Test
-                                </Button>
+                                <Link href="/register">
+                                    <Button
+                                        variant={plan.popular ? "primary" : "secondary"}
+                                        className="w-full"
+                                        size="md"
+                                        onClick={() => { document.cookie = `defaultPlan=${plan.id}|${billingType}; path=/; max-age=${60 * 60 * 12}` }}
+                                        icon={<Icon className="w-6 h-6" />}
+                                    >
+                                        Let's Start
+                                    </Button>
+                                </Link>
                             </Card>
                         </motion.div>
-                    ))}
+                    })}
                 </div>
             </div>
-        </section>
+        </section >
     );
 }
 
