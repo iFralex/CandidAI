@@ -1,3 +1,4 @@
+"use client"
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { getReferralDiscountServer } from "./utils-server";
@@ -30,7 +31,7 @@ export const getPlanById = (id) => plansInfo.find((p) => p.id === id) || plansIn
 
 export const computePriceInCents = (planId, billingType, applyDiscounts = true) => {
   const plan = getPlanById(planId);
-  const refDiscount = 20//getReferralDiscount();
+  const refDiscount = getReferralDiscount();
   if (!plan) return 0;
 
   // ---------------------------

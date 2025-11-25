@@ -4754,7 +4754,7 @@ import SkillsListBase, { EducationList, ExperienceList } from '@/components/deta
 import Script from 'next/script'
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { billingData, plansInfo } from "@/config";
-import { computePriceInCents, formatPrice, getPlanById } from "@/lib/utils";
+import { computePriceInCents, formatPrice, getPlanById, getReferralDiscount } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
 /**
@@ -5162,7 +5162,7 @@ interface PlanSelectionClientProps {
 export function PlanSelectionClient({ userId = 'user123' }) {
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [billingType, setBillingType] = useState('triennial');
-    const [refDiscount, setRefDiscount] = useState(0)//getReferralDiscount());
+    const [refDiscount, setRefDiscount] = useState(getReferralDiscount());
     const [isPending, startTransition] = useTransition();
 
     const iconMap = { Gift, Target, Rocket, Crown };
