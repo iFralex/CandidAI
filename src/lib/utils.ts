@@ -30,7 +30,7 @@ export const getPlanById = (id) => plansInfo.find((p) => p.id === id) || plansIn
 
 export const computePriceInCents = (planId, billingType, applyDiscounts = true) => {
   const plan = getPlanById(planId);
-  const refDiscount = getReferralDiscount();
+  const refDiscount = 20//getReferralDiscount();
   if (!plan) return 0;
 
   // ---------------------------
