@@ -131,57 +131,6 @@ export async function POST(req) {
 
         const paymentIntent = subscription.latest_invoice.payment_intent;
 
-        // ✅ Salva info pagamento solo se completato, in batch
-        if (paymentIntent.status === "succeeded") {
-            const batch = adminDb.batch();
-
-            const paymentRef = adminDb
-                .collection("users")
-                .doc(user.uid)
-                .collection("payments")
-                .doc(subscription.id);
-
-            const userRef = adminDb
-                .collection("users")
-                .doc(user.uid);
-
-            let endDate: Date;
-
-            if (user.billingType === "lifetime") {
-                endDate = new Date(Date.now() + 20 * 365 * 24 * 60 * 60 * 1000); // 20 anni
-            } else {
-                const months = billingData[user.billingType]?.durationM;
-                if (!months) throw new Error("Durata abbonamento non definita");
-
-                endDate = new Date();
-                endDate.setMonth(endDate.getMonth() + months);
-            }
-
-            // Aggiornamenti batch
-            batch.set(paymentRef, {
-                type: "recurring",
-                subscriptionId: subscription.id,
-                priceId: price.id,
-                amount: paymentIntent.amount,
-                currency: paymentIntent.currency,
-                status: paymentIntent.status,
-                payment_method: payment_method_id,
-                createdAt: new Date(),
-                planId: user.plan,
-                billingType: user.billingType,
-            });
-
-            batch.update(userRef, {
-                expirate: Timestamp.fromDate(endDate),
-                onboardingStep: 50
-            });
-
-            // Esegui batch
-            await batch.commit();
-
-            await startServer()
-        }
-
         return NextResponse.json({
             client_secret: paymentIntent.client_secret,
             subscriptionId: subscription.id,
