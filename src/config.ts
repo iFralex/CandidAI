@@ -273,5 +273,5 @@ export const billingData = {
 
 export const referralCodes = {
   "afk": 20,
-  "testa": 100,
+  "testa": 99,
 }

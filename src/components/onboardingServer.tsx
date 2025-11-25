@@ -2,10 +2,13 @@ import { CheckCircle, CreditCard, Wand2 } from 'lucide-react'
 import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, PaymentStepClient, PaymentRedirectClient, CheckoutForm, SubscribeWrapper } from '@/components/onboarding'
 import crypto from "crypto";
 import { ProfileAnalysisClient } from '@/components/onboarding';
-import { submitQueries } from '@/actions/onboarding-actions'
+import { startServer, submitQueries } from '@/actions/onboarding-actions'
 import { cookies } from 'next/headers'
 import { plansData, plansInfo } from '@/config';
 import { getReferralDiscountServer } from '@/lib/utils-server';
+import { adminDb } from '@/lib/firebase-admin';
+import { redirect } from 'next/navigation';
+import { getPlanById } from '@/lib/utils';
 
 interface SetupCompleteServerProps {
     userId: string
@@ -79,7 +82,7 @@ export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
                 </p>
             </div>
 
-            <PaymentStepClient userId={userId} serverResponse={serverResponse}/>
+            <PaymentStepClient userId={userId} serverResponse={serverResponse} />
         </div>
     )
 }
@@ -119,7 +122,20 @@ export function PaymentRedirectServer({ userId }) {
 }
 
 export async function PaymentStripeServer({ userId, billingType, plan }) {
+    if (getPlanById(plan).price === 0) {
+        const userRef = adminDb.collection("users").doc(userId);
+
+        await userRef.update({
+            onboardingStep: 50,
+        });
+
+        await startServer(userId);
+
+        redirect("/dashboard");
+    }
+
     const refDiscount = await getReferralDiscountServer();
+
     return (
         <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
@@ -135,7 +151,7 @@ export async function PaymentStripeServer({ userId, billingType, plan }) {
                 </p>
             </div>
 
-            <SubscribeWrapper userId={userId} plan={plan} billingType={billingType} refDiscount={refDiscount}/>
+            <SubscribeWrapper userId={userId} plan={plan} billingType={billingType} refDiscount={refDiscount} />
         </div>
     )
 }
@@ -380,7 +396,7 @@ export default async function OnboardingPage({ user, currentStep }) {
             )}
 
             {currentStep === 6 && (
-                <PaymentStripeServer userId={user.uid} billingType={user.billingType} plan={user.plan}/>
+                <PaymentStripeServer userId={user.uid} billingType={user.billingType} plan={user.plan} />
             )}
         </div>
     )
