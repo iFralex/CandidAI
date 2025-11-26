@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     });
 
     const token = tokens?.token
-    console.log(token)
+
     if (!token) {
         throw new Error('Unauthenticated');
     }

@@ -14,7 +14,6 @@ export async function POST(req: Request) {
     }
 
     let uid: string;
-    let idToken: string;
 
     if (mode === "register") {
       // -----------------------------------------
@@ -36,9 +35,6 @@ export async function POST(req: Request) {
         lastLogin: now,
       });
 
-      // Token da passare a /api/login
-      idToken = await adminAuth.createCustomToken(uid);
-
       fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,41 +44,39 @@ export async function POST(req: Request) {
         })
       });
 
-    } else {
-      // -----------------------------------------
-      // 2️⃣ LOGIN
-      // -----------------------------------------
-      // Verifica email/password lato server
-      // → Firebase Admin NON può verificare password,
-      // quindi usiamo un endpoint esterno: identity toolkit
-
-      const loginRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email,
-            password,
-            returnSecureToken: true,
-          }),
-        }
-      );
-
-      const loginData = await loginRes.json();
-      if (!loginRes.ok) {
-        return NextResponse.json({ error: loginData.error.message }, { status: 401 });
-      }
-
-      uid = loginData.localId;
-      idToken = loginData.idToken;
-
-      // Update lastLogin
-      await adminDb.collection("users").doc(uid).update({
-        lastLogin: now,
-      });
     }
 
-    console.log(mode, uid)
+    // -----------------------------------------
+    // 2️⃣ LOGIN
+    // -----------------------------------------
+    // Verifica email/password lato server
+    // → Firebase Admin NON può verificare password,
+    // quindi usiamo un endpoint esterno: identity toolkit
+
+    const loginRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          returnSecureToken: true,
+        }),
+      }
+    );
+
+    const loginData = await loginRes.json();
+    if (!loginRes.ok) {
+      return NextResponse.json({ error: loginData.error.message }, { status: 401 });
+    }
+
+    uid = loginData.localId;
+    let idToken = loginData.idToken;
+
+    // Update lastLogin
+    await adminDb.collection("users").doc(uid).update({
+      lastLogin: now,
+    });
 
     // -----------------------------------------
     // 4️⃣ RISPOSTA API

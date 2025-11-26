@@ -29,7 +29,7 @@ export async function GET(request) {
     }
 
     const userData = userDoc.data();
-console.log(decodedToken)
+
     return NextResponse.json({
       success: true,
       user: {
