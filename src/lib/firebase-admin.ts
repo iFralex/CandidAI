@@ -23,3 +23,4 @@ if (!getApps().length) {
 export const admin = getAuth();
 export const adminDb = getFirestore();
 export const adminStorage = getStorage();
+export const adminAuth = getAuth();

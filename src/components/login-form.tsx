@@ -38,22 +38,13 @@ export function LoginForm({
     const password = formData.get('password') as string;
 
     try {
-      const credential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const idToken = await credential.user.getIdToken();
-
-      const userDocRef = doc(db, 'users', await credential.user.uid);
-      await updateDoc(userDocRef, {
-        lastLogin: new Date().toISOString(),
-      });
-
-      await fetch("/api/login", {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
+      await fetch("/api/auth", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "login",
+          email,
+          password,
+        }),
       });
 
       router.push("/dashboard");
@@ -257,25 +248,14 @@ export function RegisterForm({
     }
 
     try {
-      const credential = await createUserWithEmailAndPassword(getAuth(app), email, password);
-      const user = credential.user
-      await updateProfile(user, {
-        displayName: name
-      });
-
-      // Salva informazioni aggiuntive in Firestore
-      await setDoc(doc(db, 'users', user.uid), {
-        name: name,
-        email: email,
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString()
-      });
-      const idToken = await user.getIdToken();
-
-      await fetch("/api/login", {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
+      await fetch("/api/auth", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "register",
+          name,
+          email,
+          password,
+        }),
       });
 
       router.push("/dashboard");

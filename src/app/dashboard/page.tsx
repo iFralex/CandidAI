@@ -97,7 +97,7 @@ async function ResultsWrapper({ userId }) {
 
     const companiesToConfirm = data.data.companies_to_confirm
     const parsedResults = parseResults(data.data || {}).filter(i => !(companiesToConfirm || []).includes(i.id));
-console.log(data.data)
+    console.log(data.data)
     const processingCampaigns = Object.values(data.data)
         .filter(obj => !("email_sent" in obj))
         .length;
@@ -108,25 +108,25 @@ console.log(data.data)
         .filter(obj => obj.email_sent !== false)
         .length;
     const articlesFound = Object.values(data.data)
-  .reduce((sum, obj) => sum + (obj.blog_articles || 0), 0);
+        .reduce((sum, obj) => sum + (obj.blog_articles || 0), 0);
 
     return <>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-           <Dialog open>
-  <DialogContent className="p-8 flex flex-col items-center text-center space-y-4">
-    <h2 className="text-2xl font-semibold">Thank you for your purchase! 🎉</h2>
+            <Dialog open>
+                <DialogContent className="p-8 flex flex-col items-center text-center space-y-4">
+                    <h2 className="text-2xl font-semibold">Thank you for your purchase! 🎉</h2>
 
-    <p className="text-muted-foreground text-base">
-      We’ve successfully received your order.<br />
-      Your emails will be ready within a few hours.
-    </p>
+                    <p className="text-muted-foreground text-base">
+                        We’ve successfully received your order.<br />
+                        Your emails will be ready within a few hours.
+                    </p>
 
-    <p className="text-sm text-muted-foreground">
-      We’ll notify you as soon as everything is available.
-    </p>
-  </DialogContent>
-</Dialog>
+                    <p className="text-sm text-muted-foreground">
+                        We’ll notify you as soon as everything is available.
+                    </p>
+                </DialogContent>
+            </Dialog>
 
             <Card className="p-6" gradient>
                 <div className="flex items-center justify-between">
@@ -251,7 +251,7 @@ const Page = async () => {
 
     if (!data.success)
         return redirect('/login')
-        //throw new Error(data.error)
+    //throw new Error(data.error)
 
     const user = data.user
     if (!user)
