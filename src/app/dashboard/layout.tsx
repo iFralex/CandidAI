@@ -192,7 +192,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
 
                     <main className="p-6 relative z-10">
                         {children}
-                        {currentStep >= 1 && !user.emailVerified && (
+                        {!user.emailVerified && (
                             <Dialog open>
                                 <DialogContent showCloseButton={false}>
                                     <div className="flex flex-col items-center gap-4 text-center">

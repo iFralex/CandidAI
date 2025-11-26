@@ -6,9 +6,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req) {
     try {
-        const { userId, type, newData = [] } = await req.json();
+        const { userId, type, data = [] } = await req.json();
 
-        if (!userId || !type) {
+        if (!type) {
             return NextResponse.json(
                 { error: "Missing userId or type" },
                 { status: 400 }
@@ -16,18 +16,21 @@ export async function POST(req) {
         }
 
         // --- Get user from Firebase Auth ---
-        const userRecord = await adminAuth.getUser(userId);
-        const email = userRecord.email;
+        let userRecord, email;
+        if (userId) {
+            userRecord = await adminAuth.getUser(userId);
+            email = userRecord.email;
 
-        if (!email) {
-            return NextResponse.json(
-                { error: "User has no email" },
-                { status: 404 }
-            );
+            if (!email) {
+                return NextResponse.json(
+                    { error: "User has no email" },
+                    { status: 404 }
+                );
+            }
         }
 
         const getEmailTemplate = (type, data = {}) => {
-            const { userRecord = {}, newData = [] } = data;
+            const { userRecord = {} } = data;
             const userId = userRecord.uid
             const domain = process.env.NEXT_PUBLIC_DOMAIN || 'https://candidai.com';
 
@@ -161,6 +164,9 @@ export async function POST(req) {
                     return { subject, html };
 
                 case "password-reset":
+                    if (!data.resetLink)
+                        throw new Error("no reset link")
+                    email = data.email
                     const resetSubject = "🔒 Reset Your CandidAI Password";
                     const resetHtml = wrapEmail(`
         <div style="text-align: center; margin-bottom: 30px;">
@@ -184,7 +190,7 @@ export async function POST(req) {
         </div>
 
         <div style="text-align: center; margin: 32px 0;">
-          ${button('Reset My Password', `${domain}/change-password/${userId}`)}
+          ${button('Reset My Password', `${data.resetLink}`)}
         </div>
 
         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
@@ -315,7 +321,7 @@ export async function POST(req) {
 
         const { subject, html } = getEmailTemplate(type, {
             userRecord,
-            newData/*: [
+            ...data/*: [
             {
               company: { name: 'TechCorp', domain: 'techcorp.com' },
               recruiter: { name: 'Sarah Johnson', jobTitle: 'Senior Technical Recruiter' },
@@ -326,6 +332,9 @@ export async function POST(req) {
             }
           ]*/
         });
+
+        if (!email)
+            throw new Error("Email error")
 
         // --- Send email via Resend ---
         const result = await resend.emails.send({

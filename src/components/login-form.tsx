@@ -181,12 +181,12 @@ export function LoginForm({
         <div className="grid gap-3">
           <div className="flex items-center">
             <Label htmlFor="password">Password</Label>
-            <a
-              href="#"
+            <Link
+              href="/forgot-password"
               className="ml-auto text-sm underline-offset-4 hover:underline"
             >
               Forgot your password?
-            </a>
+            </Link>
           </div>
           <Input
             id="password"
@@ -458,6 +458,101 @@ export function RegisterForm({
         >
           Sign in
         </Link>
+      </div>
+    </form>
+  );
+}
+
+export function ForgotPasswordForm({
+  className,
+  defaultEmail,
+  ...props
+}: React.ComponentProps<"form"> & {
+  defaultEmail?: string;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+
+    try {
+      const res = await fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({
+          email
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Something went wrong");
+      }
+
+      setSuccess("Password reset email sent! Check your inbox.");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form
+      className={cn("flex flex-col gap-6", className)}
+      onSubmit={handleSubmit}
+      {...props}
+    >
+      <div className="flex flex-col items-center gap-2 text-center">
+        <h1 className="text-2xl font-bold">Reset your password</h1>
+        <p className="text-muted-foreground text-sm text-balance">
+          Enter your email and we'll send you a reset link.
+        </p>
+      </div>
+
+      {error && (
+        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md">
+          {success}
+        </div>
+      )}
+
+      <div className="grid gap-6">
+        <div className="grid gap-3">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="m@example.com"
+            defaultValue={defaultEmail}
+            required
+          />
+        </div>
+
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Sending..." : "Send reset link"}
+        </Button>
+      </div>
+
+      <div className="text-center text-sm">
+        Remember your password?{" "}
+        <a href="/login" className="underline underline-offset-4">
+          Log in
+        </a>
       </div>
     </form>
   );
