@@ -1,7 +1,7 @@
 // components/DashboardLayout.tsx (rimane un Server Component per la struttura)
 // Non usare 'use client'
 
-import { Activity, BarChart3, FileText, Home, LogOut, Settings, Sparkles, Menu, Zap, Bell } from 'lucide-react'; // Importa le icone
+import { Activity, BarChart3, FileText, Home, LogOut, Settings, Sparkles, Menu, Zap, Bell, MailCheck } from 'lucide-react'; // Importa le icone
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -9,6 +9,10 @@ import { cookies } from 'next/headers';
 import Image from 'next/image';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { resendEmailVerification } from '@/actions/onboarding-actions';
+import { ResendEmailVerificationBtn } from '@/components/onboarding';
 
 // Tipo di dati utente (puoi prenderlo dal tuo sistema di auth)
 interface User {
@@ -129,7 +133,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
 
     if (!data.success)
         return redirect('/login')
-        //throw new Error(data.error)
+    //throw new Error(data.error)
 
     const user = data.user
     if (!user)
@@ -188,6 +192,34 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
 
                     <main className="p-6 relative z-10">
                         {children}
+                        {currentStep >= 1 && !user.emailVerified && (
+                            <Dialog open>
+                                <DialogContent showCloseButton={false}>
+                                    <div className="flex flex-col items-center gap-4 text-center">
+                                        {/* Icon */}
+                                        <MailCheck className="w-12 h-12 text-violet-500" />
+
+                                        {/* Title */}
+                                        <h2 className="text-xl font-semibold">
+                                            Verify Your Email
+                                        </h2>
+
+                                        {/* Description */}
+                                        <p className="">
+                                            We've sent a verification email at {user.email} to your inbox. Please check your email to continue.
+                                        </p>
+
+                                        {/* Resend button */}
+                                        <ResendEmailVerificationBtn />
+
+                                        {/* Note */}
+                                        <p className="text-sm text-gray-500">
+                                            Didn't receive the email? You can resend it using the button above.
+                                        </p>
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        )}
                     </main>
                 </div>
             </SidebarProvider>

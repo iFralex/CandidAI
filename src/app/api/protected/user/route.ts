@@ -5,6 +5,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { clientConfig, serverConfig } from '@/config';
 import { getApiRequestTokens, getTokens } from 'next-firebase-auth-edge';
 import { cookies } from 'next/headers';
+import { refreshCookiesWithIdToken } from 'next-firebase-auth-edge/next/cookies';
 
 export async function GET(request) {
   try {
@@ -16,7 +17,7 @@ export async function GET(request) {
     });
 
     const decodedToken = tokens?.decodedToken
-
+    
     // Ottieni i dati utente da Firestore
     const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
 
@@ -28,7 +29,7 @@ export async function GET(request) {
     }
 
     const userData = userDoc.data();
-
+console.log(decodedToken)
     return NextResponse.json({
       success: true,
       user: {

@@ -664,8 +664,23 @@ const checkAuth = async () => {
         serviceAccount: serverConfig.serviceAccount,
     });
 
+    if (!tokens?.decodedToken.email_verified)
+        throw new Error("Email not verified")
+
     const userId = tokens?.decodedToken?.uid;
     if (!userId) throw new Error("Utente non autenticato");
 
     return userId;
+}
+
+export const resendEmailVerification = async () => {
+    const userId = await checkAuth()
+    fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            userId,
+            type: "welcome"
+        })
+    });
 }

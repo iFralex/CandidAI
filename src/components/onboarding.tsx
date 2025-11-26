@@ -4,7 +4,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements, CardNumberElement, CardExpiryElement, CardCvcElement, PaymentRequestButtonElement } from "@stripe/react-stripe-js";
 import { useRef, useState, useTransition } from 'react'
 import { motion, AnimatePresence } from "framer-motion"
-import { selectPlan } from '@/actions/onboarding-actions'
+import { resendEmailVerification, selectPlan } from '@/actions/onboarding-actions'
 import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark, Lock } from 'lucide-react'
 import { submitCompanies } from '@/actions/onboarding-actions'
 import { Building, Plus, X, Wand2 } from 'lucide-react'
@@ -5495,3 +5495,43 @@ export function PlanSelectionClient({ userId = 'user123' }) {
         </section>
     );
 }
+
+export const ResendEmailVerificationBtn = () => {
+    const [isDisabled, setIsDisabled] = useState(false);
+    const router = useRouter()
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            handleRefresh();
+        }, 10000);
+
+        return () => clearInterval(intervalId); // cleanup quando il componente si smonta
+    }, []);
+
+    const handleClick = async () => {
+        setIsDisabled(true);
+
+        // Chiama la server action
+        try {
+            await resendEmailVerification();
+        } catch (err) {
+            console.error("Error resending email:", err);
+        }
+    };
+
+    const handleRefresh = async () => {
+        const res = await fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/refresh-user", {
+            method: "POST"
+        })
+        router.refresh()
+    }
+
+    return (
+        <div className="flex flex-col min-w-64">
+            <Button size="sm" onClick={handleRefresh}>Verified</Button>
+            <Button variant={"secondary"} size="sm" onClick={handleClick} disabled={isDisabled} className="my-2">
+                {isDisabled ? `Sent` : "Resend email for the verification"}
+            </Button>
+        </div>
+    );
+};

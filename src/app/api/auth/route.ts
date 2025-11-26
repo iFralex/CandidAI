@@ -39,6 +39,15 @@ export async function POST(req: Request) {
       // Token da passare a /api/login
       idToken = await adminAuth.createCustomToken(uid);
 
+      fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: uid,
+          type: "welcome"
+        })
+      });
+
     } else {
       // -----------------------------------------
       // 2️⃣ LOGIN
@@ -73,21 +82,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // -----------------------------------------
-    // 3️⃣ CHIAMATA INTERNA A /api/login (come volevi tu)
-    // -----------------------------------------
-    const internalLogin = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/login`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      }
-    );
-
-    if (!internalLogin.ok) {
-      throw new Error("Errore durante login interno");
-    }
+    console.log(mode, uid)
 
     // -----------------------------------------
     // 4️⃣ RISPOSTA API
@@ -95,7 +90,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: true,
-        mode,
+        idToken,
         uid,
       },
       { status: 200 }

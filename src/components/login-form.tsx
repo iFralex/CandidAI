@@ -12,6 +12,21 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
+const internLogin = async idToken => {
+  const internalLogin = await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/login`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    }
+  );
+
+  if (!internalLogin.ok) {
+    throw new Error("Errore durante login interno");
+  }
+}
+
 export function LoginForm({
   className,
   defaultEmail,
@@ -38,7 +53,7 @@ export function LoginForm({
     const password = formData.get('password') as string;
 
     try {
-      await fetch("/api/auth", {
+      const res = await fetch("/api/auth", {
         method: "POST",
         body: JSON.stringify({
           mode: "login",
@@ -46,6 +61,10 @@ export function LoginForm({
           password,
         }),
       });
+
+      const { idToken } = await res.json()
+
+      await internLogin(idToken)
 
       router.push("/dashboard");
     } catch (err: any) {
@@ -248,7 +267,7 @@ export function RegisterForm({
     }
 
     try {
-      await fetch("/api/auth", {
+      const res = await fetch("/api/auth", {
         method: "POST",
         body: JSON.stringify({
           mode: "register",
@@ -257,6 +276,10 @@ export function RegisterForm({
           password,
         }),
       });
+
+      const { idToken } = await res.json()
+
+      await internLogin(idToken)
 
       router.push("/dashboard");
     } catch (err: any) {
