@@ -33,6 +33,7 @@
     "peopledatalabs": "^14.0.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-markdown": "^10.1.0",
     "react-xpay-build": "^1.2.3",
     "resend": "^6.5.2",
     "stripe": "^20.0.0",
@@ -41,6 +42,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

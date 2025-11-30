@@ -2,14 +2,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authMiddleware, redirectToHome, redirectToLogin } from "next-firebase-auth-edge";
 import { clientConfig, serverConfig } from "./config";
+import { Path } from "next-firebase-auth-edge/next/middleware";
 
-const PUBLIC_PATHS = ['/register', '/login', "/"];
+const PUBLIC_PATHS: Path = ['/register', '/login', "/", /^\/docs(\/.*)?$/];
 
 export async function middleware(request: NextRequest) {
   // Add cookie for referral tracking
   const url = request.nextUrl.clone();
   const referralCode = url.searchParams.get('ref');
-  
+
   if (referralCode) {
     const response = NextResponse.next();
     response.cookies.set('referral', referralCode, {
@@ -27,11 +28,12 @@ export async function middleware(request: NextRequest) {
     cookieSerializeOptions: serverConfig.cookieSerializeOptions,
     serviceAccount: serverConfig.serviceAccount,
     handleValidToken: async ({ token, decodedToken }, headers) => {
-      if (PUBLIC_PATHS.includes(request.nextUrl.pathname)) {
+      if (PUBLIC_PATHS.includes(request.nextUrl.pathname.split("/")[1])) {
+        console.log(PUBLIC_PATHS.includes(request.nextUrl.pathname.split("/")[1]))
+        console.log(request.nextUrl.pathname.split("/")[1])
         // NON redirezionare se è la callback del login
         return NextResponse.next();
       }
-
 
       return NextResponse.next({
         request: {
