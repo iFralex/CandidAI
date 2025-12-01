@@ -1,13 +1,12 @@
 "use client"
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 
 const Page = () => {
-    const [lang, setLang] = useState("en")
-
-    const content = {
-        it: `# CandidAI - Documentazione Completa della Piattaforma
+   const content = {
+      it: `# CandidAI - Documentazione Completa della Piattaforma
 
 ## Panoramica
 **CandidAI** è una piattaforma innovativa progettata per aiutare i professionisti a ottenere colloqui di lavoro nelle aziende target attraverso l'intelligenza artificiale. Il sistema genera email personalizzate indirizzate ai recruiter più rilevanti, selezionati strategicamente in base al profilo dell'utente.
@@ -526,7 +525,7 @@ Registrazione → Scelta Piano → Selezione Aziende → Caricamento Profilo
 
 CandidAI rappresenta una soluzione completa per chi cerca lavoro, trasformando un processo tradizionalmente laborioso e generico in un'esperienza automatizzata, personalizzata e strategica. Grazie all'intelligenza artificiale e alla flessibilità di personalizzazione, gli utenti possono massimizzare le proprie possibilità di ottenere colloqui nelle aziende desiderate, presentandosi nel modo più efficace e professionale possibile.
         `,
-        en: `# CandidAI - Complete Platform Documentation
+      en: `# CandidAI - Complete Platform Documentation
 
 ## Overview
 **CandidAI** is an innovative platform designed to help professionals get job interviews at target companies through artificial intelligence. The system generates personalized emails addressed to the most relevant recruiters, strategically selected based on the user's profile.
@@ -1044,26 +1043,30 @@ Registration → Plan Choice → Company Selection → Profile Upload
 ## Conclusion
 
 CandidAI represents a complete solution for job seekers, transforming a traditionally laborious and generic process into an automated, personalized, and strategic experience. Thanks to artificial intelligence and customization flexibility, users can maximize their chances of getting interviews at desired companies, presenting themselves in the most effective and professional way possible.`
-    }
+   }
 
-    return <div className="max-w-3xl mx-auto p-4">
-        {/* Selettore lingua compatto */}
-        <div className="flex justify-end mb-2">
-            <select
-                value={lang}
-                onChange={(e) => setLang(e.target.value)}
-                className="bg-gray-800 text-white text-sm border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-                <option value="en">EN</option>
-                <option value="it">IT</option>
-            </select>
-        </div>
+   return <MDContent content={content} />
+}
 
-        {/* Contenuto Markdown */}
-        <div className="prose prose-invert mx-auto">
-            <ReactMarkdown>{content[lang]}</ReactMarkdown>
-        </div>
-    </div>
+export const MDContent = ({ content }) => {
+   const [lang, setLang] = useState(Object.keys(content)[0])
+
+   return <div className="max-w-3xl mx-auto p-4">
+      <div className="flex justify-end mb-2">
+         {Object.keys(content).length > 1 && <select
+            value={lang}
+            onChange={(e) => setLang(e.target.value)}
+            className="bg-gray-800 text-white text-sm border border-gray-700 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+         >
+            {Object.keys(content).map(key => <option key={key} value={key}>key</option>)}
+         </select>}
+      </div>
+
+      <div className="prose prose-invert mx-auto">
+         <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {content[lang]}</ReactMarkdown>
+      </div>
+   </div>
 }
 
 export default Page
