@@ -656,7 +656,7 @@ const deleteCreditsPaid = async (userId: string, companyId: string, contentKey: 
     });
 };
 
-const checkAuth = async () => {
+const checkAuth = async (needVerified = true) => {
     const tokens = await getTokens(await cookies(), {
         apiKey: clientConfig.apiKey,
         cookieName: serverConfig.cookieName,
@@ -664,7 +664,7 @@ const checkAuth = async () => {
         serviceAccount: serverConfig.serviceAccount,
     });
 
-    if (!tokens?.decodedToken.email_verified)
+    if (needVerified && !tokens?.decodedToken.email_verified)
         throw new Error("Email not verified")
 
     const userId = tokens?.decodedToken?.uid;
@@ -674,7 +674,7 @@ const checkAuth = async () => {
 }
 
 export const resendEmailVerification = async () => {
-    const userId = await checkAuth()
+    const userId = await checkAuth(false)
     fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
