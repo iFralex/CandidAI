@@ -4,7 +4,7 @@ import { authMiddleware, redirectToHome, redirectToLogin } from "next-firebase-a
 import { clientConfig, serverConfig } from "./config";
 import { Path } from "next-firebase-auth-edge/next/middleware";
 
-const PUBLIC_PATHS: Path = ['/register', '/login', "/", /^\/docs(\/.*)?$/, "/verify"];
+const PUBLIC_PATHS: Path = [/^(?!\/dashboard).*/];
 
 export async function middleware(request: NextRequest) {
   // Add cookie for referral tracking
