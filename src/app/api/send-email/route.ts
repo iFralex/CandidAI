@@ -43,6 +43,8 @@ export async function POST(req) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="x-apple-disable-message-reformatting">
   <title>CandidAI</title>
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
   <!--[if mso]>
   <style type="text/css">
     body, table, td {font-family: Arial, sans-serif !important;}
@@ -116,7 +118,7 @@ export async function POST(req) {
 
             // Button component
             const button = (text, link, isPrimary = true) => `
-    <a href="${link}" style="display: inline-block; padding: 16px 32px; background: ${isPrimary ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' : 'transparent'}; color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; border: ${isPrimary ? 'none' : '2px solid #8b5cf6'}; transition: all 0.3s ease; margin: 10px 0;">
+    <a href="${link}" style="display: inline-block; padding: 16px 32px; background: ${isPrimary ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' : 'transparent'}; color: #ffffff !important; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; border: ${isPrimary ? 'none' : '2px solid #8b5cf6'}; transition: all 0.3s ease; margin: 10px 0;">
       ${text}
     </a>
   `;
