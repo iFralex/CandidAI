@@ -24,28 +24,25 @@ def get_user_data(user_id):
     else:
         return doc.to_dict()
 
-from datetime import datetime, timezone, timedelta
-
 def valid_account(user_id):
     user = get_user_data(user_id)
     if not user:
         print("❌ Utente non trovato.")
         return
     
-    expirate_ts = user.get("expirate")   # Firebase Timestamp
+    expirate_dt = user.get("expirate")   # DatetimeWithNanoseconds
 
-    if expirate_ts is None:
+    if expirate_dt is None:
         print("Nessun expire presente.")
         return
-    
-    # Converti Timestamp Firestore → datetime
-    expire_dt = datetime.fromtimestamp(expirate_ts.seconds, tz=timezone.utc) + \
-                timedelta(microseconds=expirate_ts.nanoseconds / 1000)
 
-    # Ora attuale in UTC
+    # Assicura timezone UTC (nel 99% dei casi è già settato)
+    if expirate_dt.tzinfo is None:
+        expirate_dt = expirate_dt.replace(tzinfo=timezone.utc)
+
     now = datetime.now(timezone.utc)
 
-    if expire_dt < now:
+    if expirate_dt < now:
         print("Il timestamp è scaduto")
         return
     else:
