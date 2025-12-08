@@ -162,6 +162,5 @@ def decide_tasks_per_company(mode, manual_tasks, current_status, companies, user
 
     return tasks_per_company
 
-
 def run(user_id):
     return main(user_id=user_id, mode="auto")
