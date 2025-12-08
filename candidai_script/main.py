@@ -7,13 +7,13 @@ from candidai_script.database import (
     save_companies_to_results,
     get_results_status,
     get_results_row,
-    get_custom_queries
+    get_custom_queries,
+    valid_account
 )
 import logging
 import time
 
 def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
-    return
     """
     Esegue i task per generare blog, recruiter ed email in modalità automatica o manuale.
 
@@ -22,6 +22,10 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
         manual_tasks (list): task da rieseguire manualmente, es. ["blog", "recruiters", "email"]
         target_companies (list): aziende specifiche da includere, es. ["Google", "Meta"]
     """
+    if not valid_account(user_id):
+        print("❌ Account non valido. Completa il profilo prima di eseguire lo script.")
+        return
+       
     account = get_account_data(user_id)
     changed_companies = get_changed_companies(user_id)
 

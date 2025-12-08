@@ -2,6 +2,52 @@ from candidai_script import db
 from firebase_admin import firestore
 from typing import Dict
 from candidai_script import db
+from datetime import datetime, timezone
+
+def get_user_data(user_id):
+    """
+    Recupera i dati dell'account per un determinato utente.
+    
+    Args:
+        db: Istanza del database Firestore.
+        user_id (str): ID dell'utente.
+    
+    Returns:
+        dict | None: I dati dell'account se trovati, altrimenti None.
+    """
+    doc_ref = db.collection("users").document(user_id)
+    doc = doc_ref.get()
+
+    if not doc.exists:
+        print(f"❌ Documento users/{user_id} non trovato.")
+        return None
+    else:
+        return doc.to_dict()
+
+def valid_account(user_id):
+    user = get_user_data(user_id)
+    if not user:
+        print("❌ Utente non trovato.")
+        return
+    
+    expirate_ts = user.get("expirate")   # Firebase Timestamp
+
+    if expirate_ts is None:
+        print("Nessun expire presente.")
+        return
+    else:
+        # Converte il Firebase Timestamp in oggetto datetime Python
+        expire_dt = expirate_ts.to_datetime().replace(tzinfo=timezone.utc)
+
+        # Ora attuale in UTC
+        now = datetime.now(timezone.utc)
+
+        if expire_dt < now:
+            print("Il timestamp è scaduto")
+            return
+        else:
+            return True
+         
 
 def get_account_data(user_id):
     """

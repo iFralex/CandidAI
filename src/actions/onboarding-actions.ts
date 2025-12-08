@@ -654,7 +654,7 @@ const deleteCreditsPaid = async (userId: string, companyId: string, contentKey: 
     await unlockedRef.update({
         [contentKey]: FieldValue.delete()
     });
-};
+};v'fdty
 
 const checkAuth = async (needVerified = true) => {
     const tokens = await getTokens(await cookies(), {
