@@ -206,20 +206,18 @@ export function ProfileClient({ defaultName, defaultPicture, plan, account }: Pr
                 </div>
 
                 {/* Default Recruiter Criteria */}
-                {queries.length > 0 && (
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
-                        <div>
-                            <h3 className="text-base font-semibold text-white">Default Recruiter Criteria</h3>
-                            <p className="text-gray-400 text-sm mt-1">Adjust the filters used to find recruiters.</p>
-                        </div>
-                        <AdvancedFiltersClientWrapper
-                            defaultStrategy={queries}
-                            maxStrategies={maxStrategies}
-                            userId=""
-                            onSave={handleSaveQueries}
-                        />
+                <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
+                    <div>
+                        <h3 className="text-base font-semibold text-white">Default Recruiter Criteria</h3>
+                        <p className="text-gray-400 text-sm mt-1">Adjust the filters used to find recruiters.</p>
                     </div>
-                )}
+                    <AdvancedFiltersClientWrapper
+                        defaultStrategy={queries}
+                        maxStrategies={maxStrategies}
+                        userId=""
+                        onSave={handleSaveQueries}
+                    />
+                </div>
 
                 {/* Default Custom Prompt */}
                 <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">

@@ -22,19 +22,27 @@ const navigationItems = [
     { name: 'Settings', icon: <Settings className="w-5 h-5" />, href: '/dashboard/settings' }
 ];
 
+const orbPositions = [
+    { left: '10%', top: '15%' },
+    { left: '70%', top: '5%' },
+    { left: '40%', top: '60%' },
+    { left: '85%', top: '45%' },
+    { left: '20%', top: '80%' },
+    { left: '60%', top: '30%' },
+];
+
 const AnimatedBackground = () => {
     return (
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
             <div className="absolute inset-0 bg-gradient-to-br from-violet-900/10 via-purple-900/10 to-pink-900/10"></div>
-            {[...Array(6)].map((_, i) => (
+            {['#8b5cf6', '#a855f7', '#c084fc', '#e879f9', '#f472b6', '#fb7185'].map((color, i) => (
                 <div
                     key={i}
                     className={`absolute w-72 h-72 rounded-full blur-xl opacity-10 animate-pulse`}
                     style={{
-                        background: `radial-gradient(circle, ${['#8b5cf6', '#a855f7', '#c084fc', '#e879f9', '#f472b6', '#fb7185'][i]
-                            } 0%, transparent 70%)`,
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
+                        background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
+                        left: orbPositions[i].left,
+                        top: orbPositions[i].top,
                         animationDelay: `${i * 2}s`,
                         animationDuration: `${4 + i}s`
                     }}
