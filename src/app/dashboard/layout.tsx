@@ -13,6 +13,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { resendEmailVerification } from '@/actions/onboarding-actions';
 import { ResendEmailVerificationBtn } from '@/components/onboarding';
+import { adminAuth } from '@/lib/firebase-admin';
 
 // Tipo di dati utente (puoi prenderlo dal tuo sistema di auth)
 interface User {
@@ -32,6 +33,7 @@ const navigationItems = [
     { name: 'Dashboard', icon: <Home className="w-5 h-5" />, href: '/dashboard', active: true },
     { name: 'Send All', icon: <Activity className="w-5 h-5" />, href: '/dashboard/send-all' },
     { name: 'Follow Ups', icon: <Bell className="w-5 h-5" />, href: '/dashboard/follow-ups' },
+    { name: 'Plan & Credits', icon: <BarChart3 className="w-5 h-5" />, href: '/dashboard/plan-and-credits' },
     { name: 'Settings', icon: <Settings className="w-5 h-5" />, href: '/settings' }
 ];
 
@@ -121,7 +123,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
         credentials: "include",
         cache: "no-cache",
         headers: {
-            cookie: await cookies()
+            cookie: (await cookies()).toString()
         }
     });
 
@@ -177,7 +179,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
                                     </span>
                                 </div>
                             )}
-                            {onboarded && credits && (
+                            {onboarded && typeof credits === 'number' && (
                                 <div className="flex items-center gap-2">
                                     <Badge variant={"secondary"}>
                                         <div className="flex items-center gap-2">

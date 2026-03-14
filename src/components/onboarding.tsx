@@ -1,7 +1,5 @@
 'use client'
 
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, CardElement, useStripe, useElements, CardNumberElement, CardExpiryElement, CardCvcElement, PaymentRequestButtonElement } from "@stripe/react-stripe-js";
 import { useRef, useState, useTransition } from 'react'
 import { motion, AnimatePresence } from "framer-motion"
 import { resendEmailVerification, selectPlan } from '@/actions/onboarding-actions'
@@ -209,412 +207,6 @@ export function SetupCompleteClient({ userId }: SetupCompleteClientProps) {
             </motion.div>
         </>
     )
-}
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
-
-// -------------------- Small presentational components --------------------
-function BillingSummary({ planId, billingType, refDiscount }) {
-    const plan = getPlanById(planId);
-    const totalCents = computePriceInCents(planId, billingType);
-    const option = billingData[billingType] || billingData.monthly;
-    const Icon = iconMap[plan.icon]
-
-    return (
-        <Card className="p-4 space-y-4">
-            <div className="flex items-start gap-4">
-                <div>
-                    <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${plan.color} flex items-center justify-center text-white`}>
-                        <Icon className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="w-full">
-                    <h4 className="text-white gap-2 flex items-center flex-wrap">
-                        <span className="text-2xl font-semibold">{plan.name}{billingType !== "lifetime" ? "x" + option.activableTimes : ""}</span>
-                        {option.savings && (
-                            <Badge>-{option.discount}%</Badge>
-                        )}
-                    </h4>
-                    <p className="text-sm text-gray-400">{option.description ?? billingData[billingType].description}</p>
-                </div>
-            </div>
-
-            <ul className="space-y-2">
-                {plan.features.map((feature, idx) => (
-                    <motion.li
-                        key={idx}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: 0.5 + idx * 0.1 }}
-                        className="flex items-center gap-2 text-sm text-gray-300"
-                    >
-                        <Check className="w-4 h-4 text-green-400" />
-                        {feature}
-                    </motion.li>
-                ))}
-            </ul>
-        </Card>
-    );
-}
-
-function StripeCardInputs({ elementOptions }) {
-    return (
-        <div className="space-y-3">
-            <label className="block">
-                <div className="text-sm text-gray-300 mb-2">Card number</div>
-                <div className="p-3 bg-white/6 rounded-full border border-white/12 focus-within:ring-2 focus-within:ring-violet-500">
-                    <CardNumberElement options={elementOptions} />
-                </div>
-            </label>
-
-            <div className="grid grid-cols-2 gap-3">
-                <label>
-                    <div className="text-sm text-gray-300 mb-2">Expiry</div>
-                    <div className="p-3 bg-white/6 rounded-full border border-white/12 focus-within:ring-2 focus-within:ring-violet-500">
-                        <CardExpiryElement options={elementOptions} />
-                    </div>
-                </label>
-
-                <label>
-                    <div className="text-sm text-gray-300 mb-2">CVC</div>
-                    <div className="p-3 bg-white/6 rounded-full border border-white/12 focus-within:ring-2 focus-within:ring-violet-500">
-                        <CardCvcElement options={elementOptions} />
-                    </div>
-                </label>
-            </div>
-        </div>
-    );
-}
-
-// -------------------- PaymentRequestButton (Apple/Google Pay) --------------------
-function PaymentRequest({ email, amountCents, onSubscriptionCreated }) {
-    const stripe = useStripe();
-    const [paymentRequest, setPaymentRequest] = useState(null);
-    const [supported, setSupported] = useState(false);
-
-    useEffect(() => {
-        if (!stripe) return;
-
-        const pr = stripe.paymentRequest({
-            country: 'IT',
-            currency: 'eur',
-            total: { label: 'Subscription', amount: amountCents },
-            requestPayerEmail: true,
-        });
-
-        pr.canMakePayment().then((res) => {
-            if (res) setSupported(true);
-        });
-
-        pr.on('paymentmethod', async (ev) => {
-            try {
-                const res = await fetch('/api/create-subscription', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, payment_method_id: ev.paymentMethod.id }),
-                });
-                const data = await res.json();
-                if (data.error) {
-                    ev.complete('fail');
-                    return;
-                }
-
-                const { error: confirmError } = await stripe.confirmCardPayment(data.client_secret, { payment_method: ev.paymentMethod.id }, { handleActions: true });
-                if (confirmError) {
-                    ev.complete('fail');
-                } else {
-                    ev.complete('success');
-                    onSubscriptionCreated?.(data);
-                }
-            } catch (err) {
-                ev.complete('fail');
-            }
-        });
-
-        setPaymentRequest(pr);
-
-        // cleanup
-        return () => {
-            try { pr?.off && pr.off('paymentmethod'); } catch (e) { }
-        };
-    }, [stripe]);
-
-    if (!supported || !paymentRequest) return null;
-
-    return (
-        <div className="mb-4">
-            <PaymentRequestButtonElement options={{ paymentRequest }} />
-        </div>
-    );
-}
-
-// -------------------- Main Checkout form + helper sections --------------------
-function CheckoutFormCore({ email, planId, billingType, refDiscount, onSuccess }) {
-    const stripe = useStripe();
-    const elements = useElements();
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    const plan = getPlanById(planId);
-    const amountCents = computePriceInCents(planId, billingType);
-
-    const elementOptions = {
-        style: {
-            base: { color: '#fff', fontSize: '16px', fontFamily: 'Inter, sans-serif', '::placeholder': { color: '#9ca3af' } },
-            invalid: { color: '#f87171', iconColor: '#f87171' },
-        },
-    };
-
-    const handlePay = async (e) => {
-        e?.preventDefault?.();
-        if (!stripe || !elements) return;
-
-        setLoading(true);
-        setError('');
-
-        const cardNumberElement = elements.getElement(CardNumberElement);
-        if (!cardNumberElement) {
-            setError('Card element non disponibile');
-            setLoading(false);
-            return;
-        }
-
-        const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
-            type: 'card',
-            card: cardNumberElement,
-            billing_details: { email },
-        });
-
-        if (pmError) {
-            setError(pmError.message || 'Errore nel metodo di pagamento');
-            setLoading(false);
-            return;
-        }
-
-        try {
-            const res = await fetch('/api/create-subscription', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ payment_method_id: paymentMethod.id }),
-            });
-
-            const data = await res.json();
-            if (data.error) {
-                setError(data.error);
-                setLoading(false);
-                return;
-            }
-
-            const { error: confirmError } = await stripe.confirmCardPayment(data.client_secret);
-            if (confirmError) {
-                setError(confirmError.message);
-                setLoading(false);
-                return;
-            }
-
-            setLoading(false);
-            onSuccess?.(data);
-        } catch (err) {
-            setError(err.message || 'Errore imprevisto');
-            setLoading(false);
-        }
-    };
-
-    // ---------------------------------------------------
-    //  PRICE BREAKDOWN (condizionale + refactoring)
-    // ---------------------------------------------------
-    const breakdownItems = [];
-
-    if (billingType === "lifetime") {
-        // Prezzo originale lifetime
-        breakdownItems.push([
-            "Original Price",
-            plan.pricesLifetime * 100 // convertito dopo dal formatter
-        ]);
-
-        // Referral discount (solo se > 0)
-        if (refDiscount > 0) {
-            breakdownItems.push([
-                `Referral Discount -${refDiscount}%`,
-                -Math.round((plan.pricesLifetime * 100) * (refDiscount / 100))
-            ]);
-        }
-    } else {
-        const option = billingData[billingType];
-        const months = option.activableTimes || 1;
-
-        const basePrice = plan.price * months * 100;
-
-        // Prezzo base * numero mesi
-        breakdownItems.push([
-            `Original Price x${months}`,
-            Math.round(basePrice)
-        ]);
-
-        // Sconto del billing (if > 0)
-        if (option.discount > 0) {
-            breakdownItems.push([
-                `Discount -${option.discount}%`,
-                -Math.round(basePrice * (option.discount / 100))
-            ]);
-        }
-
-        // Referral discount (if > 0)
-        const refBase = basePrice * (1 - option.discount / 100);
-        if (refDiscount > 0) {
-            breakdownItems.push([
-                `Referral Discount -${refDiscount}%`,
-                -Math.round(refBase * (refDiscount / 100))
-            ]);
-        }
-    }
-
-    // Totale finale
-    breakdownItems.push(["Total", amountCents]);
-
-    return (
-        <form className="space-y-6" onSubmit={handlePay}>
-            {/* Apple Pay / Google Pay */}
-            <PaymentRequest
-                email={email}
-                amountCents={amountCents}
-                onSubscriptionCreated={onSuccess}
-            />
-
-            {/* Card input */}
-            <div className="space-y-4">
-                <StripeCardInputs elementOptions={elementOptions} />
-
-                {/* Errori */}
-                {error && <div className="text-red-400 text-sm">{error}</div>}
-            </div>
-
-            <Separator />
-
-            {/* Breakdown prezzi */}
-            <div>
-                {breakdownItems.map(([label, value], i, self) => {
-                    const isLast = i === self.length - 1;
-
-                    return (
-                        <div
-                            key={label}
-                            className={`flex items-center justify-between mb-2 ${isLast ? "mt-4" : ""
-                                }`}
-                        >
-                            <div
-                                className={`text-sm ${isLast ? "text-white font-semibold text-base" : "text-gray-400"
-                                    }`}
-                            >
-                                {label}
-                            </div>
-
-                            <div
-                                className={`${isLast
-                                    ? "text-white font-bold text-lg"
-                                    : "text-gray-300 font-medium text-sm"
-                                    }`}
-                            >
-                                {formatPrice(value)}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Bottoni */}
-            <div className="flex items-center gap-3">
-                <Button className="flex-1" onClick={handlePay} disabled={loading}>
-                    {loading ? (
-                        <span className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" /> Elaborazione...
-                        </span>
-                    ) : (
-                        <span className="flex items-center gap-2">
-                            Pay Now <ArrowRight className="w-4 h-4" />
-                        </span>
-                    )}
-                </Button>
-            </div>
-
-            {billingData[billingType] !== "lifetime" && <div className={`flex items-center justify-between mb-2 mt-4"}`}>
-                <div className={`text-sm text-white font-semibold text-base"}`}>
-                    Next Payment {new Date(new Date().setMonth(new Date().getMonth() + billingData[billingType].durationM)).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })}
-                </div>
-
-                <div className={`text-white font-bold text-lg"`}>
-                    {formatPrice(amountCents)}
-                </div>
-            </div>}
-        </form>
-    );
-}
-
-// -------------------- Wrapper component (export default) --------------------
-export function SubscribeWrapper({ userId, plan = 'pro', billingType = 'biennial', refDiscount, email = '' }) {
-    const [successPayload, setSuccessPayload] = useState(null);
-    const router = useRouter()
-
-    const handleSuccess = payload => {
-        setSuccessPayload(payload);
-        setInterval(() => {
-            router.refresh();
-        }, 5000); // refresh ogni 5 secondi
-    };
-
-    return (
-        <div className="max-w-4xl mx-auto py-12 px-4">
-            <Elements stripe={stripePromise}>
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="grid md:grid-cols-3 gap-8">
-
-                    <div className="md:col-span-1">
-                        <BillingSummary planId={plan} billingType={billingType} refDiscount={refDiscount} />
-
-                        <Card className="mt-6 p-4">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-gray-300">Payment method</div>
-                                <Badge className="bg-slate-700/30">Secure <Lock /></Badge>
-                            </div>
-
-                            <div className="mt-4 text-sm text-gray-400">Card details are processed securely by Stripe — we never see full card numbers.</div>
-                        </Card>
-                    </div>
-
-                    <div className="md:col-span-2">
-                        <Card className="p-6">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <h3 className="text-xl font-semibold text-white mb-1">Complete your subscription</h3>
-                                    <p className="text-sm text-gray-400">{getPlanById(plan).description}</p>
-                                </div>
-
-                                <div className="text-sm text-gray-300">{billingData[billingType].label}</div>
-                            </div>
-
-                            <div className="mt-6">
-                                <CheckoutFormCore email={email} planId={plan} billingType={billingType} refDiscount={refDiscount} onSuccess={handleSuccess} />
-                            </div>
-                        </Card>
-
-                        {successPayload && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6">
-                                <Card className="p-4 bg-emerald-900/10 border-emerald-700">
-                                    <div className="flex items-center gap-3">
-                                        <CheckCircle className="w-6 h-6 text-emerald-400" />
-                                        <div>
-                                            <div className="text-sm text-white">Subscription active</div>
-                                            <div className="text-xs text-gray-300">Thank you! We sent a receipt to {email}</div>
-                                        </div>
-                                    </div>
-                                </Card>
-                            </motion.div>
-                        )}
-                    </div>
-                </motion.div>
-            </Elements>
-        </div>
-    );
 }
 
 interface AdvancedFiltersClientProps {
@@ -1768,10 +1360,10 @@ export const CriteriaDisplay = ({ criteria }) => {
                         <div className={`bg-${criterionInfo.color}-500/20 border border-${criterionInfo.color}-500/30 text-${criterionInfo.color}-300 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center space-x-2 shadow-sm`}>
                             <Icon className="w-4 h-4" />
                             <div className='flex flex-wrap'>{criterionInfo.label}:
-                                {Array.isArray(c.value) ? c.value.map((v, i, self) => <>
+                                {Array.isArray(c.value) ? c.value.map((v, i, self) => <React.Fragment key={i}>
                                     <strong className="text-white px-1">{criterionInfo.inputType === "multiselect" ? criterionInfo.options.find(o => o.value === v)?.label || "Missed" : v}</strong>
                                     {i < self.length - 1 && <span className="text-violet-400 font-bold">or</span>}
-                                </>)
+                                </React.Fragment>)
                                     : <strong className="text-white">{c.value}</strong>}
                             </div>
                         </div>
@@ -2459,7 +2051,7 @@ export function AdvancedFiltersClient({ maxStrategies, strategy, setStrategy, ch
                                 </motion.div>
                             </DialogHeader>
 
-                            <ScrollArea className="max-h-[70vh]">
+                            <ScrollArea className="no-scrollbar oveflow-y-auto max-h-[70vh]">
                                 <motion.div
                                     className='p-1 gap-6'
                                     initial={{ opacity: 0 }}
@@ -2807,7 +2399,7 @@ function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
                             Edit name, title and location
                         </DialogTitle>
                     </DialogHeader>
-                    <ScrollArea className='max-h-[calc(85vh-100px)]'>
+                    <ScrollArea className='no-scrollbar oveflow-y-auto max-h-[calc(85vh-100px)]'>
                         <div className='space-y-4 p-1'>
                             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                                 <div className="flex flex-col gap-2">
@@ -3143,7 +2735,7 @@ function ExperienceSection({ profileSummary, setProfileSummary }: any) {
                         </DialogTitle>
                     </DialogHeader>
 
-                    <ScrollArea className='max-h-[calc(85vh-100px)]'>
+                    <ScrollArea className='no-scrollbar oveflow-y-auto max-h-[calc(85vh-100px)]'>
                         <div className='space-y-4 p-1'>
                             <div className="flex flex-col gap-2">
                                 <label className="text-sm text-gray-400">Role</label>
@@ -3538,7 +3130,7 @@ function EducationSection({ profileSummary, setProfileSummary }: any) {
                         </DialogTitle>
                     </DialogHeader>
 
-                    <ScrollArea className='max-h-[calc(85vh-100px)]'>
+                    <ScrollArea className='no-scrollbar oveflow-y-auto max-h-[calc(85vh-100px)]'>
                         <div className='space-y-4 p-1'>
                             <div className="flex flex-cols md:flex-row gap-3">
                                 {/* School */}
@@ -3747,7 +3339,7 @@ function CertificationsSection({ profileSummary, setProfileSummary }: any) {
                         </DialogTitle>
                     </DialogHeader>
 
-                    <ScrollArea className='max-h-[calc(85vh-100px)]'>
+                    <ScrollArea className='no-scrollbar oveflow-y-auto max-h-[calc(85vh-100px)]'>
                         <div className='space-y-4 p-1'>
                             <div className="flex flex-col gap-3">
                                 <label className="text-sm text-gray-400">Certification Name</label>
@@ -3940,7 +3532,7 @@ function ProjectsSection({ profileSummary, setProfileSummary }: any) {
                         </DialogTitle>
                     </DialogHeader>
 
-                    <ScrollArea className='max-h-[calc(85vh-100px)]'>
+                    <ScrollArea className='no-scrollbar oveflow-y-auto max-h-[calc(85vh-100px)]'>
                         <div className='space-y-4 p-1'>
                             {/* Titolo */}
                             <div className="flex flex-col gap-2">
@@ -4533,8 +4125,7 @@ import { Separator } from './ui/separator'
 import SkillsListBase, { EducationList, ExperienceList } from '@/components/detailsServer'
 import Script from 'next/script'
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { billingData, plansInfo } from "@/config";
-import { computePriceInCents, formatPrice, getPlanById, getReferralDiscount } from "@/lib/utils";
+import { plansInfo } from "@/config";
 import { PlanSelector } from "@/components/PlanSelector";
 import { useRouter } from "next/navigation";
 
@@ -4983,7 +4574,6 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                                         <Badge variant="success">Free</Badge>
                                     </div>
                                     <p className="text-gray-400 mb-2">{freePlan.description}</p>
-                                    <p className="text-sm text-violet-400">{freePlan.limits}</p>
                                 </div>
                             </div>
 

@@ -7,7 +7,7 @@ export default async function PlanAndCreditsPage() {
         credentials: "include",
         cache: "no-cache",
         headers: {
-            cookie: await cookies()
+            cookie: (await cookies()).toString()
         }
     });
 

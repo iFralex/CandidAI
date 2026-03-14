@@ -1111,7 +1111,6 @@ const PricingSection = () => {
                                         <Badge variant="success">Free</Badge>
                                     </div>
                                     <p className="text-gray-400 mb-2">{freePlan.description}</p>
-                                    <p className="text-sm text-violet-400">{freePlan.limits}</p>
                                 </div>
                             </div>
 

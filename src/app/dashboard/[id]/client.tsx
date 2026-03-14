@@ -447,7 +447,7 @@ const RecruiterProfileCard = ({ data, defaultStrategy, inProgress }: { data: any
               {loading ? (
                 <p className="text-center text-sm text-gray-500">Loading filters...</p>
               ) : (
-                <ScrollArea className="oveflow-y-auto max-h-[calc(100vh-200px)]">
+                <ScrollArea className="no-scrollbar oveflow-y-auto max-h-[calc(100vh-200px)]">
                   <AdvancedFiltersClient
                     maxStrategies={30}
                     setStrategy={setCustomStrategy}
@@ -854,7 +854,7 @@ export function EmailDraftButton({
 }
 
 export const CreditsDialog = ({ children, contentType, unlocked, className = "", action, number = 1, email = "" }) => {
-  const requiredCredits = creditsInfo[contentType]?.cost || 0 * number;
+  const requiredCredits = (creditsInfo[contentType]?.cost || 0) * number;
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [error, setError] = useState(null);
   const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
@@ -1162,7 +1162,7 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
                       <DialogHeader>
                         <DialogTitle>Prompt used for the email</DialogTitle>
                       </DialogHeader>
-                      <ScrollArea className="max-h-[calc(100vh-200px)] w-full">
+                      <ScrollArea className="no-scrollbar overflow-y-auto max-h-[calc(100vh-200px)] w-full">
                         <div className="w-full max-w-md">
                           {email.prompt.split(/\n/).map((line, i) =>
                             line.trim() === "" ? <br key={i} /> : <p key={i}>{line}</p>
@@ -1223,7 +1223,7 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
                     <DialogHeader>
                       <DialogTitle className="flex">Define Custom Instructions</DialogTitle>
                     </DialogHeader>
-                    <ScrollArea className="max-h-[calc(100vh-200px)]">
+                    <ScrollArea className="no-scrollbar oveflow-y-automax-h-[calc(100vh-200px)]">
                       <div className="p-1">
                         <Textarea rows={5} value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} />
                       </div>

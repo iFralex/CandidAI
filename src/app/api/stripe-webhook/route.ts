@@ -30,6 +30,12 @@ export async function POST(req: Request) {
       const userRef = adminDb.collection("users").doc(userId);
       const paymentRef = userRef.collection("payments").doc(paymentIntent.id);
 
+      // Idempotency: skip if already processed
+      const existingPayment = await paymentRef.get();
+      if (existingPayment.exists) {
+        return new Response("ok", { status: 200 });
+      }
+
       const batch = adminDb.batch();
 
       // Write payment record
@@ -95,7 +101,7 @@ export async function POST(req: Request) {
         }
 
         const domain = process.env.NEXT_PUBLIC_DOMAIN || "https://candidai.com";
-        await fetch(`${domain}/api/send-email`, {
+        void fetch(`${domain}/api/send-email`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

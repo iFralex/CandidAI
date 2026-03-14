@@ -18,7 +18,7 @@ export async function POST(req: Request) {
             credentials: "include",
             cache: "no-cache",
             headers: {
-                cookie: await cookies()
+                cookie: (await cookies()).toString()
             }
         });
 
@@ -36,6 +36,9 @@ export async function POST(req: Request) {
             const plan = plansInfo.find((p) => p.id === itemId);
             if (!plan) throw new Error("Piano non valido");
             amountInCents = Math.round(plan.price * 100);
+            if (amountInCents === 0) {
+                return NextResponse.json({ error: "Free plans do not require payment" }, { status: 400 });
+            }
         } else if (purchaseType === "credits") {
             const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId);
             if (!pkg) throw new Error("Pacchetto crediti non valido");

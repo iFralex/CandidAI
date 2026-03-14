@@ -305,7 +305,7 @@ export interface UnifiedCheckoutProps {
 
 export function UnifiedCheckout({ purchaseType, itemId, email = "", onSuccess }: UnifiedCheckoutProps) {
     return (
-        <div className="space-y-4">
+        <div className="no-scrollbar overflow-y-auto space-y-4">
             <Elements stripe={stripePromise}>
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">

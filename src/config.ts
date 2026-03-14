@@ -197,5 +197,4 @@ export const CREDIT_PACKAGES = [
 
 export const referralCodes = {
   "afk": 20,
-  "testa": 99,
 }

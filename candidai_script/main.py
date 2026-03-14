@@ -40,7 +40,6 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
     user_instructions = account.get("customizations", {}).get("instructions", "")
     
     # Crea o recupera ID univoci per ogni azienda
-    print("a", changed_companies)
     companies, ids, new_companies = save_companies_to_results(user_id, companies, changed_companies)
     logging.info(f"🏢 Nuove aziende aggiunte: {[c['name'] for c in new_companies]}"  )
     if len(new_companies) > 0:
@@ -48,7 +47,6 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
     logging.info(f"🏢 Aziende da processare: {[c['name'] for c in companies]}"  )
 
     companies = [c for c in companies if c not in new_companies]
-    print(companies,new_companies)
 
     # Recupera lo stato attuale
     current_status = get_results_status(user_id)

@@ -73,7 +73,7 @@ export default function PlanAndCreditsClient({ email }: PlanAndCreditsClientProp
 
             {/* Checkout Dialog */}
             <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-                <DialogContent className="max-w-3xl">
+                <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{checkoutTitle}</DialogTitle>
                     </DialogHeader>

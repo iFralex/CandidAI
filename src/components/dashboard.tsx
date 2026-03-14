@@ -589,7 +589,7 @@ export const ConfirmCompanies = ({ allDetails, userId, queries, defaultInstructi
                                                                         Define Custom Strategies for {company.display_name}
                                                                     </DialogTitle>
                                                                 </DialogHeader>
-                                                                <ScrollArea className="oveflow-y-auto max-h-[calc(100vh-200px)]">
+                                                                <ScrollArea className="no-scrollbar oveflow-y-auto max-h-[calc(100vh-200px)]">
                                                                     <AdvancedFiltersClient maxStrategies={30} setStrategy={(s) => setStrategies(prev => ({ ...prev, [companyId]: s }))} strategy={strategies[companyId] || queries} />
                                                                 </ScrollArea>
                                                                 <DialogFooter>
@@ -618,7 +618,7 @@ export const ConfirmCompanies = ({ allDetails, userId, queries, defaultInstructi
                                                                         Define Custom Instructions for {company.display_name}
                                                                     </DialogTitle>
                                                                 </DialogHeader>
-                                                                <ScrollArea className="oveflow-y-auto max-h-[calc(100vh-200px)]">
+                                                                <ScrollArea className="no-scrollbar overflow-y-auto max-h-[calc(100vh-200px)]">
                                                                     <div className="p-1">
                                                                         <Textarea rows={5} value={customInstructions[companyId] !== undefined ? customInstructions[companyId] : defaultInstructions} onChange={e => setCustomInstructions(prev => ({ ...prev, [companyId]: e.target.value }))} />
                                                                     </div>

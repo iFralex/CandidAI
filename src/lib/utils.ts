@@ -13,7 +13,6 @@ export function getReferralDiscount() {
   const cookieString = document.cookie
     .split("; ")
     .find((c) => c.startsWith("referral="));
-  console.log("Cookie String:", cookieString)
   if (!cookieString) return 0;
 
   const ref = cookieString.split("=")[1];
@@ -25,7 +24,7 @@ export function getReferralDiscount() {
 
 export const formatPrice = (cents) => `€${(cents / 100).toFixed(2)}`;
 
-export const getPlanById = (id) => plansInfo.find((p) => p.id === id) || plansInfo[1];
+export const getPlanById = (id) => plansInfo.find((p) => p.id === id);
 
 export const computePriceInCents = (purchaseType: 'plan' | 'credits', itemId: string): number => {
   if (purchaseType === 'credits') {

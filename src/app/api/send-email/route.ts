@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req) {
     try {
-        const { userId, type, data = [] } = await req.json();
+        const { userId, type, data = {} } = await req.json();
 
         if (!type) {
             return NextResponse.json(
@@ -30,7 +30,7 @@ export async function POST(req) {
         }
 
         const getEmailTemplate = (type, data = {}) => {
-            const { userRecord = {} } = data;
+            const { userRecord = {}, newData = [] } = data;
             const userId = userRecord.uid
             const domain = process.env.NEXT_PUBLIC_DOMAIN || 'https://candidai.com';
 
