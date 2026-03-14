@@ -2,11 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { adminStorage, adminDb } from '@/lib/firebase-admin'
+import { adminStorage, adminDb, adminAuth } from '@/lib/firebase-admin'
 import { cookies } from 'next/headers';
 import { getTokens } from 'next-firebase-auth-edge';
 import { clientConfig, creditsInfo, plansData, serverConfig } from '@/config';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
+import { Resend } from 'resend'
 
 export async function startServer(userId = null) {
     if (!userId)
@@ -770,4 +771,82 @@ export const resendEmailVerification = async () => {
             type: "welcome"
         })
     });
+}
+
+export async function getProfileData() {
+    const userId = await checkAuth();
+
+    const [userSnap, accountSnap] = await Promise.all([
+        adminDb.collection("users").doc(userId).get(),
+        adminDb.collection("users").doc(userId).collection("data").doc("account").get(),
+    ]);
+
+    const user = userSnap.data() || {};
+    const account = accountSnap.exists ? (accountSnap.data() ?? {}) : {};
+
+    return {
+        name: user.name || "",
+        picture: user.picture || null,
+        plan: user.plan || "free_trial",
+        account,
+    };
+}
+
+export async function updateUserBasicInfo(name: string, profilePicture?: File | null) {
+    const userId = await checkAuth();
+
+    let pictureUrl: string | null = null;
+    if (profilePicture) {
+        const bucket = adminStorage.bucket();
+        const filePath = `profile_pictures/${userId}/${profilePicture.name}`;
+        const file = bucket.file(filePath);
+
+        const arrayBuffer = await profilePicture.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        await file.save(buffer, { contentType: profilePicture.type, resumable: false });
+
+        const [signedUrl] = await file.getSignedUrl({ action: "read", expires: "2100-01-01" });
+        pictureUrl = signedUrl;
+    }
+
+    const userRef = adminDb.collection("users").doc(userId);
+    await userRef.update({
+        name,
+        ...(pictureUrl && { picture: pictureUrl }),
+    });
+
+    revalidatePath("/dashboard/profile");
+}
+
+export async function updateUserEmail(newEmail: string) {
+    const userId = await checkAuth();
+
+    await adminAuth.updateUser(userId, { email: newEmail, emailVerified: false });
+
+    const verificationLink = await adminAuth.generateEmailVerificationLink(newEmail);
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+        from: "CandidAI <no-reply@candidai.tech>",
+        to: newEmail,
+        subject: "Verify your new CandidAI email address",
+        html: `<p>You updated your CandidAI email address. Please verify it by clicking: <a href="${verificationLink}">Verify Email</a></p>`,
+    });
+
+    revalidatePath("/dashboard/profile");
+}
+
+export async function updateAccountData(data: Record<string, any>) {
+    const userId = await checkAuth();
+
+    const accountRef = adminDb
+        .collection("users")
+        .doc(userId)
+        .collection("data")
+        .doc("account");
+
+    await accountRef.set(data, { merge: true });
+
+    revalidatePath("/dashboard/profile");
 }

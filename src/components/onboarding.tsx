@@ -24,6 +24,8 @@ import { completeOnboarding } from '@/actions/onboarding-actions'
 
 interface SetupCompleteClientProps {
     userId: string
+    defaultCustomizations?: Partial<Customizations>
+    onSave?: (data: Customizations) => Promise<void>
 }
 
 interface Customizations {
@@ -50,18 +52,23 @@ const focusOptions = [
     { id: 'achievements', label: 'Achievements', description: 'Showcase accomplishments' }
 ]
 
-export function SetupCompleteClient({ userId }: SetupCompleteClientProps) {
+export function SetupCompleteClient({ userId, defaultCustomizations, onSave }: SetupCompleteClientProps) {
     const [customizations, setCustomizations] = useState<Customizations>({
-        //tone: 'professional',
-        //length: 'medium',
-        position_description: '',
-        instructions: ''
+        position_description: defaultCustomizations?.position_description || '',
+        instructions: defaultCustomizations?.instructions || ''
     })
     const [isPending, startTransition] = useTransition()
+    const [saved, setSaved] = useState(false)
 
     const handleStartGeneration = () => {
         startTransition(async () => {
-            await completeOnboarding(customizations)
+            if (onSave) {
+                await onSave(customizations)
+                setSaved(true)
+                setTimeout(() => setSaved(false), 3000)
+            } else {
+                await completeOnboarding(customizations)
+            }
         })
     }
 
@@ -180,15 +187,16 @@ export function SetupCompleteClient({ userId }: SetupCompleteClientProps) {
                     {isPending ? (
                         <>
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            <span>Starting Generation...</span>
+                            <span>{onSave ? "Saving..." : "Starting Generation..."}</span>
                         </>
                     ) : (
                         <>
-                            <Rocket className="w-5 h-5" />
-                            <span>Start Email Generation</span>
+                            {onSave ? <Check className="w-5 h-5" /> : <Rocket className="w-5 h-5" />}
+                            <span>{onSave ? "Save Changes" : "Start Email Generation"}</span>
                         </>
                     )}
                 </button>
+                {saved && <span className="ml-4 text-green-400 text-sm">Saved successfully.</span>}
 
                 <div className="mt-6 grid md:grid-cols-3 gap-4 text-sm text-gray-400">
                     <div className="flex items-center justify-center space-x-2">
@@ -1449,10 +1457,11 @@ export function AddStrategyButton({
     );
 }
 
-export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, userId }) {
+export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, userId, onSave }: { defaultStrategy: any; maxStrategies: number; userId: string; onSave?: (strategy: any) => Promise<void> }) {
     const [strategy, setStrategy] = useState(defaultStrategy);
     const [isPending, startTransition] = useTransition();
     const [hasChanges, setHasChanges] = useState(false);
+    const [saved, setSaved] = useState(false);
 
     useEffect(() => {
         setHasChanges(JSON.stringify(strategy) !== JSON.stringify(defaultStrategy))
@@ -1464,7 +1473,13 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
 
     const handleContinue = () => {
         startTransition(async () => {
-            await submitQueries(strategy)
+            if (onSave) {
+                await onSave(strategy)
+                setSaved(true)
+                setTimeout(() => setSaved(false), 3000)
+            } else {
+                await submitQueries(strategy)
+            }
         })
     };
 
@@ -1512,16 +1527,19 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
                         </>
                     ) : (
                         <>
-                            <span>Continue Setup</span>
-                            <motion.div
-                                animate={{ x: [0, 5, 0] }}
-                                transition={{ duration: 1, repeat: Infinity }}
-                            >
-                                <ArrowRight className="w-5 h-5" />
-                            </motion.div>
+                            <span>{onSave ? "Save Changes" : "Continue Setup"}</span>
+                            {!onSave && (
+                                <motion.div
+                                    animate={{ x: [0, 5, 0] }}
+                                    transition={{ duration: 1, repeat: Infinity }}
+                                >
+                                    <ArrowRight className="w-5 h-5" />
+                                </motion.div>
+                            )}
                         </>
                     )}
                 </motion.button>
+                {saved && <span className="text-green-400 text-sm">Saved successfully.</span>}
             </motion.div>
 
             {/* Changes Indicator */}
@@ -2334,6 +2352,8 @@ interface ProfileSummary {
 interface ProfileAnalysisClientProps {
     userId: string;
     plan: string;
+    initialProfile?: any;
+    onSave?: (plan: string, profileData: any, cv?: File | null) => Promise<void>;
 }
 
 function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
@@ -3693,15 +3713,16 @@ export function ProfileSummaryCard({
     )
 }
 
-export function ProfileAnalysisClient({ userId, plan }: ProfileAnalysisClientProps) {
+export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: ProfileAnalysisClientProps) {
     const [linkedinUrl, setLinkedinUrl] = useState('')
     const [analyzing, setAnalyzing] = useState(false)
-    const [analysisComplete, setAnalysisComplete] = useState(false)
-    const [profileSummary, setProfileSummary] = useState<ProfileSummary>(null)
+    const [analysisComplete, setAnalysisComplete] = useState(!!initialProfile)
+    const [profileSummary, setProfileSummary] = useState<ProfileSummary>(initialProfile || null)
     //const [recruiterPersona, setRecruiterPersona] = useState('')
     const [isPending, startTransition] = useTransition()
     const [cvFile, setCvFile] = useState<{ name: string, blob: any } | null>()
     const [isRecalculating, setIsRecalculating] = useState(false)
+    const [saved, setSaved] = useState(false)
 
     const analyzeProfile = async () => {
         try {
@@ -3814,12 +3835,15 @@ export function ProfileAnalysisClient({ userId, plan }: ProfileAnalysisClientPro
     }
 
     const handleContinue = () => {
-        if (!cvFile) return alert("Please upload your CV before continuing.")
+        if (!onSave && !cvFile) return alert("Please upload your CV before continuing.")
         startTransition(async () => {
-            await submitProfile(plan, {
-                linkedinUrl,
-                profileSummary,
-            }, cvFile?.blob)
+            if (onSave) {
+                await onSave(plan, { linkedinUrl, profileSummary }, cvFile?.blob ?? null)
+                setSaved(true)
+                setTimeout(() => setSaved(false), 3000)
+            } else {
+                await submitProfile(plan, { linkedinUrl, profileSummary }, cvFile?.blob)
+            }
         })
     }
 
@@ -4088,11 +4112,12 @@ export function ProfileAnalysisClient({ userId, plan }: ProfileAnalysisClientPro
                                 </>
                             ) : (
                                 <>
-                                    <span>Continue Setup</span>
-                                    <ArrowRight className="w-5 h-5" />
+                                    <span>{onSave ? "Save Changes" : "Continue Setup"}</span>
+                                    {!onSave && <ArrowRight className="w-5 h-5" />}
                                 </>
                             )}
                         </button>
+                        {saved && <span className="ml-4 text-green-400 text-sm">Saved successfully.</span>}
 
                         <p className="text-sm text-gray-500 mt-4">
                             This information helps us find the perfect recruiters for you

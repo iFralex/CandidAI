@@ -67,19 +67,19 @@ If any shardcn ui component is not present, use the command: npx shadcn@latest a
 ---
 
 ### Task 6: Profile Page (`/dashboard/profile`)
-- [ ] Create a new page at `src/app/dashboard/profile/page.tsx`.
-- [ ] **Section 1: Basic Info**. Create a form for Profile Picture (uploading to Firebase Storage) and Name.
-- [ ] **Section 2: Email Update (AdminAuth)**. Add an input for the Email address. Create a server action `updateUserEmail(newEmail)`:
+- [x] Create a new page at `src/app/dashboard/profile/page.tsx`.
+- [x] **Section 1: Basic Info**. Create a form for Profile Picture (uploading to Firebase Storage) and Name.
+- [x] **Section 2: Email Update (AdminAuth)**. Add an input for the Email address. Create a server action `updateUserEmail(newEmail)`:
   - Import `adminAuth` from `src/lib/firebase-admin.ts`.
   - Call `await adminAuth.updateUser(uid, { email: newEmail, emailVerified: false })`. This bypasses the client-side fresh token requirement.
   - Use `adminAuth.generateEmailVerificationLink(newEmail)` and send it to the user via Resend to verify the new address.
-- [ ] **Section 3: Onboarding Data**. Import and reuse the exact components from the onboarding flow for:
+- [x] **Section 3: Onboarding Data**. Import and reuse the exact components from the onboarding flow for:
   - User Profile (Skills, Experience, Education)
   - Default Recruiter Criteria
   - Default Custom Prompt
-- [ ] Wire these components to a server action `updateAccountData(data)` that updates `users/{uid}/data/account/{docId}`.
-- [ ] **Python Backend (`candidai_script`)**: Verify that the Python script downloads the `data/account` profile information *only once* at the beginning of the `run_module` execution. This ensures that if the user updates their profile/prompts mid-generation, it won't corrupt the ongoing loop for the current batch.
-- [ ] Mark completed.
+- [x] Wire these components to a server action `updateAccountData(data)` that updates `users/{uid}/data/account/{docId}`.
+- [x] **Python Backend (`candidai_script`)**: Verify that the Python script downloads the `data/account` profile information *only once* at the beginning of the `run_module` execution. This ensures that if the user updates their profile/prompts mid-generation, it won't corrupt the ongoing loop for the current batch.
+- [x] Mark completed.
 
 ---
 
