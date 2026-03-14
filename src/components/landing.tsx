@@ -1646,10 +1646,10 @@ const LandingPage = () => {
             <HeroSection />
             <StatsSection />
             <JobMarketCrisisSections />
+            <EmailExamplesSection />
             <SavingsSection />
             <FeaturesSection />
             <ProcessSection />
-            <EmailExamplesSection />
             <PricingSection />
             <ReviewsSection />
             <FAQSection />
