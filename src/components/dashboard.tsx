@@ -277,9 +277,11 @@ const Dashboard = ({ results }) => {
                     <p className="text-gray-300 mb-4">
                         Get more companies, advanced filters, and priority processing with Pro or Ultra plans.
                     </p>
-                    <Button variant="primary" icon={<Crown className="w-4 h-4" />}>
-                        Upgrade Now
-                    </Button>
+                    <Link href="/dashboard/plan-and-credits" className="w-max">
+                        <Button variant="primary" icon={<Crown className="w-4 h-4" />}>
+                            Upgrade Now
+                        </Button>
+                    </Link>
                 </Card>
             </div>
         </div>

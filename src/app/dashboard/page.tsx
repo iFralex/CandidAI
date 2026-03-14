@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { AnimatedResults, ConfirmCompanies } from "@/components/dashboard";
 import { calculateProgress } from "@/components/detailsServer";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import Link from "next/link";
 
 function Card({ children, className, hover = true, gradient = false, ...props }: CardProps) {
     const baseClasses = "bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl transition-all duration-300"
@@ -192,7 +193,6 @@ async function ResultsWrapper({ userId }) {
         <Card className="p-8 backdrop-blur-none">
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white">Active Campaigns</h2>
-                <Badge variant="primary"> total</Badge>
             </div>
 
             <Results results={parsedResults} />
@@ -304,9 +304,11 @@ const Page = async () => {
                     <p className="text-gray-300 mb-4">
                         Get more companies, advanced filters, and priority processing with Pro or Ultra plans.
                     </p>
+                    <Link href="/dashboard/plan-and-credits" className="w-max">
                     <Button variant="primary" icon={<Crown className="w-4 h-4" />}>
                         Upgrade Now
                     </Button>
+                    </Link>
                 </Card>
             </div>
         </div>

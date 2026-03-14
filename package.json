@@ -32,6 +32,7 @@
     "next": "^15.5.12",
     "next-firebase-auth-edge": "^1.11.1",
     "peopledatalabs": "^14.0.0",
+    "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
