@@ -15,6 +15,227 @@ import { computePriceInCents, formatPrice, getReferralDiscount } from '@/lib/uti
 import { Badge } from './ui/badge';
 import Link from 'next/link';
 import Script from 'next/script';
+import Player from "@vimeo/player";
+import { useRef } from "react";
+import { Pause, Maximize } from "lucide-react";
+import Image from 'next/image';
+
+const videos = [
+    {
+        vimeoId: "1171533200",
+        aspect: "aspect-[9/16]"
+    },
+    {
+        vimeoId: "1171533137",
+        aspect: "aspect-video"
+    }
+];
+
+
+export function HeroVideo() { // Assicurati che 'videos' sia passato come prop o sia importato
+    const [video, setVideo] = useState({});
+    const containerRef = useRef(null);
+    const playerRef = useRef(null);
+    const iframeRef = useRef(null);
+    const idleTimeoutRef = useRef(null);
+
+    const [playing, setPlaying] = useState(false);
+    const [showControls, setShowControls] = useState(false);
+    const [initialized, setInitialized] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false); // Nuovo stato per mobile
+
+    // Inizializza il player
+    const initPlayer = (e) => {
+        e?.stopPropagation();
+        setInitialized(true);
+    };
+
+    useEffect(() => {
+        if (initialized && iframeRef.current && !playerRef.current) {
+            // Usa 'window.Vimeo.Player' o importala se usi il pacchetto npm '@vimeo/player'
+            playerRef.current = new Player(iframeRef.current);
+            playerRef.current.on("play", () => setPlaying(true));
+            playerRef.current.on("pause", () => setPlaying(false));
+            playerRef.current.play().catch((e) => console.log("Errore play:", e));
+        }
+    }, [initialized]);
+
+    const toggleVideo = (e) => {
+        e?.stopPropagation();
+        if (!playerRef.current) return;
+        if (playing) {
+            playerRef.current.pause();
+        } else {
+            playerRef.current.setVolume(1);
+            playerRef.current.play();
+        }
+    };
+
+    const enterFullscreen = (e) => {
+        e?.stopPropagation();
+        if (!containerRef.current) return;
+        if (containerRef.current.requestFullscreen) {
+            containerRef.current.requestFullscreen();
+        } else if (containerRef.current.webkitRequestFullscreen) {
+            containerRef.current.webkitRequestFullscreen();
+        } else if (containerRef.current.msRequestFullscreen) {
+            containerRef.current.msRequestFullscreen();
+        }
+    };
+
+    // Gestione Resize per Mobile e Scelta Video
+    useEffect(() => {
+        const checkLayout = () => {
+            const width = window.innerWidth;
+            setIsMobile(typeof window !== "undefined" && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
+
+            // Verifica che 'videos' sia disponibile
+            if (videos && videos.length > 1) {
+                if (width >= 1500) {
+                    setVideo(videos[1]);
+                } else {
+                    setVideo(videos[0]);
+                }
+            }
+        };
+
+        checkLayout();
+
+        const handler = () => setIsFullscreen(!!document.fullscreenElement);
+        document.addEventListener("fullscreenchange", handler);
+
+        return () => {
+            window.removeEventListener("resize", checkLayout);
+            document.removeEventListener("fullscreenchange", handler);
+        };
+    }, []);
+
+    // --- NUOVA LOGICA CONTROLLI (Unificata per Desktop e Mobile) ---
+    const wakeControls = () => {
+        setShowControls(true);
+        if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+        if (playing) {
+            idleTimeoutRef.current = setTimeout(() => {
+                setShowControls(false);
+            }, 2000); // Nasconde i controlli dopo 2 secondi
+        }
+    };
+
+    const handleMouseMove = () => {
+        if (isMobile) return; // Ignora hover su mobile
+        wakeControls();
+    };
+
+    const handleMouseLeave = () => {
+        if (isMobile) return; // Su mobile non nascondere bruscamente
+        if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+        if (playing) setShowControls(false);
+    };
+
+    const handleTouchStart = () => {
+        if (isMobile) {
+            wakeControls();
+            playerRef.current.setVolume(1); // Volume massimo
+        }
+    };
+
+    // Assicura che i controlli spariscano da soli quando inizia il play
+    useEffect(() => {
+        if (!initialized) return;
+
+        if (!playing) {
+            setShowControls(true); // Se in pausa, mostra sempre
+            if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+        } else {
+            wakeControls(); // Se in play, mostra brevemente e poi nascondi
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [playing, initialized]);
+
+    const handleContainerClick = (e) => {
+        if (!initialized) return;
+
+        // Se siamo su mobile e i controlli sono nascosti, 
+        // il primo tap sveglia solo i controlli senza mettere in pausa
+        if (isMobile && !showControls && playing) {
+            wakeControls();
+            return;
+        }
+
+        toggleVideo(e);
+    };
+
+    const cursorStyle =
+        initialized && playing && !showControls
+            ? { cursor: "none" }
+            : { cursor: "pointer" };
+
+    return (
+        <div className="relative max-w-5xl mx-auto">
+            <div
+                ref={containerRef}
+                className={"relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black " + video.aspect}
+                style={cursorStyle}
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                onTouchStart={handleTouchStart} // Aggiunto per il mobile
+                onClick={handleContainerClick}
+            >
+                {initialized && (
+                    <iframe
+                        ref={iframeRef}
+                        src={"https://player.vimeo.com/video/" + video.vimeoId + "?title=0&byline=0&portrait=0&badge=0&controls=0&loop=1"}
+                        allow="fullscreen"
+                        className="absolute inset-0 w-full h-full pointer-events-none"
+                        title="Hero Video"
+                    />
+                )}
+
+                {!initialized && video.vimeoId && (
+                    <div
+                        className="absolute inset-0 flex items-center justify-center cursor-pointer z-10"
+                        onClick={initPlayer}
+                    >
+                        <Image
+                            src={"https://vumbnail.com/" + video.vimeoId + ".jpg"}
+                            className="absolute inset-0 w-full h-full object-cover opacity-80"
+                            alt="Video thumbnail"
+                            width={1920}
+                            height={1080}
+                        />
+                        <div className="relative bg-black/20 backdrop-blur rounded-full p-8 transition-transform hover:scale-110">
+                            <Play className="w-12 h-12 text-white fill-white" />
+                        </div>
+                    </div>
+                )}
+
+                {initialized && showControls && (
+                    <div
+                        className="absolute inset-0 flex items-center justify-center z-20 transition-opacity duration-300"
+                        onClick={toggleVideo}
+                    >
+                        {playing ? (
+                            <Pause className="w-16 h-16 text-white bg-black/30 rounded-full p-4 backdrop-blur-sm transition-transform hover:scale-110" />
+                        ) : (
+                            <Play className="w-16 h-16 text-white bg-black/30 rounded-full p-4 backdrop-blur-sm transition-transform hover:scale-110 fill-white" />
+                        )}
+                    </div>
+                )}
+
+                {/* Il tasto Fullscreen compare solo se !isMobile */}
+                {initialized && !isFullscreen && showControls && !isMobile && (
+                    <button
+                        onClick={enterFullscreen}
+                        className="absolute bottom-4 right-4 bg-black/40 hover:bg-black/60 backdrop-blur rounded-full p-3 z-30 transition-all duration-300"
+                    >
+                        <Maximize className="w-5 h-5 text-white" />
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+}
 
 // Animated Background Component
 const AnimatedBackground = () => {
@@ -41,68 +262,136 @@ const AnimatedBackground = () => {
 
 // Hero Section Component
 const HeroSection = () => {
-    const router = useRouter()
-    const [email, setEmail] = useState('');
+    const router = useRouter();
+    const [email, setEmail] = useState("");
 
     return (
-        <section className="relative min-h-screen flex items-center justify-center px-6 lg:px-8">
+        <section className="relative min-h-screen overflow-hidden bg-[#080510]">
             <AnimatedBackground />
-            <div className="relative z-10 text-center max-w-5xl mx-auto mt-[80px]">
-                <Badge variant="primary" className="mb-6 inline-flex items-center space-x-2">
-                    <Sparkles className="w-4 h-4" />
-                    <span>Revolutionary AI-Powered Recruitment</span>
-                </Badge>
 
-                <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-violet-200 to-purple-200 bg-clip-text text-transparent leading-tight">
-                    Land Your Dream Job with
-                    <span className="block bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                        AI-Crafted Emails
-                    </span>
-                </h1>
+            {/* Main layout: asymmetric split */}
+            <div className="relative z-10 flex flex-col lg:flex-row min-h-screen pt-24 pb-8">
 
-                <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-                    Our AI analyzes your profile, finds the perfect recruiters at your target companies, and crafts personalized emails that get responses. Transform your job search from hours to minutes.
-                </p>
+                {/* LEFT COLUMN — content, top-aligned with padding */}
+                <div className="flex-1 flex flex-col justify-center px-8 lg:pl-16 xl:pl-24 lg:pr-8 max-w-none lg:max-w-4xl mx-auto">
 
-                <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 border border-green-500/30 rounded-2xl p-6 mb-8 max-w-2xl mx-auto">
-                    <h3 className="text-xl font-semibold text-white mb-2">🎯 Try Before You Buy</h3>
-                    <p className="text-gray-300">
-                        Test our AI with one personalized email for one recruiter at your chosen company - completely free!
+                    {/* Eyebrow badge */}
+                    <div className="mb-8">
+                        <Badge
+                            variant="primary"
+                            className="whitespace-normal inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/30 text-violet-300 text-xs font-semibold tracking-widest uppercase px-4 py-2 rounded-full backdrop-blur-sm"
+                        >
+                            <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                            Revolut ionary AI-Powered Recruitment
+                        </Badge>
+                    </div>
+
+                    {/* Headline — oversized, editorial */}
+                    <h1
+                        className="font-black leading-[0.9] mb-8 tracking-tight"
+                        style={{ fontFamily: "'Syne', sans-serif" }}
+                    >
+                        <span className="block text-[clamp(3rem,6vw,5.5rem)] text-white/90">
+                            Land Your
+                        </span>
+                        <span
+                            className="block text-[clamp(3.5rem,7.5vw,7rem)] bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent"
+                        >
+                            Dream Job
+                        </span>
+                        <span className="block text-[clamp(2rem,4.5vw,4rem)] text-white/50 font-medium tracking-normal mt-1">
+                            with AI-Crafted Emails
+                        </span>
+                    </h1>
+
+                    {/* Subtitle */}
+                    <p className="text-gray-400 text-lg leading-relaxed max-w-lg mb-10" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                        Our AI analyzes your profile, finds the perfect recruiters at your
+                        target companies, and crafts personalized emails that{" "}
+                        <span className="text-violet-300 font-medium">actually get responses</span>.
                     </p>
+
+                    {/* Form — inline, pill style */}
+                    <form
+                        onSubmit={() => router.push("/login?email=" + email)}
+                        className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 max-w-lg mb-8"
+                    >
+                        <div className="flex-1 relative">
+                            <Input
+                                type="email"
+                                placeholder="your@email.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 text-white placeholder:text-gray-500 rounded-xl px-5 py-4 text-base focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-all h-14"
+                            />
+                        </div>
+                        <Link href="/register">
+                            <Button
+                                formAction="submit"
+                                size="lg"
+                                icon={<ArrowRight className="w-4 h-4" />}
+                                onClick={() => {
+                                    document.cookie = `defaultEmail=${email}; path=/; max-age=${60 * 60}`;
+                                }}
+                                className="whitespace-nowrap h-14 px-7 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold text-base shadow-lg shadow-violet-900/40 transition-all hover:shadow-violet-700/50 hover:scale-[1.02] active:scale-[0.98] flex-1 w-full"
+                            >
+                                Start Free Test
+                            </Button>
+                        </Link>
+                    </form>
+
+                    {/* Trust signals — horizontal pills */}
+                    <div className="flex flex-wrap gap-3 ">
+                        {[
+                            "No credit card required",
+                            "One free test email",
+                            "Setup in 2 minutes",
+                        ].map((item) => (
+                            <div
+                                key={item}
+                                className="flex items-center gap-2 bg-white/5 border border-white/8 rounded-full px-4 py-2 text-sm text-gray-400"
+                            >
+                                <div className="w-4 h-4 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                                    <Check className="w-2.5 h-2.5 text-green-400" />
+                                </div>
+                                {item}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                <form onSubmit={() => router.push("/login?email=" + email)} className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-xl mx-auto mb-8">
-                    <Input
-                        type="email"
-                        placeholder="Enter your email to start"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
-                    <Link href="/register">
-                        <Button formAction="submit" className='min-w-48' size="lg" icon={<ArrowRight className="w-5 h-5" />} onClick={() => { document.cookie = `defaultEmail=${email}; path=/; max-age=${60 * 60}` }}>
-                            Start Free Test
-                        </Button>
-                    </Link>
-                </form>
+                {/* RIGHT COLUMN — video, vertically centered, floating card effect */}
+                <div className="flex-1 flex items-center justify-center lg:justify-start px-8 lg:pr-12 xl:pr-20 pb-24 lg:pb-0 pt-12 lg:pt-0 max-w-6xl mx-auto w-full">
+                    <div className="relative w-full ">
 
-                <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
-                    <div className="flex items-center space-x-2">
-                        <Check className="w-4 h-4 text-green-400" />
-                        <span>No credit card required</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Check className="w-4 h-4 text-green-400" />
-                        <span>One free test email</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Check className="w-4 h-4 text-green-400" />
-                        <span>Setup in 2 minutes</span>
+                        {/* Decorative accent line */}
+                        <div className="absolute -top-6 -left-6 w-24 h-24 border-l-2 border-t-2 border-violet-500/40 rounded-tl-2xl" />
+                        <div className="absolute -bottom-6 -right-6 w-24 h-24 border-r-2 border-b-2 border-purple-500/30 rounded-br-2xl" />
+
+                        {/* Floating stat cards */}
+                        <div className="absolute -top-5 -right-4 z-20 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-3 shadow-2xl">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                                <span className="text-white text-sm font-semibold">87% response rate</span>
+                            </div>
+                        </div>
+
+                        <div className="absolute -bottom-4 -left-4 z-20 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-3 shadow-2xl">
+                            <p className="text-gray-400 text-xs mb-0.5">Avg. time to first reply</p>
+                            <p className="text-white text-sm font-bold">48 hours</p>
+                        </div>
+
+                        {/* Video container */}
+                        <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-violet-950/50 ring-1 ring-white/5">
+                            <div className="absolute inset-0 bg-gradient-to-br from-violet-900/20 to-transparent pointer-events-none z-10" />
+                            <HeroVideo />
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-                <ChevronDown className="w-8 h-8 text-gray-400" />
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 animate-bounce">
+                <ChevronDown className="w-5 h-5 text-gray-600" />
             </div>
         </section>
     );
@@ -907,7 +1196,7 @@ const PricingSection = () => {
                                 const isActive = billingType === k;
 
                                 return (
-                                    <div key={option.value} className="relative flex flex-col items-center h-full">
+                                    <div key={idx} className="relative flex flex-col items-center h-full">
                                         {/* Pulsante */}
                                         <motion.button
                                             whileHover={{ scale: 1.05 }}
@@ -1326,7 +1615,7 @@ const Footer = () => {
                             <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
                             <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
                             <li><a href="https://www.iubenda.com/privacy-policy/18216120" className="hover:text-white transition-colors" title="Privacy Policy ">Privacy Policy</a>
-                            <Script type="text/javascript">{`(function (w,d) {var loader = function () {var s = d.createElement("script"), tag = d.getElementsByTagName("script")[0]; s.src="https://cdn.iubenda.com/iubenda.js"; tag.parentNode.insertBefore(s,tag);}; if(w.addEventListener){w.addEventListener("load", loader, false);}else if(w.attachEvent){w.attachEvent("onload", loader);}else{w.onload = loader;}})(window, document);`}</Script></li>
+                                <Script type="text/javascript">{`(function (w,d) {var loader = function () {var s = d.createElement("script"), tag = d.getElementsByTagName("script")[0]; s.src="https://cdn.iubenda.com/iubenda.js"; tag.parentNode.insertBefore(s,tag);}; if(w.addEventListener){w.addEventListener("load", loader, false);}else if(w.attachEvent){w.attachEvent("onload", loader);}else{w.onload = loader;}})(window, document);`}</Script></li>
                             <li><a href="https://www.iubenda.com/privacy-policy/18216120/cookie-policy" className="hover:text-white transition-colors" title="Cookie Policy ">Cookie Policy</a><script type="text/javascript">{`(function (w,d) {var loader = function () {var s = d.createElement("script"), tag = d.getElementsByTagName("script")[0]; s.src="https://cdn.iubenda.com/iubenda.js"; tag.parentNode.insertBefore(s,tag);}; if(w.addEventListener){w.addEventListener("load", loader, false);}else if(w.attachEvent){w.attachEvent("onload", loader);}else{w.onload = loader;}})(window, document);`}</script></li>
                             <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
                         </ul>

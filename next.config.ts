@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'upload.wikimedia.org' },
       { protocol: 'https', hostname: 'images.ctfassets.net' },
       { protocol: 'https', hostname: 'pngdownload.io' },
+      { protocol: 'https', hostname: 'vumbnail.com' },
     ],
   },
 
