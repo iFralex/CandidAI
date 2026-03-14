@@ -88,7 +88,7 @@ A new modular credit package system (10€, 20€, 30€) is introduced. The UI 
 ---
 
 ### Task 8: Landing Page & Onboarding Cleanup
-- [ ] Open `src/components/landing.tsx`. Remove the "Monthly / Yearly" billing toggle state and UI entirely. Update the pricing copy to reflect one-time purchases (e.g., "Pay once, use until finished", "No subscriptions"). Ensure it uses the shared Plan Selector component.
-- [ ] Open `src/components/onboarding.tsx`. Update Step 1 (Plan Selection) to rely entirely on the shared Plan Selector component, showing single prices and removing any references to recurring billing durations.
-- [ ] Verify that step 7 (Launch) uses the refactored `UnifiedCheckout.tsx` component.
-- [ ] Mark completed.
+- [x] Open `src/components/landing.tsx`. Remove the "Monthly / Yearly" billing toggle state and UI entirely. Update the pricing copy to reflect one-time purchases (e.g., "Pay once, use until finished", "No subscriptions"). Ensure it uses the shared Plan Selector component.
+- [x] Open `src/components/onboarding.tsx`. Update Step 1 (Plan Selection) to rely entirely on the shared Plan Selector component, showing single prices and removing any references to recurring billing durations.
+- [x] Verify that step 7 (Launch) uses the refactored `UnifiedCheckout.tsx` component.
+- [x] Mark completed.

@@ -1,10 +1,10 @@
 import { CheckCircle, CreditCard, Wand2 } from 'lucide-react'
-import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, CheckoutForm, SubscribeWrapper } from '@/components/onboarding'
+import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient } from '@/components/onboarding'
 import { ProfileAnalysisClient } from '@/components/onboarding';
+import { UnifiedCheckout } from '@/components/UnifiedCheckout';
 import { startServer, submitQueries } from '@/actions/onboarding-actions'
 import { cookies } from 'next/headers'
 import { plansData, plansInfo } from '@/config';
-import { getReferralDiscountServer } from '@/lib/utils-server';
 import { adminDb } from '@/lib/firebase-admin';
 import { redirect } from 'next/navigation';
 import { getPlanById } from '@/lib/utils';
@@ -34,8 +34,7 @@ export function SetupCompleteServer({ userId }: SetupCompleteServerProps) {
     )
 }
 
-export async function PaymentStripeServer({ userId, billingType, plan }) {
-    console.log(getPlanById(plan))
+export async function PaymentStripeServer({ userId, plan, email }: { userId: string; plan: string; email?: string }) {
     if (getPlanById(plan).price === 0) {
         const userRef = adminDb.collection("users").doc(userId);
 
@@ -48,8 +47,6 @@ export async function PaymentStripeServer({ userId, billingType, plan }) {
         redirect("/dashboard");
     }
 
-    const refDiscount = await getReferralDiscountServer();
-
     return (
         <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
@@ -58,14 +55,14 @@ export async function PaymentStripeServer({ userId, billingType, plan }) {
                 </div>
 
                 <h2 className="text-3xl font-bold text-white mb-4">
-                    Payment Setup 💳
+                    Complete Your Purchase 💳
                 </h2>
                 <p className="text-lg text-gray-400">
-                    Perfect! Before processing payments, let’s configure your preferred payment methods and billing options.
+                    One-time payment — pay once, use until your company limit is reached.
                 </p>
             </div>
 
-            <SubscribeWrapper userId={userId} plan={plan} billingType={billingType} refDiscount={refDiscount} />
+            <UnifiedCheckout purchaseType="plan" itemId={plan} email={email ?? ""} />
         </div>
     )
 }
@@ -310,7 +307,7 @@ export default async function OnboardingPage({ user, currentStep }) {
             )}
 
             {currentStep === 6 && (
-                <PaymentStripeServer userId={user.uid} billingType={user.billingType} plan={user.plan} />
+                <PaymentStripeServer userId={user.uid} plan={user.plan} email={user.email} />
             )}
         </div>
     )

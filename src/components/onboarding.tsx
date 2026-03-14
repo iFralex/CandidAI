@@ -4535,6 +4535,7 @@ import Script from 'next/script'
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { billingData, plansInfo } from "@/config";
 import { computePriceInCents, formatPrice, getPlanById, getReferralDiscount } from "@/lib/utils";
+import { PlanSelector } from "@/components/PlanSelector";
 import { useRouter } from "next/navigation";
 
 /**
@@ -4941,70 +4942,24 @@ interface PlanSelectionClientProps {
 
 export function PlanSelectionClient({ userId = 'user123' }) {
     const [selectedPlan, setSelectedPlan] = useState(null);
-    const [billingType, setBillingType] = useState('triennial');
-    const [refDiscount, setRefDiscount] = useState(getReferralDiscount());
     const [isPending, startTransition] = useTransition();
-
-    const iconMap = { Gift, Target, Rocket, Crown };
-
-    const splitFeature = (feature) => {
-        const numMatch = feature.match(/(\d[\d.,]*)/);
-        if (numMatch) {
-            const num = numMatch[0];
-            const base = feature.replace(num, "").replace(/\s+/g, " ").trim().toLowerCase();
-            return { base, variant: feature, hasNumber: true, number: num };
-        }
-        return { base: feature.trim().toLowerCase(), variant: feature, hasNumber: false };
-    };
-
-    const paidPlans = plansInfo.slice(1);
-    const allFeatures = Array.from(new Set(paidPlans.flatMap(p => p.features)));
-
-    const groupsMap = allFeatures.reduce((acc, feat) => {
-        const { base, variant } = splitFeature(feat);
-        if (!acc[base]) acc[base] = new Set();
-        acc[base].add(variant);
-        return acc;
-    }, {});
-
-    const groupedFeatures = Object.entries(groupsMap).map(([base, variantsSet]) => ({
-        base,
-        variants: Array.from(variantsSet)
-    }));
 
     const freePlan = plansInfo[0];
 
-    // ----------------------- COOKIE DEFAULT -----------------------
     useEffect(() => {
         if (typeof document === "undefined") return;
         const cookie = document.cookie.split("; ").find(c => c.startsWith("defaultPlan="));
         if (cookie) {
-            const [plan, billing] = cookie.replace("defaultPlan=", "").split("|");
+            const [plan] = cookie.replace("defaultPlan=", "").split("|");
             if (plan) setSelectedPlan(plan);
-            if (billing) setBillingType(billing);
         }
     }, []);
 
-    // ----------------------- PREZZO CON SCONTI -----------------------
-    const computeFinalPrice = (planId) => {
-        const basePrice = computePriceInCents(planId, billingType) / billingData[billingType].activableTimes;
-        const billingDiscount = billingData[billingType].discount || 0;
-        const final = basePrice * (1 - billingDiscount / 100) * (1 - (refDiscount || 0) / 100);
-        return final;
-    };
-
-    const getBillingSubtext = () => {
-        const option = billingData[billingType];
-        if (billingType === "monthly") return "Recurring monthly payment";
-        return `${option.sublabel} with ${option.discount}% discount`;
-    };
-
     const handleSubmit = () => {
         if (!selectedPlan) return;
-        startTransition(() => selectPlan(selectedPlan, billingType));
+        startTransition(() => selectPlan(selectedPlan));
     };
 
-    // ----------------------- UI -----------------------
     return (
         <section id="pricing" className="relative py-24 px-6 lg:px-8 bg-black min-h-screen">
             <div className="max-w-7xl mx-auto">
@@ -5065,177 +5020,13 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                     </Card>
                 </motion.div>
 
-                {/* Billing Selector */}
-                <div className="mb-12 flex flex-col items-center">
-                    <div className="relative w-full max-w-4xl">
-                        <div className="absolute top-[60px] left-0 right-0 h-1 px-20">
-                            <div className="relative w-full h-full bg-gray-800 rounded-full overflow-hidden" />
-                        </div>
-
-                        <div className="relative grid grid-cols-2 md:grid-cols-4 gap-4 px-4">
-                            {Object.keys(billingData).map((k) => {
-                                const option = billingData[k];
-                                const isActive = billingType === k;
-
-                                return (
-                                    <motion.button
-                                        key={k}
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => setBillingType(k)}
-                                        className="relative w-full"
-                                    >
-                                        <div className={`
-                                            h-full px-4 py-4 rounded-xl border-2 transition-all duration-300
-                                            ${isActive
-                                                ? 'bg-gradient-to-br from-purple-600 to-violet-500 border-transparent shadow-lg shadow-purple-500/30'
-                                                : 'bg-gray-900 border-gray-700 hover:border-gray-600'
-                                            }
-                                        `}>
-                                            <div className="flex flex-col items-center gap-2">
-                                                <div className={`font-bold text-sm ${isActive ? 'text-white' : 'text-gray-300'}`}>
-                                                    {option.label}
-                                                </div>
-                                                <div className={`text-xs mt-1 ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
-                                                    {option.months}
-                                                </div>
-                                                {option.discount !== 0 && (
-                                                    <div className={`text-xs font-bold mt-2 px-2 py-1 rounded-full inline-block ${isActive ? 'bg-white/20 text-white' : 'bg-green-500/20 text-green-400'}`}>
-                                                        Save {option.discount}%
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </motion.button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <motion.div
-                        key={billingType}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                        className="text-center mt-8"
-                    >
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <p className="text-gray-400 text-sm font-medium">
-                                    {getBillingSubtext()}
-                                    <CircleQuestionMark className="w-4 h-4 inline-block ml-1" />
-                                </p>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" align="center">
-                                <div className="max-w-xs text-sm text-gray-300">
-                                    {billingType === 'monthly' && 'Billed monthly until canceled.'}
-                                    {billingType === 'biennial' && 'Billed once every 2 years. Activate 3 separate months as needed.'}
-                                    {billingType === 'quintennial' && 'Billed once every 5 years. Activate 5 separate months as needed.'}
-                                    {billingType === 'lifetime' && 'One-time payment for lifetime access.'}
-                                </div>
-                            </TooltipContent>
-                        </Tooltip>
-                    </motion.div>
-                </div>
-
                 {/* Paid Plans */}
-                <div className="grid md:grid-cols-3 gap-8 mb-12">
-                    {paidPlans.map((plan, index) => {
-                        const Icon = iconMap[plan.icon];
-                        const isSelected = selectedPlan === plan.id;
-
-                        return (
-                            <motion.div
-                                key={plan.id}
-                                initial={{ opacity: 0, y: 30 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.6, delay: 0.5 + index * 0.1 }}
-                                onClick={() => setSelectedPlan(plan.id)}
-                            >
-                                <Card
-                                    className={`flex flex-col p-8 relative h-full cursor-pointer ${isSelected ? "ring-2 ring-violet-500 bg-violet-500/20" : plan.popular ? "ring-2 ring-violet-500/50" : ""}`}
-                                    gradient={plan.popular}
-                                    hover={false}
-                                >
-                                    {/* Discount Badges */}
-                                    <div className="absolute top-2 right-2 flex items-center gap-2">
-                                        {billingData[billingType].discount !== 0 && (
-                                            <Badge>-{billingData[billingType].discount}%</Badge>
-                                        )}
-                                        {billingData[billingType].discount !== 0 && refDiscount !== 0 && <span className="font-bold text-sm">+</span>}
-                                        {refDiscount !== 0 && <Badge>-{refDiscount}%</Badge>}
-                                    </div>
-
-                                    <div className="text-center">
-                                        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${plan.color} flex items-center justify-center mx-auto mb-4 text-white`}>
-                                            <Icon className="w-8 h-8" />
-                                        </div>
-                                        <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                                        <p className="text-gray-400 mb-4">{plan.description}</p>
-
-                                        <div className="mb-2 space-y-2">
-                                            <motion.div
-                                                key={billingType + plan.name}
-                                                initial={{ scale: 0.9, opacity: 0 }}
-                                                animate={{ scale: 1, opacity: 1 }}
-                                                transition={{ duration: 0.3 }}
-                                                className="relative"
-                                            >
-                                                <span className="text-4xl font-bold text-white">
-                                                    {formatPrice(computePriceInCents(plan.id, billingType) / billingData[billingType].activableTimes)}
-                                                    {billingType !== "lifetime" && billingType !== "monthly" && <span className="text-violet-300"> x{billingData[billingType].activableTimes}</span>}
-                                                </span>
-                                                {billingType !== "lifetime" && <span className="text-gray-400">/{billingType === "monthly" ? "mo" : billingData[billingType].durationM / 12 + "y"}</span>}
-                                            </motion.div>
-
-                                            {plan.popular ? (
-                                                <motion.div
-                                                    initial={{ scale: 0 }}
-                                                    animate={{ scale: 1 }}
-                                                    transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
-                                                >
-                                                    <Badge className="bg-violet-500/50">Most Popular</Badge>
-                                                </motion.div>
-                                            ) : <div className="mb-11" />}
-                                        </div>
-                                    </div>
-
-                                    {/* Features */}
-                                    <ul className="space-y-4 mb-8">
-                                        {groupedFeatures.map(({ base, variants }, fIndex) => {
-                                            const includedVariant = plan.features.find(f => splitFeature(f).base === base);
-                                            const included = Boolean(includedVariant);
-
-                                            let displayedText =
-                                                includedVariant ??
-                                                variants[0].replace(/(\d[\d.,]*)/, "X");
-
-                                            return (
-                                                <li key={fIndex} className="flex items-start space-x-3">
-                                                    {included ? (
-                                                        <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-green-400" />
-                                                    ) : (
-                                                        <X className="w-5 h-5 flex-shrink-0 mt-0.5 text-gray-600 opacity-30" />
-                                                    )}
-                                                    <span className={`text-sm ${included ? "text-gray-300" : "text-gray-600 line-through opacity-60"}`}>
-                                                        {displayedText}
-                                                    </span>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
-
-                                    {/* Selected Flag */}
-                                    {isSelected && (
-                                        <div className="flex items-center justify-center space-x-2 text-violet-400 mt-auto">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <span className="text-sm font-semibold">Selected</span>
-                                        </div>
-                                    )}
-                                </Card>
-                            </motion.div>
-                        );
-                    })}
+                <div className="mb-12">
+                    <PlanSelector
+                        selectedPlanId={selectedPlan}
+                        onSelect={(plan) => setSelectedPlan(plan.id)}
+                        ctaLabel="Select Plan"
+                    />
                 </div>
 
                 {/* Submit Button */}
@@ -5266,7 +5057,7 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                     <p className="text-sm text-gray-500 mt-4">
                         {selectedPlan === freePlan.id
                             ? "No credit card required • Perfect for testing our AI"
-                            : "You can change or cancel your plan anytime"}
+                            : "Pay once, use until your company limit is reached"}
                     </p>
                 </motion.div>
             </div>

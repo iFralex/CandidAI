@@ -2,16 +2,15 @@
 
 import { motion } from 'framer-motion';
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Sparkles, Target, Zap, Users, Mail, ArrowRight, Check, Star, Play, X, Menu, Clock, TrendingUp, Shield, Award, MessageSquare, BarChart3, Filter, Brain, Eye, Send, Calendar, MapPin, Briefcase, Crown, Infinity, CircleQuestionMark, TrendingDown, Bot, AlertTriangle, FileX, XCircle, Gift, Rocket } from 'lucide-react';
+import { ChevronDown, Sparkles, Target, Zap, Users, Mail, ArrowRight, Check, Star, Play, X, Menu, Clock, TrendingUp, Shield, Award, MessageSquare, BarChart3, Filter, Brain, Eye, Send, Calendar, MapPin, Briefcase, Crown, Infinity, TrendingDown, Bot, AlertTriangle, FileX, XCircle, Gift, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 import { Review, reviews } from './reviews';
-import { billingData, billingOptions, plansInfo } from '@/config';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { plansInfo } from '@/config';
 import { get } from 'http';
-import { computePriceInCents, formatPrice, getReferralDiscount } from '@/lib/utils';
+import { PlanSelector } from '@/components/PlanSelector';
 import { Badge } from './ui/badge';
 import Link from 'next/link';
 import Script from 'next/script';
@@ -881,7 +880,7 @@ const ProcessSection = () => {
         {
             step: "01",
             title: "Account Setup",
-            description: "Create your account and choose your plan. Add target companies based on your subscription level.",
+            description: "Create your account and choose your plan. Add target companies based on your plan level.",
             icon: <Users className="w-6 h-6" />
         },
         {
@@ -1063,52 +1062,13 @@ const EmailExamplesSection = () => {
 
 // Pricing Section Component
 const PricingSection = () => {
-    const [billingType, setBillingType] = useState('triennial');
-    const [refDiscount, setRefDiscount] = useState(getReferralDiscount());
-
-    const iconMap = { Gift, Target, Rocket, Crown };
-
-    const splitFeature = (feature) => {
-        const numMatch = feature.match(/(\d[\d.,]*)/);
-        if (numMatch) {
-            const num = numMatch[0];
-            const base = feature.replace(num, "").replace(/\s+/g, " ").trim().toLowerCase();
-            return { base, variant: feature, hasNumber: true, number: num };
-        }
-        return { base: feature.trim().toLowerCase(), variant: feature, hasNumber: false };
-    };
-
-    // Calcolo di tutte le feature presenti in almeno un piano (escluso Free)
-    const paidPlans = plansInfo.slice(1);
-    const allFeatures = Array.from(new Set(paidPlans.flatMap(p => p.features)));
-
-    // Raggruppa le feature per "base"
-    const groupsMap = allFeatures.reduce((acc, feat) => {
-        const { base, variant } = splitFeature(feat);
-        if (!acc[base]) acc[base] = new Set();
-        acc[base].add(variant);
-        return acc;
-    }, {});
-
-    const groupedFeatures = Object.entries(groupsMap).map(([base, variantsSet]) => {
-        const variants = Array.from(variantsSet);
-        return { base, variants };
-    });
-
+    const router = useRouter();
     const freePlan = plansInfo[0];
 
-    const getDiscount = () => {
-        const option = billingData[billingType].discount
-        return option
+    const handlePlanCtaClick = (plan) => {
+        document.cookie = `defaultPlan=${plan.id}; path=/; max-age=${60 * 60 * 12}`;
+        router.push('/register');
     };
-
-    const getBillingSubtext = () => {
-        const option = billingData[billingType];
-        if (billingType === 'monthly') return 'Recurring monthly payment';
-        return `${option?.sublabel} with ${option?.discount}% discount`;
-    };
-
-    const activeIndex = billingOptions.findIndex(opt => opt.value === billingType);
 
     return (
         <section id="pricing" className="relative py-24 px-6 lg:px-8 bg-black">
@@ -1128,11 +1088,11 @@ const PricingSection = () => {
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="text-xl text-gray-400 max-w-2xl mx-auto"
                     >
-                        All plans include AI-powered personalization and our signature email crafting. Start with a free test!
+                        Pay once, use until finished. No subscriptions, no recurring charges. Start with a free test!
                     </motion.p>
                 </div>
 
-                {/* Piano Free - Banner Orizzontale */}
+                {/* Free Plan Banner */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1172,7 +1132,12 @@ const PricingSection = () => {
                                 </ul>
 
                                 <Link href="/register">
-                                    <Button variant="primary" size="lg" className="whitespace-nowrap" onClick={() => { document.cookie = `defaultPlan=${freePlan.id}|${billingType}; path=/; max-age=${60 * 60 * 12}` }}>
+                                    <Button
+                                        variant="primary"
+                                        size="lg"
+                                        className="whitespace-nowrap"
+                                        onClick={() => { document.cookie = `defaultPlan=${freePlan.id}; path=/; max-age=${60 * 60 * 12}`; }}
+                                    >
                                         Start Free Test
                                     </Button>
                                 </Link>
@@ -1181,229 +1146,13 @@ const PricingSection = () => {
                     </Card>
                 </motion.div>
 
-                {/* Selettore tipo di billing */}
-                <div className="mb-12 flex flex-col items-center">
-                    <div className="relative w-full max-w-4xl">
-                        {/* Cavo di connessione */}
-                        <div className="absolute top-[60px] left-0 right-0 h-1 px-20">
-                            <div className="relative w-full h-full bg-gray-800 rounded-full overflow-hidden" />
-                        </div>
-
-                        {/* Pulsanti */}
-                        <div className="relative grid grid-cols-2 md:grid-cols-4 gap-4 px-4">
-                            {Object.keys(billingData).map((k, idx) => {
-                                const option = billingData[k]
-                                const isActive = billingType === k;
-
-                                return (
-                                    <div key={idx} className="relative flex flex-col items-center h-full">
-                                        {/* Pulsante */}
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={() => setBillingType(k)}
-                                            className="relative w-full h-full"
-                                        >
-                                            <div className={`
-                        h-full px-4 py-4 rounded-xl border-2 transition-all duration-300
-                        ${isActive
-                                                    ? `bg-gradient-to-br from-purple-600 to-violet-500 border-transparent shadow-lg shadow-purple-500/30`
-                                                    : 'bg-gray-900 border-gray-700 hover:border-gray-600'
-                                                }
-                      `}>
-                                                <div className="flex flex-col items-center gap-2">
-                                                    <div className="text-center">
-                                                        <div className={`font-bold text-sm ${isActive ? 'text-white' : 'text-gray-300'}`}>
-                                                            {option.label}
-                                                        </div>
-                                                        <div className={`text-xs mt-1 ${isActive ? 'text-white/80' : 'text-gray-500'}`}>
-                                                            {option.months}
-                                                        </div>
-
-                                                        {option.discount != 0 && (
-                                                            <div className={`text-xs font-bold mt-2 px-2 py-1 rounded-full inline-block ${isActive
-                                                                ? 'bg-white/20 text-white'
-                                                                : 'bg-green-500/20 text-green-400'
-                                                                }`}>
-                                                                Save {option.discount}%
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </motion.button>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <motion.div
-                        key={billingType}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                        className="text-center mt-8"
-                    >
-                        <Tooltip >
-                            <TooltipTrigger>
-                                <p className="text-gray-400 text-sm font-medium">{getBillingSubtext()}
-                                    <CircleQuestionMark className="w-4 h-4 inline-block ml-1" />
-                                </p>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" align="center">
-                                <div className="max-w-xs text-sm text-gray-300">
-                                    {billingType === 'monthly' &&
-                                        'Billed monthly until canceled.'}
-
-                                    {billingType === 'biennial' &&
-                                        'Billed once every 2 years. During the 2-year period, you can activate your subscription in any 3 separate months — useful if you change jobs and need coverage at different moments.'}
-
-                                    {billingType === 'quintennial' &&
-                                        'Billed once every 5 years. During the 5-year period, you can activate your subscription in any 5 separate months, giving you flexibility if you switch jobs multiple times.'}
-
-                                    {billingType === 'lifetime' &&
-                                        'One-time payment for lifetime access. Each year, you can activate your subscription for 1 month whenever you need it.'}
-                                </div>
-                            </TooltipContent>
-                        </Tooltip>
-                    </motion.div>
-                </div>
-
-                {/* Piani a pagamento */}
-                <div className="grid md:grid-cols-3 gap-8 mb-12">
-                    {paidPlans.map((plan, index) => {
-                        const Icon = iconMap[plan.icon];
-
-                        return <motion.div
-                            key={index}
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: 0.5 + index * 0.1 }}
-                        >
-                            <Card
-                                className={`flex flex-col p-8 relative h-full ${plan.popular ? "ring-2 ring-violet-500" : ""}`}
-                                gradient={plan.popular}
-                                hover={false}
-                            >
-                                <div className="absolute top-2 right-2 flex items-center gap-2">
-                                    {billingData[billingType].discount !== 0 && (
-                                        <motion.div
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                        >
-                                            <Badge>-{billingData[billingType].discount}%</Badge>
-                                        </motion.div>
-                                    )}
-
-                                    {/* + SOLO se entrambi esistono */}
-                                    {billingData[billingType].discount !== 0 && refDiscount !== 0 && (
-                                        <span className="font-bold text-sm">+</span>
-                                    )}
-
-                                    {refDiscount !== 0 && (
-                                        <Tooltip>
-                                            <TooltipTrigger>
-                                                <motion.div
-                                                    initial={{ scale: 0 }}
-                                                    animate={{ scale: 1 }}
-                                                >
-                                                    <Badge>-{refDiscount}%</Badge>
-                                                </motion.div>
-                                            </TooltipTrigger>
-                                            <TooltipContent>Referral Discount</TooltipContent>
-                                        </Tooltip>
-                                    )}
-                                </div>
-
-                                <div className="text-center">
-                                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${plan.color} flex items-center justify-center mx-auto mb-4 text-white`}>
-                                        <Icon className="w-8 h-8" />
-                                    </div>
-
-                                    <h3 className="text-4xl font-bold text-white mb-2">{plan.name}</h3>
-                                    <p className="text-gray-400 mb-4">{plan.description}</p>
-
-                                    <div className="mb-2 space-y-2">
-                                        <motion.div
-                                            key={billingType + plan.name}
-                                            initial={{ scale: 0.9, opacity: 0 }}
-                                            animate={{ scale: 1, opacity: 1 }}
-                                            transition={{ duration: 0.3 }}
-                                            className="relative"
-                                        >
-                                            <span className="text-4xl font-bold text-white">
-                                                {formatPrice(computePriceInCents(plan.id, billingType) / billingData[billingType].activableTimes)}
-                                                {billingType !== "lifetime" && billingType !== "monthly" && <span className="text-violet-300"> x{billingData[billingType].activableTimes}</span>}
-                                            </span>
-                                            {billingType !== "lifetime" && <span className="text-gray-400">/{billingType === "monthly" ? "mo" : billingData[billingType].durationM / 12 + "y"}</span>}
-                                        </motion.div>
-
-                                        {plan.popular ? (
-                                            <motion.div
-                                                initial={{ scale: 0 }}
-                                                animate={{ scale: 1 }}
-                                                transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
-                                            >
-                                                <Badge className="bg-violet-500/50">Most Popular</Badge>
-                                            </motion.div>
-                                        ) : <div className="mb-11" />}
-                                    </div>
-                                </div>
-
-                                <ul className="space-y-4 mb-8">
-                                    {groupedFeatures.map(({ base, variants }, fIndex) => {
-                                        const includedVariant = plan.features.find(f => splitFeature(f).base === base);
-                                        const included = Boolean(includedVariant);
-
-                                        let displayedText;
-                                        if (included) {
-                                            displayedText = includedVariant;
-                                        } else {
-                                            const representative = variants[0];
-                                            const { hasNumber } = splitFeature(representative);
-                                            displayedText = hasNumber
-                                                ? representative.replace(/(\d[\d.,]*)/, "X")
-                                                : representative;
-                                        }
-
-                                        return (
-                                            <li key={fIndex} className="flex items-start space-x-3">
-                                                {included ? (
-                                                    <Check className="w-5 h-5 flex-shrink-0 mt-0.5 text-green-400" />
-                                                ) : (
-                                                    <X className="w-5 h-5 flex-shrink-0 mt-0.5 text-gray-600 opacity-30" />
-                                                )}
-
-                                                <span
-                                                    className={`text-sm ${included ? "text-gray-300" : "text-gray-600 line-through opacity-60"
-                                                        }`}
-                                                >
-                                                    {displayedText}
-                                                </span>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-
-                                <div className="flex-1" />
-                                <Link href="/register">
-                                    <Button
-                                        variant={plan.popular ? "primary" : "secondary"}
-                                        className="w-full"
-                                        size="md"
-                                        onClick={() => { document.cookie = `defaultPlan=${plan.id}|${billingType}; path=/; max-age=${60 * 60 * 12}` }}
-                                        icon={<Icon className="w-6 h-6" />}
-                                    >
-                                        Let's Start
-                                    </Button>
-                                </Link>
-                            </Card>
-                        </motion.div>
-                    })}
-                </div>
+                {/* Paid Plans */}
+                <PlanSelector
+                    onCtaClick={handlePlanCtaClick}
+                    ctaLabel="Let's Start"
+                />
             </div>
-        </section >
+        </section>
     );
 }
 
@@ -1480,8 +1229,8 @@ const FAQSection = () => {
             answer: "Our AI analyzes response patterns and suggests the optimal timing for follow-ups. You'll receive notifications when it's the perfect time to send a follow-up, along with AI-generated follow-up messages."
         },
         {
-            question: "Can I cancel or change my plan anytime?",
-            answer: "Yes, you can upgrade, downgrade, or cancel your subscription at any time. Changes take effect at your next billing cycle, and we'll prorate any differences."
+            question: "Can I buy a new plan when my limit is reached?",
+            answer: "Yes! Plans are one-time purchases. Once you reach your company limit, simply purchase a new plan from your dashboard to get more capacity. No subscriptions, no billing cycles."
         },
         {
             question: "Is my data secure and private?",

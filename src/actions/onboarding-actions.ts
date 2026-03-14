@@ -21,7 +21,7 @@ export async function startServer(userId = null) {
     })
 }
 
-export async function selectPlan(planId: string, billingType: string) {
+export async function selectPlan(planId: string) {
     const userId = await checkAuth()
 
     // Riferimento al documento utente
@@ -34,7 +34,6 @@ export async function selectPlan(planId: string, billingType: string) {
         onboardingStep: 2,
         plan: planId,
         credits: plansData[planId].credits || 0,
-        billingType: billingType
     })
 
     // Esegui batch
