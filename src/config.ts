@@ -150,7 +150,6 @@ export const plansInfo = [
     id: "free_trial",
     name: "Free Trial",
     price: 0,
-    pricesLifetime: 0,
     description: "Try with one company",
     features: staticFeatures.free_trial,
     highlight: "Perfect to test our AI",
@@ -161,7 +160,6 @@ export const plansInfo = [
     id: "base",
     name: "Base",
     price: 30,
-    pricesLifetime: 199,
     description: "Perfect for targeted job search",
     features: staticFeatures.base,
     highlight: "Great for focused search",
@@ -172,7 +170,6 @@ export const plansInfo = [
     id: "pro",
     name: "Pro",
     price: 69,
-    pricesLifetime: 399,
     description: "For serious job seekers",
     features: staticFeatures.pro,
     highlight: "Most Popular",
@@ -184,7 +181,6 @@ export const plansInfo = [
     id: "ultra",
     name: "Ultra",
     price: 139,
-    pricesLifetime: 799,
     description: "Maximum job search power",
     features: staticFeatures.ultra,
     highlight: "Ultimate power",
@@ -193,83 +189,11 @@ export const plansInfo = [
   }
 ];
 
-export const billingOptions = [
-  {
-    value: 'monthly',
-    label: 'Monthly',
-    sublabel: 'Recurring',
-    months: 'Pay monthly',
-    discount: null,
-    color: 'from-blue-500 to-cyan-500'
-  },
-  {
-    value: 'biennial',
-    label: '2 Years',
-    sublabel: '3 months active',
-    months: '3 mo / 2yr',
-    discount: '10%',
-    color: 'from-purple-500 to-pink-500'
-  },
-  {
-    value: 'quintennial',
-    label: '5 Years',
-    sublabel: '5 months active',
-    months: '5 mo / 5yr',
-    discount: '15%',
-    color: 'from-orange-500 to-red-500'
-  },
-  {
-    value: 'lifetime',
-    label: 'Lifetime',
-    sublabel: '1 month/year',
-    months: '1 mo / year',
-    discount: ' ∞ %',
-    color: 'from-emerald-500 to-teal-500'
-  }
+export const CREDIT_PACKAGES = [
+  { id: "pkg_1000", credits: 1000, price: 1000 }, // 10€
+  { id: "pkg_2500", credits: 2500, price: 2000 }, // 20€
+  { id: "pkg_5000", credits: 5000, price: 3000 }  // 30€
 ];
-
-export const billingData = {
-  monthly: {
-    label: 'Monthly',
-    sublabel: 'Recurring',
-    duration: '1 month',
-    discount: 0,
-    durationM: 1,
-    activableTimes: 1,
-    description: 'Billed monthly, cancel anytime',
-    savings: null
-  },
-  biennial: {
-    label: 'Biennial',
-    sublabel: '3 slots activable',
-    duration: '2 years',
-    discount: 10,
-    durationM: 24,
-    activableTimes: 3,
-    description: 'Billed once every 2 years',
-    savings: 'Save 10% compared to monthly'
-  },
-  triennial: {
-    label: 'Triennial',
-    sublabel: '4 slots active',
-    duration: '3 years',
-    discount: 15,
-    durationM: 36,
-    activableTimes: 4,
-    description: 'Billed once every 3 years',
-    savings: 'Save 15% compared to monthly'
-  },
-  lifetime: {
-    label: 'Lifetime',
-    sublabel: '1 slot/year',
-    duration: 'Forever',
-    discount: 100,
-    durationM: 12,
-    activableTimes: 1,
-    description: 'One-time payment for lifetime access',
-    savings: 'Save Infinity with lifetime access'
-  }
-};
 
 export const referralCodes = {
   "afk": 20,

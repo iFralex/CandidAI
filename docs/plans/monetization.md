@@ -22,9 +22,9 @@ A new modular credit package system (10€, 20€, 30€) is introduced. The UI 
 ---
 
 ### Task 2: Update Pricing Configurations (`src/config.ts`)
-- [ ] Open `src/config.ts`.
-- [ ] Modify the `Plan` type and existing plans: remove `monthly`, `biennial`, `quintennial`, `lifetime` from the `price` object. Keep a single numeric value (e.g., `price: 4900` for €49.00).
-- [ ] Add and export a new constant `CREDIT_PACKAGES`:
+- [x] Open `src/config.ts`.
+- [x] Modify the `Plan` type and existing plans: remove `monthly`, `biennial`, `quintennial`, `lifetime` from the `price` object. Keep a single numeric value (e.g., `price: 4900` for €49.00).
+- [x] Add and export a new constant `CREDIT_PACKAGES`:
   ```typescript
   export const CREDIT_PACKAGES =[
     { id: "pkg_1000", credits: 1000, price: 1000 }, // 10€
@@ -32,8 +32,8 @@ A new modular credit package system (10€, 20€, 30€) is introduced. The UI 
     { id: "pkg_5000", credits: 5000, price: 3000 }  // 30€
   ];
   ```
-- [ ] Update the `computePriceInCents` function so it accepts a purchase type (`plan` or `credits`) and the corresponding ID, returning the exact amount without calculating duration discounts.
-- [ ] Mark completed.
+- [x] Update the `computePriceInCents` function so it accepts a purchase type (`plan` or `credits`) and the corresponding ID, returning the exact amount without calculating duration discounts.
+- [x] Mark completed.
 
 ---
 

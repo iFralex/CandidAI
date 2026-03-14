@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { billingData, plansInfo, referralCodes } from "@/config";
+import { CREDIT_PACKAGES, plansInfo, referralCodes } from "@/config";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -27,37 +27,14 @@ export const formatPrice = (cents) => `€${(cents / 100).toFixed(2)}`;
 
 export const getPlanById = (id) => plansInfo.find((p) => p.id === id) || plansInfo[1];
 
-export const computePriceInCents = (planId, billingType, applyDiscounts = true) => {
-  const plan = getPlanById(planId);
-  const refDiscount = getReferralDiscount();
-  if (!plan) return 0;
-
-  // ---------------------------
-  // ⭐ Caso lifetime (one-time)
-  // ---------------------------
-  if (billingType === "lifetime") {
-    const baseCents = Math.round(plan.pricesLifetime * 100);
-
-    // Applica solo refDiscount se consentito
-    const finalRefDiscount = applyDiscounts ? refDiscount || 0 : 0;
-
-    return Math.round(baseCents * (1 - finalRefDiscount / 100));
+export const computePriceInCents = (purchaseType: 'plan' | 'credits', itemId: string): number => {
+  if (purchaseType === 'credits') {
+    const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId);
+    return pkg ? pkg.price : 0;
   }
 
-  // ----------------------------------------
-  // ⭐ Caso normale (ricorrente)
-  // ----------------------------------------
-  const baseCents = Math.round(plan.price * 100);
-  const option = billingData[billingType] || billingData.monthly;
-
-  const months = option.activableTimes || 1;
-  const discount = applyDiscounts ? option.discount || 0 : 0;
-  const finalRefDiscount = applyDiscounts ? refDiscount || 0 : 0;
-
-  return Math.round(
-    baseCents *
-    months *
-    (1 - discount / 100) *
-    (1 - finalRefDiscount / 100)
-  );
+  // purchaseType === 'plan'
+  const plan = getPlanById(itemId);
+  if (!plan) return 0;
+  return Math.round(plan.price * 100);
 };
