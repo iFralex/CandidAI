@@ -13,16 +13,16 @@ If any shardcn ui component is not present, use the command: npx shadcn@latest a
 ---
 
 ### Task 1: Dynamic Sidebar Active State & Profile Dropdown
-- [ ] Open `src/components/SidebarClientWrapper.tsx`.
-- [ ] Import `usePathname` from `next/navigation`. Update the navigation items mapping to determine the `active` state dynamically by comparing the item's `href` with the current `pathname`.
-- [ ] Locate the user profile card at the bottom of the sidebar. Wrap it in a `shadcn/ui` `<DropdownMenu>`.
-- [ ] Add the following `<DropdownMenuItem>` elements inside the dropdown menu:
+- [x] Open `src/components/SidebarClientWrapper.tsx`.
+- [x] Import `usePathname` from `next/navigation`. Update the navigation items mapping to determine the `active` state dynamically by comparing the item's `href` with the current `pathname`.
+- [x] Locate the user profile card at the bottom of the sidebar. Wrap it in a `shadcn/ui` `<DropdownMenu>`.
+- [x] Add the following `<DropdownMenuItem>` elements inside the dropdown menu:
   - "View Profile" (links to `/dashboard/profile`)
   - "All Sent Emails" (links to `/dashboard/sent-emails`)
   - "Billing" (links to `/dashboard/billing`)
   - `<DropdownMenuSeparator />`
   - "Log Out" (triggers Firebase sign-out and clears cookies)
-- [ ] Mark completed.
+- [x] Mark completed.
 
 ---
 

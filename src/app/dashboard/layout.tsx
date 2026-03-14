@@ -1,19 +1,17 @@
 // components/DashboardLayout.tsx (rimane un Server Component per la struttura)
 // Non usare 'use client'
 
-import { Activity, BarChart3, FileText, Home, LogOut, Settings, Sparkles, Menu, Zap, Bell, MailCheck, Plus } from 'lucide-react'; // Importa le icone
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { Activity, BarChart3, Home, Settings, Zap, Bell, MailCheck, Plus } from 'lucide-react';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarClientWrapper } from '@/components/SidebarClientWrapper';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
-import Image from 'next/image';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { resendEmailVerification } from '@/actions/onboarding-actions';
 import { ResendEmailVerificationBtn } from '@/components/onboarding';
-import { adminAuth } from '@/lib/firebase-admin';
 
 // Tipo di dati utente (puoi prenderlo dal tuo sistema di auth)
 interface User {
@@ -30,11 +28,11 @@ interface DashboardLayoutProps {
 
 // 1. Dati di navigazione definiti nel Server Component (meno JS client)
 const navigationItems = [
-    { name: 'Dashboard', icon: <Home className="w-5 h-5" />, href: '/dashboard', active: true },
+    { name: 'Dashboard', icon: <Home className="w-5 h-5" />, href: '/dashboard' },
     { name: 'Send All', icon: <Activity className="w-5 h-5" />, href: '/dashboard/send-all' },
     { name: 'Follow Ups', icon: <Bell className="w-5 h-5" />, href: '/dashboard/follow-ups' },
     { name: 'Plan & Credits', icon: <BarChart3 className="w-5 h-5" />, href: '/dashboard/plan-and-credits' },
-    { name: 'Settings', icon: <Settings className="w-5 h-5" />, href: '/settings' }
+    { name: 'Settings', icon: <Settings className="w-5 h-5" />, href: '/dashboard/settings' }
 ];
 
 const AnimatedBackground = () => {
@@ -59,64 +57,6 @@ const AnimatedBackground = () => {
     );
 };
 
-function AppSidebar({ user }) {
-    return (
-        <Sidebar>
-            <SidebarHeader className='mt-6 '>
-                <div className="pb-6 border-b border-white/10">
-                    <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 rounded-lg overflow-hidden">
-                            <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
-                        </div>
-                        <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
-                            CandidAI
-                        </span>
-                    </div>
-                </div>
-            </SidebarHeader>
-            <SidebarContent>
-                <SidebarGroup>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            {navigationItems.map((item) => (
-                                <SidebarMenuItem key={item.name}>
-                                    <SidebarMenuButton asChild isActive={item.active} size={"lg"}>
-                                        <a href={item.href}>
-                                            {item.icon}
-                                            <span>{item.name}</span>
-                                        </a>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
-            </SidebarContent>
-            <SidebarFooter>
-                <Link href="/dashboard/profile">
-                    <div className="p-4 hover:bg-white/5 rounded-lg cursor-pointer">
-                        <div className="flex items-center space-x-3">
-                            {user?.picture ? (
-                                <Image
-                                    src={user.picture}
-                                    alt={user.name || 'User'}
-                                    className="w-10 h-10 rounded-full object-cover"
-                                />
-                            ) : (
-                                <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                                    {user?.name?.charAt(0).toUpperCase() || 'U'}
-                                </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
-                                <p className="text-xs text-gray-400">{user?.email || 'User'}</p>
-                            </div>
-                        </div>
-                    </div>
-                </Link>
-            </SidebarFooter>           </Sidebar>
-    )
-}
 
 export default async function DashboardLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
     const res = await fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/user", {
@@ -151,7 +91,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
             <AnimatedBackground />
 
             <SidebarProvider>
-                {onboarded && <AppSidebar user={user} />}
+                {onboarded && <SidebarClientWrapper user={user} navigationItems={navigationItems} />}
                 {/* Main Content */}
                 <div className="w-full">
                     <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 px-6 py-4">
