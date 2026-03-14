@@ -4,7 +4,7 @@ import { useState, useTransition, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { updateUserBasicInfo, updateUserEmail, updateAccountData } from "@/actions/onboarding-actions"
+import { updateUserBasicInfo, updateUserEmail, updateAccountData, submitProfile } from "@/actions/onboarding-actions"
 import { ProfileAnalysisClient } from "@/components/onboarding"
 import { AdvancedFiltersClientWrapper } from "@/components/onboarding"
 import { SetupCompleteClient } from "@/components/onboarding"
@@ -165,7 +165,7 @@ export function ProfileClient({ defaultName, defaultPicture, plan, account }: Pr
     const maxStrategies = plan === "ultra" ? 50 : 30
 
     const handleSaveProfile = async (planArg: string, profileData: any, cv?: File | null) => {
-        await updateAccountData({ profileSummary: profileData.profileSummary })
+        await submitProfile(planArg, profileData, cv, true)
     }
 
     const handleSaveQueries = async (strategy: any) => {

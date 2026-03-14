@@ -70,7 +70,8 @@ export async function submitCompanies(companies: { name: string, domain: string 
 export async function submitProfile(
     plan: string,
     profileData: any,
-    cv?: File | null
+    cv?: File | null,
+    skipOnboardingStep?: boolean
 ) {
     const userId = await checkAuth();
 
@@ -118,7 +119,9 @@ export async function submitProfile(
     const userRef = adminDb.collection("users").doc(userId);
 
     batch.update(accountRef, updatedProfile);
-    batch.update(userRef, { onboardingStep: 4 });
+    if (!skipOnboardingStep) {
+        batch.update(userRef, { onboardingStep: 4 });
+    }
 
     await batch.commit();
 
@@ -826,6 +829,7 @@ export async function updateUserEmail(newEmail: string) {
     const userId = await checkAuth();
 
     await adminAuth.updateUser(userId, { email: newEmail, emailVerified: false });
+    await adminDb.collection("users").doc(userId).update({ email: newEmail });
 
     // Email is now updated in Auth. Attempt to send verification link.
     // If this fails, the email change is still applied — user can resend verification.

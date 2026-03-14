@@ -45,7 +45,7 @@ async function ResultsWrapper({ userId }) {
             // calcola estimatedCompletion = start_date + 2 giorni (se start_date presente)
             let estimatedCompletion = null;
             if (startDate) {
-                const d = startDate;
+                const d = new Date(startDate.getTime());
                 if (!isNaN(d)) {
                     d.setDate(d.getDate() + 2);
                     estimatedCompletion = d.toISOString().split('T')[0]; // yyyy-mm-dd
@@ -92,7 +92,7 @@ async function ResultsWrapper({ userId }) {
         credentials: "include",
         cache: "no-cache",
         headers: {
-            cookie: await cookies()
+            cookie: (await cookies()).toString()
         }
     });
 
@@ -102,17 +102,19 @@ async function ResultsWrapper({ userId }) {
 
     const companiesToConfirm = data.data.companies_to_confirm
     const parsedResults = parseResults(data.data || {}).filter(i => !(companiesToConfirm || []).includes(i.id));
-    const processingCampaigns = Object.values(data.data)
+    const { companies_to_confirm: _ctc, ...campaignEntries } = data.data;
+    const campaignValues = Object.values(campaignEntries);
+    const processingCampaigns = campaignValues
         .filter(obj => !("email_sent" in obj))
         .length;
-    const readyCampaigns = Object.values(data.data)
+    const readyCampaigns = campaignValues
         .filter((obj: any) => isEpochTs(obj?.email_sent))
         .length;
-    const sentCampaigns = Object.values(data.data)
+    const sentCampaigns = campaignValues
         .filter((obj: any) => isSentTs(obj?.email_sent))
         .length;
-    const articlesFound = Object.values(data.data)
-        .reduce((sum, obj) => sum + (obj.blog_articles || 0), 0);
+    const articlesFound = campaignValues
+        .reduce((sum: number, obj: any) => sum + (obj.blog_articles || 0), 0);
 
     return <>
         {/* Stats Cards */}
@@ -169,7 +171,7 @@ async function ResultsWrapper({ userId }) {
         {companiesToConfirm && companiesToConfirm.length > 0 && <Card className="p-8 backdrop-blur-none">
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-white">Companies To Be Confirmed</h2>
-                <Badge variant="primary"> total</Badge>
+                <Badge variant="primary">{companiesToConfirm.length} total</Badge>
             </div>
 
             <Suspense fallback={<ResultsSkeleton />}>
@@ -196,7 +198,7 @@ const ConfirmCompaniesWrapper = async ({ companiesToConfirm, userId }) => {
         cache: 'no-cache',
         headers: {
             'Content-Type': 'application/json',
-            cookie: await cookies()
+            cookie: (await cookies()).toString()
         },
         body: JSON.stringify({ companyIds: companiesToConfirm }) // Corpo della richiesta con array di companyId
     });
@@ -209,7 +211,7 @@ const ConfirmCompaniesWrapper = async ({ companiesToConfirm, userId }) => {
         credentials: "include",
         cache: "no-cache",
         headers: {
-            cookie: await cookies()
+            cookie: (await cookies()).toString()
         }
     });
 
@@ -228,7 +230,7 @@ const Page = async () => {
         credentials: "include",
         cache: "no-cache",
         headers: {
-            cookie: await cookies()
+            cookie: (await cookies()).toString()
         }
     });
 
