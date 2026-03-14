@@ -675,6 +675,54 @@ const checkAuth = async (needVerified = true) => {
     return userId;
 }
 
+export async function addNewCompanies(companies: { name: string; domain?: string; linkedin_url?: string }[]) {
+    const userId = await checkAuth();
+
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) return { success: false, error: "User not found" };
+
+    const plan = userSnap.data()!.plan || "free_trial";
+    const companiesLimit: number = (plansData as any)[plan]?.maxCompanies ?? 1;
+
+    // Count existing company entries in the results doc
+    const resultsRef = adminDb.collection("users").doc(userId).collection("data").doc("results");
+    const resultsSnap = await resultsRef.get();
+    const resultsData = resultsSnap.exists ? (resultsSnap.data() ?? {}) : {};
+    const existingCount = Object.entries(resultsData).filter(
+        ([k, v]: any) => k !== "companies_to_confirm" && typeof v === "object" && v?.company
+    ).length;
+
+    if (existingCount + companies.length > companiesLimit) {
+        return { success: false, error: `Exceeds plan limit (${existingCount}/${companiesLimit} used).` };
+    }
+
+    // Fetch existing account companies
+    const accountRef = adminDb.collection("users").doc(userId).collection("data").doc("account");
+    const accountSnap = await accountRef.get();
+    const existingCompanies: any[] = accountSnap.exists ? accountSnap.data()?.companies ?? [] : [];
+
+    // Build result entries and ID mappings for all new companies
+    const resultUpdates: Record<string, any> = {};
+    const batch = adminDb.batch();
+
+    for (const company of companies) {
+        const companyKey = `${company.name}-${userId}`;
+        const newId = adminDb.collection("_generated_ids").doc().id;
+        resultUpdates[newId] = { company, start_date: Timestamp.now() };
+        batch.set(adminDb.collection("ids").doc(companyKey), { id: newId }, { merge: true });
+    }
+
+    // Update account.companies and pre-create result entries (no email_sent → Python will process them)
+    batch.set(accountRef, { companies: [...existingCompanies, ...companies] }, { merge: true });
+    batch.set(resultsRef, resultUpdates, { merge: true });
+
+    await batch.commit();
+    await startServer(userId);
+    revalidatePath("/dashboard");
+    return { success: true };
+}
+
 export const resendEmailVerification = async () => {
     const userId = await checkAuth(false)
     fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {

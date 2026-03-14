@@ -8,10 +8,10 @@ import Image from "next/image";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import Link from "next/link";
-import { confirmCompany } from "@/actions/onboarding-actions";
+import { addNewCompanies, confirmCompany } from "@/actions/onboarding-actions";
 import { Input } from "./ui/input";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
-import { AddStrategyButton, AdvancedFiltersClient } from "./onboarding";
+import { AddStrategyButton, AdvancedFiltersClient, CompanyAutocomplete } from "./onboarding";
 import { Textarea } from "./ui/textarea";
 import { CreditsDialog } from "@/app/dashboard/[id]/client";
 
@@ -935,3 +935,142 @@ export const ConfirmCompanies = ({ allDetails, userId, queries, defaultInstructi
         </div >
     );
 };
+
+type TQuery = { name: string; domain: string; icon: string | null };
+
+export function AddMoreCompaniesDialog() {
+    const [open, setOpen] = useState(false);
+    const [selectedCompanies, setSelectedCompanies] = useState<TQuery[]>([]);
+    const [inputValue, setInputValue] = useState("");
+    const [isPending, setIsPending] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleAddCompany = (company: TQuery) => {
+        if (!selectedCompanies.some((c) => c.domain === company.domain)) {
+            setSelectedCompanies((prev) => [...prev, company]);
+        }
+        setInputValue("");
+    };
+
+    const handleRemoveCompany = (domain: string) => {
+        setSelectedCompanies((prev) => prev.filter((c) => c.domain !== domain));
+    };
+
+    const toLinkedInUrl = (domain: string) => {
+        domain = domain.trim();
+        if (!domain) return null;
+        if (domain.includes("linkedin.com/company/")) {
+            return domain.startsWith("http") ? domain : `https://${domain}`;
+        }
+        return domain.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split(/[/?#]/)[0];
+    };
+
+    const handleSubmit = async () => {
+        if (selectedCompanies.length === 0) return;
+        setIsPending(true);
+        setError(null);
+
+        const companies = selectedCompanies
+            .map((c) => {
+                const url = toLinkedInUrl(c.domain);
+                if (!url) return null;
+                if (url.includes("linkedin.com/company/")) {
+                    const linkedin_url = url;
+                    const name = c.name || linkedin_url.split("linkedin.com/company/")[1]?.split(/[/?#]/)[0]?.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) || "";
+                    return { linkedin_url, name };
+                }
+                const domain = url;
+                const name = c.name || domain.split(".")[0].replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+                return { domain, name };
+            })
+            .filter(Boolean) as { name: string; domain?: string; linkedin_url?: string }[];
+
+        const result = await addNewCompanies(companies);
+        setIsPending(false);
+        if (!result.success) {
+            setError(result.error ?? "An error occurred");
+        } else {
+            setOpen(false);
+            setSelectedCompanies([]);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
+                    Add More Companies
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>Add Target Companies</DialogTitle>
+                    <DialogDescription>
+                        Search for companies to add to your campaign queue.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-2">
+                    {/* Selected companies */}
+                    <div className="min-h-[56px] bg-black/20 border border-white/10 rounded-lg p-3 flex flex-wrap gap-2">
+                        {selectedCompanies.length === 0 ? (
+                            <span className="text-sm text-white/40 self-center w-full text-center">
+                                No companies selected yet
+                            </span>
+                        ) : (
+                            selectedCompanies.map((company) => (
+                                <div
+                                    key={company.domain}
+                                    className="bg-violet-500/50 flex items-center gap-2 pl-2 pr-1 py-1 rounded-full text-sm font-medium border border-violet-500"
+                                >
+                                    {company.icon ? (
+                                        <img src={company.icon} alt={company.name} className="w-5 h-5 rounded-full object-contain bg-white" />
+                                    ) : (
+                                        <Building2 className="w-5 h-5 p-0.5 text-white/70" />
+                                    )}
+                                    <span className="truncate max-w-[180px]">{company.name}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveCompany(company.domain)}
+                                        className="bg-black/20 hover:bg-red-500/50 rounded-full p-1 transition-colors"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Autocomplete input */}
+                    <CompanyAutocomplete
+                        value={inputValue}
+                        onChange={setInputValue}
+                        onAddCompany={handleAddCompany}
+                        placeholder="Search by company name or paste a LinkedIn URL..."
+                    />
+
+                    {error && (
+                        <p className="text-sm text-red-400 flex items-center gap-1">
+                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                            {error}
+                        </p>
+                    )}
+                </div>
+
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="secondary">Cancel</Button>
+                    </DialogClose>
+                    <Button
+                        variant="primary"
+                        onClick={handleSubmit}
+                        disabled={isPending || selectedCompanies.length === 0}
+                        icon={isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    >
+                        {isPending ? "Adding..." : `Add ${selectedCompanies.length > 0 ? selectedCompanies.length : ""} ${selectedCompanies.length === 1 ? "Company" : "Companies"}`}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}

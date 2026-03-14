@@ -7,7 +7,7 @@ import { CheckCircle, Crown, ExternalLink, Mail, Plus, RefreshCw, Send } from "l
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { redirect } from "next/navigation";
-import { AnimatedResults, ConfirmCompanies } from "@/components/dashboard";
+import { AnimatedResults, AddMoreCompaniesDialog, ConfirmCompanies } from "@/components/dashboard";
 import { calculateProgress } from "@/components/detailsServer";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import Link from "next/link";
@@ -198,6 +198,7 @@ async function ResultsWrapper({ userId }) {
         <Card className="p-8 backdrop-blur-none">
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white">Active Campaigns</h2>
+                <AddMoreCompaniesDialog />
             </div>
 
             <Results results={parsedResults} />

@@ -35,16 +35,16 @@ If any shardcn ui component is not present, use the command: npx shadcn@latest a
 ---
 
 ### Task 3: Adding Target Companies Post-Onboarding
-- [ ] Open `src/app/dashboard/page.tsx` (Main Dashboard). Add a `shadcn/ui` `<Button>` labeled "Add More Companies" at the top of the campaign list.
-- [ ] When clicked, open a `shadcn/ui` `<Dialog>` that renders the existing Company Selection component reused from the onboarding flow (`src/components/CompanyInput.tsx` or similar).
-- [ ] Create a new server action `addNewCompanies(companies)` in `src/actions/onboarding-actions.ts`:
+- [x] Open `src/app/dashboard/page.tsx` (Main Dashboard). Add a `shadcn/ui` `<Button>` labeled "Add More Companies" at the top of the campaign list.
+- [x] When clicked, open a `shadcn/ui` `<Dialog>` that renders the existing Company Selection component reused from the onboarding flow (`src/components/CompanyInput.tsx` or similar).
+- [x] Create a new server action `addNewCompanies(companies)` in `src/actions/onboarding-actions.ts`:
   - Fetch the user's `companiesLimit` from their plan.
   - Count the existing documents in `users/{uid}/data/results`.
   - If `current + new > limit`, throw an "Exceeds plan limit" error.
   - If valid, batch write the new companies to Firestore (initializing `email_sent` with the 1970 Epoch).
   - Call `startServer(userId)` at the end of the action.
-- [ ] **Python Backend (`candidai_script`)**: Verify the backend `run_module` logic. Ensure that when `startServer` is triggered, the script fetches all companies from `results`, filters for those that haven't been processed yet (no email generated), and safely processes the newly appended ones.
-- [ ] Mark completed.
+- [x] **Python Backend (`candidai_script`)**: Verify the backend `run_module` logic. Ensure that when `startServer` is triggered, the script fetches all companies from `results`, filters for those that haven't been processed yet (no email generated), and safely processes the newly appended ones.
+- [x] Mark completed.
 
 ---
 
