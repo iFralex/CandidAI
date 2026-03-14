@@ -69,12 +69,12 @@ A new modular credit package system (10€, 20€, 30€) is introduced. The UI 
 ---
 
 ### Task 6: New Plan & Credits Dashboard Page
-- [ ] Create a new page at `src/app/dashboard/plan-and-credits/page.tsx`.
-- [ ] In the top section of this page, import and reuse the **Plan Selector** component (the exact same one used in the landing page and onboarding) to allow users to buy a new plan when their limit is reached.
-- [ ] In the bottom section, import and reuse the `CreditSelector.tsx` component.
-- [ ] In this specific page context, pass a prop to `CreditSelector` to render a "Buy" button inside each credit package card. When clicked, it should open a shadcn/ui `<Dialog>` containing **only** the `UnifiedCheckout.tsx` component (since the package has already been selected).
-- [ ] Open `src/components/SidebarClientWrapper.tsx` (or the top navigation where credits are displayed). Next to the credits indicator, add a compact `+` button (using the Lucide `Plus` icon). Clicking it should route the user to `/dashboard/plan-and-credits`.
-- [ ] Mark completed.
+- [x] Create a new page at `src/app/dashboard/plan-and-credits/page.tsx`.
+- [x] In the top section of this page, import and reuse the **Plan Selector** component (the exact same one used in the landing page and onboarding) to allow users to buy a new plan when their limit is reached.
+- [x] In the bottom section, import and reuse the `CreditSelector.tsx` component.
+- [x] In this specific page context, pass a prop to `CreditSelector` to render a "Buy" button inside each credit package card. When clicked, it should open a shadcn/ui `<Dialog>` containing **only** the `UnifiedCheckout.tsx` component (since the package has already been selected).
+- [x] Open `src/components/SidebarClientWrapper.tsx` (or the top navigation where credits are displayed). Next to the credits indicator, add a compact `+` button (using the Lucide `Plus` icon). Clicking it should route the user to `/dashboard/plan-and-credits`.
+- [x] Mark completed.
 
 ---
 

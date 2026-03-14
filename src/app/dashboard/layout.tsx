@@ -1,7 +1,7 @@
 // components/DashboardLayout.tsx (rimane un Server Component per la struttura)
 // Non usare 'use client'
 
-import { Activity, BarChart3, FileText, Home, LogOut, Settings, Sparkles, Menu, Zap, Bell, MailCheck } from 'lucide-react'; // Importa le icone
+import { Activity, BarChart3, FileText, Home, LogOut, Settings, Sparkles, Menu, Zap, Bell, MailCheck, Plus } from 'lucide-react'; // Importa le icone
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -178,14 +178,21 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
                                 </div>
                             )}
                             {onboarded && credits && (
-                                <Badge variant={"secondary"}>
-                                    <div className="flex items-center gap-2">
-                                        <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                                        <span className="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-                                            {credits}
-                                        </span>
-                                    </div>
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                    <Badge variant={"secondary"}>
+                                        <div className="flex items-center gap-2">
+                                            <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                                            <span className="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                                                {credits}
+                                            </span>
+                                        </div>
+                                    </Badge>
+                                    <Link href="/dashboard/plan-and-credits">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-white" title="Buy credits or upgrade plan">
+                                            <Plus className="w-4 h-4" />
+                                        </Button>
+                                    </Link>
+                                </div>
                             )}
                         </div>
                     </header>
