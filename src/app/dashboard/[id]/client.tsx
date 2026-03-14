@@ -12,6 +12,8 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText, Copy, Download, ChevronRight, Lock, XCircle } from "lucide-react";
 import Link from "next/link";
+import { CreditSelector } from "@/components/CreditSelector";
+import { UnifiedCheckout } from "@/components/UnifiedCheckout";
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -851,10 +853,12 @@ export function EmailDraftButton({
   );
 }
 
-export const CreditsDialog = ({ children, contentType, unlocked, className = "", action, number = 1 }) => {
+export const CreditsDialog = ({ children, contentType, unlocked, className = "", action, number = 1, email = "" }) => {
   const requiredCredits = creditsInfo[contentType]?.cost || 0 * number;
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [error, setError] = useState(null);
+  const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
+  const [selectedCreditPackageId, setSelectedCreditPackageId] = useState("pkg_1000");
 
   const handleUnlock = async () => {
     setIsUnlocking(true);
@@ -871,6 +875,7 @@ export const CreditsDialog = ({ children, contentType, unlocked, className = "",
   };
 
   return (
+    <>
     <Dialog>
       <DialogTrigger className={className} onClick={() => unlocked ? action?.() : null}>{children}</DialogTrigger>
       {!unlocked && (
@@ -937,12 +942,12 @@ export const CreditsDialog = ({ children, contentType, unlocked, className = "",
                   <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-center rounded-xl p-4 mb-4 flex flex-col items-center gap-3 animate-in fade-in duration-200">
                     <XCircle className="w-6 h-6" />
                     <p>You don’t have enough credits to unlock this content.</p>
-                    <Link
-                      href="/dashboard/credits"
-                      className="mt-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg text-white font-semibold hover:from-purple-600 hover:to-blue-600 transition-all"
+                    <Button
+                      onClick={() => setBuyCreditsOpen(true)}
+                      className="mt-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold"
                     >
                       Buy more credits
-                    </Link>
+                    </Button>
                   </div>
                 )}
 
@@ -998,6 +1003,28 @@ export const CreditsDialog = ({ children, contentType, unlocked, className = "",
         </DialogContent>
       )}
     </Dialog>
+
+    <Dialog open={buyCreditsOpen} onOpenChange={setBuyCreditsOpen}>
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Buy Credits</DialogTitle>
+          <DialogDescription>Select a credit package and complete your purchase instantly.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-6 pt-2">
+          <CreditSelector
+            onSelect={(pkg) => setSelectedCreditPackageId(pkg.id)}
+            selectedId={selectedCreditPackageId}
+          />
+          <UnifiedCheckout
+            purchaseType="credits"
+            itemId={selectedCreditPackageId}
+            email={email}
+            onSuccess={() => setBuyCreditsOpen(false)}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 

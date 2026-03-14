@@ -60,11 +60,11 @@ A new modular credit package system (10€, 20€, 30€) is introduced. The UI 
 ---
 
 ### Task 5: Refactor Insufficient Credits Flow
-- [ ] Open `src/app/dashboard/[id]/client.tsx` and locate the `CreditsDialog` component.
-- [ ] Locate the "Insufficient credits" error block.
-- [ ] Replace the hardcoded `<Link>` with a shadcn/ui `<Button>` that triggers a shadcn/ui `<Dialog>`.
-- [ ] Inside this new Dialog, render **both** the `CreditSelector` and the `UnifiedCheckout` components simultaneously. When the user clicks a package in the selector, the checkout component instantly updates to process that specific amount. This ensures the user can buy credits with the minimum number of clicks without leaving the modal.
-- [ ] Mark completed.
+- [x] Open `src/app/dashboard/[id]/client.tsx` and locate the `CreditsDialog` component.
+- [x] Locate the "Insufficient credits" error block.
+- [x] Replace the hardcoded `<Link>` with a shadcn/ui `<Button>` that triggers a shadcn/ui `<Dialog>`.
+- [x] Inside this new Dialog, render **both** the `CreditSelector` and the `UnifiedCheckout` components simultaneously. When the user clicks a package in the selector, the checkout component instantly updates to process that specific amount. This ensures the user can buy credits with the minimum number of clicks without leaving the modal.
+- [x] Mark completed.
 
 ---
 
