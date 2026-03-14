@@ -309,6 +309,67 @@ export async function POST(req) {
 
                     return { subject: generatedSubject, html: generatedHtml };
 
+                case "purchase-confirmation":
+                    const confirmSubject = `✅ Purchase Confirmed – ${data.item}`;
+                    const confirmHtml = wrapEmail(`
+        <div style="text-align: center; margin-bottom: 30px;">
+          <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.1); border-radius: 24px; margin-bottom: 20px;">
+            <span style="color: #8b5cf6; font-size: 14px; font-weight: 600;">PURCHASE CONFIRMED</span>
+          </div>
+        </div>
+
+        <h2 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0 0 16px; line-height: 1.3;">
+          Payment Successful! 🎉
+        </h2>
+
+        <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+          Thank you for your purchase. Your account has been updated and you're ready to keep going!
+        </p>
+
+        <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.1) 100%); border: 2px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 24px; margin: 24px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            <tr>
+              <td style="padding: 10px 0; border-bottom: 1px solid rgba(139, 92, 246, 0.2);">
+                <span style="color: #888888; font-size: 14px;">Item</span>
+              </td>
+              <td style="padding: 10px 0; border-bottom: 1px solid rgba(139, 92, 246, 0.2); text-align: right;">
+                <span style="color: #ffffff; font-size: 14px; font-weight: 600;">${data.item}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; border-bottom: 1px solid rgba(139, 92, 246, 0.2);">
+                <span style="color: #888888; font-size: 14px;">Amount Paid</span>
+              </td>
+              <td style="padding: 10px 0; border-bottom: 1px solid rgba(139, 92, 246, 0.2); text-align: right;">
+                <span style="color: #8b5cf6; font-size: 14px; font-weight: 600;">${data.amount}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0;">
+                <span style="color: #888888; font-size: 14px;">New Credit Balance</span>
+              </td>
+              <td style="padding: 10px 0; text-align: right;">
+                <span style="color: #ffffff; font-size: 14px; font-weight: 600;">${data.newBalance} credits</span>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="text-align: center; margin: 32px 0;">
+          ${button('Go to Dashboard', `${domain}/dashboard`)}
+          ${data.receiptUrl ? button('View Receipt', data.receiptUrl, false) : ''}
+        </div>
+
+        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
+          <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">
+            <strong style="color: #aaaaaa;">Questions?</strong><br>
+            If you have any questions about your purchase, contact us at <a href="mailto:support@candidai.com" style="color: #8b5cf6; text-decoration: none;">support@candidai.com</a>
+          </p>
+        </div>
+      `, `Your purchase of ${data.item} for ${data.amount} is confirmed`);
+
+                    return { subject: confirmSubject, html: confirmHtml };
+
                 default:
                     return {
                         subject: "CandidAI Notification",

@@ -79,11 +79,11 @@ A new modular credit package system (10€, 20€, 30€) is introduced. The UI 
 ---
 
 ### Task 7: Transactional Email via Resend
-- [ ] Open `src/app/api/send-email/route.ts`.
-- [ ] Add `"purchase-confirmation"` to the `EmailType` union type.
--[ ] Implement the HTML template block for this email. It should accept a payload containing: `amount` (e.g., "€10.00"), `item` (e.g., "2500 Credits" or "Pro Plan"), `newBalance`, and the `receiptUrl` provided by Stripe.
-- [ ] Open `src/app/api/stripe-webhook/route.ts`. Upon successful completion of `payment_intent.succeeded`, trigger the `POST` request to the `/api/send-email` route with the updated transaction details to send the receipt to the user.
-- [ ] Mark completed.
+- [x] Open `src/app/api/send-email/route.ts`.
+- [x] Add `"purchase-confirmation"` to the `EmailType` union type.
+- [x] Implement the HTML template block for this email. It should accept a payload containing: `amount` (e.g., "€10.00"), `item` (e.g., "2500 Credits" or "Pro Plan"), `newBalance`, and the `receiptUrl` provided by Stripe.
+- [x] Open `src/app/api/stripe-webhook/route.ts`. Upon successful completion of `payment_intent.succeeded`, trigger the `POST` request to the `/api/send-email` route with the updated transaction details to send the receipt to the user.
+- [x] Mark completed.
 
 ---
 

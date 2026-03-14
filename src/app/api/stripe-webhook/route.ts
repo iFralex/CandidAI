@@ -72,6 +72,41 @@ export async function POST(req: Request) {
       if (purchaseType === "plan") {
         await startServer(userId);
       }
+
+      // Send purchase confirmation email (non-blocking)
+      try {
+        let receiptUrl: string | null = null;
+        if (paymentIntent.latest_charge) {
+          const charge = await stripe.charges.retrieve(paymentIntent.latest_charge as string);
+          receiptUrl = charge.receipt_url ?? null;
+        }
+
+        const userSnap = await userRef.get();
+        const newBalance = userSnap.data()?.credits ?? 0;
+
+        const amountFormatted = `€${(paymentIntent.amount / 100).toFixed(2)}`;
+        let itemName: string;
+        if (purchaseType === "credits") {
+          const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId);
+          itemName = `${pkg?.credits ?? ""} Credits`;
+        } else {
+          const plan = plansInfo.find((p) => p.id === itemId);
+          itemName = `${plan?.name ?? itemId} Plan`;
+        }
+
+        const domain = process.env.NEXT_PUBLIC_DOMAIN || "https://candidai.com";
+        await fetch(`${domain}/api/send-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            type: "purchase-confirmation",
+            data: { amount: amountFormatted, item: itemName, newBalance, receiptUrl },
+          }),
+        });
+      } catch (emailErr) {
+        console.error("Failed to send purchase confirmation email:", emailErr);
+      }
     }
 
     return new Response("ok", { status: 200 });
