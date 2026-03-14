@@ -1,8 +1,6 @@
 from candidai_script import db
 from firebase_admin import firestore
 from typing import Dict
-from candidai_script import db
-from datetime import datetime, timezone
 
 def get_user_data(user_id):
     """
@@ -29,24 +27,8 @@ def valid_account(user_id):
     if not user:
         print("❌ Utente non trovato.")
         return
-    
-    expirate_dt = user.get("expirate")   # DatetimeWithNanoseconds
 
-    if expirate_dt is None:
-        print("Nessun expire presente.")
-        return
-
-    # Assicura timezone UTC (nel 99% dei casi è già settato)
-    if expirate_dt.tzinfo is None:
-        expirate_dt = expirate_dt.replace(tzinfo=timezone.utc)
-
-    now = datetime.now(timezone.utc)
-
-    if expirate_dt < now:
-        print("Il timestamp è scaduto")
-        return
-    else:
-        return True
+    return True
 
 def get_account_data(user_id):
     """

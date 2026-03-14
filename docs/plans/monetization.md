@@ -12,12 +12,12 @@ A new modular credit package system (10€, 20€, 30€) is introduced. The UI 
 ---
 
 ### Task 1: Complete Nexi Removal & Expiration Logic
-- [ ] Open `src/app/api/protected/nexi-payment/route.ts` and delete the entire file.
-- [ ] Open `.env.local` and remove the variables `NEXT_PUBLIC_NEXI_ALIAS` and `NEXT_PUBLIC_NEXI_SECRET_KEY`.
-- [ ] Open `src/components/onboarding.tsx` and `src/components/onboardingServer.tsx`. Remove any UI elements, functions, or server logic related to Nexi payments.
--[ ] Open `src/actions/onboarding-actions.ts`. In the onboarding completion / user setup logic, **completely remove the initialization of the `expirate` field**.
-- [ ] Open the Python backend file `candidai_script`. Find the logic that validates the user's subscription and remove the check for `expired`. The backend must now rely solely on the target companies limit vs processed companies.
-- [ ] Mark completed.
+- [x] Open `src/app/api/protected/nexi-payment/route.ts` and delete the entire file.
+- [x] Open `.env.local` and remove the variables `NEXT_PUBLIC_NEXI_ALIAS` and `NEXT_PUBLIC_NEXI_SECRET_KEY`.
+- [x] Open `src/components/onboarding.tsx` and `src/components/onboardingServer.tsx`. Remove any UI elements, functions, or server logic related to Nexi payments.
+-[x] Open `src/actions/onboarding-actions.ts`. In the onboarding completion / user setup logic, **completely remove the initialization of the `expirate` field**.
+- [x] Open the Python backend file `candidai_script`. Find the logic that validates the user's subscription and remove the check for `expired`. The backend must now rely solely on the target companies limit vs processed companies.
+- [x] Mark completed.
 
 ---
 

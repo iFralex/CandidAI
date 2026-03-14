@@ -1,6 +1,5 @@
 import { CheckCircle, CreditCard, Wand2 } from 'lucide-react'
-import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, PaymentStepClient, PaymentRedirectClient, CheckoutForm, SubscribeWrapper } from '@/components/onboarding'
-import crypto from "crypto";
+import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, CheckoutForm, SubscribeWrapper } from '@/components/onboarding'
 import { ProfileAnalysisClient } from '@/components/onboarding';
 import { startServer, submitQueries } from '@/actions/onboarding-actions'
 import { cookies } from 'next/headers'
@@ -33,92 +32,6 @@ export function SetupCompleteServer({ userId }: SetupCompleteServerProps) {
             <SetupCompleteClient userId={userId} />
         </div>
     )
-}
-
-interface PaymentSetupServerProps {
-    userId: string
-}
-
-export function PaymentStepServer({ userId }: PaymentSetupServerProps) {
-    const amount = 100; // centesimi
-    const transactionId = "TXN" + Date.now();
-    const divisa = 978;
-    const secret = process.env.NEXT_PUBLIC_NEXI_SECRET_KEY;
-
-    const stringa = `codTrans=${transactionId}divisa=${divisa}importo=${amount}${secret}`;
-    const mac = crypto.createHash("sha1").update(stringa).digest("hex");
-
-    const serverResponse = {
-        baseConfig: {
-            apiKey: process.env.NEXT_PUBLIC_NEXI_ALIAS,
-            environment: "PROD"
-        },
-        paymentParams: {
-            amount: amount,
-            transactionId: transactionId,
-            currency: 978,
-            timeStamp: Date.now(),
-            mac: mac,
-            url: process.env.NEXT_PUBLIC_DOMAIN + "/dashboard?callback",
-            url_back: process.env.NEXT_PUBLIC_DOMAIN + "/dashboard?callback",
-            urlpost: process.env.NEXT_PUBLIC_DOMAIN + "/api/payment-confirm",
-        },
-        customParams: {},
-        language: "ENG",
-    }
-
-    return (
-        <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-                <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CreditCard className="w-10 h-10 text-white" />
-                </div>
-
-                <h2 className="text-3xl font-bold text-white mb-4">
-                    Payment Setup 💳
-                </h2>
-                <p className="text-lg text-gray-400">
-                    Perfect! Before processing payments, let’s configure your preferred payment methods and billing options.
-                </p>
-            </div>
-
-            <PaymentStepClient userId={userId} serverResponse={serverResponse} />
-        </div>
-    )
-}
-
-export function PaymentRedirectServer({ userId }) {
-    const amount = 100; // = 50€
-    const codTrans = "TXN" + Date.now();
-    const divisa = "EUR";
-    const secret = process.env.NEXT_PUBLIC_NEXI_SECRET_KEY;
-
-    // Calcolo MAC secondo documentazione
-    const macString =
-        `codTrans=${codTrans}divisa=${divisa}importo=${amount}${secret}`;
-
-    const mac = crypto.createHash("sha1").update(macString).digest("hex");
-
-    const payload = {
-        alias: process.env.NEXT_PUBLIC_NEXI_ALIAS,
-        importo: amount,
-        divisa: divisa,
-        codTrans: codTrans,
-        url: process.env.NEXT_PUBLIC_DOMAIN + "/payment/result",
-        url_back: process.env.NEXT_PUBLIC_DOMAIN + "/payment/cancel",
-        urlpost: process.env.NEXT_PUBLIC_DOMAIN + "/api/payment-confirm",
-        mac: mac,
-        mail: "cliente@example.com",
-        languageId: "ITA",
-        descrizione: "Pagamento ordine #" + codTrans,
-    };
-
-    return (
-        <div className="max-w-xl mx-auto">
-            <h2 className="text-2xl font-bold text-white mb-4">Checkout Nexi</h2>
-            <PaymentRedirectClient payload={payload} />
-        </div>
-    );
 }
 
 export async function PaymentStripeServer({ userId, billingType, plan }) {
