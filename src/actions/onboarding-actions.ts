@@ -723,6 +723,43 @@ export async function addNewCompanies(companies: { name: string; domain?: string
     return { success: true };
 }
 
+export async function updateSettings(data: {
+    marketingEmails: boolean;
+    reminderFrequency: string;
+}) {
+    const userId = await checkAuth();
+
+    const settingsRef = adminDb
+        .collection("users")
+        .doc(userId)
+        .collection("data")
+        .doc("settings");
+
+    await settingsRef.set({ preferences: data }, { merge: true });
+
+    revalidatePath("/dashboard/settings");
+}
+
+export async function getSettings() {
+    const userId = await checkAuth();
+
+    const settingsRef = adminDb
+        .collection("users")
+        .doc(userId)
+        .collection("data")
+        .doc("settings");
+
+    const snap = await settingsRef.get();
+    if (!snap.exists) {
+        return { marketingEmails: true, reminderFrequency: "weekly" };
+    }
+    const prefs = snap.data()?.preferences ?? {};
+    return {
+        marketingEmails: prefs.marketingEmails ?? true,
+        reminderFrequency: prefs.reminderFrequency ?? "weekly",
+    };
+}
+
 export const resendEmailVerification = async () => {
     const userId = await checkAuth(false)
     fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {

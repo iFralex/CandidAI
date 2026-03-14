@@ -58,11 +58,11 @@ If any shardcn ui component is not present, use the command: npx shadcn@latest a
 ---
 
 ### Task 5: Settings Page (`/dashboard/settings`)
-- [ ] Create a new page at `src/app/dashboard/settings/page.tsx`.
-- [ ] Build a form using `shadcn/ui` `<Form>`, `<Switch>` (for marketing email authorization), and `<Select>` (for reminder email frequency).
-- [ ] Create a server action `updateSettings(data)` that writes to the document `users/{uid}/data/settings/preferences` (using `set` with `{ merge: true }`).
-- [ ] Fetch the existing settings on page load and populate the default values of the form.
-- [ ] Mark completed.
+- [x] Create a new page at `src/app/dashboard/settings/page.tsx`.
+- [x] Build a form using `shadcn/ui` `<Form>`, `<Switch>` (for marketing email authorization), and `<Select>` (for reminder email frequency).
+- [x] Create a server action `updateSettings(data)` that writes to the document `users/{uid}/data/settings/preferences` (using `set` with `{ merge: true }`).
+- [x] Fetch the existing settings on page load and populate the default values of the form.
+- [x] Mark completed.
 
 ---
 
