@@ -29,9 +29,14 @@ function Card({ children, className, hover = true, gradient = false, ...props }:
 }
 
 async function ResultsWrapper({ userId }) {
+    const isEpochTs = (ts: any) => ts?._seconds === 0;
+    const isSentTs = (ts: any) => ts?._seconds > 0;
+
     const parseResults = (results) => {
         delete results.companies_to_confirm
-        return Object.entries(results).map(([id, info]) => {
+        return Object.entries(results)
+            .filter(([, info]: any) => !isSentTs(info?.email_sent))
+            .map(([id, info]) => {
             // valori sicuri
             const recruiterName = info?.recruiter?.name ?? null;
             const recruiterTitle = info?.recruiter?.job_title ?? null;
@@ -103,10 +108,10 @@ async function ResultsWrapper({ userId }) {
         .filter(obj => !("email_sent" in obj))
         .length;
     const readyCampaigns = Object.values(data.data)
-        .filter(obj => obj.email_sent === false)
+        .filter((obj: any) => isEpochTs(obj?.email_sent))
         .length;
     const sentCampaigns = Object.values(data.data)
-        .filter(obj => obj.email_sent !== false)
+        .filter((obj: any) => isSentTs(obj?.email_sent))
         .length;
     const articlesFound = Object.values(data.data)
         .reduce((sum, obj) => sum + (obj.blog_articles || 0), 0);

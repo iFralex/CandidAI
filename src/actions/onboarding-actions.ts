@@ -6,7 +6,7 @@ import { adminStorage, adminDb } from '@/lib/firebase-admin'
 import { cookies } from 'next/headers';
 import { getTokens } from 'next-firebase-auth-edge';
 import { clientConfig, creditsInfo, plansData, serverConfig } from '@/config';
-import { FieldValue } from 'firebase-admin/firestore'
+import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 
 export async function startServer(userId = null) {
     if (!userId)
@@ -503,8 +503,8 @@ export async function submitEmailSent(companyId: string, sent: boolean) {
     // Ottieni l'utente autenticato
     const userId = await checkAuth();
 
-    // Valore da salvare: false o timestamp server
-    const value = sent ? FieldValue.serverTimestamp() : false;
+    // Valore da salvare: epoch timestamp o timestamp server
+    const value = sent ? FieldValue.serverTimestamp() : Timestamp.fromDate(new Date(0));
 
     // --- Batch Firestore Admin ---
     const batch = adminDb.batch();

@@ -1042,6 +1042,7 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
   const [isEmailSubmitting, setIsEmailSubmitting] = useState(false); // ✅ stato di caricamento per Email Sent
   const [email, setEmail] = useState(data.email || {});
   const [emailSentSuccess, setEmailSentSuccess] = useState(false);
+  const isEmailSent = (ts: any) => ts?._seconds > 0;
 
   const rightInstructions = defaultInstructions !== undefined ? (defaultInstructions || instructions) : instructions
   const handleSetRightInstructions = () => {
@@ -1135,7 +1136,7 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
               <Input
                 value={(!inProgress ? email : placeholderEmail)?.subject}
                 onChange={(e) => setEmail((prev) => ({ ...prev, subject: e.target.value }))}
-                disabled={inProgress || email.email_sent}
+                disabled={inProgress || isEmailSent(email.email_sent)}
               />
             </motion.div>
 
@@ -1145,7 +1146,7 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
                 rows={12}
                 value={(!inProgress ? email : placeholderEmail)?.body}
                 onChange={(e) => setEmail((prev) => ({ ...prev, body: e.target.value }))}
-                disabled={inProgress || email.email_sent}
+                disabled={inProgress || isEmailSent(email.email_sent)}
               />
             </motion.div>
 
@@ -1190,7 +1191,7 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
           {/* Colonna laterale */}
           <motion.div variants={itemVariants} className="col-span-1 space-y-4 mt-4 sm:mt-0">
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              {!email.email_sent ? (
+              {!isEmailSent(email.email_sent) ? (
                 <EmailDialog
                   to={email?.email_address}
                   from={"ifralex.business@gmail.com"}

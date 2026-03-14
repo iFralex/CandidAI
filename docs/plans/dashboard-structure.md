@@ -27,10 +27,10 @@ If any shardcn ui component is not present, use the command: npx shadcn@latest a
 ---
 
 ### Task 2: Refactoring `email_sent` Logic & Python Backend Integration
-- [ ] Open `src/actions/onboarding-actions.ts`. In the functions that initialize campaign results or generate emails, change the default initialization of the `email_sent` field from `false` to a Firestore Timestamp representing `1970-01-01T00:00:00Z` (Epoch).
-- [ ] **Python Backend (`candidai_script`)**: Open the Python backend script. Locate where the database rows for newly discovered recruiters/companies are created. Change the `email_sent` default value being written to Firestore from `False` to a datetime object representing `1970-01-01`. 
-- [ ] Update the `dashboardServer.tsx` (or the API route `results/route.ts`) to modify the main dashboard query: it must now fetch only the campaigns where `email_sent == Timestamp(1970-01-01)` (meaning they are pending/processing).
-- [ ] Mark completed.
+- [x] Open `src/actions/onboarding-actions.ts`. In the functions that initialize campaign results or generate emails, change the default initialization of the `email_sent` field from `false` to a Firestore Timestamp representing `1970-01-01T00:00:00Z` (Epoch).
+- [x] **Python Backend (`candidai_script`)**: Open the Python backend script. Locate where the database rows for newly discovered recruiters/companies are created. Change the `email_sent` default value being written to Firestore from `False` to a datetime object representing `1970-01-01`.
+- [x] Update the `dashboardServer.tsx` (or the API route `results/route.ts`) to modify the main dashboard query: it must now fetch only the campaigns where `email_sent == Timestamp(1970-01-01)` (meaning they are pending/processing).
+- [x] Mark completed.
 
 ---
 
