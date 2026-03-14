@@ -45,3 +45,5 @@ venv/
 __pycache__/
 *.pyc
 **/store_pdl.json
+.ralphex/
+.DS_Store
