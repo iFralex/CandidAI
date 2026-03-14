@@ -84,8 +84,8 @@ If any shardcn ui component is not present, use the command: npx shadcn@latest a
 ---
 
 ### Task 7: Billing History Page (`/dashboard/billing`)
-- [ ] Create a new page at `src/app/dashboard/billing/page.tsx`.
-- [ ] Create a server function `fetchBillingHistory()` that queries the `users/{uid}/payments` subcollection, ordered by `createdAt` descending.
-- [ ] Render the data using the `shadcn/ui` `<Table>` components (`Table`, `TableHeader`, `TableRow`, `TableHead`, `TableCell`).
-- [ ] Display columns for: Date, Description/Item (e.g., "Pro Plan" or "2500 Credits"), Amount, and Status.
-- [ ] Mark completed.
+- [x] Create a new page at `src/app/dashboard/billing/page.tsx`.
+- [x] Create a server function `fetchBillingHistory()` that queries the `users/{uid}/payments` subcollection, ordered by `createdAt` descending.
+- [x] Render the data using the `shadcn/ui` `<Table>` components (`Table`, `TableHeader`, `TableRow`, `TableHead`, `TableCell`).
+- [x] Display columns for: Date, Description/Item (e.g., "Pro Plan" or "2500 Credits"), Amount, and Status.
+- [x] Mark completed.

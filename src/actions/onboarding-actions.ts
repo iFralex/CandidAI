@@ -837,6 +837,32 @@ export async function updateUserEmail(newEmail: string) {
     revalidatePath("/dashboard/profile");
 }
 
+export async function fetchBillingHistory() {
+    const userId = await checkAuth();
+
+    const paymentsSnap = await adminDb
+        .collection("users")
+        .doc(userId)
+        .collection("payments")
+        .orderBy("createdAt", "desc")
+        .get();
+
+    return paymentsSnap.docs.map((doc) => {
+        const d = doc.data();
+        const createdAt = d.createdAt?._seconds
+            ? new Date(d.createdAt._seconds * 1000).toISOString()
+            : null;
+        return {
+            id: doc.id,
+            createdAt,
+            description: d.description ?? d.item ?? null,
+            amount: d.amount ?? null,
+            currency: d.currency ?? "usd",
+            status: d.status ?? null,
+        };
+    });
+}
+
 export async function updateAccountData(data: Record<string, any>) {
     const userId = await checkAuth();
 
