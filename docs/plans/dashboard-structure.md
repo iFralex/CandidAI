@@ -49,11 +49,11 @@ If any shardcn ui component is not present, use the command: npx shadcn@latest a
 ---
 
 ### Task 4: All Sent Emails Page (`/dashboard/sent-emails`)
-- [ ] Create a new page at `src/app/dashboard/sent-emails/page.tsx`.
-- [ ] Create a server-side fetch function that queries the `users/{uid}/data/results` collection for documents where `email_sent > Timestamp(1970-01-01)`.
-- [ ] Render the fetched campaigns using the existing `CampaignCard` component.
-- [ ] Add a Date Filter at the top of the page using `shadcn/ui` components (`<Popover>`, `<Calendar>`, `<Select>`). When a date range is selected, update the page state to filter the rendered list locally or via a new server action query.
-- [ ] Mark completed.
+- [x] Create a new page at `src/app/dashboard/sent-emails/page.tsx`.
+- [x] Create a server-side fetch function that queries the `users/{uid}/data/results` collection for documents where `email_sent > Timestamp(1970-01-01)`.
+- [x] Render the fetched campaigns using the existing `CampaignCard` component.
+- [x] Add a Date Filter at the top of the page using `shadcn/ui` components (`<Popover>`, `<Calendar>`, `<Select>`). When a date range is selected, update the page state to filter the rendered list locally or via a new server action query.
+- [x] Mark completed.
 
 ---
 
