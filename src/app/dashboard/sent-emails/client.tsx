@@ -34,8 +34,13 @@ export function SentEmailsFilter({ preset, from, to, totalCount }: SentEmailsFil
     };
 
     const handlePresetChange = (value: string) => {
-        if (value !== "custom") setDateRange(undefined);
-        pushUpdate(value, dateRange);
+        if (value === "custom") {
+            // Don't navigate yet — wait for the user to pick dates in the calendar
+            setDateRange(undefined);
+            return;
+        }
+        setDateRange(undefined);
+        pushUpdate(value, undefined);
     };
 
     const handleDateRangeSelect = (range: DateRange | undefined) => {

@@ -1,7 +1,7 @@
 from candidai_script import db
 from firebase_admin import firestore
 from typing import Dict
-from datetime import datetime
+from datetime import datetime, timezone
 
 def get_user_data(user_id):
     """
@@ -407,7 +407,7 @@ def save_email(user_id: str, unique_id: str, email, prompt, email_address, cv_ur
 
     results_ref.set({
         unique_id: {
-            "email_sent": datetime(1970, 1, 1)
+            "email_sent": datetime(1970, 1, 1, tzinfo=timezone.utc)
         }
     }, merge=True)
 

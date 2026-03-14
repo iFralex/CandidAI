@@ -13,19 +13,6 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ResendEmailVerificationBtn } from '@/components/onboarding';
 
-// Tipo di dati utente (puoi prenderlo dal tuo sistema di auth)
-interface User {
-    name: string;
-    email: string;
-}
-
-interface DashboardLayoutProps {
-    children: React.ReactNode;
-    user: User; // Questi dati possono essere passati o fetchati qui
-    currentStep?: number | null;
-    totalSteps?: number | null;
-}
-
 // 1. Dati di navigazione definiti nel Server Component (meno JS client)
 const navigationItems = [
     { name: 'Dashboard', icon: <Home className="w-5 h-5" />, href: '/dashboard' },

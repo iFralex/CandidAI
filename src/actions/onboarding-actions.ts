@@ -763,7 +763,7 @@ export async function getSettings() {
 
 export const resendEmailVerification = async () => {
     const userId = await checkAuth(false)
-    fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -771,6 +771,9 @@ export const resendEmailVerification = async () => {
             type: "welcome"
         })
     });
+    if (!res.ok) {
+        throw new Error("Failed to send verification email. Please try again.")
+    }
 }
 
 export async function getProfileData() {
@@ -824,15 +827,22 @@ export async function updateUserEmail(newEmail: string) {
 
     await adminAuth.updateUser(userId, { email: newEmail, emailVerified: false });
 
-    const verificationLink = await adminAuth.generateEmailVerificationLink(newEmail);
-
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({
-        from: "CandidAI <no-reply@candidai.tech>",
-        to: newEmail,
-        subject: "Verify your new CandidAI email address",
-        html: `<p>You updated your CandidAI email address. Please verify it by clicking: <a href="${verificationLink}">Verify Email</a></p>`,
-    });
+    // Email is now updated in Auth. Attempt to send verification link.
+    // If this fails, the email change is still applied — user can resend verification.
+    try {
+        const verificationLink = await adminAuth.generateEmailVerificationLink(newEmail);
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        await resend.emails.send({
+            from: "CandidAI <no-reply@candidai.tech>",
+            to: newEmail,
+            subject: "Verify your new CandidAI email address",
+            html: `<p>You updated your CandidAI email address. Please verify it by clicking: <a href="${verificationLink}">Verify Email</a></p>`,
+        });
+    } catch (err) {
+        console.error("Failed to send verification email after email update:", err);
+        revalidatePath("/dashboard/profile");
+        throw new Error("Email updated but verification email failed to send. Please use 'Resend Verification' to get a new link.");
+    }
 
     revalidatePath("/dashboard/profile");
 }
@@ -849,9 +859,11 @@ export async function fetchBillingHistory() {
 
     return paymentsSnap.docs.map((doc) => {
         const d = doc.data();
-        const createdAt = d.createdAt?._seconds
-            ? new Date(d.createdAt._seconds * 1000).toISOString()
-            : null;
+        const createdAt = d.createdAt?.toDate
+            ? d.createdAt.toDate().toISOString()
+            : d.createdAt?.seconds
+                ? new Date(d.createdAt.seconds * 1000).toISOString()
+                : null;
         return {
             id: doc.id,
             createdAt,

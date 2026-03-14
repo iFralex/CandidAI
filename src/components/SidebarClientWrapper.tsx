@@ -76,10 +76,10 @@ export function SidebarClientWrapper({ user, navigationItems }: SidebarClientWra
                                 return (
                                     <SidebarMenuItem key={item.name}>
                                         <SidebarMenuButton asChild isActive={isActive} size="lg">
-                                            <a href={item.href}>
+                                            <Link href={item.href}>
                                                 {item.icon}
                                                 <span>{item.name}</span>
-                                            </a>
+                                            </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
                                 );
