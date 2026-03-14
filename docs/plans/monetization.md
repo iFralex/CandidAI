@@ -52,10 +52,10 @@ A new modular credit package system (10€, 20€, 30€) is introduced. The UI 
 ---
 
 ### Task 4: Unified Checkout & Reusable Selection Components
-- [ ] Create `src/components/UnifiedCheckout.tsx`. Extract the existing Stripe checkout logic from the final step of the onboarding into this component. Adapt it so it accepts a `purchaseType` and `itemId` as props, allowing it to dynamically handle both plan purchases and credit purchases without duplicating code.
-- [ ] Create `src/components/CreditSelector.tsx`. Build a clean UI to display the 3 credit packages. It should accept an `onSelect` callback.
-- [ ] Ensure the existing Plan Selector component (used in the landing page) is modular enough to be imported and reused elsewhere.
-- [ ] Mark completed.
+- [x] Create `src/components/UnifiedCheckout.tsx`. Extract the existing Stripe checkout logic from the final step of the onboarding into this component. Adapt it so it accepts a `purchaseType` and `itemId` as props, allowing it to dynamically handle both plan purchases and credit purchases without duplicating code.
+- [x] Create `src/components/CreditSelector.tsx`. Build a clean UI to display the 3 credit packages. It should accept an `onSelect` callback.
+- [x] Ensure the existing Plan Selector component (used in the landing page) is modular enough to be imported and reused elsewhere.
+- [x] Mark completed.
 
 ---
 
