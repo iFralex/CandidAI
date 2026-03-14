@@ -38,16 +38,16 @@ A new modular credit package system (10€, 20€, 30€) is introduced. The UI 
 ---
 
 ### Task 3: Stripe Backend Refactoring (PaymentIntents Only)
-- [ ] Rename the file `src/app/api/create-subscription/route.ts` to `src/app/api/create-payment/route.ts`.
-- [ ] Refactor the route to exclusively call `stripe.paymentIntents.create`. Remove all logic related to creating Stripe Subscriptions or Customers for recurring billing.
-- [ ] Add metadata to the PaymentIntent: `{ userId: string, purchaseType: 'plan' | 'credits', itemId: string }`.
-- [ ] Open `src/app/api/stripe-webhook/route.ts`. Remove the handling of the `invoice.paid` event and any `stripe.subscriptions` calls.
-- [ ] Implement handling for the `payment_intent.succeeded` event exclusively.
-- [ ] Inside the webhook logic:
+- [x] Rename the file `src/app/api/create-subscription/route.ts` to `src/app/api/create-payment/route.ts`.
+- [x] Refactor the route to exclusively call `stripe.paymentIntents.create`. Remove all logic related to creating Stripe Subscriptions or Customers for recurring billing.
+- [x] Add metadata to the PaymentIntent: `{ userId: string, purchaseType: 'plan' | 'credits', itemId: string }`.
+- [x] Open `src/app/api/stripe-webhook/route.ts`. Remove the handling of the `invoice.paid` event and any `stripe.subscriptions` calls.
+- [x] Implement handling for the `payment_intent.succeeded` event exclusively.
+- [x] Inside the webhook logic:
   - If `purchaseType === 'credits'`: Use `adminDb` to update the user document with `FieldValue.increment(creditsAmount)` on the `credits` field.
   - If `purchaseType === 'plan'`: Update the user's `plan` field, reset or add to their generated companies limit, and increment the base credits included in the plan.
   - Write a payment record to the `users/{uid}/payments/{paymentId}` subcollection.
-- [ ] Mark completed.
+- [x] Mark completed.
 
 ---
 
