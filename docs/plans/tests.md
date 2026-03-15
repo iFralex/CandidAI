@@ -230,13 +230,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.2: Integration Test - API Route - POST /api/auth - Login Mode
-- [ ] Verify valid credentials return `{ success: true, idToken, uid }` and update `lastLogin` in Firestore.
-- [ ] Verify wrong password returns `{ success: false }` with status 401 (MSW returns `INVALID_PASSWORD`).
-- [ ] Verify unregistered email returns `{ success: false }` with status 401 (MSW returns `EMAIL_NOT_FOUND`).
-- [ ] Verify disabled account returns `{ success: false }` with status 403 (MSW returns `USER_DISABLED`).
-- [ ] Verify missing `mode` returns status 400.
-- [ ] Verify invalid `mode` value returns status 400.
-- [ ] Mark completed
+- [x] Verify valid credentials return `{ success: true, idToken, uid }` and update `lastLogin` in Firestore.
+- [x] Verify wrong password returns `{ success: false }` with status 401 (MSW returns `INVALID_PASSWORD`).
+- [x] Verify unregistered email returns `{ success: false }` with status 401 (MSW returns `EMAIL_NOT_FOUND`).
+- [x] Verify disabled account returns `{ success: false }` with status 403 (MSW returns `USER_DISABLED`).
+- [x] Verify missing `mode` returns status 400.
+- [x] Verify invalid `mode` value returns status 400.
+- [x] Mark completed
 
 ### Task 5.3: Integration Test - API Route - POST /api/auth/forgot-password
 - [ ] Verify valid registered email generates reset link via Firebase Admin + sends email via Resend and returns `{ success: true }`.

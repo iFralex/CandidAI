@@ -91,7 +91,9 @@ export async function POST(req: Request) {
 
     const loginData = await loginRes.json();
     if (!loginRes.ok) {
-      return NextResponse.json({ error: loginData.error.message }, { status: 401 });
+      const errMsg: string = loginData?.error?.message ?? "AUTH_ERROR";
+      const status = errMsg === "USER_DISABLED" ? 403 : 401;
+      return NextResponse.json({ success: false, error: errMsg }, { status });
     }
 
     uid = loginData.localId;
