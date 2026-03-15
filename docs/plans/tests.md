@@ -342,12 +342,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.15: Integration Test - API Route - POST /api/protected/all_details
-- [ ] Verify `{ companyIds: ["company1", "company2"] }` returns details for both from Firestore.
-- [ ] Verify non-existent `companyId` returns `null` for that ID in the array without crashing.
-- [ ] Verify empty `companyIds` array returns empty array.
-- [ ] Verify non-array `companyIds` returns status 400.
-- [ ] Verify request without auth returns status 401.
-- [ ] Mark completed
+- [x] Verify `{ companyIds: ["company1", "company2"] }` returns details for both from Firestore.
+- [x] Verify non-existent `companyId` returns `null` for that ID in the array without crashing.
+- [x] Verify empty `companyIds` array returns empty array.
+- [x] Verify non-array `companyIds` returns status 400.
+- [x] Verify request without auth returns status 401.
+- [x] Mark completed
 
 ### Task 5.16: Integration Test - API Route - GET /api/protected/result/[resultId]
 - [ ] Verify valid `resultId` returns campaign details from Firestore.
