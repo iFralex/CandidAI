@@ -648,13 +648,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 12.8: E2E Test - Auth - Logout and Route Protection
-- [ ] Logged-in user: access `/dashboard` -> OK.
-- [ ] Unauthenticated user: attempt access `/dashboard` -> redirect to `/login`.
-- [ ] Unauthenticated user: attempt access `/dashboard/settings` -> redirect to `/login`.
-- [ ] Unauthenticated user: attempt access any `/dashboard/*` -> redirect to `/login`.
-- [ ] Logged-in user: access `/login` -> redirect to `/dashboard`.
-- [ ] Logout: cookie removed -> redirect to `/login` -> access to `/dashboard` denied.
-- [ ] Mark completed
+- [x] Logged-in user: access `/dashboard` -> OK.
+- [x] Unauthenticated user: attempt access `/dashboard` -> redirect to `/login`.
+- [x] Unauthenticated user: attempt access `/dashboard/settings` -> redirect to `/login`.
+- [x] Unauthenticated user: attempt access any `/dashboard/*` -> redirect to `/login`.
+- [x] Logged-in user: access `/login` -> redirect to `/dashboard`.
+- [x] Logout: cookie removed -> redirect to `/login` -> access to `/dashboard` denied.
+- [x] Mark completed
 
 ### Task 13.1: E2E Test - Onboarding Flow - Persona A: Free Trial
 - [ ] Setup: Registered user, `onboardingStep=1`.
