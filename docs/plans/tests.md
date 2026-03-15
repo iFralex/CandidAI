@@ -460,10 +460,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.16: Integration Test - Server Actions - getProfileData
-- [ ] Verify it returns `{ name, picture, plan, credits, email }` for authenticated user.
-- [ ] Verify user without `picture` returns `null` or default.
-- [ ] Verify unauthenticated user throws error.
-- [ ] Mark completed
+- [x] Verify it returns `{ name, picture, plan, credits, email }` for authenticated user.
+- [x] Verify user without `picture` returns `null` or default.
+- [x] Verify unauthenticated user throws error.
+- [x] Mark completed
 
 ### Task 6.17: Integration Test - Server Actions - getSettings
 - [ ] Verify it returns notification settings from Firestore.
