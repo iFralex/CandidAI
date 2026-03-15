@@ -471,10 +471,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.18: Integration Test - Server Actions - fetchBillingHistory
-- [ ] Verify user with 3 payments returns array of 3 transactions ordered by date.
-- [ ] Verify user without payments returns empty array.
-- [ ] Verify each transaction contains: `id`, `type`, `amount`, `status`, `createdAt`, `itemId`.
-- [ ] Mark completed
+- [x] Verify user with 3 payments returns array of 3 transactions ordered by date.
+- [x] Verify user without payments returns empty array.
+- [x] Verify each transaction contains: `id`, `type`, `amount`, `status`, `createdAt`, `itemId`.
+- [x] Mark completed
 
 ### Task 7.1: Integration Test - Full Onboarding Flow - Free Trial
 - [ ] Setup: Create test user with `onboardingStep=1`.
