@@ -19,20 +19,44 @@ export async function POST(req: Request) {
       // -----------------------------------------
       // 1️⃣ REGISTER
       // -----------------------------------------
-      const userRecord = await adminAuth.createUser({
-        email,
-        password,
-        displayName: name,
-      });
+      if (!email || !password) {
+        return NextResponse.json(
+          { error: "Missing email or password" },
+          { status: 400 }
+        );
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return NextResponse.json(
+          { error: "Invalid email format" },
+          { status: 400 }
+        );
+      }
 
-      uid = userRecord.uid;
+      try {
+        const userRecord = await adminAuth.createUser({
+          email,
+          password,
+          displayName: name,
+        });
+        uid = userRecord.uid;
+      } catch (createErr: any) {
+        return NextResponse.json(
+          { success: false, error: createErr.message },
+          { status: createErr.code === "auth/email-already-exists" ? 400 : 500 }
+        );
+      }
 
       // Salva documento Firestore
       await adminDb.collection("users").doc(uid).set({
-        name,
+        name: name ?? "",
         email,
         createdAt: now,
         lastLogin: now,
+        onboardingStep: 1,
+        plan: "free_trial",
+        credits: 0,
+        emailVerified: false,
       });
 
       fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {

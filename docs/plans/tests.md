@@ -218,16 +218,16 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.1: Integration Test - API Route - POST /api/auth - Register Mode
-- [ ] Verify valid input (`mode="register"`, email, password, name) triggers Firestore creation of `users/{uid}` with correct fields and returns `{ success: true }`.
-- [ ] Verify `users/{uid}` contains: `name`, `email`, `createdAt`, `lastLogin`, `onboardingStep=1`, `plan="free_trial"`, `credits=0`, `emailVerified=false`.
-- [ ] Verify call to `POST /api/send-email` with `type="welcome"` after registration is intercepted by MSW with 200.
-- [ ] Verify already registered email returns `{ success: false, error: "..." }` with status 400.
-- [ ] Verify missing password returns status 400.
-- [ ] Verify malformed email returns status 400.
-- [ ] Verify missing name returns status 400 or default name.
-- [ ] Verify malformed JSON body returns status 400.
-- [ ] Verify empty body returns status 400.
-- [ ] Mark completed
+- [x] Verify valid input (`mode="register"`, email, password, name) triggers Firestore creation of `users/{uid}` with correct fields and returns `{ success: true }`.
+- [x] Verify `users/{uid}` contains: `name`, `email`, `createdAt`, `lastLogin`, `onboardingStep=1`, `plan="free_trial"`, `credits=0`, `emailVerified=false`.
+- [x] Verify call to `POST /api/send-email` with `type="welcome"` after registration is intercepted by MSW with 200.
+- [x] Verify already registered email returns `{ success: false, error: "..." }` with status 400.
+- [x] Verify missing password returns status 400.
+- [x] Verify malformed email returns status 400.
+- [x] Verify missing name returns status 400 or default name.
+- [x] Verify malformed JSON body returns status 400.
+- [x] Verify empty body returns status 400.
+- [x] Mark completed
 
 ### Task 5.2: Integration Test - API Route - POST /api/auth - Login Mode
 - [ ] Verify valid credentials return `{ success: true, idToken, uid }` and update `lastLogin` in Firestore.
