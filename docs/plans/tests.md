@@ -210,12 +210,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 4.5: MSW Mock Handlers - Firebase Identity Toolkit
-- [ ] `POST https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword` (success): return `{ idToken: "fake_id_token", localId: "user123", email: "test@test.com", refreshToken: "fake_refresh" }`.
-- [ ] `POST ...signInWithPassword` (wrong password): return status 400 with `{ error: { message: "INVALID_PASSWORD" } }`.
-- [ ] `POST ...signInWithPassword` (user not found): return status 400 with `{ error: { message: "EMAIL_NOT_FOUND" } }`.
-- [ ] `POST ...signInWithPassword` (account disabled): return status 400 with `{ error: { message: "USER_DISABLED" } }`.
-- [ ] `POST ...signInWithPassword` (too many attempts): return status 400 with `{ error: { message: "TOO_MANY_ATTEMPTS_TRY_LATER" } }`.
-- [ ] Mark completed
+- [x] `POST https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword` (success): return `{ idToken: "fake_id_token", localId: "user123", email: "test@test.com", refreshToken: "fake_refresh" }`.
+- [x] `POST ...signInWithPassword` (wrong password): return status 400 with `{ error: { message: "INVALID_PASSWORD" } }`.
+- [x] `POST ...signInWithPassword` (user not found): return status 400 with `{ error: { message: "EMAIL_NOT_FOUND" } }`.
+- [x] `POST ...signInWithPassword` (account disabled): return status 400 with `{ error: { message: "USER_DISABLED" } }`.
+- [x] `POST ...signInWithPassword` (too many attempts): return status 400 with `{ error: { message: "TOO_MANY_ATTEMPTS_TRY_LATER" } }`.
+- [x] Mark completed
 
 ### Task 5.1: Integration Test - API Route - POST /api/auth - Register Mode
 - [ ] Verify valid input (`mode="register"`, email, password, name) triggers Firestore creation of `users/{uid}` with correct fields and returns `{ success: true }`.
