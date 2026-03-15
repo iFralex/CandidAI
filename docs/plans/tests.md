@@ -74,14 +74,14 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 2.4: Unit Test - Utils - cn (Class Merging Utility)
-- [ ] Verify simple strings: `cn("foo", "bar")` -> `"foo bar"`.
-- [ ] Verify with `undefined`: `cn("foo", undefined, "bar")` -> `"foo bar"`.
-- [ ] Verify with `null`: `cn("foo", null)` -> `"foo"`.
-- [ ] Verify conditionals: `cn("a", false && "b", "c")` -> `"a c"`.
-- [ ] Verify Tailwind conflict resolution: `cn("px-2", "px-4")` -> `"px-4"`.
-- [ ] Verify arrays of classes: `cn(["a", "b"], "c")` -> `"a b c"`.
-- [ ] Verify empty input: `cn()` -> `""`.
-- [ ] Mark completed
+- [x] Verify simple strings: `cn("foo", "bar")` -> `"foo bar"`.
+- [x] Verify with `undefined`: `cn("foo", undefined, "bar")` -> `"foo bar"`.
+- [x] Verify with `null`: `cn("foo", null)` -> `"foo"`.
+- [x] Verify conditionals: `cn("a", false && "b", "c")` -> `"a c"`.
+- [x] Verify Tailwind conflict resolution: `cn("px-2", "px-4")` -> `"px-4"`.
+- [x] Verify arrays of classes: `cn(["a", "b"], "c")` -> `"a b c"`.
+- [x] Verify empty input: `cn()` -> `""`.
+- [x] Mark completed
 
 ### Task 3.1: Unit Test - Components - LoginForm
 - [ ] Verify email field, password field, and submit button are rendered.
