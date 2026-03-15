@@ -624,14 +624,14 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 12.5: E2E Test - Auth - Register Flow
-- [ ] Navigate to `/register`: form is visible (success case).
-- [ ] Fill name, email, password: click submit -> success (message or redirect).
-- [ ] Welcome email sent (verify via MSW intercept log).
-- [ ] Empty name: error.
-- [ ] Already registered email: message "Email already in use".
-- [ ] Password too short: error.
-- [ ] Malformed email: error.
-- [ ] Mark completed
+- [x] Navigate to `/register`: form is visible (success case).
+- [x] Fill name, email, password: click submit -> success (message or redirect).
+- [x] Welcome email sent (verify via MSW intercept log).
+- [x] Empty name: error.
+- [x] Already registered email: message "Email already in use".
+- [x] Password too short: error.
+- [x] Malformed email: error.
+- [x] Mark completed
 
 ### Task 12.6: E2E Test - Auth - Forgot Password Flow
 - [ ] `/forgot-password`: fill email -> click submit -> message "Check your email".
