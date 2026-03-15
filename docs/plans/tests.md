@@ -498,11 +498,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 7.3: Integration Test - Onboarding Flow - Error Interruption
-- [ ] Verify user at `onboardingStep=3` calling `submitCompanies` again overwrites correctly (or handles "step already completed" error).
-- [ ] Verify user skipping steps (e.g., from `onboardingStep=2` to `completeOnboarding`) returns error or handled gracefully.
-- [ ] Verify user losing connection during `submitProfile` upload resumes from correct point.
-- [ ] Verify page reload mid-onboarding persists `onboardingStep` and restarts from correct point.
-- [ ] Mark completed
+- [x] Verify user at `onboardingStep=3` calling `submitCompanies` again overwrites correctly (or handles "step already completed" error).
+- [x] Verify user skipping steps (e.g., from `onboardingStep=2` to `completeOnboarding`) returns error or handled gracefully.
+- [x] Verify user losing connection during `submitProfile` upload resumes from correct point.
+- [x] Verify page reload mid-onboarding persists `onboardingStep` and restarts from correct point.
+- [x] Mark completed
 
 ### Task 8.1: Integration Test - Credits Purchase Flow
 - [ ] Setup: Authenticated user with `credits=0`, `base` plan.
