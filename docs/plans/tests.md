@@ -247,12 +247,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.4: Integration Test - API Route - GET /api/protected/user
-- [ ] Verify request with valid auth cookie returns user data from Firestore.
-- [ ] Verify response contains: `uid`, `email`, `name`, `emailVerified`, `onboardingStep`, `plan`, `credits`, `picture`, `billingType`.
-- [ ] Verify request without cookie returns status 401.
-- [ ] Verify expired cookie / invalid token returns status 401.
-- [ ] Verify user not found in Firestore returns status 404.
-- [ ] Mark completed
+- [x] Verify request with valid auth cookie returns user data from Firestore.
+- [x] Verify response contains: `uid`, `email`, `name`, `emailVerified`, `onboardingStep`, `plan`, `credits`, `picture`, `billingType`.
+- [x] Verify request without cookie returns status 401.
+- [x] Verify expired cookie / invalid token returns status 401.
+- [x] Verify user not found in Firestore returns status 404.
+- [x] Mark completed
 
 ### Task 5.5: Integration Test - API Route - PUT /api/protected/user
 - [ ] Verify body `{ name: "New Name" }` with auth updates Firestore and `updatedAt`, returning `{ success: true }`.
