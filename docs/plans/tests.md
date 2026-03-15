@@ -516,9 +516,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 8.2: Integration Test - Webhook Idempotency
-- [ ] Verify same `paymentIntentId` sent twice increments credits only once.
-- [ ] Verify payment document is not duplicated.
-- [ ] Mark completed
+- [x] Verify same `paymentIntentId` sent twice increments credits only once.
+- [x] Verify payment document is not duplicated.
+- [x] Mark completed
 
 ### Task 9.1: Backend Python - Unit Test Logic - decide_tasks_per_company - Auto mode
 - [ ] Company with `blog_articles=0`, `recruiter=null`, `email_sent=null`: tasks -> `["find_recruiter", "get_blog", "generate_email"]`.
