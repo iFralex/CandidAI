@@ -640,12 +640,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 12.7: E2E Test - Auth - Email Verification Flow
-- [ ] Unverified user accessing dashboard: email verification dialog visible.
-- [ ] Click "Resend verification email": API called -> message "Email sent".
-- [ ] Navigate to `/verify/[validId]`: email marked verified -> correct redirect.
-- [ ] Navigate to `/verify/[expiredId]`: error "Link expired".
-- [ ] Navigate to `/verify/[invalidId]`: error message.
-- [ ] Mark completed
+- [x] Unverified user accessing dashboard: email verification dialog visible.
+- [x] Click "Resend verification email": API called -> message "Email sent".
+- [x] Navigate to `/verify/[validId]`: email marked verified -> correct redirect.
+- [x] Navigate to `/verify/[expiredId]`: error "Link expired".
+- [x] Navigate to `/verify/[invalidId]`: error message.
+- [x] Mark completed
 
 ### Task 12.8: E2E Test - Auth - Logout and Route Protection
 - [ ] Logged-in user: access `/dashboard` -> OK.
