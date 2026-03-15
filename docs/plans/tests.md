@@ -277,10 +277,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.8: Integration Test - API Route - GET /api/protected/emails
-- [ ] Verify user with generated emails returns `{ data: { [companyId]: emailContent }, userId }`.
-- [ ] Verify user without generated emails returns `{ data: {}, userId }`.
-- [ ] Verify request without auth returns status 401.
-- [ ] Mark completed
+- [x] Verify user with generated emails returns `{ data: { [companyId]: emailContent }, userId }`.
+- [x] Verify user without generated emails returns `{ data: {}, userId }`.
+- [x] Verify request without auth returns status 401.
+- [x] Mark completed
 
 ### Task 5.9: Integration Test - API Route - POST /api/protected/sent_emails
 - [ ] Verify body `{ ids: ["company1", "company2"], userId }` with auth updates `email_sent` in results, emails, and details, returning `{ success: true }`.
