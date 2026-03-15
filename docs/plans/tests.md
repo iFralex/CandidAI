@@ -84,19 +84,19 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 3.1: Unit Test - Components - LoginForm
-- [ ] Verify email field, password field, and submit button are rendered.
-- [ ] Verify "Forgot password?" link points to `/forgot-password`.
-- [ ] Verify "Register" link points to `/register`.
-- [ ] Verify valid email and password trigger a `POST /api/auth` call with `mode="login"`.
-- [ ] Verify submit with empty email shows HTML5 validation message.
-- [ ] Verify submit with malformed email (e.g., `notanemail`) shows error.
-- [ ] Verify submit with empty password shows validation message.
-- [ ] Verify button is disabled during submit (loading state).
-- [ ] Verify API response `{ success: false, error: "Invalid credentials" }` shows visible error message.
-- [ ] Verify API response `{ success: true }` redirects to `/dashboard`.
-- [ ] Verify network error shows generic error message (no crash).
-- [ ] Verify password field is of type `password` (not visible in plain text).
-- [ ] Mark completed
+- [x] Verify email field, password field, and submit button are rendered.
+- [x] Verify "Forgot password?" link points to `/forgot-password`.
+- [x] Verify "Register" link points to `/register`.
+- [x] Verify valid email and password trigger a `POST /api/auth` call with `mode="login"`.
+- [x] Verify submit with empty email shows HTML5 validation message.
+- [x] Verify submit with malformed email (e.g., `notanemail`) shows error.
+- [x] Verify submit with empty password shows validation message.
+- [x] Verify button is disabled during submit (loading state).
+- [x] Verify API response `{ success: false, error: "Invalid credentials" }` shows visible error message.
+- [x] Verify API response `{ success: true }` redirects to `/dashboard`.
+- [x] Verify network error shows generic error message (no crash).
+- [x] Verify password field is of type `password` (not visible in plain text).
+- [x] Mark completed
 
 ### Task 3.2: Unit Test - Components - RegisterForm
 - [ ] Verify name, email, password fields, and submit button are rendered.
