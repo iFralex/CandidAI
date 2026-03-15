@@ -365,10 +365,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.2: Integration Test - Server Actions - submitCompanies - Happy path
-- [ ] Verify `submitCompanies([{ name: "Acme", domain: "acme.com" }])` creates `data/account.companies` in Firestore, updates `onboardingStep=3`, and returns `{ success: true }`.
-- [ ] Verify only passed companies are saved (no extra data).
-- [ ] Verify `email_sent` initialized as `"1970-01-01T00:00:00Z"` for each company.
-- [ ] Mark completed
+- [x] Verify `submitCompanies([{ name: "Acme", domain: "acme.com" }])` creates `data/account.companies` in Firestore, updates `onboardingStep=3`, and returns `{ success: true }`.
+- [x] Verify only passed companies are saved (no extra data).
+- [x] Verify `email_sent` initialized as `"1970-01-01T00:00:00Z"` for each company.
+- [x] Mark completed
 
 ### Task 6.3: Integration Test - Server Actions - submitCompanies - Validation
 - [ ] Verify invalid domain (e.g., `"notadomain"`) returns error `{ success: false, error: "..." }`.
