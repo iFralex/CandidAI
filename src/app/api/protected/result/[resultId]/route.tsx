@@ -61,7 +61,14 @@ export async function GET(request, { params }) {
         ]);
 
         // 🔹 Dati estratti
-        const detailsData = detailsDoc.exists ? detailsDoc.data() : {};
+        if (!detailsDoc.exists) {
+            return NextResponse.json(
+                { error: 'Result not found' },
+                { status: 404 }
+            );
+        }
+
+        const detailsData = detailsDoc.data();
         const unlocked = unlockedDoc.exists ? unlockedDoc.data() : {};
         const customizationsData = customizationsDoc.exists
             ? customizationsDoc.data()

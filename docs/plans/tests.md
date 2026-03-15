@@ -350,10 +350,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.16: Integration Test - API Route - GET /api/protected/result/[resultId]
-- [ ] Verify valid `resultId` returns campaign details from Firestore.
-- [ ] Verify non-existent `resultId` returns status 404.
-- [ ] Verify request without auth returns status 401.
-- [ ] Mark completed
+- [x] Verify valid `resultId` returns campaign details from Firestore.
+- [x] Verify non-existent `resultId` returns status 404.
+- [x] Verify request without auth returns status 401.
+- [x] Mark completed
 
 ### Task 6.1: Integration Test - Server Actions - selectPlan
 - [ ] Verify `selectPlan("free_trial")` updates `onboardingStep=2` in Firestore and returns `{ success: true }`.
