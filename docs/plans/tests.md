@@ -45,18 +45,18 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 2.1: Unit Test - Config - computePriceInCents
-- [ ] Verify `purchaseType="plan"`, `itemId="free_trial"` returns `0`.
-- [ ] Verify `purchaseType="plan"`, `itemId="base"` returns `3000` (€30.00).
-- [ ] Verify `purchaseType="plan"`, `itemId="pro"` returns `6900` (€69.00).
-- [ ] Verify `purchaseType="plan"`, `itemId="ultra"` returns `13900` (€139.00).
-- [ ] Verify `purchaseType="credits"`, `itemId="pkg_1000"` returns `1000` (€10.00).
-- [ ] Verify `purchaseType="credits"`, `itemId="pkg_2500"` returns `2000` (€20.00).
-- [ ] Verify `purchaseType="credits"`, `itemId="pkg_5000"` returns `3000` (€30.00).
-- [ ] Verify `purchaseType="plan"`, `itemId="unknown_plan"` throws `Error` or returns `undefined`.
-- [ ] Verify `purchaseType="credits"`, `itemId="pkg_9999"` throws `Error`.
-- [ ] Verify `purchaseType=undefined` throws `TypeError`.
-- [ ] Verify all returned values are whole `number` integers (no floats).
-- [ ] Mark completed
+- [x] Verify `purchaseType="plan"`, `itemId="free_trial"` returns `0`.
+- [x] Verify `purchaseType="plan"`, `itemId="base"` returns `3000` (€30.00).
+- [x] Verify `purchaseType="plan"`, `itemId="pro"` returns `6900` (€69.00).
+- [x] Verify `purchaseType="plan"`, `itemId="ultra"` returns `13900` (€139.00).
+- [x] Verify `purchaseType="credits"`, `itemId="pkg_1000"` returns `1000` (€10.00).
+- [x] Verify `purchaseType="credits"`, `itemId="pkg_2500"` returns `2000` (€20.00).
+- [x] Verify `purchaseType="credits"`, `itemId="pkg_5000"` returns `3000` (€30.00).
+- [x] Verify `purchaseType="plan"`, `itemId="unknown_plan"` throws `Error` or returns `undefined`.
+- [x] Verify `purchaseType="credits"`, `itemId="pkg_9999"` throws `Error`.
+- [x] Verify `purchaseType=undefined` throws `TypeError`.
+- [x] Verify all returned values are whole `number` integers (no floats).
+- [x] Mark completed
 
 ### Task 2.2: Unit Test - Config - PLANS Constants Structure
 - [ ] Verify every plan has properties: `id`, `name`, `price`, `maxCompanies`, `credits`.

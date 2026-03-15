@@ -27,13 +27,18 @@ export const formatPrice = (cents) => `€${(cents / 100).toFixed(2)}`;
 export const getPlanById = (id) => plansInfo.find((p) => p.id === id);
 
 export const computePriceInCents = (purchaseType: 'plan' | 'credits', itemId: string): number => {
+  if (purchaseType !== 'plan' && purchaseType !== 'credits') {
+    throw new TypeError(`Invalid purchaseType: ${purchaseType}`);
+  }
+
   if (purchaseType === 'credits') {
     const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId);
-    return pkg ? pkg.price : 0;
+    if (!pkg) throw new Error(`Unknown credit package: ${itemId}`);
+    return pkg.price;
   }
 
   // purchaseType === 'plan'
   const plan = getPlanById(itemId);
-  if (!plan) return 0;
+  if (!plan) throw new Error(`Unknown plan: ${itemId}`);
   return Math.round(plan.price * 100);
 };
