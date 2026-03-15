@@ -549,13 +549,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 10.1: Backend Python - API Routes Test - POST /run_module
-- [ ] Valid body `{ "user_id": "test123" }` with mocked `enqueue_job`: returns `{ "status": "queued" }` status 200.
-- [ ] Missing `user_id`: returns status 400 with error message.
-- [ ] Malformed JSON body: returns status 400.
-- [ ] Empty body: returns status 400.
-- [ ] Empty string `user_id`: returns status 400.
-- [ ] `enqueue_job` exception: returns status 500.
-- [ ] Mark completed
+- [x] Valid body `{ "user_id": "test123" }` with mocked `enqueue_job`: returns `{ "status": "queued" }` status 200.
+- [x] Missing `user_id`: returns status 400 with error message.
+- [x] Malformed JSON body: returns status 400.
+- [x] Empty body: returns status 400.
+- [x] Empty string `user_id`: returns status 400.
+- [x] `enqueue_job` exception: returns status 500.
+- [x] Mark completed
 
 ### Task 10.2: Backend Python - API Routes Test - Auth and Security
 - [ ] Request without auth header (if required): status 401 or 403.

@@ -56,9 +56,13 @@ def run_module():
         return jsonify({"error": "user_id mancante"}), 400
 
     user_id = str(data["user_id"])
+    if not user_id:
+        return jsonify({"error": "user_id non può essere vuoto"}), 400
 
-    # Inserisci il job nella coda globale
-    enqueue_job(run_candidai_script, args=(user_id,))
+    try:
+        enqueue_job(run_candidai_script, args=(user_id,))
+    except Exception as e:
+        logger.error(f"Errore durante enqueue_job: {e}")
+        return jsonify({"error": "Errore interno del server"}), 500
 
-    # Ritorna subito
     return jsonify({"status": "queued", "message": f"Job per user {user_id} aggiunto in coda"}), 200
