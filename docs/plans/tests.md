@@ -634,10 +634,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 12.6: E2E Test - Auth - Forgot Password Flow
-- [ ] `/forgot-password`: fill email -> click submit -> message "Check your email".
-- [ ] Unregistered email: shows appropriate message (security: without revealing existence).
-- [ ] Empty email: validation triggered.
-- [ ] Mark completed
+- [x] `/forgot-password`: fill email -> click submit -> message "Check your email".
+- [x] Unregistered email: shows appropriate message (security: without revealing existence).
+- [x] Empty email: validation triggered.
+- [x] Mark completed
 
 ### Task 12.7: E2E Test - Auth - Email Verification Flow
 - [ ] Unverified user accessing dashboard: email verification dialog visible.
