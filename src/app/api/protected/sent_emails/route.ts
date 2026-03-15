@@ -1,24 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin"; // <-- tu hai già adminDb inizializzato
+import { adminDb } from "@/lib/firebase-admin";
+import { requireAuth } from "@/lib/server-auth";
 
 export async function POST(req: NextRequest) {
     try {
+        await requireAuth(req);
+    } catch {
+        return NextResponse.json(
+            { error: "Non autorizzato" },
+            { status: 401 }
+        );
+    }
+
+    try {
         const body = await req.json();
         const ids = body?.ids;
+        const userId = body?.userId;
 
-        if (!Array.isArray(ids) || ids.length === 0) {
-            return NextResponse.json(
-                { error: "Campo 'ids' mancante o non valido." },
-                { status: 400 }
-            );
-        }
-
-        // 🔥 Timestamp server (Firestore Admin)
-        const serverTimestamp = new Date();
-
-        // ❗ Devi sapere lo userId
-        // Option A: lo ricevi dalla richiesta (più facile)
-        const userId = body.userId;
         if (!userId) {
             return NextResponse.json(
                 { error: "userId mancante nella richiesta." },
@@ -26,6 +24,18 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        if (!Array.isArray(ids)) {
+            return NextResponse.json(
+                { error: "Campo 'ids' deve essere un array." },
+                { status: 400 }
+            );
+        }
+
+        if (ids.length === 0) {
+            return NextResponse.json({ success: true });
+        }
+
+        const emailSentTimestamp = new Date().toISOString();
         const batch = adminDb.batch();
 
         for (const companyId of ids) {
@@ -35,14 +45,14 @@ export async function POST(req: NextRequest) {
                 `users/${userId}/data/results/${companyId}/details`
             );
 
-            batch.update(resultsRef, { [`${companyId}.email_sent`]: serverTimestamp });
-            batch.update(emailsRef, { [`${companyId}.email_sent`]: serverTimestamp });
-            batch.update(detailsRef, { "email.email_sent": serverTimestamp });
+            batch.update(resultsRef, { [`${companyId}.email_sent`]: emailSentTimestamp });
+            batch.update(emailsRef, { [`${companyId}.email_sent`]: emailSentTimestamp });
+            batch.update(detailsRef, { "email.email_sent": emailSentTimestamp });
         }
 
         await batch.commit();
 
-        return NextResponse.json({ ok: true });
+        return NextResponse.json({ success: true });
     } catch (err) {
         console.error("Errore API sent_emails:", err);
         return NextResponse.json(

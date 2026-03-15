@@ -283,15 +283,15 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.9: Integration Test - API Route - POST /api/protected/sent_emails
-- [ ] Verify body `{ ids: ["company1", "company2"], userId }` with auth updates `email_sent` in results, emails, and details, returning `{ success: true }`.
-- [ ] Verify `email_sent` is a valid ISO timestamp after update.
-- [ ] Verify update does not overwrite other fields in the document.
-- [ ] Verify empty `ids` array returns OK but performs no update.
-- [ ] Verify `ids` containing non-existent ID is handled gracefully.
-- [ ] Verify missing `userId` returns status 400.
-- [ ] Verify request without auth returns status 401.
-- [ ] Verify `ids` not as an array returns status 400.
-- [ ] Mark completed
+- [x] Verify body `{ ids: ["company1", "company2"], userId }` with auth updates `email_sent` in results, emails, and details, returning `{ success: true }`.
+- [x] Verify `email_sent` is a valid ISO timestamp after update.
+- [x] Verify update does not overwrite other fields in the document.
+- [x] Verify empty `ids` array returns OK but performs no update.
+- [x] Verify `ids` containing non-existent ID is handled gracefully.
+- [x] Verify missing `userId` returns status 400.
+- [x] Verify request without auth returns status 401.
+- [x] Verify `ids` not as an array returns status 400.
+- [x] Mark completed
 
 ### Task 5.10: Integration Test - API Route - POST /api/create-payment
 - [ ] Verify `{ purchaseType: "plan", itemId: "base", payment_method_id: "pm_test" }` returns `{ client_secret, type: "one_time", amount: 3000 }` (Stripe mock).
