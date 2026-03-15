@@ -101,12 +101,43 @@ export async function submitCompanies(companies: { name: string, domain: string 
     revalidatePath('/dashboard')
 }
 
+const ALLOWED_CV_TYPES = ["application/pdf"];
+const MAX_CV_SIZE = 5 * 1024 * 1024; // 5 MB
+
 export async function submitProfile(
     plan: string,
     profileData: any,
     cv?: File | null,
     skipOnboardingStep?: boolean
 ) {
+    // Validate CV file if provided
+    if (cv) {
+        const isValidType =
+            ALLOWED_CV_TYPES.includes(cv.type) ||
+            cv.name.toLowerCase().endsWith(".pdf");
+        if (!isValidType) {
+            return { success: false, error: "Invalid file type" };
+        }
+        if (cv.size > MAX_CV_SIZE) {
+            return { success: false, error: "File too large" };
+        }
+    }
+
+    // For initial onboarding (not profile updates): CV and experience are mandatory
+    if (!skipOnboardingStep) {
+        if (!cv) {
+            return { success: false, error: "CV is required" };
+        }
+        if (
+            profileData?.profileSummary &&
+            typeof profileData.profileSummary === "object" &&
+            Array.isArray(profileData.profileSummary.experience) &&
+            profileData.profileSummary.experience.length === 0
+        ) {
+            return { success: false, error: "Experience is required" };
+        }
+    }
+
     const userId = await checkAuth();
 
     let cvUrl = profileData.cvUrl || null;

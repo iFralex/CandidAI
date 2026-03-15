@@ -98,6 +98,181 @@ describe("submitProfile server action", () => {
     mockGetSignedUrl.mockResolvedValue([FAKE_SIGNED_URL]);
   });
 
+  describe("validation", () => {
+    it("returns error 'Invalid file type' for a non-PDF file (e.g. .exe)", async () => {
+      const cv = new File(["binary content"], "malware.exe", {
+        type: "application/octet-stream",
+      });
+
+      const result = await submitProfile(
+        "pro",
+        { linkedinUrl: "https://linkedin.com/in/johndoe", profileSummary: "Engineer" },
+        cv
+      );
+
+      expect(result).toEqual({ success: false, error: "Invalid file type" });
+      // must not reach Firebase Storage
+      expect(mockFileSave).not.toHaveBeenCalled();
+      // must not reach auth check
+      expect(mockGetTokens).not.toHaveBeenCalled();
+    });
+
+    it("returns error 'Invalid file type' for a .docx file", async () => {
+      const cv = new File(["docx content"], "cv.docx", {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+
+      const result = await submitProfile(
+        "pro",
+        { linkedinUrl: "https://linkedin.com/in/johndoe", profileSummary: "Engineer" },
+        cv
+      );
+
+      expect(result).toEqual({ success: false, error: "Invalid file type" });
+      expect(mockFileSave).not.toHaveBeenCalled();
+    });
+
+    it("returns error 'File too large' when CV exceeds 5 MB", async () => {
+      const largeBuffer = new Uint8Array(6 * 1024 * 1024); // 6 MB
+      const cv = new File([largeBuffer], "large.pdf", {
+        type: "application/pdf",
+      });
+
+      const result = await submitProfile(
+        "pro",
+        { linkedinUrl: "https://linkedin.com/in/johndoe", profileSummary: "Engineer" },
+        cv
+      );
+
+      expect(result).toEqual({ success: false, error: "File too large" });
+      expect(mockFileSave).not.toHaveBeenCalled();
+      expect(mockGetTokens).not.toHaveBeenCalled();
+    });
+
+    it("allows a PDF exactly at the 5 MB limit", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+
+      const exactBuffer = new Uint8Array(5 * 1024 * 1024); // exactly 5 MB
+      const cv = new File([exactBuffer], "exact.pdf", { type: "application/pdf" });
+
+      await expect(
+        submitProfile("pro", { linkedinUrl: "https://linkedin.com/in/johndoe", profileSummary: "Engineer" }, cv)
+      ).resolves.not.toThrow();
+    });
+
+    it("returns error 'CV is required' when CV is null (initial onboarding)", async () => {
+      const result = await submitProfile(
+        "pro",
+        { linkedinUrl: "https://linkedin.com/in/johndoe", profileSummary: "Engineer" },
+        null
+      );
+
+      expect(result).toEqual({ success: false, error: "CV is required" });
+      // must not reach auth check
+      expect(mockGetTokens).not.toHaveBeenCalled();
+    });
+
+    it("returns error 'CV is required' when CV is undefined (initial onboarding)", async () => {
+      const result = await submitProfile(
+        "pro",
+        { linkedinUrl: "https://linkedin.com/in/johndoe", profileSummary: "Engineer" }
+        // cv not provided
+      );
+
+      expect(result).toEqual({ success: false, error: "CV is required" });
+      expect(mockGetTokens).not.toHaveBeenCalled();
+    });
+
+    it("does NOT require CV when skipOnboardingStep=true (profile update)", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+
+      await expect(
+        submitProfile(
+          "pro",
+          { linkedinUrl: "https://linkedin.com/in/johndoe", profileSummary: "Engineer" },
+          null,
+          true // skipOnboardingStep
+        )
+      ).resolves.not.toThrow();
+
+      expect(mockBatchCommit).toHaveBeenCalledOnce();
+    });
+
+    it("returns error 'Experience is required' when profileSummary.experience is empty", async () => {
+      const cv = new File(["pdf content"], "resume.pdf", { type: "application/pdf" });
+
+      const result = await submitProfile(
+        "pro",
+        {
+          linkedinUrl: "https://linkedin.com/in/johndoe",
+          profileSummary: { experience: [] },
+        },
+        cv
+      );
+
+      expect(result).toEqual({ success: false, error: "Experience is required" });
+      expect(mockFileSave).not.toHaveBeenCalled();
+      expect(mockGetTokens).not.toHaveBeenCalled();
+    });
+
+    it("does NOT require experience when profileSummary is a plain string", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+
+      const cv = new File(["pdf content"], "resume.pdf", { type: "application/pdf" });
+
+      // profileSummary is a string, not an object — experience check is skipped
+      await expect(
+        submitProfile("pro", { linkedinUrl: "https://linkedin.com/in/johndoe", profileSummary: "Engineer" }, cv)
+      ).resolves.not.toThrow();
+    });
+
+    it("saves partial profile data (missing linkedinUrl) without error", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+
+      const cv = new File(["pdf content"], "resume.pdf", { type: "application/pdf" });
+
+      // Only profileSummary provided — no linkedinUrl
+      await expect(
+        submitProfile("pro", { profileSummary: "Engineer with broad experience" }, cv)
+      ).resolves.not.toThrow();
+
+      // available data must be persisted
+      expect(mockBatchCommit).toHaveBeenCalledOnce();
+      expect(mockBatchUpdate).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ profileSummary: "Engineer with broad experience" })
+      );
+    });
+
+    it("saves partial profile data (missing profileSummary) without error", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+
+      const cv = new File(["pdf content"], "resume.pdf", { type: "application/pdf" });
+
+      // Only linkedinUrl provided — no profileSummary
+      await expect(
+        submitProfile("pro", { linkedinUrl: "https://linkedin.com/in/johndoe" }, cv)
+      ).resolves.not.toThrow();
+
+      expect(mockBatchCommit).toHaveBeenCalledOnce();
+      expect(mockBatchUpdate).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ linkedinUrl: "https://linkedin.com/in/johndoe" })
+      );
+    });
+
+    it("does not call Firebase Storage for invalid file type (fails before upload)", async () => {
+      const cv = new File(["exe content"], "virus.exe", {
+        type: "application/x-msdownload",
+      });
+
+      await submitProfile("pro", { linkedinUrl: "https://linkedin.com/in/johndoe", profileSummary: "Dev" }, cv);
+
+      expect(mockFileSave).not.toHaveBeenCalled();
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+  });
+
   describe("happy path", () => {
     it("uploads CV to Firebase Storage and saves the signed URL to data/account.cvUrl", async () => {
       mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });

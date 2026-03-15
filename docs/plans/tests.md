@@ -399,12 +399,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.7: Integration Test - Server Actions - submitProfile - Validation
-- [ ] Verify invalid CV file type (e.g., `.exe`) returns error "Invalid file type".
-- [ ] Verify CV file exceeding size limit returns error "File too large".
-- [ ] Verify missing CV returns error (mandatory).
-- [ ] Verify empty `experience` returns error.
-- [ ] Verify partial profile data handling (saves available data or error).
-- [ ] Mark completed
+- [x] Verify invalid CV file type (e.g., `.exe`) returns error "Invalid file type".
+- [x] Verify CV file exceeding size limit returns error "File too large".
+- [x] Verify missing CV returns error (mandatory).
+- [x] Verify empty `experience` returns error.
+- [x] Verify partial profile data handling (saves available data or error).
+- [x] Mark completed
 
 ### Task 6.8: Integration Test - Server Actions - submitProfile - Firebase Storage (emulator)
 - [ ] Verify file is uploaded correctly and resulting URL points to storage emulator.
