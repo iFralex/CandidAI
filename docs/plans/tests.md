@@ -529,10 +529,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 9.2: Backend Python - Unit Test Logic - decide_tasks_per_company - Manual mode (override)
-- [ ] `force_tasks=["generate_email"]`: only generate_email, ignores current state.
-- [ ] `force_tasks=["find_recruiter"]`: only find_recruiter.
-- [ ] `force_tasks=[]`: no tasks (explicit override to zero).
-- [ ] Mark completed
+- [x] `force_tasks=["generate_email"]`: only generate_email, ignores current state.
+- [x] `force_tasks=["find_recruiter"]`: only find_recruiter.
+- [x] `force_tasks=[]`: no tasks (explicit override to zero).
+- [x] Mark completed
 
 ### Task 9.3: Backend Python - Unit Test Logic - decide_tasks_per_company - Edge cases
 - [ ] Verify empty company list returns `{}` (no crash).
