@@ -239,12 +239,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.3: Integration Test - API Route - POST /api/auth/forgot-password
-- [ ] Verify valid registered email generates reset link via Firebase Admin + sends email via Resend and returns `{ success: true }`.
-- [ ] Verify email not found in Firebase returns appropriate error response.
-- [ ] Verify Resend 429 is handled gracefully returning `{ success: false, error: "..." }` without crashing.
-- [ ] Verify missing email in body returns status 400.
-- [ ] Verify empty body returns status 400.
-- [ ] Mark completed
+- [x] Verify valid registered email generates reset link via Firebase Admin + sends email via Resend and returns `{ success: true }`.
+- [x] Verify email not found in Firebase returns appropriate error response.
+- [x] Verify Resend 429 is handled gracefully returning `{ success: false, error: "..." }` without crashing.
+- [x] Verify missing email in body returns status 400.
+- [x] Verify empty body returns status 400.
+- [x] Mark completed
 
 ### Task 5.4: Integration Test - API Route - GET /api/protected/user
 - [ ] Verify request with valid auth cookie returns user data from Firestore.
