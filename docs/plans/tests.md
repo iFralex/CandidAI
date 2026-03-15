@@ -453,11 +453,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.15: Integration Test - Server Actions - confirmCompanies
-- [ ] Verify `confirmCompanies` updates details in Firestore, removes from `companies_to_confirm`, and returns `{ success: true }`.
-- [ ] Verify empty array performs no operation and returns OK.
-- [ ] Verify `companyId` not in `companies_to_confirm` handling.
-- [ ] Verify partial data updates only provided fields.
-- [ ] Mark completed
+- [x] Verify `confirmCompanies` updates details in Firestore, removes from `companies_to_confirm`, and returns `{ success: true }`.
+- [x] Verify empty array performs no operation and returns OK.
+- [x] Verify `companyId` not in `companies_to_confirm` handling.
+- [x] Verify partial data updates only provided fields.
+- [x] Mark completed
 
 ### Task 6.16: Integration Test - Server Actions - getProfileData
 - [ ] Verify it returns `{ name, picture, plan, credits, email }` for authenticated user.
