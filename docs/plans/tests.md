@@ -428,9 +428,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.12: Integration Test - Server Actions - completeOnboarding - Validation
-- [ ] Verify excessively long instructions (e.g., > 2000 chars) handling.
-- [ ] Verify empty instructions save as empty or return error.
-- [ ] Mark completed
+- [x] Verify excessively long instructions (e.g., > 2000 chars) handling.
+- [x] Verify empty instructions save as empty or return error.
+- [x] Mark completed
 
 ### Task 6.13: Integration Test - Server Actions - regenerateEmail
 - [ ] Verify `regenerateEmail("company1", "Be more formal")` with sufficient credits calls Python server, decrements credits by 50, and returns `{ success: true }`.
