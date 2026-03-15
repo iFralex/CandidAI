@@ -356,13 +356,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.1: Integration Test - Server Actions - selectPlan
-- [ ] Verify `selectPlan("free_trial")` updates `onboardingStep=2` in Firestore and returns `{ success: true }`.
-- [ ] Verify `selectPlan("base")` updates `onboardingStep=2`.
-- [ ] Verify `selectPlan("pro")` updates `onboardingStep=2`.
-- [ ] Verify `selectPlan("ultra")` updates `onboardingStep=2`.
-- [ ] Verify `selectPlan("unknown")` returns error or default behavior.
-- [ ] Verify unauthenticated user call throws authentication error.
-- [ ] Mark completed
+- [x] Verify `selectPlan("free_trial")` updates `onboardingStep=2` in Firestore and returns `{ success: true }`.
+- [x] Verify `selectPlan("base")` updates `onboardingStep=2`.
+- [x] Verify `selectPlan("pro")` updates `onboardingStep=2`.
+- [x] Verify `selectPlan("ultra")` updates `onboardingStep=2`.
+- [x] Verify `selectPlan("unknown")` returns error or default behavior.
+- [x] Verify unauthenticated user call throws authentication error.
+- [x] Mark completed
 
 ### Task 6.2: Integration Test - Server Actions - submitCompanies - Happy path
 - [ ] Verify `submitCompanies([{ name: "Acme", domain: "acme.com" }])` creates `data/account.companies` in Firestore, updates `onboardingStep=3`, and returns `{ success: true }`.
