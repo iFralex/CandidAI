@@ -433,15 +433,15 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.13: Integration Test - Server Actions - regenerateEmail
-- [ ] Verify `regenerateEmail("company1", "Be more formal")` with sufficient credits calls Python server, decrements credits by 50, and returns `{ success: true }`.
-- [ ] Verify user credits are decremented by exactly 50 in Firestore.
-- [ ] Verify user with 30 credits returns error "Insufficient credits".
-- [ ] Verify user with 0 credits returns error "Insufficient credits".
-- [ ] Verify user with exactly 50 credits -> OK.
-- [ ] Verify non-existent `companyId` returns error.
-- [ ] Verify unreachable Python server handles error.
-- [ ] Verify empty instructions use default or return error.
-- [ ] Mark completed
+- [x] Verify `regenerateEmail("company1", "Be more formal")` with sufficient credits calls Python server, decrements credits by 50, and returns `{ success: true }`.
+- [x] Verify user credits are decremented by exactly 50 in Firestore.
+- [x] Verify user with 30 credits returns error "Insufficient credits".
+- [x] Verify user with 0 credits returns error "Insufficient credits".
+- [x] Verify user with exactly 50 credits -> OK.
+- [x] Verify non-existent `companyId` returns error.
+- [x] Verify unreachable Python server handles error.
+- [x] Verify empty instructions use default or return error.
+- [x] Mark completed
 
 ### Task 6.14: Integration Test - Server Actions - refindRecruiter
 - [ ] Verify `refindRecruiter` with valid inputs costs 100 credits, calls Python server, and returns `{ success: true }`.
