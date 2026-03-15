@@ -564,14 +564,14 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 11.1: Backend Python - Firestore Emulator Integration - save_companies_to_results
-- [ ] New user (no previous results): pass 3 new companies -> creates 3 docs in `users/{uid}/data/results/` with `email_sent="1970-01-01T00:00:00Z"`.
-- [ ] User with existing results: 1 existing + 2 new companies -> only 2 new docs created, existing remains unchanged.
-- [ ] Existing company keeps original `email_sent` (not reset).
-- [ ] Correctly handle companies in `companies_to_confirm`.
-- [ ] Empty company list: no writes performed.
-- [ ] Special domain company (subdomain, uncommon TLD): handled correctly.
-- [ ] Firestore timeout: handled with retry or clear exception.
-- [ ] Mark completed
+- [x] New user (no previous results): pass 3 new companies -> creates 3 docs in `users/{uid}/data/results/` with `email_sent="1970-01-01T00:00:00Z"`.
+- [x] User with existing results: 1 existing + 2 new companies -> only 2 new docs created, existing remains unchanged.
+- [x] Existing company keeps original `email_sent` (not reset).
+- [x] Correctly handle companies in `companies_to_confirm`.
+- [x] Empty company list: no writes performed.
+- [x] Special domain company (subdomain, uncommon TLD): handled correctly.
+- [x] Firestore timeout: handled with retry or clear exception.
+- [x] Mark completed
 
 ### Task 11.2: Backend Python - Firestore Emulator Integration - get_custom_queries
 - [ ] `data/account` present with queries: returns correct queries.
