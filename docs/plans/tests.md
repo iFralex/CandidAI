@@ -255,12 +255,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.5: Integration Test - API Route - PUT /api/protected/user
-- [ ] Verify body `{ name: "New Name" }` with auth updates Firestore and `updatedAt`, returning `{ success: true }`.
-- [ ] Verify empty string name returns status 400.
-- [ ] Verify excessively long name returns validation error.
-- [ ] Verify request without authentication returns status 401.
-- [ ] Verify update does not overwrite other fields (credits, plan) in Firestore.
-- [ ] Mark completed
+- [x] Verify body `{ name: "New Name" }` with auth updates Firestore and `updatedAt`, returning `{ success: true }`.
+- [x] Verify empty string name returns status 400.
+- [x] Verify excessively long name returns validation error.
+- [x] Verify request without authentication returns status 401.
+- [x] Verify update does not overwrite other fields (credits, plan) in Firestore.
+- [x] Mark completed
 
 ### Task 5.6: Integration Test - API Route - GET /api/protected/account
 - [ ] Verify request with valid auth returns `{ companies, profileSummary, queries, customizations }`.
