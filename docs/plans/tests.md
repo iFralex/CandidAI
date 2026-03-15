@@ -387,11 +387,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.5: Integration Test - Server Actions - submitCompanies - Add more companies (post-onboarding)
-- [ ] Verify base plan user with 3 companies adds 5 -> total 8, OK.
-- [ ] Verify base plan user with 18 companies adds 3 -> error (exceeds 20).
-- [ ] Verify base plan user with 18 companies adds 2 -> total 20, OK.
-- [ ] Verify domain already in existing list returns error "Already in list".
-- [ ] Mark completed
+- [x] Verify base plan user with 3 companies adds 5 -> total 8, OK.
+- [x] Verify base plan user with 18 companies adds 3 -> error (exceeds 20).
+- [x] Verify base plan user with 18 companies adds 2 -> total 20, OK.
+- [x] Verify domain already in existing list returns error "Already in list".
+- [x] Mark completed
 
 ### Task 6.6: Integration Test - Server Actions - submitProfile - Happy path
 - [ ] Verify `submitProfile` with valid data and CV file uploads to Firebase Storage, saves URL to `data/account.cvUrl`, saves profileSummary, updates `onboardingStep=4`, and returns `{ success: true }`.

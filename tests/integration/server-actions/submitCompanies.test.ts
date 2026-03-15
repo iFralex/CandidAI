@@ -262,6 +262,58 @@ describe("submitCompanies server action", () => {
     });
   });
 
+  describe("add more companies (post-onboarding)", () => {
+    const makeCompanies = (n: number, prefix = "") =>
+      Array.from({ length: n }, (_, i) => ({
+        name: `Company${prefix}${i + 1}`,
+        domain: `company${prefix}${i + 1}.com`,
+      }));
+
+    it("base plan user with 3 existing companies adds 5 new -> total 8, OK", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+      mockUserGet.mockResolvedValue({ data: () => ({ plan: "base" }) });
+
+      // Simulate submitting merged list: 3 existing + 5 new = 8 total (within limit of 20)
+      const mergedCompanies = [...makeCompanies(3), ...makeCompanies(5, "new")];
+      await expect(submitCompanies(mergedCompanies)).resolves.not.toThrow();
+      expect(mockBatchCommit).toHaveBeenCalledOnce();
+    });
+
+    it("base plan user with 18 existing companies adds 3 new -> error (21 exceeds limit of 20)", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+      mockUserGet.mockResolvedValue({ data: () => ({ plan: "base" }) });
+
+      // Simulate submitting merged list: 18 existing + 3 new = 21 total (exceeds limit of 20)
+      const mergedCompanies = [...makeCompanies(18), ...makeCompanies(3, "new")];
+      const result = await submitCompanies(mergedCompanies);
+
+      expect(result).toEqual({ success: false, error: expect.stringMatching(/exceeds plan limit/i) });
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+
+    it("base plan user with 18 existing companies adds 2 new -> total 20, OK (exactly at limit)", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+      mockUserGet.mockResolvedValue({ data: () => ({ plan: "base" }) });
+
+      // Simulate submitting merged list: 18 existing + 2 new = 20 total (exactly at limit of 20)
+      const mergedCompanies = [...makeCompanies(18), ...makeCompanies(2, "new")];
+      await expect(submitCompanies(mergedCompanies)).resolves.not.toThrow();
+      expect(mockBatchCommit).toHaveBeenCalledOnce();
+    });
+
+    it("domain already in existing list returns error", async () => {
+      // Simulate adding a new company whose domain matches an existing one
+      // by submitting a merged list that contains a duplicate domain
+      const result = await submitCompanies([
+        { name: "Existing Corp", domain: "existing.com" },
+        { name: "New Corp with Same Domain", domain: "existing.com" },
+      ]);
+
+      expect(result).toEqual({ success: false, error: expect.any(String) });
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+  });
+
   describe("plan limits", () => {
     const makeCompanies = (n: number) =>
       Array.from({ length: n }, (_, i) => ({ name: `Company${i + 1}`, domain: `company${i + 1}.com` }));
