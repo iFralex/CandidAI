@@ -30,19 +30,19 @@ npm run test:all           # Everything together via Firebase emulators:exec
 ---
 
 ### Task 1.1: Infrastructure & Emulator Setup
-- [ ] Run `npx firebase init emulators` and select Firestore, Auth, and Storage on default ports (8080, 9099, 9199).
-- [ ] Create `.env.test.local` for Next.js with the following variables: `NEXT_PUBLIC_FIREBASE_API_KEY=fake-api-key`, `NEXT_PUBLIC_DOMAIN=http://localhost:3000`, `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080`, `FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099`, `FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199`, `STRIPE_SECRET_KEY=sk_test_fake`, `STRIPE_WEBHOOK_SECRET=whsec_fake`, `RESEND_API_KEY=re_fake`, `SERVER_RUNNER_URL=http://localhost:5001`, `AUTH_COOKIE_NAME=CandidAIToken`, `AUTH_COOKIE_SIGNATURE_KEY_CURRENT=fake-sig-key-32chars-long-abcde`, `AUTH_COOKIE_SIGNATURE_KEY_PREVIOUS=fake-sig-key-32chars-long-fghij`, `USE_SECURE_COOKIES=false`.
-- [ ] Create `.env.test` for the Python backend with the following variables: `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080`, `FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099`, `FIREBASE_ADMIN_PROJECT_ID=demo-candidai`.
-- [ ] Install Next.js dependencies: `npm i -D vitest @vitejs/plugin-react jsdom @testing-library/react @testing-library/dom @testing-library/jest-dom @testing-library/user-event playwright @playwright/test msw`.
-- [ ] Install Python dependencies: `pip install pytest pytest-mock pytest-flask httpretty`.
-- [ ] Create `vitest.config.ts` with `@/` alias resolution, `jsdom` environment, and `vitest.setup.ts` setup file.
-- [ ] Create `vitest.integration.config.ts` with `node` environment to test server actions.
-- [ ] Create `playwright.config.ts` with `webServer: { command: "npm run dev", port: 3000 }`, browser engines Chromium + Firefox + WebKit, and 30s timeout.
-- [ ] Create `vitest.setup.ts` to start the MSW server in `beforeAll` and close it in `afterAll`.
-- [ ] Update `package.json` scripts: `"test:unit": "vitest run --config vitest.config.ts"`, `"test:integration": "vitest run --config vitest.integration.config.ts"`, `"test:e2e": "playwright test"`, `"test:all": "firebase emulators:exec --project demo-candidai 'npm run test:unit && npm run test:integration && pytest && npm run test:e2e'"`
-- [ ] Create `tests/conftest.py` for Python: load `.env.test`, initialize Flask test client, patch `firebase_admin.credentials` with fake credentials, and connect to Firestore emulator.
-- [ ] Create `tests/helpers/emulator.ts` helper for Next.js: include functions `clearFirestore()`, `createTestUser(overrides?)`, `signInTestUser()`, and `getFirestoreDoc(path)`.
-- [ ] Mark completed
+- [x] Run `npx firebase init emulators` and select Firestore, Auth, and Storage on default ports (8080, 9099, 9199).
+- [x] Create `.env.test.local` for Next.js with the following variables: `NEXT_PUBLIC_FIREBASE_API_KEY=fake-api-key`, `NEXT_PUBLIC_DOMAIN=http://localhost:3000`, `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080`, `FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099`, `FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199`, `STRIPE_SECRET_KEY=sk_test_fake`, `STRIPE_WEBHOOK_SECRET=whsec_fake`, `RESEND_API_KEY=re_fake`, `SERVER_RUNNER_URL=http://localhost:5001`, `AUTH_COOKIE_NAME=CandidAIToken`, `AUTH_COOKIE_SIGNATURE_KEY_CURRENT=fake-sig-key-32chars-long-abcde`, `AUTH_COOKIE_SIGNATURE_KEY_PREVIOUS=fake-sig-key-32chars-long-fghij`, `USE_SECURE_COOKIES=false`.
+- [x] Create `.env.test` for the Python backend with the following variables: `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080`, `FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099`, `FIREBASE_ADMIN_PROJECT_ID=demo-candidai`.
+- [x] Install Next.js dependencies: `npm i -D vitest @vitejs/plugin-react jsdom @testing-library/react @testing-library/dom @testing-library/jest-dom @testing-library/user-event playwright @playwright/test msw`.
+- [x] Install Python dependencies: `pip install pytest pytest-mock pytest-flask httpretty`.
+- [x] Create `vitest.config.ts` with `@/` alias resolution, `jsdom` environment, and `vitest.setup.ts` setup file.
+- [x] Create `vitest.integration.config.ts` with `node` environment to test server actions.
+- [x] Create `playwright.config.ts` with `webServer: { command: "npm run dev", port: 3000 }`, browser engines Chromium + Firefox + WebKit, and 30s timeout.
+- [x] Create `vitest.setup.ts` to start the MSW server in `beforeAll` and close it in `afterAll`.
+- [x] Update `package.json` scripts: `"test:unit": "vitest run --config vitest.config.ts"`, `"test:integration": "vitest run --config vitest.integration.config.ts"`, `"test:e2e": "playwright test"`, `"test:all": "firebase emulators:exec --project demo-candidai 'npm run test:unit && npm run test:integration && pytest && npm run test:e2e'"`
+- [x] Create `tests/conftest.py` for Python: load `.env.test`, initialize Flask test client, patch `firebase_admin.credentials` with fake credentials, and connect to Firestore emulator.
+- [x] Create `tests/helpers/emulator.ts` helper for Next.js: include functions `clearFirestore()`, `createTestUser(overrides?)`, `signInTestUser()`, and `getFirestoreDoc(path)`.
+- [x] Mark completed
 
 ### Task 2.1: Unit Test - Config - computePriceInCents
 - [ ] Verify `purchaseType="plan"`, `itemId="free_trial"` returns `0`.
