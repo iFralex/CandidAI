@@ -309,10 +309,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.11: Integration Test - API Route - POST /api/stripe-webhook - Plan Purchase
-- [ ] Verify valid payload with `metadata.purchaseType="plan"`, `metadata.itemId="base"`, `metadata.userId="user123"`: Creates payment document in `users/user123/payments/{paymentIntentId}`, updates `users/user123` (`plan="base"`, `maxCompanies=20`, `credits=0`, `onboardingStep=50`), calls Resend with `purchase-confirmation`, calls `SERVER_RUNNER_URL/run_module`, and returns status 200.
-- [ ] Verify payload with `itemId="pro"` sets `credits=1000`, `maxCompanies=50`.
-- [ ] Verify payload with `itemId="ultra"` sets `credits=2500`, `maxCompanies=100`.
-- [ ] Mark completed
+- [x] Verify valid payload with `metadata.purchaseType="plan"`, `metadata.itemId="base"`, `metadata.userId="user123"`: Creates payment document in `users/user123/payments/{paymentIntentId}`, updates `users/user123` (`plan="base"`, `maxCompanies=20`, `credits=0`, `onboardingStep=50`), calls Resend with `purchase-confirmation`, calls `SERVER_RUNNER_URL/run_module`, and returns status 200.
+- [x] Verify payload with `itemId="pro"` sets `credits=1000`, `maxCompanies=50`.
+- [x] Verify payload with `itemId="ultra"` sets `credits=2500`, `maxCompanies=100`.
+- [x] Mark completed
 
 ### Task 5.12: Integration Test - API Route - POST /api/stripe-webhook - Credit Purchase
 - [ ] Verify `metadata.purchaseType="credits"`, `metadata.itemId="pkg_1000"`: Creates payment document, increments `users/user123.credits` by 1000, sends confirmation email, does **not** call `SERVER_RUNNER_URL`, and returns status 200.
