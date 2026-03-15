@@ -394,9 +394,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.6: Integration Test - Server Actions - submitProfile - Happy path
-- [ ] Verify `submitProfile` with valid data and CV file uploads to Firebase Storage, saves URL to `data/account.cvUrl`, saves profileSummary, updates `onboardingStep=4`, and returns `{ success: true }`.
-- [ ] Verify CV URL is a valid Firebase Storage URL.
-- [ ] Mark completed
+- [x] Verify `submitProfile` with valid data and CV file uploads to Firebase Storage, saves URL to `data/account.cvUrl`, saves profileSummary, updates `onboardingStep=4`, and returns `{ success: true }`.
+- [x] Verify CV URL is a valid Firebase Storage URL.
+- [x] Mark completed
 
 ### Task 6.7: Integration Test - Server Actions - submitProfile - Validation
 - [ ] Verify invalid CV file type (e.g., `.exe`) returns error "Invalid file type".
