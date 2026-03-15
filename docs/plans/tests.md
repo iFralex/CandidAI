@@ -186,12 +186,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 4.2: MSW Mock Handlers - Resend
-- [ ] `POST https://api.resend.com/emails` (success): return `{ id: "re_fake_123" }` with status 200.
-- [ ] `POST https://api.resend.com/emails` (rate limit): return status 429 with header `Retry-After: 60`.
-- [ ] `POST https://api.resend.com/emails` (invalid API key): return status 403.
-- [ ] `POST https://api.resend.com/emails` (invalid email): return status 422 with `{ error: "Invalid email address" }`.
-- [ ] `POST https://api.resend.com/emails` (server error): return status 500.
-- [ ] Mark completed
+- [x] `POST https://api.resend.com/emails` (success): return `{ id: "re_fake_123" }` with status 200.
+- [x] `POST https://api.resend.com/emails` (rate limit): return status 429 with header `Retry-After: 60`.
+- [x] `POST https://api.resend.com/emails` (invalid API key): return status 403.
+- [x] `POST https://api.resend.com/emails` (invalid email): return status 422 with `{ error: "Invalid email address" }`.
+- [x] `POST https://api.resend.com/emails` (server error): return status 500.
+- [x] Mark completed
 
 ### Task 4.3: MSW Mock Handlers - PDL (People Data Labs)
 - [ ] `POST https://api.peopledatalabs.com/v5/person/search` (success): return JSON with list of 5 mock recruiters.
