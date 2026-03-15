@@ -588,10 +588,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 11.4: Backend Python - Firestore Emulator Integration - Result Updates
-- [ ] `update_email_sent`: correctly updates timestamp in Firestore.
-- [ ] Batch update of 10 companies: all updated in one transaction.
-- [ ] Partial update (only some companies): others left untouched.
-- [ ] Mark completed
+- [x] `update_email_sent`: correctly updates timestamp in Firestore.
+- [x] Batch update of 10 companies: all updated in one transaction.
+- [x] Partial update (only some companies): others left untouched.
+- [x] Mark completed
 
 ### Task 12.1: E2E Test - Auth - Landing & Navigation
 - [ ] `/` loads correctly: title visible, CTA present.
