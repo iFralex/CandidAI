@@ -601,11 +601,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 12.2: E2E Test - Auth - Login Flow - Success
-- [ ] Navigate to `/login`: form is visible.
-- [ ] Enter valid email + correct password: click submit -> redirect to `/dashboard`.
-- [ ] Verify `CandidAIToken` cookie is present after login.
-- [ ] Verify breadcrumb/header shows logged-in username.
-- [ ] Mark completed
+- [x] Navigate to `/login`: form is visible.
+- [x] Enter valid email + correct password: click submit -> redirect to `/dashboard`.
+- [x] Verify `CandidAIToken` cookie is present after login.
+- [x] Verify breadcrumb/header shows logged-in username.
+- [x] Mark completed
 
 ### Task 12.3: E2E Test - Auth - Login Flow - Failure
 - [ ] Wrong password: shows "Invalid credentials" error -> remains on `/login`.
