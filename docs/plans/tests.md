@@ -151,16 +151,16 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 3.7: Unit Test - Components - AddMoreCompaniesDialog
-- [ ] Verify dialog is closed by default.
-- [ ] Verify clicking "Add More Companies" opens the dialog.
-- [ ] Verify rendering of form to insert companies (name, domain).
-- [ ] Verify submit with valid fields calls `addNewCompanies` action.
-- [ ] Verify submit with invalid domain shows validation error.
-- [ ] Verify submit with duplicate company (already in list) shows error.
-- [ ] Verify submit exceeding plan limit shows "Limit Reached" error.
-- [ ] Verify success closes dialog and updates list.
-- [ ] Verify clicking outside dialog closes it without saving.
-- [ ] Mark completed
+- [x] Verify dialog is closed by default.
+- [x] Verify clicking "Add More Companies" opens the dialog.
+- [x] Verify rendering of form to insert companies (name, domain).
+- [x] Verify submit with valid fields calls `addNewCompanies` action.
+- [x] Verify submit with invalid domain shows validation error.
+- [x] Verify submit with duplicate company (already in list) shows error.
+- [x] Verify submit exceeding plan limit shows "Limit Reached" error.
+- [x] Verify success closes dialog and updates list.
+- [x] Verify clicking outside dialog closes it without saving.
+- [x] Mark completed
 
 ### Task 3.8: Unit Test - Components - Sidebar
 - [ ] Verify links: Dashboard, Send All, Plan & Credits, Settings.
