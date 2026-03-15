@@ -99,15 +99,15 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 3.2: Unit Test - Components - RegisterForm
-- [ ] Verify name, email, password fields, and submit button are rendered.
-- [ ] Verify submit with all valid fields triggers `POST /api/auth` with `mode="register"`, `name`, `email`, `password`.
-- [ ] Verify submit with empty name shows validation error.
-- [ ] Verify submit with existing email returns API error and shows visible message.
-- [ ] Verify submit with password too short (< 6 chars) shows error.
-- [ ] Verify submit with malformed email shows error.
-- [ ] Verify success response redirects to `/login` (or shows "check your email" message).
-- [ ] Verify loading state during submit.
-- [ ] Mark completed
+- [x] Verify name, email, password fields, and submit button are rendered.
+- [x] Verify submit with all valid fields triggers `POST /api/auth` with `mode="register"`, `name`, `email`, `password`.
+- [x] Verify submit with empty name shows validation error.
+- [x] Verify submit with existing email returns API error and shows visible message.
+- [x] Verify submit with password too short (< 6 chars) shows error.
+- [x] Verify submit with malformed email shows error.
+- [x] Verify success response redirects to `/login` (or shows "check your email" message).
+- [x] Verify loading state during submit.
+- [x] Mark completed
 
 ### Task 3.3: Unit Test - Components - ForgotPasswordForm
 - [ ] Verify email field and "Send reset link" button are rendered.
