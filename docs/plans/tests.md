@@ -679,10 +679,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 13.3: E2E Test - Onboarding Flow - Persona C: Pro Plan
-- [ ] Steps 1-5: Select "Pro Plan" (€69).
-- [ ] Card payment -> success.
-- [ ] Verify dashboard with `maxCompanies=50`, `credits=1000` is shown.
-- [ ] Mark completed
+- [x] Steps 1-5: Select "Pro Plan" (€69).
+- [x] Card payment -> success.
+- [x] Verify dashboard with `maxCompanies=50`, `credits=1000` is shown.
+- [x] Mark completed
 
 ### Task 13.4: E2E Test - Onboarding Flow - Persona D: Ultra Plan
 - [ ] Steps 1-5: Select "Ultra Plan" (€139).
