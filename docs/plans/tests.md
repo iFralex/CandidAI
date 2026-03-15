@@ -263,11 +263,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.6: Integration Test - API Route - GET /api/protected/account
-- [ ] Verify request with valid auth returns `{ companies, profileSummary, queries, customizations }`.
-- [ ] Verify user without `data/account` document returns empty defaults without crashing.
-- [ ] Verify `companies` is an array (even if empty) in valid response.
-- [ ] Verify request without auth returns status 401.
-- [ ] Mark completed
+- [x] Verify request with valid auth returns `{ companies, profileSummary, queries, customizations }`.
+- [x] Verify user without `data/account` document returns empty defaults without crashing.
+- [x] Verify `companies` is an array (even if empty) in valid response.
+- [x] Verify request without auth returns status 401.
+- [x] Mark completed
 
 ### Task 5.7: Integration Test - API Route - GET /api/protected/results
 - [ ] Verify user with active campaigns returns map `{ [companyId]: { recruiter, email_sent, blog_articles, ... } }`.
