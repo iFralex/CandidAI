@@ -412,10 +412,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.9: Integration Test - Server Actions - submitQueries
-- [ ] Verify `submitQueries({ strategy: "domain", ... })` saves to `data/account.queries`, updates `onboardingStep=5`, and returns `{ success: true }`.
-- [ ] Verify empty queries return error or default behavior.
-- [ ] Verify invalid `strategy` returns error.
-- [ ] Mark completed
+- [x] Verify `submitQueries({ strategy: "domain", ... })` saves to `data/account.queries`, updates `onboardingStep=5`, and returns `{ success: true }`.
+- [x] Verify empty queries return error or default behavior.
+- [x] Verify invalid `strategy` returns error.
+- [x] Mark completed
 
 ### Task 6.10: Integration Test - Server Actions - completeOnboarding - Free Plan
 - [ ] Verify `completeOnboarding` on free_trial saves customizations, updates `onboardingStep=50`, calls `SERVER_RUNNER_URL/run_module`, and returns `{ success: true }`.
