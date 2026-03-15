@@ -617,11 +617,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 12.4: E2E Test - Auth - Login UX
-- [ ] Submit button is disabled during request (loading spinner).
-- [ ] Password field is type `password` (hidden text).
-- [ ] "Forgot password?" link navigates to `/forgot-password`.
-- [ ] "Register" link navigates to `/register`.
-- [ ] Mark completed
+- [x] Submit button is disabled during request (loading spinner).
+- [x] Password field is type `password` (hidden text).
+- [x] "Forgot password?" link navigates to `/forgot-password`.
+- [x] "Register" link navigates to `/register`.
+- [x] Mark completed
 
 ### Task 12.5: E2E Test - Auth - Register Flow
 - [ ] Navigate to `/register`: form is visible (success case).
