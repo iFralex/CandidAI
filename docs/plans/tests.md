@@ -581,11 +581,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 11.3: Backend Python - Firestore Emulator Integration - get_account_data
-- [ ] Complete document: returns all fields.
-- [ ] Partial document: returns available fields + defaults for missing ones.
-- [ ] Document absent: returns default structure (no `KeyError`).
-- [ ] Expired or invalid `cvUrl`: handled gracefully.
-- [ ] Mark completed
+- [x] Complete document: returns all fields.
+- [x] Partial document: returns available fields + defaults for missing ones.
+- [x] Document absent: returns default structure (no `KeyError`).
+- [x] Expired or invalid `cvUrl`: handled gracefully.
+- [x] Mark completed
 
 ### Task 11.4: Backend Python - Firestore Emulator Integration - Result Updates
 - [ ] `update_email_sent`: correctly updates timestamp in Firestore.
