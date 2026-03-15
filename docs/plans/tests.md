@@ -444,13 +444,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.14: Integration Test - Server Actions - refindRecruiter
-- [ ] Verify `refindRecruiter` with valid inputs costs 100 credits, calls Python server, and returns `{ success: true }`.
-- [ ] Verify credits are decremented by 100.
-- [ ] Verify user with 90 credits returns error "Insufficient credits".
-- [ ] Verify user with 0 credits returns error.
-- [ ] Verify invalid `linkedinUrl` returns error or warning.
-- [ ] Verify non-existent `companyId` returns error.
-- [ ] Mark completed
+- [x] Verify `refindRecruiter` with valid inputs costs 100 credits, calls Python server, and returns `{ success: true }`.
+- [x] Verify credits are decremented by 100.
+- [x] Verify user with 90 credits returns error "Insufficient credits".
+- [x] Verify user with 0 credits returns error.
+- [x] Verify invalid `linkedinUrl` returns error or warning.
+- [x] Verify non-existent `companyId` returns error.
+- [x] Mark completed
 
 ### Task 6.15: Integration Test - Server Actions - confirmCompanies
 - [ ] Verify `confirmCompanies` updates details in Firestore, removes from `companies_to_confirm`, and returns `{ success: true }`.
