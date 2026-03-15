@@ -418,9 +418,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.10: Integration Test - Server Actions - completeOnboarding - Free Plan
-- [ ] Verify `completeOnboarding` on free_trial saves customizations, updates `onboardingStep=50`, calls `SERVER_RUNNER_URL/run_module`, and returns `{ success: true }`.
-- [ ] Verify unreachable `SERVER_RUNNER_URL` does not crash action and handles error.
-- [ ] Mark completed
+- [x] Verify `completeOnboarding` on free_trial saves customizations, updates `onboardingStep=50`, calls `SERVER_RUNNER_URL/run_module`, and returns `{ success: true }`.
+- [x] Verify unreachable `SERVER_RUNNER_URL` does not crash action and handles error.
+- [x] Mark completed
 
 ### Task 6.11: Integration Test - Server Actions - completeOnboarding - Paid Plan
 - [ ] Verify `completeOnboarding` on base/pro/ultra saves customizations, updates `onboardingStep=6` (wait for payment), and does **not** call startServer.
