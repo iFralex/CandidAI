@@ -558,10 +558,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 10.2: Backend Python - API Routes Test - Auth and Security
-- [ ] Request without auth header (if required): status 401 or 403.
-- [ ] Invalid Authorization header: status 401.
-- [ ] IP not in whitelist (if firewall present): request denied.
-- [ ] Mark completed
+- [x] Request without auth header (if required): status 401 or 403.
+- [x] Invalid Authorization header: status 401.
+- [x] IP not in whitelist (if firewall present): request denied.
+- [x] Mark completed
 
 ### Task 11.1: Backend Python - Firestore Emulator Integration - save_companies_to_results
 - [ ] New user (no previous results): pass 3 new companies -> creates 3 docs in `users/{uid}/data/results/` with `email_sent="1970-01-01T00:00:00Z"`.
