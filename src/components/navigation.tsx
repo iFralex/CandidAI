@@ -9,7 +9,7 @@ export const Navigation = () => {
         <nav className="fixed top-0 w-full z-50 bg-black/20 backdrop-blur-lg border-b border-white/10">
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
-                    <div className="flex items-center space-x-2">
+                    <Link href="/" className="flex items-center space-x-2" aria-label="CandidAI home">
                         <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
                             <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
                         </div>
@@ -17,7 +17,7 @@ export const Navigation = () => {
                         <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
                             CandidAI
                         </span>
-                    </div>
+                    </Link>
 
                     <div className="hidden md:flex items-center space-x-8">
                         <Link href="#features" className="text-gray-300 hover:text-white transition-colors">Features</Link>

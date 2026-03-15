@@ -594,11 +594,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 12.1: E2E Test - Auth - Landing & Navigation
-- [ ] `/` loads correctly: title visible, CTA present.
-- [ ] Click "Get Started" or "Login": redirect to `/login`.
-- [ ] Click "Register": redirect to `/register`.
-- [ ] Navbar logo click: returns to `/`.
-- [ ] Mark completed
+- [x] `/` loads correctly: title visible, CTA present.
+- [x] Click "Get Started" or "Login": redirect to `/login`.
+- [x] Click "Register": redirect to `/register`.
+- [x] Navbar logo click: returns to `/`.
+- [x] Mark completed
 
 ### Task 12.2: E2E Test - Auth - Login Flow - Success
 - [ ] Navigate to `/login`: form is visible.
