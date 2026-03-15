@@ -67,11 +67,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 2.3: Unit Test - Config - creditsInfo Constants Structure
-- [ ] Verify `creditsInfo["prompt"].cost === 100`.
-- [ ] Verify `creditsInfo["generate-email"].cost === 50`.
-- [ ] Verify `creditsInfo["find-recruiter"].cost === 100`.
-- [ ] Verify `creditsInfo["change-company"].cost === 70`.
-- [ ] Mark completed
+- [x] Verify `creditsInfo["prompt"].cost === 100`.
+- [x] Verify `creditsInfo["generate-email"].cost === 50`.
+- [x] Verify `creditsInfo["find-recruiter"].cost === 100`.
+- [x] Verify `creditsInfo["change-company"].cost === 70`.
+- [x] Mark completed
 
 ### Task 2.4: Unit Test - Utils - cn (Class Merging Utility)
 - [ ] Verify simple strings: `cn("foo", "bar")` -> `"foo bar"`.
