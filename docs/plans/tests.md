@@ -294,19 +294,19 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.10: Integration Test - API Route - POST /api/create-payment
-- [ ] Verify `{ purchaseType: "plan", itemId: "base", payment_method_id: "pm_test" }` returns `{ client_secret, type: "one_time", amount: 3000 }` (Stripe mock).
-- [ ] Verify `{ purchaseType: "plan", itemId: "pro" }` returns `amount: 6900`.
-- [ ] Verify `{ purchaseType: "plan", itemId: "ultra" }` returns `amount: 13900`.
-- [ ] Verify `{ purchaseType: "credits", itemId: "pkg_1000" }` returns `amount: 1000`.
-- [ ] Verify `{ purchaseType: "credits", itemId: "pkg_2500" }` returns `amount: 2000`.
-- [ ] Verify `{ purchaseType: "credits", itemId: "pkg_5000" }` returns `amount: 3000`.
-- [ ] Verify `{ purchaseType: "plan", itemId: "free_trial" }` returns error response (no payment for free trial).
-- [ ] Verify invalid `itemId` returns status 400.
-- [ ] Verify invalid `purchaseType` returns status 400.
-- [ ] Verify Stripe API error returns status 500.
-- [ ] Verify request without auth returns status 401.
-- [ ] Verify missing body returns status 400.
-- [ ] Mark completed
+- [x] Verify `{ purchaseType: "plan", itemId: "base", payment_method_id: "pm_test" }` returns `{ client_secret, type: "one_time", amount: 3000 }` (Stripe mock).
+- [x] Verify `{ purchaseType: "plan", itemId: "pro" }` returns `amount: 6900`.
+- [x] Verify `{ purchaseType: "plan", itemId: "ultra" }` returns `amount: 13900`.
+- [x] Verify `{ purchaseType: "credits", itemId: "pkg_1000" }` returns `amount: 1000`.
+- [x] Verify `{ purchaseType: "credits", itemId: "pkg_2500" }` returns `amount: 2000`.
+- [x] Verify `{ purchaseType: "credits", itemId: "pkg_5000" }` returns `amount: 3000`.
+- [x] Verify `{ purchaseType: "plan", itemId: "free_trial" }` returns error response (no payment for free trial).
+- [x] Verify invalid `itemId` returns status 400.
+- [x] Verify invalid `purchaseType` returns status 400.
+- [x] Verify Stripe API error returns status 500.
+- [x] Verify request without auth returns status 401.
+- [x] Verify missing body returns status 400.
+- [x] Mark completed
 
 ### Task 5.11: Integration Test - API Route - POST /api/stripe-webhook - Plan Purchase
 - [ ] Verify valid payload with `metadata.purchaseType="plan"`, `metadata.itemId="base"`, `metadata.userId="user123"`: Creates payment document in `users/user123/payments/{paymentIntentId}`, updates `users/user123` (`plan="base"`, `maxCompanies=20`, `credits=0`, `onboardingStep=50`), calls Resend with `purchase-confirmation`, calls `SERVER_RUNNER_URL/run_module`, and returns status 200.

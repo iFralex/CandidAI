@@ -22,7 +22,9 @@ export async function POST(req: Request) {
             }
         });
 
-        if (!res.ok) throw new Error(String(res.status));
+        if (!res.ok) {
+            return NextResponse.json({ error: "Authentication failed" }, { status: res.status });
+        }
 
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
@@ -34,17 +36,17 @@ export async function POST(req: Request) {
 
         if (purchaseType === "plan") {
             const plan = plansInfo.find((p) => p.id === itemId);
-            if (!plan) throw new Error("Piano non valido");
+            if (!plan) return NextResponse.json({ error: "Piano non valido" }, { status: 400 });
             amountInCents = Math.round(plan.price * 100);
             if (amountInCents === 0) {
                 return NextResponse.json({ error: "Free plans do not require payment" }, { status: 400 });
             }
         } else if (purchaseType === "credits") {
             const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId);
-            if (!pkg) throw new Error("Pacchetto crediti non valido");
+            if (!pkg) return NextResponse.json({ error: "Pacchetto crediti non valido" }, { status: 400 });
             amountInCents = pkg.price;
         } else {
-            throw new Error("purchaseType non valido");
+            return NextResponse.json({ error: "purchaseType non valido" }, { status: 400 });
         }
 
         const paymentIntent = await stripe.paymentIntents.create({
