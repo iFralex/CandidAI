@@ -657,17 +657,17 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 13.1: E2E Test - Onboarding Flow - Persona A: Free Trial
-- [ ] Setup: Registered user, `onboardingStep=1`.
-- [ ] Dashboard shows Step 1 (Plan Selection).
-- [ ] Step 1: Select "Free Trial" -> click Next -> advance.
-- [ ] Step 2: Enter 1 company (name + valid domain "acmecorp.com") -> click Next -> advance.
-- [ ] Step 3: Complete profile (experience, education, location), upload valid PDF -> click Next -> advance (verify progress bar/upload).
-- [ ] Step 4: Set recruiter search criteria -> click Next -> advance.
-- [ ] Step 5: Enter custom instructions -> click "Complete Setup".
-- [ ] Verify no payment form shown.
-- [ ] Verify `startServer` called (MSW intercept).
-- [ ] Verify main dashboard shown (Step 50).
-- [ ] Mark completed
+- [x] Setup: Registered user, `onboardingStep=1`.
+- [x] Dashboard shows Step 1 (Plan Selection).
+- [x] Step 1: Select "Free Trial" -> click Next -> advance.
+- [x] Step 2: Enter 1 company (name + valid domain "acmecorp.com") -> click Next -> advance.
+- [x] Step 3: Complete profile (experience, education, location), upload valid PDF -> click Next -> advance (verify progress bar/upload).
+- [x] Step 4: Set recruiter search criteria -> click Next -> advance.
+- [x] Step 5: Enter custom instructions -> click "Complete Setup".
+- [x] Verify no payment form shown.
+- [x] Verify `startServer` called (MSW intercept).
+- [x] Verify main dashboard shown (Step 50).
+- [x] Mark completed
 
 ### Task 13.2: E2E Test - Onboarding Flow - Persona B: Base Plan
 - [ ] Steps 1-5: Select "Base Plan" (€30).
