@@ -488,14 +488,14 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 7.2: Integration Test - Full Onboarding Flow - Paid Plan
-- [ ] Setup: Create test user with `onboardingStep=1`.
-- [ ] Steps 1-5: Execute as above using `selectPlan("base")`.
-- [ ] After step 5: Verify `onboardingStep=6` (waits for payment).
-- [ ] Verify `startServer` is **not** called yet.
-- [ ] Simulate Stripe webhook for `purchaseType="plan"`, `itemId="base"`: Sets `onboardingStep=50`, `plan="base"`, `maxCompanies=20`.
-- [ ] Verify `startServer` is called by the webhook (MSW intercepts).
-- [ ] Verify final state: `plan="base"`, `onboardingStep=50`.
-- [ ] Mark completed
+- [x] Setup: Create test user with `onboardingStep=1`.
+- [x] Steps 1-5: Execute as above using `selectPlan("base")`.
+- [x] After step 5: Verify `onboardingStep=6` (waits for payment).
+- [x] Verify `startServer` is **not** called yet.
+- [x] Simulate Stripe webhook for `purchaseType="plan"`, `itemId="base"`: Sets `onboardingStep=50`, `plan="base"`, `maxCompanies=20`.
+- [x] Verify `startServer` is called by the webhook (MSW intercepts).
+- [x] Verify final state: `plan="base"`, `onboardingStep=50`.
+- [x] Mark completed
 
 ### Task 7.3: Integration Test - Onboarding Flow - Error Interruption
 - [ ] Verify user at `onboardingStep=3` calling `submitCompanies` again overwrites correctly (or handles "step already completed" error).
