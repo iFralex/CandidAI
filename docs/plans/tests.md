@@ -466,9 +466,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.17: Integration Test - Server Actions - getSettings
-- [ ] Verify it returns notification settings from Firestore.
-- [ ] Verify user without saved settings returns defaults (`marketingEmails: false`, `reminderFrequency: "weekly"`).
-- [ ] Mark completed
+- [x] Verify it returns notification settings from Firestore.
+- [x] Verify user without saved settings returns defaults (`marketingEmails: false`, `reminderFrequency: "weekly"`).
+- [x] Mark completed
 
 ### Task 6.18: Integration Test - Server Actions - fetchBillingHistory
 - [ ] Verify user with 3 payments returns array of 3 transactions ordered by date.
