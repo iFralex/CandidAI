@@ -477,15 +477,15 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 7.1: Integration Test - Full Onboarding Flow - Free Trial
-- [ ] Setup: Create test user with `onboardingStep=1`.
-- [ ] Step 1: `selectPlan("free_trial")` -> `onboardingStep=2`.
-- [ ] Step 2: `submitCompanies([{ name: "TestCo", domain: "testco.com" }])` -> `onboardingStep=3`.
-- [ ] Step 3: `submitProfile(validProfileData, mockCVFile)` -> `onboardingStep=4`.
-- [ ] Step 4: `submitQueries(validQueries)` -> `onboardingStep=5`.
-- [ ] Step 5: `completeOnboarding({ instructions: "Be professional" })` -> `onboardingStep=50`.
-- [ ] Verify `startServer` was called (MSW intercepts `/run_module`).
-- [ ] Verify final state in Firestore: `plan="free_trial"`, `onboardingStep=50`, complete `data/account`.
-- [ ] Mark completed
+- [x] Setup: Create test user with `onboardingStep=1`.
+- [x] Step 1: `selectPlan("free_trial")` -> `onboardingStep=2`.
+- [x] Step 2: `submitCompanies([{ name: "TestCo", domain: "testco.com" }])` -> `onboardingStep=3`.
+- [x] Step 3: `submitProfile(validProfileData, mockCVFile)` -> `onboardingStep=4`.
+- [x] Step 4: `submitQueries(validQueries)` -> `onboardingStep=5`.
+- [x] Step 5: `completeOnboarding({ instructions: "Be professional" })` -> `onboardingStep=50`.
+- [x] Verify `startServer` was called (MSW intercepts `/run_module`).
+- [x] Verify final state in Firestore: `plan="free_trial"`, `onboardingStep=50`, complete `data/account`.
+- [x] Mark completed
 
 ### Task 7.2: Integration Test - Full Onboarding Flow - Paid Plan
 - [ ] Setup: Create test user with `onboardingStep=1`.
