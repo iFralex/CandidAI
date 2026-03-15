@@ -59,12 +59,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 2.2: Unit Test - Config - PLANS Constants Structure
-- [ ] Verify every plan has properties: `id`, `name`, `price`, `maxCompanies`, `credits`.
-- [ ] Verify `free_trial.maxCompanies === 1`.
-- [ ] Verify `pro.credits === 1000`.
-- [ ] Verify `ultra.credits === 2500`.
-- [ ] Verify `CREDIT_PACKAGES` has exactly 3 elements.
-- [ ] Mark completed
+- [x] Verify every plan has properties: `id`, `name`, `price`, `maxCompanies`, `credits`.
+- [x] Verify `free_trial.maxCompanies === 1`.
+- [x] Verify `pro.credits === 1000`.
+- [x] Verify `ultra.credits === 2500`.
+- [x] Verify `CREDIT_PACKAGES` has exactly 3 elements.
+- [x] Mark completed
 
 ### Task 2.3: Unit Test - Config - creditsInfo Constants Structure
 - [ ] Verify `creditsInfo["prompt"].cost === 100`.
