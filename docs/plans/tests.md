@@ -371,11 +371,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.3: Integration Test - Server Actions - submitCompanies - Validation
-- [ ] Verify invalid domain (e.g., `"notadomain"`) returns error `{ success: false, error: "..." }`.
-- [ ] Verify empty company name returns error.
-- [ ] Verify empty array returns error (at least 1 company required).
-- [ ] Verify duplicate companies in the same submission return error or deduplicate.
-- [ ] Mark completed
+- [x] Verify invalid domain (e.g., `"notadomain"`) returns error `{ success: false, error: "..." }`.
+- [x] Verify empty company name returns error.
+- [x] Verify empty array returns error (at least 1 company required).
+- [x] Verify duplicate companies in the same submission return error or deduplicate.
+- [x] Mark completed
 
 ### Task 6.4: Integration Test - Server Actions - submitCompanies - Plan limits
 - [ ] Verify free_trial user (maxCompanies=1): submit 1 company -> OK.

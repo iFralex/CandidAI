@@ -169,6 +169,55 @@ describe("submitCompanies server action", () => {
     });
   });
 
+  describe("validation", () => {
+    it("returns error when companies array is empty", async () => {
+      const result = await submitCompanies([]);
+      expect(result).toEqual({ success: false, error: expect.any(String) });
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+
+    it("returns error for invalid domain without a dot (e.g. 'notadomain')", async () => {
+      const result = await submitCompanies([{ name: "Acme", domain: "notadomain" }]);
+      expect(result).toEqual({ success: false, error: expect.stringContaining("Invalid domain") });
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+
+    it("returns error for empty company name", async () => {
+      const result = await submitCompanies([{ name: "", domain: "acme.com" }]);
+      expect(result).toEqual({ success: false, error: expect.any(String) });
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+
+    it("returns error for whitespace-only company name", async () => {
+      const result = await submitCompanies([{ name: "   ", domain: "acme.com" }]);
+      expect(result).toEqual({ success: false, error: expect.any(String) });
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+
+    it("returns error when duplicate domains are submitted", async () => {
+      const result = await submitCompanies([
+        { name: "Acme", domain: "acme.com" },
+        { name: "Acme Corp", domain: "acme.com" },
+      ]);
+      expect(result).toEqual({ success: false, error: expect.any(String) });
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+
+    it("treats duplicate domains case-insensitively", async () => {
+      const result = await submitCompanies([
+        { name: "Acme", domain: "Acme.com" },
+        { name: "Acme Corp", domain: "acme.com" },
+      ]);
+      expect(result).toEqual({ success: false, error: expect.any(String) });
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+
+    it("does not call checkAuth (getTokens) when validation fails", async () => {
+      await submitCompanies([]);
+      expect(mockGetTokens).not.toHaveBeenCalled();
+    });
+  });
+
   describe("authentication", () => {
     it("throws when user is not authenticated (null tokens)", async () => {
       mockGetTokens.mockResolvedValue(null);
