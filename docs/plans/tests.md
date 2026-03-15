@@ -270,11 +270,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.7: Integration Test - API Route - GET /api/protected/results
-- [ ] Verify user with active campaigns returns map `{ [companyId]: { recruiter, email_sent, blog_articles, ... } }`.
-- [ ] Verify user without campaigns returns empty object `{}`.
-- [ ] Verify request without auth returns status 401.
-- [ ] Verify Firestore inaccessibility simulation returns status 500.
-- [ ] Mark completed
+- [x] Verify user with active campaigns returns map `{ [companyId]: { recruiter, email_sent, blog_articles, ... } }`.
+- [x] Verify user without campaigns returns empty object `{}`.
+- [x] Verify request without auth returns status 401.
+- [x] Verify Firestore inaccessibility simulation returns status 500.
+- [x] Mark completed
 
 ### Task 5.8: Integration Test - API Route - GET /api/protected/emails
 - [ ] Verify user with generated emails returns `{ data: { [companyId]: emailContent }, userId }`.

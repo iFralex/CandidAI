@@ -1,10 +1,12 @@
-// app/api/protected/user/route.js
+// app/api/protected/results/route.js
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { clientConfig, serverConfig } from '@/config';
 import { getTokens } from 'next-firebase-auth-edge';
 
 export async function GET(request) {
+    let decodedToken;
+
     try {
         const tokens = await getTokens(request.cookies, {
             apiKey: clientConfig.apiKey,
@@ -13,9 +15,23 @@ export async function GET(request) {
             serviceAccount: serverConfig.serviceAccount,
         });
 
-        const decodedToken = tokens?.decodedToken
+        if (!tokens?.decodedToken) {
+            return NextResponse.json(
+                { error: 'Non autorizzato' },
+                { status: 401 }
+            );
+        }
 
-        // Ottieni i dati utente da Firestore
+        decodedToken = tokens.decodedToken;
+    } catch (error) {
+        console.error('Auth error:', error);
+        return NextResponse.json(
+            { error: 'Non autorizzato' },
+            { status: 401 }
+        );
+    }
+
+    try {
         const userDoc = await adminDb.collection('users').doc(decodedToken.uid).collection("data").doc("results").get();
 
         if (!userDoc.exists) {
@@ -33,11 +49,11 @@ export async function GET(request) {
         });
 
     } catch (error) {
-        console.error('Errore API protetta:', error);
+        console.error('Firestore error:', error);
 
         return NextResponse.json(
-            { error: 'Non autorizzato' },
-            { status: 401 }
+            { error: 'Internal server error' },
+            { status: 500 }
         );
     }
 }
