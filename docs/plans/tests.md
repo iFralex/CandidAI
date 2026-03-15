@@ -574,11 +574,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 11.2: Backend Python - Firestore Emulator Integration - get_custom_queries
-- [ ] `data/account` present with queries: returns correct queries.
-- [ ] `data/account` absent: returns default `{}`.
-- [ ] `queries` field missing in doc: returns default `{}`.
-- [ ] `queries` is null: returns default `{}`.
-- [ ] Mark completed
+- [x] `data/account` present with queries: returns correct queries.
+- [x] `data/account` absent: returns default `{}`.
+- [x] `queries` field missing in doc: returns default `{}`.
+- [x] `queries` is null: returns default `{}`.
+- [x] Mark completed
 
 ### Task 11.3: Backend Python - Firestore Emulator Integration - get_account_data
 - [ ] Complete document: returns all fields.
