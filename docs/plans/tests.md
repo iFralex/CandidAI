@@ -174,16 +174,16 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 4.1: MSW Mock Handlers - Stripe
-- [ ] `POST /v1/payment_intents` (success): return `{ id: "pi_test_123", client_secret: "pi_test_123_secret_xxx", status: "requires_payment_method", amount: 3000, currency: "eur" }`.
-- [ ] `POST /v1/payment_intents` (card declined): return `{ error: { type: "card_error", code: "card_declined", message: "Your card was declined." } }` with status 402.
-- [ ] `POST /v1/payment_intents` (insufficient funds): return `insufficient_funds` error with status 402.
-- [ ] `POST /v1/payment_intents` (expired card): return `expired_card` error with status 402.
-- [ ] `POST /v1/payment_intents` (invalid CVC): return `incorrect_cvc` error with status 402.
-- [ ] `POST /v1/payment_intents` (network timeout): no response after 5s.
-- [ ] `POST /v1/payment_intents` (Stripe server error): return status 500.
-- [ ] `GET /v1/payment_intents/:id`: return mock existing payment intent.
-- [ ] `POST /v1/payment_intents/:id/confirm`: return mock succeeded status.
-- [ ] Mark completed
+- [x] `POST /v1/payment_intents` (success): return `{ id: "pi_test_123", client_secret: "pi_test_123_secret_xxx", status: "requires_payment_method", amount: 3000, currency: "eur" }`.
+- [x] `POST /v1/payment_intents` (card declined): return `{ error: { type: "card_error", code: "card_declined", message: "Your card was declined." } }` with status 402.
+- [x] `POST /v1/payment_intents` (insufficient funds): return `insufficient_funds` error with status 402.
+- [x] `POST /v1/payment_intents` (expired card): return `expired_card` error with status 402.
+- [x] `POST /v1/payment_intents` (invalid CVC): return `incorrect_cvc` error with status 402.
+- [x] `POST /v1/payment_intents` (network timeout): no response after 5s.
+- [x] `POST /v1/payment_intents` (Stripe server error): return status 500.
+- [x] `GET /v1/payment_intents/:id`: return mock existing payment intent.
+- [x] `POST /v1/payment_intents/:id/confirm`: return mock succeeded status.
+- [x] Mark completed
 
 ### Task 4.2: MSW Mock Handlers - Resend
 - [ ] `POST https://api.resend.com/emails` (success): return `{ id: "re_fake_123" }` with status 200.
