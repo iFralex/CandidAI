@@ -194,13 +194,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 4.3: MSW Mock Handlers - PDL (People Data Labs)
-- [ ] `POST https://api.peopledatalabs.com/v5/person/search` (success): return JSON with list of 5 mock recruiters.
-- [ ] `POST https://api.peopledatalabs.com/v5/company/search` (success): return JSON with mock company data.
-- [ ] `POST https://api.peopledatalabs.com/v5/person/search` (no results): return `{ data: [], total: 0 }`.
-- [ ] `POST https://api.peopledatalabs.com/v5/person/search` (rate limit): return status 429.
-- [ ] `POST https://api.peopledatalabs.com/v5/person/search` (unauthorized): return status 401.
-- [ ] `POST https://api.peopledatalabs.com/v5/person/search` (bad request): return status 400.
-- [ ] Mark completed
+- [x] `POST https://api.peopledatalabs.com/v5/person/search` (success): return JSON with list of 5 mock recruiters.
+- [x] `POST https://api.peopledatalabs.com/v5/company/search` (success): return JSON with mock company data.
+- [x] `POST https://api.peopledatalabs.com/v5/person/search` (no results): return `{ data: [], total: 0 }`.
+- [x] `POST https://api.peopledatalabs.com/v5/person/search` (rate limit): return status 429.
+- [x] `POST https://api.peopledatalabs.com/v5/person/search` (unauthorized): return status 401.
+- [x] `POST https://api.peopledatalabs.com/v5/person/search` (bad request): return status 400.
+- [x] Mark completed
 
 ### Task 4.4: MSW Mock Handlers - External Python Server (SERVER_RUNNER_URL)
 - [ ] `POST /run_module` (success): return `{ status: "queued", message: "Processing started" }` with status 200.
