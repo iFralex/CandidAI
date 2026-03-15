@@ -407,9 +407,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.8: Integration Test - Server Actions - submitProfile - Firebase Storage (emulator)
-- [ ] Verify file is uploaded correctly and resulting URL points to storage emulator.
-- [ ] Verify upload failure (Storage emulator offline) is handled.
-- [ ] Mark completed
+- [x] Verify file is uploaded correctly and resulting URL points to storage emulator.
+- [x] Verify upload failure (Storage emulator offline) is handled.
+- [x] Mark completed
 
 ### Task 6.9: Integration Test - Server Actions - submitQueries
 - [ ] Verify `submitQueries({ strategy: "domain", ... })` saves to `data/account.queries`, updates `onboardingStep=5`, and returns `{ success: true }`.

@@ -273,6 +273,58 @@ describe("submitProfile server action", () => {
     });
   });
 
+  describe("Firebase Storage (emulator)", () => {
+    const EMULATOR_STORAGE_URL =
+      "http://127.0.0.1:9199/v0/b/demo-candidai.appspot.com/o/cv%2Fuser123%2Fresume.pdf?alt=media&token=fake-token";
+
+    it("uploads file correctly and saves URL from storage emulator to data/account.cvUrl", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+      // Simulate storage emulator returning an emulator-style URL
+      mockGetSignedUrl.mockResolvedValue([EMULATOR_STORAGE_URL]);
+
+      const cv = new File(["pdf content"], "resume.pdf", { type: "application/pdf" });
+
+      const result = await submitProfile(
+        "pro",
+        { linkedinUrl: "https://linkedin.com/in/johndoe", profileSummary: "Engineer" },
+        cv
+      );
+
+      // Upload must have been called once
+      expect(mockFileSave).toHaveBeenCalledOnce();
+      expect(mockGetSignedUrl).toHaveBeenCalledOnce();
+
+      // The URL saved in Firestore must match the emulator URL
+      const accountUpdateCall = mockBatchUpdate.mock.calls.find(
+        ([, data]) => data && "cvUrl" in data
+      );
+      expect(accountUpdateCall).toBeDefined();
+      expect(accountUpdateCall![1].cvUrl).toBe(EMULATOR_STORAGE_URL);
+
+      // Action must succeed
+      expect(result).not.toEqual(expect.objectContaining({ success: false }));
+    });
+
+    it("propagates error when Storage emulator is offline (file.save throws)", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+      // Simulate storage emulator being unreachable
+      mockFileSave.mockRejectedValue(new Error("ECONNREFUSED 127.0.0.1:9199"));
+
+      const cv = new File(["pdf content"], "resume.pdf", { type: "application/pdf" });
+
+      await expect(
+        submitProfile(
+          "pro",
+          { linkedinUrl: "https://linkedin.com/in/johndoe", profileSummary: "Engineer" },
+          cv
+        )
+      ).rejects.toThrow("ECONNREFUSED 127.0.0.1:9199");
+
+      // Firestore batch must NOT have been committed (upload failed before Firestore write)
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+  });
+
   describe("happy path", () => {
     it("uploads CV to Firebase Storage and saves the signed URL to data/account.cvUrl", async () => {
       mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
