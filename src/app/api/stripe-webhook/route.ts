@@ -25,7 +25,9 @@ export async function POST(req: Request) {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       const { userId, purchaseType, itemId } = paymentIntent.metadata;
 
-      if (!userId) throw new Error("userId non trovato nel metadata del payment intent");
+      if (!userId) {
+        return new Response("Webhook Error: missing userId in metadata", { status: 400 });
+      }
 
       const userRef = adminDb.collection("users").doc(userId);
       const paymentRef = userRef.collection("payments").doc(paymentIntent.id);
@@ -76,7 +78,11 @@ export async function POST(req: Request) {
       await batch.commit();
 
       if (purchaseType === "plan") {
-        await startServer(userId);
+        try {
+          await startServer(userId);
+        } catch (serverErr) {
+          console.error("Failed to start server:", serverErr);
+        }
       }
 
       // Send purchase confirmation email (non-blocking)

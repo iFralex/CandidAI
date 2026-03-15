@@ -321,14 +321,14 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.13: Integration Test - API Route - POST /api/stripe-webhook - Edge Cases
-- [ ] Verify invalid Stripe signature (`stripe-signature` header) returns status 400.
-- [ ] Verify missing Stripe signature returns status 400.
-- [ ] Verify already processed event (idempotency by `paymentIntentId`) skips without error and returns status 200.
-- [ ] Verify missing `userId` in metadata returns status 400.
-- [ ] Verify unhandled event type (e.g., `payment_intent.created`) skips and returns status 200.
-- [ ] Verify Resend 429 does not crash webhook and returns status 200.
-- [ ] Verify unreachable `SERVER_RUNNER_URL` does not crash webhook and returns status 200.
-- [ ] Mark completed
+- [x] Verify invalid Stripe signature (`stripe-signature` header) returns status 400.
+- [x] Verify missing Stripe signature returns status 400.
+- [x] Verify already processed event (idempotency by `paymentIntentId`) skips without error and returns status 200.
+- [x] Verify missing `userId` in metadata returns status 400.
+- [x] Verify unhandled event type (e.g., `payment_intent.created`) skips and returns status 200.
+- [x] Verify Resend 429 does not crash webhook and returns status 200.
+- [x] Verify unreachable `SERVER_RUNNER_URL` does not crash webhook and returns status 200.
+- [x] Mark completed
 
 ### Task 5.14: Integration Test - API Route - POST /api/send-email
 - [ ] Verify type `welcome` with user data calls Resend and returns 200; HTML contains username and verification link.
