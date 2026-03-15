@@ -130,13 +130,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 3.5: Unit Test - Components - PlanSelector
-- [ ] Verify all 4 plans are rendered (free_trial, base, pro, ultra).
-- [ ] Verify each plan shows: name, price, maxCompanies, features list.
-- [ ] Verify clicking a plan calls `onSelect` with `planId`.
-- [ ] Verify selected plan has a visual indicator.
-- [ ] Verify user's current plan (prop `currentPlan`) shows "Current Plan" badge and is not clickable (or disabled).
-- [ ] Verify free trial does not show a price (or shows "Free").
-- [ ] Mark completed
+- [x] Verify all 4 plans are rendered (free_trial, base, pro, ultra).
+- [x] Verify each plan shows: name, price, maxCompanies, features list.
+- [x] Verify clicking a plan calls `onSelect` with `planId`.
+- [x] Verify selected plan has a visual indicator.
+- [x] Verify user's current plan (prop `currentPlan`) shows "Current Plan" badge and is not clickable (or disabled).
+- [x] Verify free trial does not show a price (or shows "Free").
+- [x] Mark completed
 
 ### Task 3.6: Unit Test - Components - UnifiedCheckout
 - [ ] Verify rendering without crash with valid `clientSecret` and `amount`.
