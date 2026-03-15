@@ -543,10 +543,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 9.4: Backend Python - Unit Test Logic - Credit Calculation and Limits
-- [ ] Verify credit deduction for each task type.
-- [ ] Verify insufficient credits: task not queued, error returned.
-- [ ] Verify PDL daily request limit: queue logic respected.
-- [ ] Mark completed
+- [x] Verify credit deduction for each task type.
+- [x] Verify insufficient credits: task not queued, error returned.
+- [x] Verify PDL daily request limit: queue logic respected.
+- [x] Mark completed
 
 ### Task 10.1: Backend Python - API Routes Test - POST /run_module
 - [ ] Valid body `{ "user_id": "test123" }` with mocked `enqueue_job`: returns `{ "status": "queued" }` status 200.
