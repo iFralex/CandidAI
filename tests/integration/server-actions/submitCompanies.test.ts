@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 
 // Hoist mocks so they are available inside vi.mock factory
-const { mockGetTokens, mockBatchSet, mockBatchUpdate, mockBatchCommit } = vi.hoisted(() => ({
+const { mockGetTokens, mockBatchSet, mockBatchUpdate, mockBatchCommit, mockUserGet } = vi.hoisted(() => ({
   mockGetTokens: vi.fn(),
   mockBatchSet: vi.fn(),
   mockBatchUpdate: vi.fn(),
   mockBatchCommit: vi.fn(),
+  mockUserGet: vi.fn(),
 }));
 
 vi.mock("next-firebase-auth-edge", () => ({
@@ -32,6 +33,7 @@ vi.mock("@/lib/firebase-admin", () => ({
   adminDb: {
     collection: vi.fn().mockReturnValue({
       doc: vi.fn().mockReturnValue({
+        get: mockUserGet,
         collection: vi.fn().mockReturnValue({
           doc: vi.fn().mockReturnValue({}),
         }),
@@ -78,6 +80,8 @@ describe("submitCompanies server action", () => {
 
   beforeEach(() => {
     mockBatchCommit.mockResolvedValue(undefined);
+    // Default: pro plan (maxCompanies=50) — doesn't affect small-array happy-path tests
+    mockUserGet.mockResolvedValue({ data: () => ({ plan: "pro" }) });
   });
 
   describe("happy path", () => {
@@ -255,6 +259,68 @@ describe("submitCompanies server action", () => {
       await expect(
         submitCompanies([{ name: "Acme", domain: "acme.com" }])
       ).rejects.toThrow("Email not verified");
+    });
+  });
+
+  describe("plan limits", () => {
+    const makeCompanies = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({ name: `Company${i + 1}`, domain: `company${i + 1}.com` }));
+
+    it("free_trial (maxCompanies=1): submit 1 company -> OK", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+      mockUserGet.mockResolvedValue({ data: () => ({ plan: "free_trial" }) });
+
+      await expect(
+        submitCompanies([{ name: "Acme", domain: "acme.com" }])
+      ).resolves.not.toThrow();
+      expect(mockBatchCommit).toHaveBeenCalledOnce();
+    });
+
+    it("free_trial (maxCompanies=1): submit 2 companies -> error 'Exceeds plan limit'", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+      mockUserGet.mockResolvedValue({ data: () => ({ plan: "free_trial" }) });
+
+      const result = await submitCompanies([
+        { name: "Acme", domain: "acme.com" },
+        { name: "Globex", domain: "globex.com" },
+      ]);
+
+      expect(result).toEqual({ success: false, error: expect.stringMatching(/exceeds plan limit/i) });
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+
+    it("base (maxCompanies=20): submit 20 companies -> OK", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+      mockUserGet.mockResolvedValue({ data: () => ({ plan: "base" }) });
+
+      await expect(submitCompanies(makeCompanies(20))).resolves.not.toThrow();
+      expect(mockBatchCommit).toHaveBeenCalledOnce();
+    });
+
+    it("base (maxCompanies=20): submit 21 companies -> error", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+      mockUserGet.mockResolvedValue({ data: () => ({ plan: "base" }) });
+
+      const result = await submitCompanies(makeCompanies(21));
+
+      expect(result).toEqual({ success: false, error: expect.stringMatching(/exceeds plan limit/i) });
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+
+    it("pro (maxCompanies=50): submit 50 companies -> OK", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+      mockUserGet.mockResolvedValue({ data: () => ({ plan: "pro" }) });
+
+      await expect(submitCompanies(makeCompanies(50))).resolves.not.toThrow();
+      expect(mockBatchCommit).toHaveBeenCalledOnce();
+    });
+
+    it("ultra (maxCompanies=100): submit 100 companies -> OK", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
+      mockUserGet.mockResolvedValue({ data: () => ({ plan: "ultra" }) });
+
+      await expect(submitCompanies(makeCompanies(100))).resolves.not.toThrow();
+      expect(mockBatchCommit).toHaveBeenCalledOnce();
     });
   });
 });

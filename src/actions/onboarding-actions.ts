@@ -74,8 +74,18 @@ export async function submitCompanies(companies: { name: string, domain: string 
 
     const userId = await checkAuth()
 
-    const accountRef = adminDb.collection("users").doc(userId).collection("data").doc("account")
     const userRef = adminDb.collection("users").doc(userId)
+
+    // Enforce plan limits
+    const userSnap = await userRef.get()
+    const plan: string = userSnap.data()?.plan || "free_trial"
+    const maxCompanies: number = (plansData as any)[plan]?.maxCompanies ?? 1
+
+    if (companies.length > maxCompanies) {
+        return { success: false, error: `Exceeds plan limit of ${maxCompanies} companies` }
+    }
+
+    const accountRef = adminDb.collection("users").doc(userId).collection("data").doc("account")
 
     // Batch per unire le due operazioni in un'unica commit
     const batch = adminDb.batch()

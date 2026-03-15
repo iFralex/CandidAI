@@ -378,13 +378,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 6.4: Integration Test - Server Actions - submitCompanies - Plan limits
-- [ ] Verify free_trial user (maxCompanies=1): submit 1 company -> OK.
-- [ ] Verify free_trial user: submit 2 companies -> error "Exceeds plan limit".
-- [ ] Verify base user (maxCompanies=20): submit 20 companies -> OK.
-- [ ] Verify base user: submit 21 companies -> error.
-- [ ] Verify pro user (maxCompanies=50): submit 50 companies -> OK.
-- [ ] Verify ultra user (maxCompanies=100): submit 100 companies -> OK.
-- [ ] Mark completed
+- [x] Verify free_trial user (maxCompanies=1): submit 1 company -> OK.
+- [x] Verify free_trial user: submit 2 companies -> error "Exceeds plan limit".
+- [x] Verify base user (maxCompanies=20): submit 20 companies -> OK.
+- [x] Verify base user: submit 21 companies -> error.
+- [x] Verify pro user (maxCompanies=50): submit 50 companies -> OK.
+- [x] Verify ultra user (maxCompanies=100): submit 100 companies -> OK.
+- [x] Mark completed
 
 ### Task 6.5: Integration Test - Server Actions - submitCompanies - Add more companies (post-onboarding)
 - [ ] Verify base plan user with 3 companies adds 5 -> total 8, OK.
