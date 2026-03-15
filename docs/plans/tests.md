@@ -670,13 +670,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 13.2: E2E Test - Onboarding Flow - Persona B: Base Plan
-- [ ] Steps 1-5: Select "Base Plan" (€30).
-- [ ] After Step 5: Stripe payment form shown.
-- [ ] Enter test card data (`4242 4242 4242 4242`).
-- [ ] Click "Pay €30" -> loading -> success.
-- [ ] Simulate webhook receipt -> dashboard unlocked.
-- [ ] Main dashboard shown.
-- [ ] Mark completed
+- [x] Steps 1-5: Select "Base Plan" (€30).
+- [x] After Step 5: Stripe payment form shown.
+- [x] Enter test card data (`4242 4242 4242 4242`).
+- [x] Click "Pay €30" -> loading -> success.
+- [x] Simulate webhook receipt -> dashboard unlocked.
+- [x] Main dashboard shown.
+- [x] Mark completed
 
 ### Task 13.3: E2E Test - Onboarding Flow - Persona C: Pro Plan
 - [ ] Steps 1-5: Select "Pro Plan" (€69).
