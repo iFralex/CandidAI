@@ -521,12 +521,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 9.1: Backend Python - Unit Test Logic - decide_tasks_per_company - Auto mode
-- [ ] Company with `blog_articles=0`, `recruiter=null`, `email_sent=null`: tasks -> `["find_recruiter", "get_blog", "generate_email"]`.
-- [ ] Company with `recruiter` present, `blog_articles=0`: tasks -> `["get_blog", "generate_email"]`.
-- [ ] Company with `recruiter` and `blog_articles>0`, email not generated: tasks -> `["generate_email"]`.
-- [ ] Completely processed company (email generated): tasks -> `[]`.
-- [ ] Company with `current_status="processing"`: tasks -> `[]` (already in queue).
-- [ ] Mark completed
+- [x] Company with `blog_articles=0`, `recruiter=null`, `email_sent=null`: tasks -> `["find_recruiter", "get_blog", "generate_email"]`.
+- [x] Company with `recruiter` present, `blog_articles=0`: tasks -> `["get_blog", "generate_email"]`.
+- [x] Company with `recruiter` and `blog_articles>0`, email not generated: tasks -> `["generate_email"]`.
+- [x] Completely processed company (email generated): tasks -> `[]`.
+- [x] Company with `current_status="processing"`: tasks -> `[]` (already in queue).
+- [x] Mark completed
 
 ### Task 9.2: Backend Python - Unit Test Logic - decide_tasks_per_company - Manual mode (override)
 - [ ] `force_tasks=["generate_email"]`: only generate_email, ignores current state.
