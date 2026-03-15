@@ -535,12 +535,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 9.3: Backend Python - Unit Test Logic - decide_tasks_per_company - Edge cases
-- [ ] Verify empty company list returns `{}` (no crash).
-- [ ] Verify missing `current_status` field uses safe defaults.
-- [ ] Verify `current_status` as `null` uses safe defaults.
-- [ ] Verify corrupted data (`current_status` not a dict) does not throw fatal exception.
-- [ ] Verify 100 companies in batch have acceptable performance (< 1s).
-- [ ] Mark completed
+- [x] Verify empty company list returns `{}` (no crash).
+- [x] Verify missing `current_status` field uses safe defaults.
+- [x] Verify `current_status` as `null` uses safe defaults.
+- [x] Verify corrupted data (`current_status` not a dict) does not throw fatal exception.
+- [x] Verify 100 companies in batch have acceptable performance (< 1s).
+- [x] Mark completed
 
 ### Task 9.4: Backend Python - Unit Test Logic - Credit Calculation and Limits
 - [ ] Verify credit deduction for each task type.

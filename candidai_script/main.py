@@ -133,10 +133,14 @@ def decide_tasks_per_company(mode, manual_tasks, current_status, companies, user
     tasks_per_company = {}
     target_companies = [c for c in target_companies] if target_companies else None
 
+    if not isinstance(current_status, dict):
+        current_status = {}
+
     for company in companies:
         name = company["name"]
         company_key = f"{name}-{user_id}"
-        data = current_status.get(ids[company_key], {})
+        raw = current_status.get(ids.get(company_key), {})
+        data = raw if isinstance(raw, dict) else {}
         company_tasks = []
 
         # Se specificate aziende target, ignora le altre
