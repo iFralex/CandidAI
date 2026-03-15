@@ -163,15 +163,15 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 3.8: Unit Test - Components - Sidebar
-- [ ] Verify links: Dashboard, Send All, Plan & Credits, Settings.
-- [ ] Verify Dashboard link points to `/dashboard`.
-- [ ] Verify Send All link points to `/dashboard/send-all`.
-- [ ] Verify Plan & Credits link points to `/dashboard/plan-and-credits`.
-- [ ] Verify Settings link points to `/dashboard/settings`.
-- [ ] Verify mobile hamburger trigger shows sidebar on click.
-- [ ] Verify active link has highlighted CSS class.
-- [ ] Verify credit badge is visible with the correct value.
-- [ ] Mark completed
+- [x] Verify links: Dashboard, Send All, Plan & Credits, Settings.
+- [x] Verify Dashboard link points to `/dashboard`.
+- [x] Verify Send All link points to `/dashboard/send-all`.
+- [x] Verify Plan & Credits link points to `/dashboard/plan-and-credits`.
+- [x] Verify Settings link points to `/dashboard/settings`.
+- [x] Verify mobile hamburger trigger shows sidebar on click.
+- [x] Verify active link has highlighted CSS class.
+- [x] Verify credit badge is visible with the correct value.
+- [x] Mark completed
 
 ### Task 4.1: MSW Mock Handlers - Stripe
 - [ ] `POST /v1/payment_intents` (success): return `{ id: "pi_test_123", client_secret: "pi_test_123_secret_xxx", status: "requires_payment_method", amount: 3000, currency: "eur" }`.
