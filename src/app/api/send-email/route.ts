@@ -8,9 +8,19 @@ export async function POST(req) {
     try {
         const { userId, type, data = {} } = await req.json();
 
-        if (!type) {
+        const VALID_TYPES = ["welcome", "password-reset", "new_emails_generated", "purchase-confirmation"];
+        const TYPES_REQUIRING_USER_ID = ["welcome", "new_emails_generated", "purchase-confirmation"];
+
+        if (!type || !VALID_TYPES.includes(type)) {
             return NextResponse.json(
-                { error: "Missing userId or type" },
+                { error: "Missing or invalid type" },
+                { status: 400 }
+            );
+        }
+
+        if (TYPES_REQUIRING_USER_ID.includes(type) && !userId) {
+            return NextResponse.json(
+                { error: "Missing userId for this email type" },
                 { status: 400 }
             );
         }

@@ -331,15 +331,15 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.14: Integration Test - API Route - POST /api/send-email
-- [ ] Verify type `welcome` with user data calls Resend and returns 200; HTML contains username and verification link.
-- [ ] Verify type `password-reset` with email and link calls Resend and returns 200.
-- [ ] Verify type `new_emails_generated` calls Resend and returns 200.
-- [ ] Verify type `purchase-confirmation` calls Resend and returns 200.
-- [ ] Verify unrecognized type returns status 400.
-- [ ] Verify missing `userId` for required types returns status 400.
-- [ ] Verify Resend 500 returns error without crashing.
-- [ ] Verify Resend 429 returns graceful error.
-- [ ] Mark completed
+- [x] Verify type `welcome` with user data calls Resend and returns 200; HTML contains username and verification link.
+- [x] Verify type `password-reset` with email and link calls Resend and returns 200.
+- [x] Verify type `new_emails_generated` calls Resend and returns 200.
+- [x] Verify type `purchase-confirmation` calls Resend and returns 200.
+- [x] Verify unrecognized type returns status 400.
+- [x] Verify missing `userId` for required types returns status 400.
+- [x] Verify Resend 500 returns error without crashing.
+- [x] Verify Resend 429 returns graceful error.
+- [x] Mark completed
 
 ### Task 5.15: Integration Test - API Route - POST /api/protected/all_details
 - [ ] Verify `{ companyIds: ["company1", "company2"] }` returns details for both from Firestore.
