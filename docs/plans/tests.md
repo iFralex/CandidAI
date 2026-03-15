@@ -608,13 +608,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 12.3: E2E Test - Auth - Login Flow - Failure
-- [ ] Wrong password: shows "Invalid credentials" error -> remains on `/login`.
-- [ ] Unregistered email: shows visible error message.
-- [ ] Empty email: HTML5 validation blocks submit.
-- [ ] Empty password: HTML5 validation blocks submit.
-- [ ] Malformed email: validation blocks submit.
-- [ ] Disabled account: shows specific error message.
-- [ ] Mark completed
+- [x] Wrong password: shows "Invalid credentials" error -> remains on `/login`.
+- [x] Unregistered email: shows visible error message.
+- [x] Empty email: HTML5 validation blocks submit.
+- [x] Empty password: HTML5 validation blocks submit.
+- [x] Malformed email: validation blocks submit.
+- [x] Disabled account: shows specific error message.
+- [x] Mark completed
 
 ### Task 12.4: E2E Test - Auth - Login UX
 - [ ] Submit button is disabled during request (loading spinner).
