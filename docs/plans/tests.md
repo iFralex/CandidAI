@@ -315,10 +315,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 5.12: Integration Test - API Route - POST /api/stripe-webhook - Credit Purchase
-- [ ] Verify `metadata.purchaseType="credits"`, `metadata.itemId="pkg_1000"`: Creates payment document, increments `users/user123.credits` by 1000, sends confirmation email, does **not** call `SERVER_RUNNER_URL`, and returns status 200.
-- [ ] Verify `itemId="pkg_2500"` increments credits by 2500.
-- [ ] Verify `itemId="pkg_5000"` increments credits by 5000.
-- [ ] Mark completed
+- [x] Verify `metadata.purchaseType="credits"`, `metadata.itemId="pkg_1000"`: Creates payment document, increments `users/user123.credits` by 1000, sends confirmation email, does **not** call `SERVER_RUNNER_URL`, and returns status 200.
+- [x] Verify `itemId="pkg_2500"` increments credits by 2500.
+- [x] Verify `itemId="pkg_5000"` increments credits by 5000.
+- [x] Mark completed
 
 ### Task 5.13: Integration Test - API Route - POST /api/stripe-webhook - Edge Cases
 - [ ] Verify invalid Stripe signature (`stripe-signature` header) returns status 400.
