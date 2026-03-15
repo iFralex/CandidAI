@@ -139,16 +139,16 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 3.6: Unit Test - Components - UnifiedCheckout
-- [ ] Verify rendering without crash with valid `clientSecret` and `amount`.
-- [ ] Verify correct price (in EUR) from `amount` prop is shown.
-- [ ] Verify Stripe Elements mounts correctly (mock Stripe JS).
-- [ ] Verify missing `clientSecret` renders skeleton/loading state.
-- [ ] Verify Stripe unavailable (window.Stripe undefined) shows visible error message.
-- [ ] Verify clicking "Pay" calls Stripe `confirmPayment`.
-- [ ] Verify `confirmPayment` failure (card declined) shows error message.
-- [ ] Verify `confirmPayment` success calls `onSuccess` callback.
-- [ ] Verify Pay button is disabled during processing.
-- [ ] Mark completed
+- [x] Verify rendering without crash with valid `clientSecret` and `amount`.
+- [x] Verify correct price (in EUR) from `amount` prop is shown.
+- [x] Verify Stripe Elements mounts correctly (mock Stripe JS).
+- [x] Verify missing `clientSecret` renders skeleton/loading state.
+- [x] Verify Stripe unavailable (window.Stripe undefined) shows visible error message.
+- [x] Verify clicking "Pay" calls Stripe `confirmPayment`.
+- [x] Verify `confirmPayment` failure (card declined) shows error message.
+- [x] Verify `confirmPayment` success calls `onSuccess` callback.
+- [x] Verify Pay button is disabled during processing.
+- [x] Mark completed
 
 ### Task 3.7: Unit Test - Components - AddMoreCompaniesDialog
 - [ ] Verify dialog is closed by default.
