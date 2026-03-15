@@ -685,9 +685,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 13.4: E2E Test - Onboarding Flow - Persona D: Ultra Plan
-- [ ] Steps 1-5: Select "Ultra Plan" (€139).
-- [ ] Verify dashboard with `maxCompanies=100`, `credits=2500` is shown.
-- [ ] Mark completed
+- [x] Steps 1-5: Select "Ultra Plan" (€139).
+- [x] Verify dashboard with `maxCompanies=100`, `credits=2500` is shown.
+- [x] Mark completed
 
 ### Task 13.5: E2E Test - Onboarding Flow - Persona E: The Error Maker
 - [ ] Step 1: Click Next without plan -> error "Select a plan".
