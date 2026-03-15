@@ -203,11 +203,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 4.4: MSW Mock Handlers - External Python Server (SERVER_RUNNER_URL)
-- [ ] `POST /run_module` (success): return `{ status: "queued", message: "Processing started" }` with status 200.
-- [ ] `POST /run_module` (user not found): return status 404.
-- [ ] `POST /run_module` (server unavailable): return network error / status 503.
-- [ ] `POST /run_module` (missing user_id): return status 400.
-- [ ] Mark completed
+- [x] `POST /run_module` (success): return `{ status: "queued", message: "Processing started" }` with status 200.
+- [x] `POST /run_module` (user not found): return status 404.
+- [x] `POST /run_module` (server unavailable): return network error / status 503.
+- [x] `POST /run_module` (missing user_id): return status 400.
+- [x] Mark completed
 
 ### Task 4.5: MSW Mock Handlers - Firebase Identity Toolkit
 - [ ] `POST https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword` (success): return `{ idToken: "fake_id_token", localId: "user123", email: "test@test.com", refreshToken: "fake_refresh" }`.
