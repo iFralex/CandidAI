@@ -110,13 +110,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 3.3: Unit Test - Components - ForgotPasswordForm
-- [ ] Verify email field and "Send reset link" button are rendered.
-- [ ] Verify submit with valid email triggers `POST /api/auth/forgot-password`.
-- [ ] Verify success shows "Email sent" message.
-- [ ] Verify unregistered email returns API 404 and shows "Email not found" message.
-- [ ] Verify submit with empty email triggers client-side validation.
-- [ ] Verify loading state.
-- [ ] Mark completed
+- [x] Verify email field and "Send reset link" button are rendered.
+- [x] Verify submit with valid email triggers `POST /api/auth/forgot-password`.
+- [x] Verify success shows "Email sent" message.
+- [x] Verify unregistered email returns API 404 and shows "Email not found" message.
+- [x] Verify submit with empty email triggers client-side validation.
+- [x] Verify loading state.
+- [x] Mark completed
 
 ### Task 3.4: Unit Test - Components - CreditSelector
 - [ ] Verify exactly 3 credit packages are rendered (pkg_1000, pkg_2500, pkg_5000).
