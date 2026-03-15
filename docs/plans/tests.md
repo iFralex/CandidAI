@@ -119,15 +119,15 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 3.4: Unit Test - Components - CreditSelector
-- [ ] Verify exactly 3 credit packages are rendered (pkg_1000, pkg_2500, pkg_5000).
-- [ ] Verify each card shows: name, credit amount, price.
-- [ ] Verify clicking pkg_1000 calls `onSelect` with `"pkg_1000"`.
-- [ ] Verify clicking pkg_2500 calls `onSelect` with `"pkg_2500"`.
-- [ ] Verify clicking pkg_5000 calls `onSelect` with `"pkg_5000"`.
-- [ ] Verify selected package receives active state CSS class (highlighted border).
-- [ ] Verify unselected packages do not have the active class.
-- [ ] Verify changing selection from pkg_1000 to pkg_5000 updates visual state correctly.
-- [ ] Mark completed
+- [x] Verify exactly 3 credit packages are rendered (pkg_1000, pkg_2500, pkg_5000).
+- [x] Verify each card shows: name, credit amount, price.
+- [x] Verify clicking pkg_1000 calls `onSelect` with `"pkg_1000"`.
+- [x] Verify clicking pkg_2500 calls `onSelect` with `"pkg_2500"`.
+- [x] Verify clicking pkg_5000 calls `onSelect` with `"pkg_5000"`.
+- [x] Verify selected package receives active state CSS class (highlighted border).
+- [x] Verify unselected packages do not have the active class.
+- [x] Verify changing selection from pkg_1000 to pkg_5000 updates visual state correctly.
+- [x] Mark completed
 
 ### Task 3.5: Unit Test - Components - PlanSelector
 - [ ] Verify all 4 plans are rendered (free_trial, base, pro, ultra).
