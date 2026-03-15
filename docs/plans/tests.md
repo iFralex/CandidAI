@@ -505,15 +505,15 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 8.1: Integration Test - Credits Purchase Flow
-- [ ] Setup: Authenticated user with `credits=0`, `base` plan.
-- [ ] Call `POST /api/create-payment` with `purchaseType="credits"`, `itemId="pkg_1000"`: returns `client_secret`.
-- [ ] Simulate webhook `payment_intent.succeeded` for `purchaseType="credits"`, `itemId="pkg_1000"`.
-- [ ] Verify `users/{uid}.credits` is 1000.
-- [ ] Verify payment document created in `users/{uid}/payments/`.
-- [ ] Verify `purchase-confirmation` email sent (MSW intercepts Resend).
-- [ ] Verify purchasing `pkg_2500` for user with 1000 credits results in 3500 credits after webhook (increment, not replace).
-- [ ] Verify purchasing `pkg_5000` increments credits by 5000.
-- [ ] Mark completed
+- [x] Setup: Authenticated user with `credits=0`, `base` plan.
+- [x] Call `POST /api/create-payment` with `purchaseType="credits"`, `itemId="pkg_1000"`: returns `client_secret`.
+- [x] Simulate webhook `payment_intent.succeeded` for `purchaseType="credits"`, `itemId="pkg_1000"`.
+- [x] Verify `users/{uid}.credits` is 1000.
+- [x] Verify payment document created in `users/{uid}/payments/`.
+- [x] Verify `purchase-confirmation` email sent (MSW intercepts Resend).
+- [x] Verify purchasing `pkg_2500` for user with 1000 credits results in 3500 credits after webhook (increment, not replace).
+- [x] Verify purchasing `pkg_5000` increments credits by 5000.
+- [x] Mark completed
 
 ### Task 8.2: Integration Test - Webhook Idempotency
 - [ ] Verify same `paymentIntentId` sent twice increments credits only once.
