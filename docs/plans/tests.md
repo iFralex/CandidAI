@@ -916,12 +916,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 22.2: E2E Test - Responsive
-- [ ] Mobile (375px): responsive layout, collapsed sidebar.
-- [ ] Tablet (768px): hybrid layout.
-- [ ] Desktop (1280px): full layout.
-- [ ] No horizontal overflow on any breakpoint.
-- [ ] Form usable on mobile (inputs, labels, buttons).
-- [ ] Mark completed
+- [x] Mobile (375px): responsive layout, collapsed sidebar.
+- [x] Tablet (768px): hybrid layout.
+- [x] Desktop (1280px): full layout.
+- [x] No horizontal overflow on any breakpoint.
+- [x] Form usable on mobile (inputs, labels, buttons).
+- [x] Mark completed
 
 ### Task 23.1: Security Tests - Auth Security
 - [ ] Requests to `/api/protected/*` without cookie: return status 401 (no data leaked).
