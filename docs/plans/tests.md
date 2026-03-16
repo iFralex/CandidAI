@@ -847,9 +847,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 18.2: E2E Test - Billing - Download/Details
-- [ ] Click transaction: expands details or navigates to detail.
-- [ ] If available: download invoice -> file downloaded.
-- [ ] Mark completed
+- [x] Click transaction: expands details or navigates to detail.
+- [x] If available: download invoice -> file downloaded.
+- [x] Mark completed
 
 ### Task 19.1: E2E Test - Profile - Visualization
 - [ ] `/dashboard/profile` loads profile data.
