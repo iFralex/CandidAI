@@ -873,14 +873,14 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 20.1: E2E Test - Settings - Notification Settings
-- [ ] `/dashboard/settings` loads current settings.
-- [ ] Toggle "Marketing Emails": correct default shown.
-- [ ] Toggle ON -> save -> API updates Firestore -> success toast.
-- [ ] Toggle OFF -> save -> API updates Firestore.
-- [ ] Page reload: persisted settings shown correctly.
-- [ ] "Reminder Frequency" selector: daily, weekly, monthly, never options available.
-- [ ] Change frequency -> save -> persisted.
-- [ ] Mark completed
+- [x] `/dashboard/settings` loads current settings.
+- [x] Toggle "Marketing Emails": correct default shown.
+- [x] Toggle ON -> save -> API updates Firestore -> success toast.
+- [x] Toggle OFF -> save -> API updates Firestore.
+- [x] Page reload: persisted settings shown correctly.
+- [x] "Reminder Frequency" selector: daily, weekly, monthly, never options available.
+- [x] Change frequency -> save -> persisted.
+- [x] Mark completed
 
 ### Task 20.2: E2E Test - Settings - Edge Cases
 - [ ] Modify setting -> navigate away without saving -> setting not persisted.
