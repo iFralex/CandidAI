@@ -803,11 +803,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 17.1: E2E Test - Plan & Credits - Visualization
-- [ ] `/dashboard/plan-and-credits` loads current plan.
-- [ ] Display: current plan, available credits, company limit, features.
-- [ ] Current plan highlighted in plan grid.
-- [ ] Credit packages shown.
-- [ ] Mark completed
+- [x] `/dashboard/plan-and-credits` loads current plan.
+- [x] Display: current plan, available credits, company limit, features.
+- [x] Current plan highlighted in plan grid.
+- [x] Credit packages shown.
+- [x] Mark completed
 
 ### Task 17.2: E2E Test - Plan & Credits - Credit Purchase Success
 - [ ] Click "Buy Credits" -> select `pkg_1000` -> Stripe form dialog.
