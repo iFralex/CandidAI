@@ -705,10 +705,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 13.6: E2E Test - Onboarding Flow - Step Navigation
-- [ ] Verify cannot skip steps via URL (e.g., Step 2 to 4) -> redirected to correct step.
-- [ ] If `onboardingStep=50`, direct access to `/dashboard` (no onboarding).
-- [ ] Completed step not shown again if `onboardingStep` is further.
-- [ ] Mark completed
+- [x] Verify cannot skip steps via URL (e.g., Step 2 to 4) -> redirected to correct step.
+- [x] If `onboardingStep=50`, direct access to `/dashboard` (no onboarding).
+- [x] Completed step not shown again if `onboardingStep` is further.
+- [x] Mark completed
 
 ### Task 14.1: E2E Test - Main Dashboard - Loading and Stats
 - [ ] `/dashboard` loads: header, sidebar, content visible.
