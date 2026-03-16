@@ -859,12 +859,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 19.2: E2E Test - Profile - Name Modification
-- [ ] Edit name -> click "Save" -> API `PUT /api/protected/user` -> success toast.
-- [ ] Updated name visible in sidebar after save.
-- [ ] Empty name -> validation error.
-- [ ] Unchanged name: click save -> no update or no-op update.
-- [ ] Network error during save -> error toast.
-- [ ] Mark completed
+- [x] Edit name -> click "Save" -> API `PUT /api/protected/user` -> success toast.
+- [x] Updated name visible in sidebar after save.
+- [x] Empty name -> validation error.
+- [x] Unchanged name: click save -> no update or no-op update.
+- [x] Network error during save -> error toast.
+- [x] Mark completed
 
 ### Task 19.3: E2E Test - Profile - Picture Upload
 - [ ] Click "Change Picture" -> file chooser -> select image -> upload -> photo updated.
