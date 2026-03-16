@@ -888,12 +888,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 21.1: E2E Test - Dashboard Navigation - Sidebar
-- [ ] All sidebar links navigate correctly.
-- [ ] Active link highlighted based on current route.
-- [ ] Sidebar credit badge updated after purchase.
-- [ ] Mobile: hamburger menu -> sidebar slide-in -> click link -> sidebar closes -> navigate.
-- [ ] Mobile: tap outside sidebar -> sidebar closes.
-- [ ] Mark completed
+- [x] All sidebar links navigate correctly.
+- [x] Active link highlighted based on current route.
+- [x] Sidebar credit badge updated after purchase.
+- [x] Mobile: hamburger menu -> sidebar slide-in -> click link -> sidebar closes -> navigate.
+- [x] Mobile: tap outside sidebar -> sidebar closes.
+- [x] Mark completed
 
 ### Task 21.2: E2E Test - Dashboard Navigation - Route Errors
 - [ ] Navigate to `/dashboard/nonexistent-page`: 404 or redirect to `/dashboard`.
