@@ -946,12 +946,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 24.1: Cross-Browser Tests
-- [ ] Run critical E2E tests (auth, onboarding, dashboard) on Chromium.
-- [ ] Run critical E2E tests on Firefox.
-- [ ] Run critical E2E tests on WebKit (Safari).
-- [ ] No browser-specific regressions in forms and dialogs.
-- [ ] Stripe Elements works correctly on all browsers.
-- [ ] Mark completed
+- [x] Run critical E2E tests (auth, onboarding, dashboard) on Chromium.
+- [x] Run critical E2E tests on Firefox.
+- [x] Run critical E2E tests on WebKit (Safari).
+- [x] No browser-specific regressions in forms and dialogs.
+- [x] Stripe Elements works correctly on all browsers.
+- [x] Mark completed
 
 ### Task 25.1: CI/CD Pipeline Setup
 - [ ] Create `.github/workflows/ci.yml` triggered on `push` and `pull_request` to `main`.
