@@ -954,16 +954,16 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 25.1: CI/CD Pipeline Setup
-- [ ] Create `.github/workflows/ci.yml` triggered on `push` and `pull_request` to `main`.
-- [ ] Step 1: `actions/checkout@v4`.
-- [ ] Step 2: `actions/setup-node@v4` with Node.js 20.
-- [ ] Step 3: `npm ci` to install dependencies.
-- [ ] Step 4: `actions/setup-python@v5` with Python 3.11.
-- [ ] Step 5: `pip install -r requirements.txt -r requirements-test.txt`.
-- [ ] Step 6: `npm i -g firebase-tools`.
-- [ ] Step 7: `npx playwright install --with-deps chromium firefox webkit`.
-- [ ] Step 8: `firebase emulators:exec --project demo-candidai "npm run test:all"`.
-- [ ] On Playwright failure: upload artifacts (screenshots, traces, videos) via `actions/upload-artifact@v4`.
-- [ ] Branch protection on `main`: CI required before merge.
-- [ ] Cache `node_modules` and `~/.cache/pip` between runs.
-- [ ] Mark completed
+- [x] Create `.github/workflows/ci.yml` triggered on `push` and `pull_request` to `main`.
+- [x] Step 1: `actions/checkout@v4`.
+- [x] Step 2: `actions/setup-node@v4` with Node.js 20.
+- [x] Step 3: `npm ci` to install dependencies.
+- [x] Step 4: `actions/setup-python@v5` with Python 3.11.
+- [x] Step 5: `pip install -r requirements.txt -r requirements-test.txt`.
+- [x] Step 6: `npm i -g firebase-tools`.
+- [x] Step 7: `npx playwright install --with-deps chromium firefox webkit`.
+- [x] Step 8: `firebase emulators:exec --project demo-candidai "npm run test:all"`.
+- [x] On Playwright failure: upload artifacts (screenshots, traces, videos) via `actions/upload-artifact@v4`.
+- [x] Branch protection on `main`: CI required before merge.
+- [x] Cache `node_modules` and `~/.cache/pip` between runs.
+- [x] Mark completed
