@@ -782,9 +782,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 15.3: E2E Test - Send All - Empty State
-- [ ] No ready emails: "No emails ready" message -> appropriate CTA.
-- [ ] All emails already sent: empty state.
-- [ ] Mark completed
+- [x] No ready emails: "No emails ready" message -> appropriate CTA.
+- [x] All emails already sent: empty state.
+- [x] Mark completed
 
 ### Task 16.1: E2E Test - Sent Emails - History Visualization
 - [ ] `/dashboard/sent-emails` loads sent email list.
