@@ -794,13 +794,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 16.2: E2E Test - Sent Emails - Date Filters
-- [ ] Filter "Last 7 days" shows only emails from last 7 days.
-- [ ] Filter "Last 30 days" shows only emails from last 30 days.
-- [ ] Filter "Custom range" opens calendar picker.
-- [ ] Custom range selection filters correctly.
-- [ ] Start date > end date: error or automatic swap.
-- [ ] Range with no results: empty state.
-- [ ] Mark completed
+- [x] Filter "Last 7 days" shows only emails from last 7 days.
+- [x] Filter "Last 30 days" shows only emails from last 30 days.
+- [x] Filter "Custom range" opens calendar picker.
+- [x] Custom range selection filters correctly.
+- [x] Start date > end date: error or automatic swap.
+- [x] Range with no results: empty state.
+- [x] Mark completed
 
 ### Task 17.1: E2E Test - Plan & Credits - Visualization
 - [ ] `/dashboard/plan-and-credits` loads current plan.

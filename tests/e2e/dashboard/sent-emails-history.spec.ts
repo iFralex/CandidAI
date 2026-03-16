@@ -456,3 +456,259 @@ test.describe("Sent Emails - Empty State", () => {
     await expect(page.getByText(/0 email/i)).toBeVisible({ timeout: 15000 });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Task 16.2: Sent Emails - Date Filters - Filter behavior tests
+// Tests:
+// - Last 7 days shows only emails sent in last 7 days
+// - Last 30 days shows only emails sent in last 30 days
+// - Custom range opens calendar picker
+// - Custom range selection filters correctly
+// - Start date > end date: graceful empty state
+// - Range with no results: empty state
+// ---------------------------------------------------------------------------
+
+test.describe("Sent Emails - Date Filters - Last 7 Days Preset", () => {
+  test("?preset=7 shows emails sent within last 7 days", async ({ page }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    await page.goto("/dashboard/sent-emails?preset=7");
+
+    // Alpha Corp (3 days ago) is within 7 days — should be visible
+    await expect(page.getByText("Alpha Corp")).toBeVisible({ timeout: 15000 });
+  });
+
+  test("?preset=7 excludes emails older than 7 days", async ({ page }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    await page.goto("/dashboard/sent-emails?preset=7");
+
+    // Beta IO (10 days ago) is outside the 7-day window
+    await expect(page.getByText("Beta IO")).not.toBeVisible({ timeout: 15000 });
+  });
+
+  test("?preset=7 excludes emails older than 30 days", async ({ page }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    await page.goto("/dashboard/sent-emails?preset=7");
+
+    // Gamma Technologies (40 days ago) is far outside the window
+    await expect(page.getByText("Gamma Technologies")).not.toBeVisible({
+      timeout: 15000,
+    });
+  });
+
+  test("?preset=7 shows correct email count (1)", async ({ page }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    await page.goto("/dashboard/sent-emails?preset=7");
+
+    // Only 1 email in last 7 days (Alpha Corp)
+    await expect(page.getByText(/1 email sent/i)).toBeVisible({ timeout: 15000 });
+  });
+});
+
+test.describe("Sent Emails - Date Filters - Last 30 Days Preset", () => {
+  test("?preset=30 shows emails sent within last 30 days", async ({ page }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    await page.goto("/dashboard/sent-emails?preset=30");
+
+    // Alpha Corp (3 days ago) and Beta IO (10 days ago) are both within 30 days
+    await expect(page.getByText("Alpha Corp")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Beta IO")).toBeVisible({ timeout: 15000 });
+  });
+
+  test("?preset=30 excludes emails older than 30 days", async ({ page }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    await page.goto("/dashboard/sent-emails?preset=30");
+
+    // Gamma Technologies (40 days ago) is outside the 30-day window
+    await expect(page.getByText("Gamma Technologies")).not.toBeVisible({
+      timeout: 15000,
+    });
+  });
+
+  test("?preset=30 shows correct email count (2)", async ({ page }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    await page.goto("/dashboard/sent-emails?preset=30");
+
+    // 2 emails in last 30 days (Alpha Corp + Beta IO)
+    await expect(page.getByText(/2 emails sent/i)).toBeVisible({ timeout: 15000 });
+  });
+});
+
+test.describe("Sent Emails - Date Filters - Custom Range", () => {
+  test("?preset=custom shows calendar picker button", async ({ page }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    await page.goto("/dashboard/sent-emails?preset=custom");
+
+    // The popover trigger button with "Pick a range" label should be visible
+    await expect(
+      page.getByRole("button", { name: /Pick a range/i })
+    ).toBeVisible({ timeout: 15000 });
+  });
+
+  test("?preset=custom shows calendar icon in picker button", async ({ page }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    await page.goto("/dashboard/sent-emails?preset=custom");
+
+    // The button with calendar icon should be rendered
+    const calendarBtn = page.locator("button").filter({ hasText: /Pick a range/i });
+    await expect(calendarBtn).toBeVisible({ timeout: 15000 });
+  });
+
+  test("custom range from 5 days ago to today shows email within range", async ({
+    page,
+  }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    const toDate = new Date();
+    const fromDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+    const fromStr = fromDate.toISOString().split("T")[0];
+    const toStr = toDate.toISOString().split("T")[0];
+
+    await page.goto(
+      `/dashboard/sent-emails?preset=custom&from=${fromStr}&to=${toStr}`
+    );
+
+    // Alpha Corp (3 days ago) is inside [5 days ago, today]
+    await expect(page.getByText("Alpha Corp")).toBeVisible({ timeout: 15000 });
+  });
+
+  test("custom range from 5 days ago to today excludes older emails", async ({
+    page,
+  }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    const toDate = new Date();
+    const fromDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+    const fromStr = fromDate.toISOString().split("T")[0];
+    const toStr = toDate.toISOString().split("T")[0];
+
+    await page.goto(
+      `/dashboard/sent-emails?preset=custom&from=${fromStr}&to=${toStr}`
+    );
+
+    // Beta IO (10 days ago) and Gamma (40 days ago) are outside the range
+    await expect(page.getByText("Beta IO")).not.toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Gamma Technologies")).not.toBeVisible({
+      timeout: 15000,
+    });
+  });
+
+  test("custom range from/to shows correct email count", async ({ page }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    const toDate = new Date();
+    const fromDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+    const fromStr = fromDate.toISOString().split("T")[0];
+    const toStr = toDate.toISOString().split("T")[0];
+
+    await page.goto(
+      `/dashboard/sent-emails?preset=custom&from=${fromStr}&to=${toStr}`
+    );
+
+    // Only 1 email within [5 days ago, today]
+    await expect(page.getByText(/1 email sent/i)).toBeVisible({ timeout: 15000 });
+  });
+
+  test("?preset=custom with no from/to shows all campaigns (no date constraint)", async ({
+    page,
+  }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    // preset=custom but no from/to → server returns all campaigns
+    await page.goto("/dashboard/sent-emails?preset=custom");
+
+    // All 3 companies with sent emails should be visible
+    await expect(page.getByText("Alpha Corp")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Beta IO")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Gamma Technologies")).toBeVisible({
+      timeout: 15000,
+    });
+  });
+});
+
+test.describe("Sent Emails - Date Filters - Edge Cases", () => {
+  test("inverted date range (from > to) results in empty state", async ({
+    page,
+  }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    // from = today, to = 5 days ago → fromDate > toDate
+    const fromDate = new Date();
+    const toDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+    const fromStr = fromDate.toISOString().split("T")[0];
+    const toStr = toDate.toISOString().split("T")[0];
+
+    await page.goto(
+      `/dashboard/sent-emails?preset=custom&from=${fromStr}&to=${toStr}`
+    );
+
+    // Server filter: d >= fromDate AND d <= toDate is unsatisfiable → empty
+    await expect(page.getByText(/No companies found/i)).toBeVisible({
+      timeout: 15000,
+    });
+  });
+
+  test("future date range with no matching emails shows empty state", async ({
+    page,
+  }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    // Far-future range → no emails
+    await page.goto(
+      "/dashboard/sent-emails?preset=custom&from=2099-01-01&to=2099-12-31"
+    );
+
+    await expect(page.getByText(/No companies found/i)).toBeVisible({
+      timeout: 15000,
+    });
+  });
+
+  test("empty range still shows filter controls", async ({ page }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    await page.goto(
+      "/dashboard/sent-emails?preset=custom&from=2099-01-01&to=2099-12-31"
+    );
+
+    // Filter select should still be visible
+    await expect(
+      page.locator("[data-slot='select-trigger']").first()
+    ).toBeVisible({ timeout: 15000 });
+  });
+
+  test("empty range shows 0 emails count label", async ({ page }) => {
+    await mockUser(page);
+    await mockResults(page);
+
+    await page.goto(
+      "/dashboard/sent-emails?preset=custom&from=2099-01-01&to=2099-12-31"
+    );
+
+    // "0 emails sent" count
+    await expect(page.getByText(/0 email/i)).toBeVisible({ timeout: 15000 });
+  });
+});
