@@ -747,20 +747,20 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 14.5: E2E Test - Campaign Detail
-- [ ] Navigate to `/dashboard/[validCompanyId]`: details visible.
-- [ ] Display: company name, recruiter (name, title, email, LinkedIn), articles found, generated email.
-- [ ] Generated email visible in preview.
-- [ ] "Regenerate Email" button visible (if credits sufficient).
-- [ ] Click "Regenerate Email" -> dialog with instructions field.
-- [ ] Enter instructions -> confirm -> loading -> new email shown.
-- [ ] Credits updated in sidebar badge (decremented by 50).
-- [ ] Insufficient credits: "Regenerate" disabled or shows message.
-- [ ] "Find New Recruiter" button -> dialog with options.
-- [ ] Select alternative strategy -> confirm -> loading -> new recruiter shown.
-- [ ] Verify 100 credits deducted.
-- [ ] "Change Company": costs 70 credits.
-- [ ] Navigate to `/dashboard/[nonExistentId]`: 404 or redirect.
-- [ ] Mark completed
+- [x] Navigate to `/dashboard/[validCompanyId]`: details visible.
+- [x] Display: company name, recruiter (name, title, email, LinkedIn), articles found, generated email.
+- [x] Generated email visible in preview.
+- [x] "Regenerate Email" button visible (if credits sufficient).
+- [x] Click "Regenerate Email" -> dialog with instructions field.
+- [x] Enter instructions -> confirm -> loading -> new email shown.
+- [x] Credits updated in sidebar badge (decremented by 50).
+- [x] Insufficient credits: "Regenerate" disabled or shows message.
+- [x] "Find New Recruiter" button -> dialog with options.
+- [x] Select alternative strategy -> confirm -> loading -> new recruiter shown.
+- [x] Verify 100 credits deducted.
+- [x] "Change Company": costs 70 credits.
+- [x] Navigate to `/dashboard/[nonExistentId]`: 404 or redirect.
+- [x] Mark completed
 
 ### Task 15.1: E2E Test - Send All - Email Visualization
 - [ ] `/dashboard/send-all` loads list of ready emails.
