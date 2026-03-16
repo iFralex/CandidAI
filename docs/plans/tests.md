@@ -772,14 +772,14 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 15.2: E2E Test - Send All - Sending Emails
-- [ ] Select 2 emails -> click "Send Selected" -> confirmation dialog.
-- [ ] Confirm -> API `POST /api/protected/sent_emails` called -> emails marked sent.
-- [ ] Sent emails disappear from "Send All" list (or change state).
-- [ ] Success message shown.
-- [ ] Select 0 emails: "Send Selected" button disabled.
-- [ ] "Send All" sends everything in list.
-- [ ] Cancel confirmation dialog: no emails sent.
-- [ ] Mark completed
+- [x] Select 2 emails -> click "Send Selected" -> confirmation dialog.
+- [x] Confirm -> API `POST /api/protected/sent_emails` called -> emails marked sent.
+- [x] Sent emails disappear from "Send All" list (or change state).
+- [x] Success message shown.
+- [x] Select 0 emails: "Send Selected" button disabled.
+- [x] "Send All" sends everything in list.
+- [x] Cancel confirmation dialog: no emails sent.
+- [x] Mark completed
 
 ### Task 15.3: E2E Test - Send All - Empty State
 - [ ] No ready emails: "No emails ready" message -> appropriate CTA.
