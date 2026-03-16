@@ -85,8 +85,6 @@ describe("POST /api/auth/forgot-password", () => {
 
       const req = makeForgotPasswordRequest({ email: "user@example.com" });
       await POST(req);
-      // Allow fire-and-forget fetch to execute
-      await new Promise((r) => setTimeout(r, 100));
 
       expect(capturedBody).toMatchObject({ type: "password-reset" });
     });

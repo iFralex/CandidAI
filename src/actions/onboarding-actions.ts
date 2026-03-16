@@ -735,7 +735,7 @@ const checkAuth = async (needVerified = true) => {
         serviceAccount: serverConfig.serviceAccount,
     });
 
-    if (needVerified && !tokens?.decodedToken.email_verified)
+    if (needVerified && !tokens?.decodedToken?.email_verified)
         throw new Error("Email not verified")
 
     const userId = tokens?.decodedToken?.uid;

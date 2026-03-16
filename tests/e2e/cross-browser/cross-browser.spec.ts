@@ -189,7 +189,7 @@ async function injectStripeMock(
 // ---------------------------------------------------------------------------
 
 test.describe("Cross-Browser: Auth - Login Form", () => {
-  test("login form renders on all browsers", async ({ page, browserName }) => {
+  test("login form renders on all browsers", async ({ page }) => {
     await page.goto("/login");
 
     await expect(
@@ -202,20 +202,14 @@ test.describe("Cross-Browser: Auth - Login Form", () => {
     ).toBeVisible();
   });
 
-  test("password field type is password (not plain text) on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("password field type is password (not plain text) on all browsers", async ({ page }) => {
     await page.goto("/login");
 
     const passwordInput = page.getByLabel("Password");
     await expect(passwordInput).toHaveAttribute("type", "password");
   });
 
-  test("email and password inputs accept typed values on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("email and password inputs accept typed values on all browsers", async ({ page }) => {
     await page.goto("/login");
 
     await page.getByLabel("Email").fill(TEST_USER.email);
@@ -225,10 +219,7 @@ test.describe("Cross-Browser: Auth - Login Form", () => {
     await expect(page.getByLabel("Password")).toHaveValue(TEST_USER.password);
   });
 
-  test("login form submits and redirects to dashboard on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("login form submits and redirects to dashboard on all browsers", async ({ page }) => {
     await setupAuthMocks(page);
 
     await page.goto("/login");
@@ -240,10 +231,7 @@ test.describe("Cross-Browser: Auth - Login Form", () => {
     expect(page.url()).toContain("/dashboard");
   });
 
-  test("register link navigates to /register on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("register link navigates to /register on all browsers", async ({ page }) => {
     await page.goto("/login");
 
     const registerLink = page.getByRole("link", { name: /register/i });
@@ -251,10 +239,7 @@ test.describe("Cross-Browser: Auth - Login Form", () => {
     await expect(registerLink).toHaveAttribute("href", /register/);
   });
 
-  test("forgot password link navigates to /forgot-password on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("forgot password link navigates to /forgot-password on all browsers", async ({ page }) => {
     await page.goto("/login");
 
     const forgotLink = page.getByRole("link", {
@@ -270,10 +255,7 @@ test.describe("Cross-Browser: Auth - Login Form", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Cross-Browser: Auth - Register Form", () => {
-  test("register form renders all fields on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("register form renders all fields on all browsers", async ({ page }) => {
     await page.goto("/register");
 
     await expect(page.getByLabel(/name/i)).toBeVisible();
@@ -284,10 +266,7 @@ test.describe("Cross-Browser: Auth - Register Form", () => {
     ).toBeVisible();
   });
 
-  test("form fields accept input on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("form fields accept input on all browsers", async ({ page }) => {
     await page.goto("/register");
 
     await page.getByLabel(/name/i).fill(TEST_USER.name);
@@ -307,10 +286,7 @@ test.describe("Cross-Browser: Auth - Register Form", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Cross-Browser: Auth - Forgot Password Form", () => {
-  test("forgot password form renders on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("forgot password form renders on all browsers", async ({ page }) => {
     await page.goto("/forgot-password");
 
     await expect(page.getByLabel(/email/i)).toBeVisible();
@@ -325,10 +301,7 @@ test.describe("Cross-Browser: Auth - Forgot Password Form", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Cross-Browser: Dashboard - Navigation", () => {
-  test("dashboard page loads and shows user name in sidebar on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("dashboard page loads and shows user name in sidebar on all browsers", async ({ page }) => {
     await setupDashboardMocks(page);
 
     await page.goto("/dashboard");
@@ -338,10 +311,7 @@ test.describe("Cross-Browser: Dashboard - Navigation", () => {
     });
   });
 
-  test("sidebar navigation links are visible on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("sidebar navigation links are visible on all browsers", async ({ page }) => {
     await setupDashboardMocks(page);
 
     await page.goto("/dashboard");
@@ -357,10 +327,7 @@ test.describe("Cross-Browser: Dashboard - Navigation", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Cross-Browser: Dashboard - Dialogs", () => {
-  test("checkout dialog opens and renders on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("checkout dialog opens and renders on all browsers", async ({ page }) => {
     await injectStripeMock(page);
     await setupDashboardMocks(page);
     await page.route("**/api/create-payment**", async (route) => {
@@ -387,10 +354,7 @@ test.describe("Cross-Browser: Dashboard - Dialogs", () => {
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 15000 });
   });
 
-  test("dialog can be dismissed with close button on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("dialog can be dismissed with close button on all browsers", async ({ page }) => {
     await injectStripeMock(page);
     await setupDashboardMocks(page);
     await page.route("**/api/create-payment**", async (route) => {
@@ -433,10 +397,7 @@ test.describe("Cross-Browser: Dashboard - Dialogs", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Cross-Browser: Stripe Elements", () => {
-  test("Stripe mock intercepts CDN on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("Stripe mock intercepts CDN on all browsers", async ({ page }) => {
     // Track whether the Stripe CDN was blocked
     const stripeRequests: string[] = [];
     page.on("requestfailed", (req) => {
@@ -472,10 +433,7 @@ test.describe("Cross-Browser: Stripe Elements", () => {
     ).toBeVisible({ timeout: 15000 });
   });
 
-  test("Stripe Pay button is functional on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("Stripe Pay button is functional on all browsers", async ({ page }) => {
     await injectStripeMock(page);
     await setupDashboardMocks(page);
     await page.route("**/api/create-payment**", async (route) => {
@@ -507,10 +465,7 @@ test.describe("Cross-Browser: Stripe Elements", () => {
     });
   });
 
-  test("Stripe error message displays correctly on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("Stripe error message displays correctly on all browsers", async ({ page }) => {
     await injectStripeMock(page, {
       error: { message: "Your card was declined." },
     });
@@ -544,10 +499,7 @@ test.describe("Cross-Browser: Stripe Elements", () => {
     });
   });
 
-  test("Stripe payment success state does not appear on error on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("Stripe payment success state does not appear on error on all browsers", async ({ page }) => {
     await injectStripeMock(page, {
       error: { message: "Payment failed." },
     });
@@ -586,10 +538,7 @@ test.describe("Cross-Browser: Stripe Elements", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Cross-Browser: Onboarding - Free Trial", () => {
-  test("onboarding page loads without errors on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("onboarding page loads without errors on all browsers", async ({ page }) => {
     await setupOnboardingMocks(page);
 
     await page.goto("/onboarding");
@@ -604,10 +553,7 @@ test.describe("Cross-Browser: Onboarding - Free Trial", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Cross-Browser: Form Validation", () => {
-  test("empty email submission shows validation on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("empty email submission shows validation on all browsers", async ({ page }) => {
     await page.goto("/login");
 
     // Leave email empty and submit
@@ -622,10 +568,7 @@ test.describe("Cross-Browser: Form Validation", () => {
     expect(isInvalid).toBe(true);
   });
 
-  test("malformed email shows validation error on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("malformed email shows validation error on all browsers", async ({ page }) => {
     await page.goto("/login");
 
     await page.getByLabel("Email").fill("notanemail");
@@ -639,10 +582,7 @@ test.describe("Cross-Browser: Form Validation", () => {
     expect(isInvalid).toBe(true);
   });
 
-  test("empty password shows validation on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("empty password shows validation on all browsers", async ({ page }) => {
     await page.goto("/login");
 
     await page.getByLabel("Email").fill(TEST_USER.email);
@@ -658,10 +598,7 @@ test.describe("Cross-Browser: Form Validation", () => {
     expect(isInvalid).toBe(true);
   });
 
-  test("forgot-password form validates empty email on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("forgot-password form validates empty email on all browsers", async ({ page }) => {
     await page.goto("/forgot-password");
 
     await page.getByRole("button", { name: /send reset link/i }).click();
@@ -679,10 +616,7 @@ test.describe("Cross-Browser: Form Validation", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Cross-Browser: Rendering Regressions", () => {
-  test("login page has no horizontal overflow on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("login page has no horizontal overflow on all browsers", async ({ page }) => {
     await page.goto("/login");
 
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
@@ -690,10 +624,7 @@ test.describe("Cross-Browser: Rendering Regressions", () => {
     expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + 1); // allow 1px tolerance
   });
 
-  test("register page has no horizontal overflow on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("register page has no horizontal overflow on all browsers", async ({ page }) => {
     await page.goto("/register");
 
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
@@ -701,10 +632,7 @@ test.describe("Cross-Browser: Rendering Regressions", () => {
     expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + 1);
   });
 
-  test("dashboard page has no horizontal overflow on all browsers", async ({
-    page,
-    browserName,
-  }) => {
+  test("dashboard page has no horizontal overflow on all browsers", async ({ page }) => {
     await setupDashboardMocks(page);
     await page.goto("/dashboard");
 

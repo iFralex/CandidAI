@@ -1,10 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
-import { requireAuth } from "@/lib/server-auth";
+import { clientConfig, serverConfig } from "@/config";
+import { getTokens } from "next-firebase-auth-edge";
 
 export async function POST(req: NextRequest) {
+    let userId: string;
+
     try {
-        await requireAuth(req);
+        const tokens = await getTokens(req.cookies, {
+            apiKey: clientConfig.apiKey,
+            cookieName: serverConfig.cookieName,
+            cookieSignatureKeys: serverConfig.cookieSignatureKeys,
+            serviceAccount: serverConfig.serviceAccount,
+        });
+
+        if (!tokens?.decodedToken?.uid) {
+            return NextResponse.json(
+                { error: "Non autorizzato" },
+                { status: 401 }
+            );
+        }
+
+        userId = tokens.decodedToken.uid;
     } catch {
         return NextResponse.json(
             { error: "Non autorizzato" },
@@ -15,14 +32,6 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const ids = body?.ids;
-        const userId = body?.userId;
-
-        if (!userId) {
-            return NextResponse.json(
-                { error: "userId mancante nella richiesta." },
-                { status: 400 }
-            );
-        }
 
         if (!Array.isArray(ids)) {
             return NextResponse.json(

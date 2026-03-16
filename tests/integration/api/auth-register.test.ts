@@ -66,7 +66,7 @@ describe("POST /api/auth - Register Mode", () => {
       mockCreateUser.mockResolvedValue({ uid: "new-user-uid" });
     });
 
-    it("returns { success: true, idToken, uid } for valid input", async () => {
+    it("returns { success: true, requiresVerification: true } for valid input", async () => {
       const req = makeRegisterRequest({
         mode: "register",
         email: "new@example.com",
@@ -76,10 +76,9 @@ describe("POST /api/auth - Register Mode", () => {
       const res = await POST(req);
       const data = await res.json();
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(201);
       expect(data.success).toBe(true);
-      expect(data.idToken).toBe("fake_id_token");
-      expect(data.uid).toBe("new-user-uid");
+      expect(data.requiresVerification).toBe(true);
     });
 
     it("creates Firestore document with name, email, createdAt, lastLogin", async () => {
@@ -136,10 +135,10 @@ describe("POST /api/auth - Register Mode", () => {
         name: "Test User",
       });
       await POST(req);
-      // Give fire-and-forget fetch time to execute
-      await new Promise((r) => setTimeout(r, 100));
-
-      expect(capturedBody).toMatchObject({ type: "welcome" });
+      // Poll until the fire-and-forget fetch completes
+      await vi.waitFor(() => {
+        expect(capturedBody).toMatchObject({ type: "welcome" });
+      }, { timeout: 2000 });
     });
   });
 
@@ -158,9 +157,9 @@ describe("POST /api/auth - Register Mode", () => {
       });
       const res = await POST(req);
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.status).toBe(400);
       const data = await res.json();
-      expect(data.error ?? data.success === false).toBeTruthy();
+      expect(data.error).toBeDefined();
     });
 
     it("returns 400 for missing password", async () => {
@@ -192,8 +191,8 @@ describe("POST /api/auth - Register Mode", () => {
         password: "password123",
       });
       const res = await POST(req);
-      // Missing name: route proceeds with empty string default
-      expect([200, 400]).toContain(res.status);
+      // Missing name: route proceeds with empty string default and returns 201
+      expect(res.status).toBe(201);
     });
 
     it("returns >= 400 for malformed JSON body", async () => {

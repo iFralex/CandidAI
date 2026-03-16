@@ -1,30 +1,16 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 
 // Hoist mocks so they are available inside vi.mock factory
-const { mockRequireAuth, mockBatchUpdate, mockBatchCommit, mockAdminDoc } =
+const { mockGetTokens, mockBatchUpdate, mockBatchCommit, mockAdminDoc } =
   vi.hoisted(() => ({
-    mockRequireAuth: vi.fn(),
+    mockGetTokens: vi.fn(),
     mockBatchUpdate: vi.fn(),
     mockBatchCommit: vi.fn().mockResolvedValue(undefined),
     mockAdminDoc: vi.fn().mockReturnValue({}),
   }));
 
-vi.mock("@/lib/server-auth", () => ({
-  requireAuth: mockRequireAuth,
-}));
-
-vi.mock("@/lib/firebase-admin", () => ({
-  adminDb: {
-    batch: vi.fn().mockReturnValue({
-      update: mockBatchUpdate,
-      commit: mockBatchCommit,
-    }),
-    doc: mockAdminDoc,
-  },
-}));
-
 vi.mock("next-firebase-auth-edge", () => ({
-  getTokens: vi.fn(),
+  getTokens: mockGetTokens,
   getApiRequestTokens: vi.fn(),
 }));
 
@@ -37,6 +23,16 @@ vi.mock("next/headers", () => ({
     get: vi.fn(),
     getAll: vi.fn().mockReturnValue([]),
   }),
+}));
+
+vi.mock("@/lib/firebase-admin", () => ({
+  adminDb: {
+    batch: vi.fn().mockReturnValue({
+      update: mockBatchUpdate,
+      commit: mockBatchCommit,
+    }),
+    doc: mockAdminDoc,
+  },
 }));
 
 vi.mock("@/config", () => ({
@@ -55,19 +51,10 @@ const validDecodedToken = {
   email: "test@example.com",
 };
 
-function makePostRequest(
-  body: Record<string, unknown>,
-  withAuth = true
-) {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (withAuth) {
-    headers["authToken"] = "valid-token";
-  }
+function makePostRequest(body: Record<string, unknown>) {
   return new Request("http://localhost:3000/api/protected/sent_emails", {
     method: "POST",
-    headers,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 }
@@ -79,13 +66,10 @@ describe("POST /api/protected/sent_emails", () => {
   });
 
   describe("happy path", () => {
-    it("returns { success: true } when ids and userId are valid and auth passes", async () => {
-      mockRequireAuth.mockResolvedValue(validDecodedToken);
+    it("returns { success: true } when ids are valid and auth passes", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
 
-      const req = makePostRequest({
-        ids: ["company1", "company2"],
-        userId: "user123",
-      });
+      const req = makePostRequest({ ids: ["company1", "company2"] });
       const res = await POST(req);
       const body = await res.json();
 
@@ -94,12 +78,9 @@ describe("POST /api/protected/sent_emails", () => {
     });
 
     it("calls batch.update for results, emails, and details for each id", async () => {
-      mockRequireAuth.mockResolvedValue(validDecodedToken);
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
 
-      const req = makePostRequest({
-        ids: ["company1", "company2"],
-        userId: "user123",
-      });
+      const req = makePostRequest({ ids: ["company1", "company2"] });
       await POST(req);
 
       // 3 updates per company id: results, emails, details
@@ -107,24 +88,18 @@ describe("POST /api/protected/sent_emails", () => {
     });
 
     it("calls batch.commit once after all updates", async () => {
-      mockRequireAuth.mockResolvedValue(validDecodedToken);
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
 
-      const req = makePostRequest({
-        ids: ["company1"],
-        userId: "user123",
-      });
+      const req = makePostRequest({ ids: ["company1"] });
       await POST(req);
 
       expect(mockBatchCommit).toHaveBeenCalledTimes(1);
     });
 
     it("email_sent value passed to batch.update is a valid ISO timestamp string", async () => {
-      mockRequireAuth.mockResolvedValue(validDecodedToken);
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
 
-      const req = makePostRequest({
-        ids: ["company1"],
-        userId: "user123",
-      });
+      const req = makePostRequest({ ids: ["company1"] });
       await POST(req);
 
       const updateCalls = mockBatchUpdate.mock.calls;
@@ -142,12 +117,9 @@ describe("POST /api/protected/sent_emails", () => {
     });
 
     it("batch.update uses dot-notation keys and does not overwrite other fields", async () => {
-      mockRequireAuth.mockResolvedValue(validDecodedToken);
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
 
-      const req = makePostRequest({
-        ids: ["company1"],
-        userId: "user123",
-      });
+      const req = makePostRequest({ ids: ["company1"] });
       await POST(req);
 
       const updateCalls = mockBatchUpdate.mock.calls;
@@ -159,13 +131,10 @@ describe("POST /api/protected/sent_emails", () => {
       }
     });
 
-    it("uses correct Firestore paths: users/{userId}/data/results and users/{userId}/data/emails", async () => {
-      mockRequireAuth.mockResolvedValue(validDecodedToken);
+    it("uses correct Firestore paths derived from authenticated uid", async () => {
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
 
-      const req = makePostRequest({
-        ids: ["company1"],
-        userId: "user123",
-      });
+      const req = makePostRequest({ ids: ["company1"] });
       await POST(req);
 
       const docPaths = mockAdminDoc.mock.calls.map(
@@ -181,9 +150,9 @@ describe("POST /api/protected/sent_emails", () => {
 
   describe("empty ids array", () => {
     it("returns { success: true } for empty ids array without calling batch.update", async () => {
-      mockRequireAuth.mockResolvedValue(validDecodedToken);
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
 
-      const req = makePostRequest({ ids: [], userId: "user123" });
+      const req = makePostRequest({ ids: [] });
       const res = await POST(req);
       const body = await res.json();
 
@@ -196,13 +165,10 @@ describe("POST /api/protected/sent_emails", () => {
 
   describe("non-existent id handling", () => {
     it("handles gracefully when batch.commit throws (e.g. non-existent document)", async () => {
-      mockRequireAuth.mockResolvedValue(validDecodedToken);
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
       mockBatchCommit.mockRejectedValue(new Error("NOT_FOUND: Document does not exist"));
 
-      const req = makePostRequest({
-        ids: ["non-existent-id"],
-        userId: "user123",
-      });
+      const req = makePostRequest({ ids: ["non-existent-id"] });
       const res = await POST(req);
 
       expect(res.status).toBe(500);
@@ -212,43 +178,28 @@ describe("POST /api/protected/sent_emails", () => {
   });
 
   describe("validation", () => {
-    it("returns status 400 when userId is missing", async () => {
-      mockRequireAuth.mockResolvedValue(validDecodedToken);
-
-      const req = makePostRequest({ ids: ["company1"] });
-      const res = await POST(req);
-
-      expect(res.status).toBe(400);
-    });
-
     it("returns status 400 when ids is not an array", async () => {
-      mockRequireAuth.mockResolvedValue(validDecodedToken);
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
 
-      const req = makePostRequest({ ids: "company1", userId: "user123" });
+      const req = makePostRequest({ ids: "company1" });
       const res = await POST(req);
 
       expect(res.status).toBe(400);
     });
 
     it("returns status 400 when ids is a string (not array)", async () => {
-      mockRequireAuth.mockResolvedValue(validDecodedToken);
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
 
-      const req = makePostRequest({
-        ids: "company1,company2",
-        userId: "user123",
-      });
+      const req = makePostRequest({ ids: "company1,company2" });
       const res = await POST(req);
 
       expect(res.status).toBe(400);
     });
 
     it("returns status 400 when ids is an object (not array)", async () => {
-      mockRequireAuth.mockResolvedValue(validDecodedToken);
+      mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
 
-      const req = makePostRequest({
-        ids: { 0: "company1" },
-        userId: "user123",
-      });
+      const req = makePostRequest({ ids: { 0: "company1" } });
       const res = await POST(req);
 
       expect(res.status).toBe(400);
@@ -256,29 +207,19 @@ describe("POST /api/protected/sent_emails", () => {
   });
 
   describe("authentication", () => {
-    it("returns status 401 when no auth token is provided", async () => {
-      mockRequireAuth.mockRejectedValue(
-        new Error("No authentication token provided")
-      );
+    it("returns status 401 when no auth token is provided (getTokens returns null)", async () => {
+      mockGetTokens.mockResolvedValue(null);
 
-      const req = makePostRequest(
-        { ids: ["company1"], userId: "user123" },
-        false
-      );
+      const req = makePostRequest({ ids: ["company1"] });
       const res = await POST(req);
 
       expect(res.status).toBe(401);
     });
 
-    it("returns status 401 when auth token is invalid or expired", async () => {
-      mockRequireAuth.mockRejectedValue(
-        new Error("Invalid authentication token")
-      );
+    it("returns status 401 when auth token is invalid or expired (getTokens throws)", async () => {
+      mockGetTokens.mockRejectedValue(new Error("Invalid authentication token"));
 
-      const req = makePostRequest({
-        ids: ["company1"],
-        userId: "user123",
-      });
+      const req = makePostRequest({ ids: ["company1"] });
       const res = await POST(req);
 
       expect(res.status).toBe(401);

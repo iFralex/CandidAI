@@ -73,10 +73,6 @@ export async function requireAuth(request) {
     throw new Error('No authentication token provided');
   }
 
-  if (!token) {
-    throw new Error('No authentication token provided');
-  }
-
   const decodedToken = await verifyAuthToken(token);
   
   if (!decodedToken) {

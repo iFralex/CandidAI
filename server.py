@@ -55,9 +55,9 @@ def run_module():
     if not data or "user_id" not in data:
         return jsonify({"error": "user_id mancante"}), 400
 
-    user_id = str(data["user_id"])
-    if not user_id:
+    if not data.get("user_id"):
         return jsonify({"error": "user_id non può essere vuoto"}), 400
+    user_id = str(data["user_id"])
 
     try:
         enqueue_job(run_candidai_script, args=(user_id,))
