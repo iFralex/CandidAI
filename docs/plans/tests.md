@@ -819,13 +819,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 17.3: E2E Test - Plan & Credits - Credit Purchase Cancellation/Failure
-- [ ] Open credits dialog -> click "Cancel" or X -> dialog closed -> credits unchanged.
-- [ ] Open dialog -> ESC -> dialog closed.
-- [ ] Card declined (`4000 0000 0000 0002`) -> "Card declined" message in Stripe form.
-- [ ] Insufficient funds -> appropriate message.
-- [ ] Expired card -> appropriate message.
-- [ ] Cancel after error: dialog closeable without credit modification.
-- [ ] Mark completed
+- [x] Open credits dialog -> click "Cancel" or X -> dialog closed -> credits unchanged.
+- [x] Open dialog -> ESC -> dialog closed.
+- [x] Card declined (`4000 0000 0000 0002`) -> "Card declined" message in Stripe form.
+- [x] Insufficient funds -> appropriate message.
+- [x] Expired card -> appropriate message.
+- [x] Cancel after error: dialog closeable without credit modification.
+- [x] Mark completed
 
 ### Task 17.4: E2E Test - Plan & Credits - Plan Upgrade
 - [ ] Click "Pro" plan (upgrade from "Base") -> confirmation dialog with price.
