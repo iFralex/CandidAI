@@ -932,13 +932,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 23.2: Security Tests - Input Validation
-- [ ] XSS: company name with `<script>alert(1)</script>` -> saved escaped, not executed.
-- [ ] XSS: custom instructions with XSS payload -> escaped.
-- [ ] SQL Injection: Verify Firestore queries use safe parameters (not applicable but verified).
-- [ ] Path traversal: `companyId` with `../../../etc/passwd` -> Firestore document path does not reach file system.
-- [ ] `companyId` with special characters (`%00`, null byte): handled gracefully.
-- [ ] CSRF: API routes with mutation methods (PUT, POST, DELETE) require auth cookie.
-- [ ] Mark completed
+- [x] XSS: company name with `<script>alert(1)</script>` -> saved escaped, not executed.
+- [x] XSS: custom instructions with XSS payload -> escaped.
+- [x] SQL Injection: Verify Firestore queries use safe parameters (not applicable but verified).
+- [x] Path traversal: `companyId` with `../../../etc/passwd` -> Firestore document path does not reach file system.
+- [x] `companyId` with special characters (`%00`, null byte): handled gracefully.
+- [x] CSRF: API routes with mutation methods (PUT, POST, DELETE) require auth cookie.
+- [x] Mark completed
 
 ### Task 23.3: Security Tests - Rate Limiting
 - [ ] 10+ requests to `POST /api/auth` in 1 minute from same IP: rate limit activated (if implemented).
