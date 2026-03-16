@@ -728,12 +728,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 14.3: E2E Test - Main Dashboard - Companies To Confirm
-- [ ] If `companies_to_confirm` not empty: section "Companies To Confirm" visible.
-- [ ] List shown with data.
-- [ ] Click "Confirm" -> form to update company data.
-- [ ] Correct confirmation: company removed from list, processed.
-- [ ] Cancel: company remains in list.
-- [ ] Mark completed
+- [x] If `companies_to_confirm` not empty: section "Companies To Confirm" visible.
+- [x] List shown with data.
+- [x] Click "Confirm" -> form to update company data.
+- [x] Correct confirmation: company removed from list, processed.
+- [x] Cancel: company remains in list.
+- [x] Mark completed
 
 ### Task 14.4: E2E Test - Main Dashboard - Add More Companies
 - [ ] Click "Add More Companies" -> dialog opens.
