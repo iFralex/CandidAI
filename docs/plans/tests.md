@@ -828,14 +828,14 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 17.4: E2E Test - Plan & Credits - Plan Upgrade
-- [ ] Click "Pro" plan (upgrade from "Base") -> confirmation dialog with price.
-- [ ] Confirm -> Stripe form -> pay -> plan updated.
-- [ ] Header/badge shows new plan.
-- [ ] New `maxCompanies` reflected in UI.
-- [ ] Attempt downgrade (Pro to Base): disabled button or message (if not allowed).
-- [ ] Current plan: no action possible.
-- [ ] Upgrade to same plan: no action.
-- [ ] Mark completed
+- [x] Click "Pro" plan (upgrade from "Base") -> confirmation dialog with price.
+- [x] Confirm -> Stripe form -> pay -> plan updated.
+- [x] Header/badge shows new plan.
+- [x] New `maxCompanies` reflected in UI.
+- [x] Attempt downgrade (Pro to Base): disabled button or message (if not allowed).
+- [x] Current plan: no action possible.
+- [x] Upgrade to same plan: no action.
+- [x] Mark completed
 
 ### Task 18.1: E2E Test - Billing - Payment History
 - [ ] `/dashboard/billing` loads payment history.
