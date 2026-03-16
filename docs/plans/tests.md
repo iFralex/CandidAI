@@ -736,15 +736,15 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 14.4: E2E Test - Main Dashboard - Add More Companies
-- [ ] Click "Add More Companies" -> dialog opens.
-- [ ] Enter valid companies -> submit -> dialog closes -> list updated.
-- [ ] Invalid domain -> inline error.
-- [ ] Duplicate domain -> "Already in list" error.
-- [ ] Attempt adding beyond limit -> "Limit Reached" dialog (not the form).
-- [ ] Cancel dialog -> no changes.
-- [ ] ESC key -> closes dialog.
-- [ ] Click outside dialog -> closes dialog.
-- [ ] Mark completed
+- [x] Click "Add More Companies" -> dialog opens.
+- [x] Enter valid companies -> submit -> dialog closes -> list updated.
+- [x] Invalid domain -> inline error.
+- [x] Duplicate domain -> "Already in list" error.
+- [x] Attempt adding beyond limit -> "Limit Reached" dialog (not the form).
+- [x] Cancel dialog -> no changes.
+- [x] ESC key -> closes dialog.
+- [x] Click outside dialog -> closes dialog.
+- [x] Mark completed
 
 ### Task 14.5: E2E Test - Campaign Detail
 - [ ] Navigate to `/dashboard/[validCompanyId]`: details visible.
