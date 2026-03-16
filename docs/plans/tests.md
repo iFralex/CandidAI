@@ -787,11 +787,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 16.1: E2E Test - Sent Emails - History Visualization
-- [ ] `/dashboard/sent-emails` loads sent email list.
-- [ ] Row shows: company, recruiter, send date, status.
-- [ ] Table sortable by column.
-- [ ] Empty state if no emails sent.
-- [ ] Mark completed
+- [x] `/dashboard/sent-emails` loads sent email list.
+- [x] Row shows: company, recruiter, send date, status.
+- [x] Table sortable by column.
+- [x] Empty state if no emails sent.
+- [x] Mark completed
 
 ### Task 16.2: E2E Test - Sent Emails - Date Filters
 - [ ] Filter "Last 7 days" shows only emails from last 7 days.
