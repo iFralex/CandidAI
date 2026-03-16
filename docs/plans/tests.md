@@ -883,9 +883,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 20.2: E2E Test - Settings - Edge Cases
-- [ ] Modify setting -> navigate away without saving -> setting not persisted.
-- [ ] Reset settings to defaults (if functionality present).
-- [ ] Mark completed
+- [x] Modify setting -> navigate away without saving -> setting not persisted.
+- [x] Reset settings to defaults (if functionality present).
+- [x] Mark completed
 
 ### Task 21.1: E2E Test - Dashboard Navigation - Sidebar
 - [ ] All sidebar links navigate correctly.
