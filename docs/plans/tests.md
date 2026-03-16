@@ -906,14 +906,14 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 22.1: E2E Test - Accessibility
-- [ ] Every page has an appropriate `<h1>`.
-- [ ] Form inputs have associated `<label>`.
-- [ ] Dialog has `aria-modal`, `aria-label`.
-- [ ] Focus trap inside open dialog.
-- [ ] Tab navigation works throughout the dashboard.
-- [ ] Toast notifications announced via `aria-live`.
-- [ ] WCAG AA color contrast (visual verification).
-- [ ] Mark completed
+- [x] Every page has an appropriate `<h1>`.
+- [x] Form inputs have associated `<label>`.
+- [x] Dialog has `aria-modal`, `aria-label`.
+- [x] Focus trap inside open dialog.
+- [x] Tab navigation works throughout the dashboard.
+- [x] Toast notifications announced via `aria-live`.
+- [x] WCAG AA color contrast (visual verification).
+- [x] Mark completed
 
 ### Task 22.2: E2E Test - Responsive
 - [ ] Mobile (375px): responsive layout, collapsed sidebar.
