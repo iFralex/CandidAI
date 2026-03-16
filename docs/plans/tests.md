@@ -852,11 +852,11 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 19.1: E2E Test - Profile - Visualization
-- [ ] `/dashboard/profile` loads profile data.
-- [ ] Display: current name, email (read-only), plan, credits.
-- [ ] Name field is editable.
-- [ ] Profile picture upload (if supported).
-- [ ] Mark completed
+- [x] `/dashboard/profile` loads profile data.
+- [x] Display: current name, email (read-only), plan, credits.
+- [x] Name field is editable.
+- [x] Profile picture upload (if supported).
+- [x] Mark completed
 
 ### Task 19.2: E2E Test - Profile - Name Modification
 - [ ] Edit name -> click "Save" -> API `PUT /api/protected/user` -> success toast.
