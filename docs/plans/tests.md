@@ -896,9 +896,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 21.2: E2E Test - Dashboard Navigation - Route Errors
-- [ ] Navigate to `/dashboard/nonexistent-page`: 404 or redirect to `/dashboard`.
-- [ ] Navigate to `/nonexistent`: 404 page.
-- [ ] Mark completed
+- [x] Navigate to `/dashboard/nonexistent-page`: 404 or redirect to `/dashboard`.
+- [x] Navigate to `/nonexistent`: 404 page.
+- [x] Mark completed
 
 ### Task 21.3: E2E Test - Dashboard Navigation - Back Button
 - [ ] Dashboard -> Campaign detail -> Back -> returns to Dashboard.
