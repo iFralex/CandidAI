@@ -49,7 +49,7 @@ export async function selectPlan(planId: string) {
 
 function isValidDomain(domain: string): boolean {
     if (!domain || !domain.trim()) return false;
-    return /^(?!-)[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/.test(domain);
+    return /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$/.test(domain);
 }
 
 export async function submitCompanies(companies: { name: string, domain: string }[]) {
@@ -113,7 +113,7 @@ export async function submitProfile(
     // Validate CV file if provided
     if (cv) {
         const isValidType =
-            ALLOWED_CV_TYPES.includes(cv.type) ||
+            ALLOWED_CV_TYPES.includes(cv.type) &&
             cv.name.toLowerCase().endsWith(".pdf");
         if (!isValidType) {
             return { success: false, error: "Invalid file type" };

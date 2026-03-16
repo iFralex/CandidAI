@@ -5,6 +5,8 @@ import { clientConfig, serverConfig } from '@/config';
 import { getTokens } from 'next-firebase-auth-edge';
 
 export async function GET(request, { params }) {
+    let decodedToken;
+
     try {
         // Estrai l'ID dinamico del risultato dall'URL
         const { resultId } = params;
@@ -17,14 +19,24 @@ export async function GET(request, { params }) {
             serviceAccount: serverConfig.serviceAccount,
         });
 
-        const decodedToken = tokens?.decodedToken;
-        if (!decodedToken) {
+        if (!tokens?.decodedToken) {
             return NextResponse.json(
                 { error: 'Non autorizzato' },
                 { status: 401 }
             );
         }
 
+        decodedToken = tokens.decodedToken;
+    } catch (error) {
+        console.error('Auth error:', error);
+        return NextResponse.json(
+            { error: 'Non autorizzato' },
+            { status: 401 }
+        );
+    }
+
+    try {
+        const { resultId } = params;
         const userId = decodedToken.uid;
 
         // Percorso Firestore:
@@ -86,10 +98,10 @@ export async function GET(request, { params }) {
         });
 
     } catch (error) {
-        console.error('Errore API protetta:', error);
+        console.error('Firestore error:', error);
         return NextResponse.json(
-            { error: 'Non autorizzato' },
-            { status: 401 }
+            { error: 'Internal server error' },
+            { status: 500 }
         );
     }
 }
