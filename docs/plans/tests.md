@@ -941,9 +941,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 23.3: Security Tests - Rate Limiting
-- [ ] 10+ requests to `POST /api/auth` in 1 minute from same IP: rate limit activated (if implemented).
-- [ ] 10+ requests to `POST /api/auth/forgot-password`: rate limit activated.
-- [ ] Mark completed
+- [x] 10+ requests to `POST /api/auth` in 1 minute from same IP: rate limit activated (if implemented).
+- [x] 10+ requests to `POST /api/auth/forgot-password`: rate limit activated.
+- [x] Mark completed
 
 ### Task 24.1: Cross-Browser Tests
 - [ ] Run critical E2E tests (auth, onboarding, dashboard) on Chromium.
