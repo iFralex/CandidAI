@@ -690,19 +690,19 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 13.5: E2E Test - Onboarding Flow - Persona E: The Error Maker
-- [ ] Step 1: Click Next without plan -> error "Select a plan".
-- [ ] Step 2: Invalid domain ("notadomain") -> validation error.
-- [ ] Step 2: Duplicate domain -> error.
-- [ ] Step 2: Exceed plan limit (2 companies on free trial) -> limit error.
-- [ ] Step 3: Upload non-PDF (e.g., `.jpg`) -> error "Invalid file type".
-- [ ] Step 3: Upload PDF exceeding size limit -> error "File too large".
-- [ ] Step 3: Click Next without CV -> error "CV required".
-- [ ] Step 5: Payment with declined card (`4000 0000 0000 0002`) -> "Card declined".
-- [ ] Step 5: Payment with insufficient funds (`4000 0000 0000 9995`) -> appropriate message.
-- [ ] Step 5: Payment with expired card -> appropriate message.
-- [ ] Navigate back during onboarding: can return to previous step.
-- [ ] Page reload mid-onboarding: resumes from correct step (persisted data).
-- [ ] Mark completed
+- [x] Step 1: Click Next without plan -> error "Select a plan".
+- [x] Step 2: Invalid domain ("notadomain") -> validation error.
+- [x] Step 2: Duplicate domain -> error.
+- [x] Step 2: Exceed plan limit (2 companies on free trial) -> limit error.
+- [x] Step 3: Upload non-PDF (e.g., `.jpg`) -> error "Invalid file type".
+- [x] Step 3: Upload PDF exceeding size limit -> error "File too large".
+- [x] Step 3: Click Next without CV -> error "CV required".
+- [x] Step 5: Payment with declined card (`4000 0000 0000 0002`) -> "Card declined".
+- [x] Step 5: Payment with insufficient funds (`4000 0000 0000 9995`) -> appropriate message.
+- [x] Step 5: Payment with expired card -> appropriate message.
+- [x] Navigate back during onboarding: can return to previous step.
+- [x] Page reload mid-onboarding: resumes from correct step (persisted data).
+- [x] Mark completed
 
 ### Task 13.6: E2E Test - Onboarding Flow - Step Navigation
 - [ ] Verify cannot skip steps via URL (e.g., Step 2 to 4) -> redirected to correct step.
