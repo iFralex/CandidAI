@@ -901,9 +901,9 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 21.3: E2E Test - Dashboard Navigation - Back Button
-- [ ] Dashboard -> Campaign detail -> Back -> returns to Dashboard.
-- [ ] Settings -> Back -> returns to previous page.
-- [ ] Mark completed
+- [x] Dashboard -> Campaign detail -> Back -> returns to Dashboard.
+- [x] Settings -> Back -> returns to previous page.
+- [x] Mark completed
 
 ### Task 22.1: E2E Test - Accessibility
 - [ ] Every page has an appropriate `<h1>`.
