@@ -763,13 +763,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 15.1: E2E Test - Send All - Email Visualization
-- [ ] `/dashboard/send-all` loads list of ready emails.
-- [ ] Each email shows: company name, subject, body preview, recruiter name, recipient email.
-- [ ] Checkbox for individual selection.
-- [ ] "Select All" selects everything.
-- [ ] "Deselect All" deselects everything.
-- [ ] Selected counter updates in real-time.
-- [ ] Mark completed
+- [x] `/dashboard/send-all` loads list of ready emails.
+- [x] Each email shows: company name, subject, body preview, recruiter name, recipient email.
+- [x] Checkbox for individual selection.
+- [x] "Select All" selects everything.
+- [x] "Deselect All" deselects everything.
+- [x] Selected counter updates in real-time.
+- [x] Mark completed
 
 ### Task 15.2: E2E Test - Send All - Sending Emails
 - [ ] Select 2 emails -> click "Send Selected" -> confirmation dialog.
