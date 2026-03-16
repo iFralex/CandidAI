@@ -810,13 +810,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 17.2: E2E Test - Plan & Credits - Credit Purchase Success
-- [ ] Click "Buy Credits" -> select `pkg_1000` -> Stripe form dialog.
-- [ ] Enter test card `4242...` -> pay -> success.
-- [ ] Sidebar credit badge updated (+1000).
-- [ ] Success message shown.
-- [ ] Select `pkg_2500` -> pay -> credits +2500.
-- [ ] Select `pkg_5000` -> pay -> credits +5000.
-- [ ] Mark completed
+- [x] Click "Buy Credits" -> select `pkg_1000` -> Stripe form dialog.
+- [x] Enter test card `4242...` -> pay -> success.
+- [x] Sidebar credit badge updated (+1000).
+- [x] Success message shown.
+- [x] Select `pkg_2500` -> pay -> credits +2500.
+- [x] Select `pkg_5000` -> pay -> credits +5000.
+- [x] Mark completed
 
 ### Task 17.3: E2E Test - Plan & Credits - Credit Purchase Cancellation/Failure
 - [ ] Open credits dialog -> click "Cancel" or X -> dialog closed -> credits unchanged.
