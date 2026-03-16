@@ -924,12 +924,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 23.1: Security Tests - Auth Security
-- [ ] Requests to `/api/protected/*` without cookie: return status 401 (no data leaked).
-- [ ] Manually modified cookie: token validation fails -> status 401.
-- [ ] Cookie from another user (`uid=attacker`): no access to victim data.
-- [ ] Stripe webhook without valid signature: status 400 (no processing).
-- [ ] Stripe webhook with test signature in production environment: rejected.
-- [ ] Mark completed
+- [x] Requests to `/api/protected/*` without cookie: return status 401 (no data leaked).
+- [x] Manually modified cookie: token validation fails -> status 401.
+- [x] Cookie from another user (`uid=attacker`): no access to victim data.
+- [x] Stripe webhook without valid signature: status 400 (no processing).
+- [x] Stripe webhook with test signature in production environment: rejected.
+- [x] Mark completed
 
 ### Task 23.2: Security Tests - Input Validation
 - [ ] XSS: company name with `<script>alert(1)</script>` -> saved escaped, not executed.
