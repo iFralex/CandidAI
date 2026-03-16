@@ -867,10 +867,10 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 19.3: E2E Test - Profile - Picture Upload
-- [ ] Click "Change Picture" -> file chooser -> select image -> upload -> photo updated.
-- [ ] Non-image file -> error.
-- [ ] Image exceeding size limit -> error.
-- [ ] Mark completed
+- [x] Click "Change Picture" -> file chooser -> select image -> upload -> photo updated.
+- [x] Non-image file -> error.
+- [x] Image exceeding size limit -> error.
+- [x] Mark completed
 
 ### Task 20.1: E2E Test - Settings - Notification Settings
 - [ ] `/dashboard/settings` loads current settings.
