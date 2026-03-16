@@ -719,13 +719,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 14.2: E2E Test - Main Dashboard - Active Campaigns
-- [ ] Campaign list shows card for each company.
-- [ ] Card shows: company name, recruiter name, status, progress bar.
-- [ ] Progress bar reflects real state (recruiter found, articles, email generated).
-- [ ] Click card -> navigate to `/dashboard/[companyId]`.
-- [ ] "Processing" state shows processing indicator.
-- [ ] Ready campaign shows "Send" button or similar.
-- [ ] Mark completed
+- [x] Campaign list shows card for each company.
+- [x] Card shows: company name, recruiter name, status, progress bar.
+- [x] Progress bar reflects real state (recruiter found, articles, email generated).
+- [x] Click card -> navigate to `/dashboard/[companyId]`.
+- [x] "Processing" state shows processing indicator.
+- [x] Ready campaign shows "Send" button or similar.
+- [x] Mark completed
 
 ### Task 14.3: E2E Test - Main Dashboard - Companies To Confirm
 - [ ] If `companies_to_confirm` not empty: section "Companies To Confirm" visible.
