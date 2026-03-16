@@ -711,12 +711,12 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 14.1: E2E Test - Main Dashboard - Loading and Stats
-- [ ] `/dashboard` loads: header, sidebar, content visible.
-- [ ] Stats cards shown: "Processing", "Ready to Send", "Emails Sent", "Articles Found".
-- [ ] Numerical stats values are correct (from Firestore mock).
-- [ ] Skeleton loader visible during fetch -> replaced by data.
-- [ ] Empty state shown if no campaigns + CTA.
-- [ ] Mark completed
+- [x] `/dashboard` loads: header, sidebar, content visible.
+- [x] Stats cards shown: "Processing", "Ready to Send", "Emails Sent", "Articles Found".
+- [x] Numerical stats values are correct (from Firestore mock).
+- [x] Skeleton loader visible during fetch -> replaced by data.
+- [x] Empty state shown if no campaigns + CTA.
+- [x] Mark completed
 
 ### Task 14.2: E2E Test - Main Dashboard - Active Campaigns
 - [ ] Campaign list shows card for each company.
