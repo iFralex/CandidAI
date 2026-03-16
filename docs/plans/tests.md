@@ -838,13 +838,13 @@ npm run test:all           # Everything together via Firebase emulators:exec
 - [x] Mark completed
 
 ### Task 18.1: E2E Test - Billing - Payment History
-- [ ] `/dashboard/billing` loads payment history.
-- [ ] Row shows: date, type (plan/credits), amount, status, transaction ID.
-- [ ] "succeeded" status shown in green, others highlighted differently.
-- [ ] Correct EUR format (e.g., "€30.00").
-- [ ] Sorted by date (most recent first).
-- [ ] Empty state if no payments.
-- [ ] Mark completed
+- [x] `/dashboard/billing` loads payment history.
+- [x] Row shows: date, type (plan/credits), amount, status, transaction ID.
+- [x] "succeeded" status shown in green, others highlighted differently.
+- [x] Correct EUR format (e.g., "€30.00").
+- [x] Sorted by date (most recent first).
+- [x] Empty state if no payments.
+- [x] Mark completed
 
 ### Task 18.2: E2E Test - Billing - Download/Details
 - [ ] Click transaction: expands details or navigates to detail.
