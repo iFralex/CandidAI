@@ -3,7 +3,7 @@ import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, 
 import { ProfileAnalysisClient } from '@/components/onboarding';
 import { UnifiedCheckout } from '@/components/UnifiedCheckout';
 import { startServer, submitQueries } from '@/actions/onboarding-actions'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { plansData, plansInfo } from '@/config';
 import { setTestMock } from '@/app/api/test/set-mock/route';
 import { adminDb } from '@/lib/firebase-admin';
@@ -90,10 +90,9 @@ interface AdvancedFiltersServerProps {
 export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersServerProps) {
     const maxFilters = plan === 'ultra' ? 50 : 30
     const res = await fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/account", {
-        credentials: "include",
         cache: "no-cache",
         headers: {
-            cookie: await cookies()
+            cookie: (await headers()).get('cookie') ?? ''
         }
     });
 
@@ -106,9 +105,9 @@ export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersSer
         throw new Error(data.error)
 
     const profileSummary = data.data.profileSummary
-    const companies = profileSummary.experience.map(e => e.company.name)
-    const universities = profileSummary.education.map(e => e.school.name)
-    const location = profileSummary.location
+    const companies = profileSummary?.experience?.map(e => e.company.name) ?? []
+    const universities = profileSummary?.education?.map(e => e.school.name) ?? []
+    const location = profileSummary?.location ?? {}
 
     // Funzione helper per generare l'array di criteria in base alle condizioni
     const buildCriteria = (base = []) => {
