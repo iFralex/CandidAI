@@ -3487,13 +3487,14 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
     const [analyzing, setAnalyzing] = useState(false)
     const [analysisComplete, setAnalysisComplete] = useState(!!initialProfile)
     const [profileSummary, setProfileSummary] = useState<ProfileSummary>(initialProfile || null)
-    //const [recruiterPersona, setRecruiterPersona] = useState('')
+    const [recruiterPersona, setRecruiterPersona] = useState('')
     const [isPending, startTransition] = useTransition()
     const [cvFile, setCvFile] = useState<{ name: string, blob: any } | null>()
     const [isRecalculating, setIsRecalculating] = useState(false)
     const [saved, setSaved] = useState(false)
 
     const analyzeProfile = async () => {
+        let localProfile: ProfileSummary | null = null
         try {
             setAnalyzing(true)
 
@@ -3566,11 +3567,12 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
                 certifications: [],
             }
 
+            localProfile = profileSummary
             setProfileSummary(profileSummary)
             setAnalysisComplete(true)
         } catch (error) {
             console.error("Errore durante l'analisi del profilo:", error)
-            setProfileSummary({
+            const fallback: ProfileSummary = {
                 name: "Your name",
                 title: "Your current job title",
                 experience: [],
@@ -3579,10 +3581,18 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
                 location: { country: "Your country", continent: "Your continent" },
                 projects: [],
                 certifications: []
-            })
+            }
+            localProfile = fallback
+            setProfileSummary(fallback)
             setAnalysisComplete(true)
         } finally {
             setAnalyzing(false)
+        }
+        // Auto-submit in onboarding flow when CV is already uploaded
+        if (!onSave && cvFile && localProfile) {
+            startTransition(async () => {
+                await submitProfile(plan, { linkedinUrl, profileSummary: localProfile }, cvFile.blob)
+            })
         }
     }
 
