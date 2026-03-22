@@ -3,8 +3,18 @@ import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { clientConfig, serverConfig } from '@/config';
 import { getTokens } from 'next-firebase-auth-edge';
+import { getTestMock } from '@/app/api/test/set-mock/route';
 
 export async function POST(request) {
+    // Test bypass
+    if (process.env.NODE_ENV !== 'production') {
+        const mock = getTestMock('/api/protected/all_details');
+        if (mock) return NextResponse.json(mock);
+        if (request.cookies.get('__playwright_user__')?.value) {
+            return NextResponse.json({ success: true, data: [] });
+        }
+    }
+
     try {
         // ✅ Estrai array di ID dalla richiesta
         const { companyIds } = await request.json();

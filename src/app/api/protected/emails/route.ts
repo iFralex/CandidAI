@@ -3,8 +3,18 @@ import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { clientConfig, serverConfig } from '@/config';
 import { getTokens } from 'next-firebase-auth-edge';
+import { getTestMock } from '@/app/api/test/set-mock/route';
 
 export async function GET(request) {
+  // Test bypass
+  if (process.env.NODE_ENV !== 'production') {
+    const mock = getTestMock('/api/protected/emails');
+    if (mock) return NextResponse.json(mock);
+    if (request.cookies.get('__playwright_user__')?.value) {
+      return NextResponse.json({ data: {}, userId: '' });
+    }
+  }
+
   let decodedToken;
 
   try {

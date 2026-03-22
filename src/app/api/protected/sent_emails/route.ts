@@ -2,8 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { clientConfig, serverConfig } from "@/config";
 import { getTokens } from "next-firebase-auth-edge";
+import { getTestMock } from "@/app/api/test/set-mock/route";
 
 export async function POST(req: NextRequest) {
+    // Test bypass
+    if (process.env.NODE_ENV !== 'production') {
+        const mock = getTestMock('/api/protected/sent_emails');
+        if (mock) return NextResponse.json(mock);
+        if (req.cookies.get('__playwright_user__')?.value) {
+            return NextResponse.json({ success: true });
+        }
+    }
+
     let userId: string;
 
     try {

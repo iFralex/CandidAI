@@ -83,9 +83,9 @@ describe("UnifiedCheckout", () => {
       ).not.toThrow();
     });
 
-    it("renders the 'Complete your purchase' heading", () => {
+    it("renders the 'Payment details' heading", () => {
       render(<UnifiedCheckout purchaseType="plan" itemId="pro" email="user@test.com" />);
-      expect(screen.getByText("Complete your purchase")).toBeInTheDocument();
+      expect(screen.getByText("Payment details")).toBeInTheDocument();
     });
 
     it("renders without crashing for a credits purchaseType", () => {
