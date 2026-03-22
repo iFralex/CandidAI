@@ -296,7 +296,7 @@ const HeroSection = () => {
                         <span
                             className="block text-[clamp(3.5rem,7.5vw,7rem)] bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent"
                         >
-                            Dream Job
+                            Deam Job
                         </span>
                         <span className="block text-[clamp(2rem,4.5vw,4rem)] text-white/50 font-medium tracking-normal mt-1">
                             with AI-Crafted Emails
