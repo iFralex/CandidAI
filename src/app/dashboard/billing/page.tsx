@@ -1,4 +1,5 @@
-import { fetchBillingHistory } from "@/actions/onboarding-actions";
+"use client";
+import { useEffect, useState } from "react";
 import {
     Table,
     TableBody,
@@ -8,6 +9,15 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+
+type Payment = {
+    id: string;
+    createdAt: string | null;
+    description: string | null;
+    amount: number | null;
+    currency: string;
+    status: string | null;
+};
 
 function formatAmount(amount: number | null, currency: string) {
     if (amount == null) return "—";
@@ -34,8 +44,29 @@ function statusVariant(status: string | null): "default" | "secondary" | "destru
     return "outline";
 }
 
-export default async function BillingPage() {
-    const payments = await fetchBillingHistory();
+export default function BillingPage() {
+    const [payments, setPayments] = useState<Payment[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetch('/api/protected/billing')
+            .then(r => {
+                if (!r.ok) throw new Error(r.statusText);
+                return r.json();
+            })
+            .then(data => {
+                setPayments(data.payments ?? []);
+                setLoading(false);
+            })
+            .catch((err: Error) => {
+                setError(err.message || 'Failed to load billing history');
+                setLoading(false);
+            });
+    }, []);
+
+    if (loading) return <div className="text-gray-400">Loading...</div>;
+    if (error) return <div className="text-red-400">Error: {error}</div>;
 
     return (
         <div className="space-y-8">

@@ -3,14 +3,23 @@ import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { clientConfig, serverConfig } from '@/config';
 import { getTokens } from 'next-firebase-auth-edge';
+import { getTestMock } from '@/app/api/test/set-mock/route';
 
 export async function GET(request, { params }) {
+    // Test bypass
+    if (process.env.NODE_ENV !== 'production') {
+        const urlPath = new URL(request.url).pathname;
+        const mock = getTestMock(urlPath);
+        if (mock) return NextResponse.json(mock);
+        // Cookie bypass: return empty-but-valid response so SSR doesn't crash
+        if (request.cookies.get('__playwright_user__')?.value) {
+            return NextResponse.json({ success: true, details: {}, customizations: { instructions: null, queries: null } });
+        }
+    }
+
     let decodedToken;
 
     try {
-        // Estrai l'ID dinamico del risultato dall'URL
-        const { resultId } = params;
-
         // Autentica l'utente tramite cookie Firebase
         const tokens = await getTokens(request.cookies, {
             apiKey: clientConfig.apiKey,
@@ -36,7 +45,7 @@ export async function GET(request, { params }) {
     }
 
     try {
-        const { resultId } = params;
+        const { resultId } = await params;
         const userId = decodedToken.uid;
 
         // Percorso Firestore:
