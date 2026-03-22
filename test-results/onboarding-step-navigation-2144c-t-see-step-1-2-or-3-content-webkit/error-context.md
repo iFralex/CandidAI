@@ -1,0 +1,65 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [active]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - navigation [ref=e7]:
+            - button "previous" [disabled] [ref=e8]:
+              - img "previous" [ref=e9]
+            - generic [ref=e11]:
+              - generic [ref=e12]: 1/
+              - text: "1"
+            - button "next" [disabled] [ref=e13]:
+              - img "next" [ref=e14]
+          - img
+        - generic [ref=e16]:
+          - link "Next.js 15.5.12 (outdated) Turbopack" [ref=e17]:
+            - /url: https://nextjs.org/docs/messages/version-staleness
+            - img [ref=e18]
+            - generic "An outdated version detected (latest is 16.2.1), upgrade is highly recommended!" [ref=e20]: Next.js 15.5.12 (outdated)
+            - generic [ref=e21]: Turbopack
+          - img
+      - dialog "Runtime TypeError" [ref=e23]:
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - generic [ref=e29]:
+                - generic [ref=e30]: Runtime TypeError
+                - generic [ref=e31]: Server
+              - generic [ref=e32]:
+                - button "Copy Error Info" [ref=e33] [cursor=pointer]:
+                  - img [ref=e34]
+                - button "No related documentation found" [disabled] [ref=e36]:
+                  - img [ref=e37]
+                - link "Learn more about enabling Node.js inspector for server code with Chrome DevTools" [ref=e39]:
+                  - /url: https://nextjs.org/docs/app/building-your-application/configuring/debugging#server-side-code
+                  - img [ref=e40]
+            - paragraph [ref=e52]: Cannot read properties of undefined (reading 'experience')
+          - generic [ref=e55]:
+            - paragraph [ref=e56]:
+              - text: Call Stack
+              - generic [ref=e57]: "5"
+            - button "Show 5 ignore-listed frame(s)" [ref=e58] [cursor=pointer]:
+              - text: Show 5 ignore-listed frame(s)
+              - img [ref=e59]
+        - generic [ref=e61]:
+          - generic [ref=e62]: "1"
+          - generic [ref=e63]: "2"
+    - generic [ref=e68] [cursor=pointer]:
+      - button "Open Next.js Dev Tools" [ref=e69]:
+        - img [ref=e70]
+      - generic [ref=e75]:
+        - button "Open issues overlay" [ref=e76]:
+          - generic [ref=e77]:
+            - generic [ref=e78]: "0"
+            - generic [ref=e79]: "1"
+          - generic [ref=e80]: Issue
+        - button "Collapse issues badge" [ref=e81]:
+          - img [ref=e82]
+  - generic [ref=e85]:
+    - 'heading "Application error: a server-side exception has occurred while loading localhost (see the server logs for more information)." [level=2] [ref=e86]'
+    - paragraph [ref=e87]: "Digest: 1159220038"
+```

@@ -1,0 +1,229 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e6] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e7]:
+      - img [ref=e8]
+    - generic [ref=e13]:
+      - button "Open issues overlay" [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: "0"
+          - generic [ref=e17]: "1"
+        - generic [ref=e18]: Issue
+      - button "Collapse issues badge" [ref=e19]:
+        - img [ref=e20]
+  - generic [ref=e23]:
+    - generic [ref=e26]:
+      - generic [ref=e29]:
+        - img "Logo" [ref=e31]
+        - generic [ref=e32]: CandidAI
+      - list [ref=e36]:
+        - listitem [ref=e37]:
+          - link "Dashboard" [ref=e38]:
+            - /url: /dashboard
+            - img [ref=e39]
+            - generic [ref=e42]: Dashboard
+        - listitem [ref=e43]:
+          - link "Send All" [ref=e44]:
+            - /url: /dashboard/send-all
+            - img [ref=e45]
+            - generic [ref=e47]: Send All
+        - listitem [ref=e48]:
+          - link "Follow Ups" [ref=e49]:
+            - /url: /dashboard/follow-ups
+            - img [ref=e50]
+            - generic [ref=e53]: Follow Ups
+        - listitem [ref=e54]:
+          - link "Plan & Credits" [ref=e55]:
+            - /url: /dashboard/plan-and-credits
+            - img [ref=e56]
+            - generic [ref=e58]: Plan & Credits
+        - listitem [ref=e59]:
+          - link "Settings" [ref=e60]:
+            - /url: /dashboard/settings
+            - img [ref=e61]
+            - generic [ref=e64]: Settings
+      - generic [ref=e67] [cursor=pointer]:
+        - generic [ref=e68]: P
+        - generic [ref=e69]:
+          - paragraph [ref=e70]: Plan Upgrade User
+          - paragraph [ref=e71]: plan-upgrade@example.com
+    - generic [ref=e72]:
+      - banner [ref=e73]:
+        - generic [ref=e74]:
+          - generic [ref=e75]:
+            - button "Toggle Sidebar" [ref=e76]:
+              - img [ref=e77]
+              - generic [ref=e79]: Toggle Sidebar
+            - heading "Dashboard" [level=1] [ref=e81]
+          - generic [ref=e82]:
+            - generic [ref=e84]:
+              - img [ref=e85]
+              - generic [ref=e87]: "150"
+            - link [ref=e88]:
+              - /url: /dashboard/plan-and-credits
+              - button "Buy credits or upgrade plan" [ref=e89]:
+                - img [ref=e90]
+      - main [ref=e91]:
+        - generic [ref=e92]:
+          - generic [ref=e93]:
+            - heading "Plan & Credits" [level=1] [ref=e94]
+            - paragraph [ref=e95]: Upgrade your plan or top up your credits to keep generating personalised outreach emails.
+          - generic [ref=e96]:
+            - generic [ref=e97]:
+              - generic [ref=e98]:
+                - heading "Choose a Plan" [level=2] [ref=e99]
+                - paragraph [ref=e100]: One-time purchase — pay once, use until your company limit is reached.
+              - generic [ref=e101]:
+                - generic [ref=e103] [cursor=pointer]:
+                  - generic [ref=e104]:
+                    - img [ref=e106]
+                    - heading "Base" [level=3] [ref=e110]
+                    - paragraph [ref=e111]: Perfect for targeted job search
+                    - generic [ref=e112]: €30.00
+                    - generic [ref=e113]: one-time purchase
+                  - list [ref=e114]:
+                    - listitem [ref=e115]:
+                      - img [ref=e116]
+                      - generic [ref=e118]: 20 companies maximum
+                    - listitem [ref=e119]:
+                      - img [ref=e120]
+                      - generic [ref=e123]: X credits included
+                    - listitem [ref=e124]:
+                      - img [ref=e125]
+                      - generic [ref=e128]: Custom Instructions
+                    - listitem [ref=e129]:
+                      - img [ref=e130]
+                      - generic [ref=e133]: Custom strategy for recruiter search with X criteria
+                    - listitem [ref=e134]:
+                      - img [ref=e135]
+                      - generic [ref=e138]: Follow-up email automation
+                    - listitem [ref=e139]:
+                      - img [ref=e140]
+                      - generic [ref=e143]: Company confirmation calls
+                    - listitem [ref=e144]:
+                      - img [ref=e145]
+                      - generic [ref=e148]: Company information deep-dive reports
+                    - listitem [ref=e149]:
+                      - img [ref=e150]
+                      - generic [ref=e153]: AI company recommendations
+                    - listitem [ref=e154]:
+                      - img [ref=e155]
+                      - generic [ref=e158]: Generation priority
+                  - button "Buy Plan" [ref=e159]:
+                    - text: Buy Plan
+                    - img [ref=e161]
+                - generic [ref=e166] [cursor=pointer]:
+                  - generic [ref=e168]: Most Popular
+                  - generic [ref=e169]:
+                    - img [ref=e171]
+                    - heading "Pro" [level=3] [ref=e176]
+                    - paragraph [ref=e177]: For serious job seekers
+                    - generic [ref=e178]: €69.00
+                    - generic [ref=e179]: one-time purchase
+                  - list [ref=e180]:
+                    - listitem [ref=e181]:
+                      - img [ref=e182]
+                      - generic [ref=e184]: 50 companies maximum
+                    - listitem [ref=e185]:
+                      - img [ref=e186]
+                      - generic [ref=e188]: 1000 credits included
+                    - listitem [ref=e189]:
+                      - img [ref=e190]
+                      - generic [ref=e192]: Custom Instructions
+                    - listitem [ref=e193]:
+                      - img [ref=e194]
+                      - generic [ref=e196]: Custom strategy for recruiter search with 30 criteria
+                    - listitem [ref=e197]:
+                      - img [ref=e198]
+                      - generic [ref=e200]: Follow-up email automation
+                    - listitem [ref=e201]:
+                      - img [ref=e202]
+                      - generic [ref=e205]: Company confirmation calls
+                    - listitem [ref=e206]:
+                      - img [ref=e207]
+                      - generic [ref=e210]: Company information deep-dive reports
+                    - listitem [ref=e211]:
+                      - img [ref=e212]
+                      - generic [ref=e215]: AI company recommendations
+                    - listitem [ref=e216]:
+                      - img [ref=e217]
+                      - generic [ref=e220]: Generation priority
+                  - button "Buy Plan" [ref=e221]:
+                    - text: Buy Plan
+                    - img [ref=e223]
+                - generic [ref=e229] [cursor=pointer]:
+                  - generic [ref=e230]:
+                    - img [ref=e232]
+                    - heading "Ultra" [level=3] [ref=e234]
+                    - paragraph [ref=e235]: Maximum job search power
+                    - generic [ref=e236]: €139.00
+                    - generic [ref=e237]: one-time purchase
+                  - list [ref=e238]:
+                    - listitem [ref=e239]:
+                      - img [ref=e240]
+                      - generic [ref=e242]: 100 companies maximum
+                    - listitem [ref=e243]:
+                      - img [ref=e244]
+                      - generic [ref=e246]: 2500 credits included
+                    - listitem [ref=e247]:
+                      - img [ref=e248]
+                      - generic [ref=e250]: Custom Instructions
+                    - listitem [ref=e251]:
+                      - img [ref=e252]
+                      - generic [ref=e254]: Custom strategy for recruiter search with 50 criteria
+                    - listitem [ref=e255]:
+                      - img [ref=e256]
+                      - generic [ref=e258]: Follow-up email automation
+                    - listitem [ref=e259]:
+                      - img [ref=e260]
+                      - generic [ref=e262]: Company confirmation calls
+                    - listitem [ref=e263]:
+                      - img [ref=e264]
+                      - generic [ref=e266]: Company information deep-dive reports
+                    - listitem [ref=e267]:
+                      - img [ref=e268]
+                      - generic [ref=e270]: AI company recommendations
+                    - listitem [ref=e271]:
+                      - img [ref=e272]
+                      - generic [ref=e274]: Generation priority
+                  - button "Buy Plan" [ref=e275]:
+                    - text: Buy Plan
+                    - img [ref=e277]
+            - generic [ref=e280]:
+              - generic [ref=e281]:
+                - heading "Top Up Credits" [level=2] [ref=e282]
+                - paragraph [ref=e283]: Add credits to your account instantly. Credits are used to generate personalised emails.
+              - generic [ref=e284]:
+                - generic [ref=e286] [cursor=pointer]:
+                  - generic [ref=e288]:
+                    - img [ref=e290]
+                    - generic [ref=e292]: Starter
+                  - generic [ref=e293]:
+                    - generic [ref=e294]: 1,000credits
+                    - generic [ref=e295]: €10.00
+                    - generic [ref=e296]: Great for occasional use
+                  - button "Buy €10.00" [ref=e297]
+                - generic [ref=e299] [cursor=pointer]:
+                  - generic [ref=e301]: Most Popular
+                  - generic [ref=e303]:
+                    - img [ref=e305]
+                    - generic [ref=e307]: Popular
+                  - generic [ref=e308]:
+                    - generic [ref=e309]: 2,500credits
+                    - generic [ref=e310]: €20.00
+                    - generic [ref=e311]: Best value per credit
+                  - button "Buy €20.00" [ref=e312]
+                - generic [ref=e314] [cursor=pointer]:
+                  - generic [ref=e316]:
+                    - img [ref=e318]
+                    - generic [ref=e320]: Power
+                  - generic [ref=e321]:
+                    - generic [ref=e322]: 5,000credits
+                    - generic [ref=e323]: €30.00
+                    - generic [ref=e324]: For heavy job seekers
+                  - button "Buy €30.00" [ref=e325]
+  - alert [ref=e326]
+  - iframe [ref=e327]
+```

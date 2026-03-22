@@ -1,0 +1,117 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [active]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - navigation [ref=e7]:
+            - button "previous" [disabled] [ref=e8]:
+              - img "previous" [ref=e9]
+            - generic [ref=e11]:
+              - generic [ref=e12]: 1/
+              - text: "2"
+            - button "next" [ref=e13] [cursor=pointer]:
+              - img "next" [ref=e14]
+          - img
+        - generic [ref=e16]:
+          - link "Next.js 15.5.12 (outdated) Turbopack" [ref=e17] [cursor=pointer]:
+            - /url: https://nextjs.org/docs/messages/version-staleness
+            - img [ref=e18]
+            - generic "An outdated version detected (latest is 16.2.1), upgrade is highly recommended!" [ref=e20]: Next.js 15.5.12 (outdated)
+            - generic [ref=e21]: Turbopack
+          - img
+      - dialog "Runtime Error" [ref=e23]:
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - generic [ref=e30]: Runtime Error
+              - generic [ref=e31]:
+                - button "Copy Error Info" [ref=e32] [cursor=pointer]:
+                  - img [ref=e33]
+                - button "No related documentation found" [disabled] [ref=e35]:
+                  - img [ref=e36]
+                - link "Learn more about enabling Node.js inspector for server code with Chrome DevTools" [ref=e38] [cursor=pointer]:
+                  - /url: https://nextjs.org/docs/app/building-your-application/configuring/debugging#server-side-code
+                  - img [ref=e39]
+            - paragraph [ref=e48]: Failed to load Stripe.js
+          - generic [ref=e49]:
+            - generic [ref=e50]:
+              - paragraph [ref=e52]:
+                - img [ref=e54]
+                - generic [ref=e57]: src/components/UnifiedCheckout.tsx (23:33) @ <unknown>
+                - button "Open in editor" [ref=e58] [cursor=pointer]:
+                  - img [ref=e60]
+              - generic [ref=e63]:
+                - generic [ref=e64]: "21 | import { CREDIT_PACKAGES } from \"@/config\";"
+                - generic [ref=e65]: 22 |
+                - generic [ref=e66]: "> 23 | const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);"
+                - generic [ref=e67]: "| ^"
+                - generic [ref=e68]: 24 |
+                - generic [ref=e69]: "25 | const elementOptions = {"
+                - generic [ref=e70]: "26 | style: {"
+            - generic [ref=e71]:
+              - generic [ref=e72]:
+                - paragraph [ref=e73]:
+                  - text: Call Stack
+                  - generic [ref=e74]: "99"
+                - button "Show 93 ignore-listed frame(s)" [ref=e75] [cursor=pointer]:
+                  - text: Show 93 ignore-listed frame(s)
+                  - img [ref=e76]
+              - generic [ref=e78]:
+                - generic [ref=e79]:
+                  - text: <unknown>
+                  - button "Open <unknown> in editor" [ref=e80] [cursor=pointer]:
+                    - img [ref=e81]
+                - text: src/components/UnifiedCheckout.tsx (23:33)
+              - generic [ref=e83]:
+                - generic [ref=e84]:
+                  - text: <unknown>
+                  - button "Open <unknown> in editor" [ref=e85] [cursor=pointer]:
+                    - img [ref=e86]
+                - text: src/app/dashboard/[id]/client.tsx (16:1)
+              - generic [ref=e88]:
+                - generic [ref=e89]:
+                  - text: <unknown>
+                  - button "Open <unknown> in editor" [ref=e90] [cursor=pointer]:
+                    - img [ref=e91]
+                - text: src/components/dashboard.tsx (16:1)
+              - generic [ref=e93]:
+                - generic [ref=e94]:
+                  - text: <unknown>
+                  - button "Open <unknown> in editor" [ref=e95] [cursor=pointer]:
+                    - img [ref=e96]
+                - text: src/components/detailsServer.tsx (2:1)
+              - generic [ref=e98]:
+                - generic [ref=e99]:
+                  - text: <unknown>
+                  - button "Open <unknown> in editor" [ref=e100] [cursor=pointer]:
+                    - img [ref=e101]
+                - text: src/components/onboarding.tsx (3929:1)
+              - generic [ref=e103]:
+                - generic [ref=e104]:
+                  - text: <unknown>
+                  - button "Open <unknown> in editor" [ref=e105] [cursor=pointer]:
+                    - img [ref=e106]
+                - text: src/app/dashboard/profile/client.tsx (8:1)
+        - generic [ref=e108]:
+          - generic [ref=e109]: "1"
+          - generic [ref=e110]: "2"
+    - generic [ref=e115] [cursor=pointer]:
+      - button "Open Next.js Dev Tools" [ref=e116]:
+        - img [ref=e117]
+      - generic [ref=e121]:
+        - button "Open issues overlay" [ref=e122]:
+          - generic [ref=e123]:
+            - generic [ref=e124]: "1"
+            - generic [ref=e125]: "2"
+          - generic [ref=e126]:
+            - text: Issue
+            - generic [ref=e127]: s
+        - button "Collapse issues badge" [ref=e128]:
+          - img [ref=e129]
+  - generic [ref=e132]:
+    - 'heading "Application error: a server-side exception has occurred while loading localhost (see the server logs for more information)." [level=2] [ref=e133]'
+    - paragraph [ref=e134]: "Digest: 3929255190"
+```

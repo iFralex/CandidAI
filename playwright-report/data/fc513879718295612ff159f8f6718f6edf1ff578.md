@@ -1,0 +1,88 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [active]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - navigation [ref=e7]:
+            - button "previous" [disabled] [ref=e8]:
+              - img "previous" [ref=e9]
+            - generic [ref=e11]:
+              - generic [ref=e12]: 1/
+              - text: "1"
+            - button "next" [disabled] [ref=e13]:
+              - img "next" [ref=e14]
+          - img
+        - generic [ref=e16]:
+          - link "Next.js 15.5.12 (outdated) Turbopack" [ref=e17]:
+            - /url: https://nextjs.org/docs/messages/version-staleness
+            - img [ref=e18]
+            - generic "An outdated version detected (latest is 16.2.1), upgrade is highly recommended!" [ref=e20]: Next.js 15.5.12 (outdated)
+            - generic [ref=e21]: Turbopack
+          - img
+      - dialog "Runtime Error" [ref=e23]:
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - generic [ref=e29]:
+                - generic [ref=e30]: Runtime Error
+                - generic [ref=e31]: Server
+              - generic [ref=e32]:
+                - button "Copy Error Info" [ref=e33] [cursor=pointer]:
+                  - img [ref=e34]
+                - button "No related documentation found" [disabled] [ref=e36]:
+                  - img [ref=e37]
+                - link "Learn more about enabling Node.js inspector for server code with Chrome DevTools" [ref=e39]:
+                  - /url: https://nextjs.org/docs/app/building-your-application/configuring/debugging#server-side-code
+                  - img [ref=e40]
+            - paragraph [ref=e52]: "5 NOT_FOUND: No document to update: projects/candidai-1bda0/databases/(default)/documents/users/profile-name-uid"
+          - generic [ref=e53]:
+            - generic [ref=e54]:
+              - paragraph [ref=e56]:
+                - img [ref=e58]
+                - generic [ref=e62]: src/app/dashboard/profile/client.tsx (182:13) @ ProfileClient
+                - button "Open in editor" [ref=e63] [cursor=pointer]:
+                  - img [ref=e65]
+              - generic [ref=e68]:
+                - generic [ref=e69]: 180 | <div className="space-y-8 max-w-4xl">
+                - generic [ref=e70]: "181 | {/* Section 1: Basic Info */}"
+                - generic [ref=e71]: "> 182 | <BasicInfoSection defaultName={defaultName} defaultPicture={defaultPicture} />"
+                - generic [ref=e72]: "| ^"
+                - generic [ref=e73]: 183 |
+                - generic [ref=e74]: "184 | {/* Section 2: Email Update */}"
+                - generic [ref=e75]: 185 | <EmailUpdateSection />
+            - generic [ref=e76]:
+              - generic [ref=e77]:
+                - paragraph [ref=e78]:
+                  - text: Call Stack
+                  - generic [ref=e79]: "6"
+                - button "Show 5 ignore-listed frame(s)" [ref=e80] [cursor=pointer]:
+                  - text: Show 5 ignore-listed frame(s)
+                  - img [ref=e81]
+              - generic [ref=e83]:
+                - generic [ref=e84]:
+                  - text: ProfileClient
+                  - button "Open ProfileClient in editor" [ref=e85] [cursor=pointer]:
+                    - img [ref=e86]
+                - text: src/app/dashboard/profile/client.tsx (182:13)
+        - generic [ref=e88]:
+          - generic [ref=e89]: "1"
+          - generic [ref=e90]: "2"
+    - generic [ref=e95] [cursor=pointer]:
+      - button "Open Next.js Dev Tools" [ref=e96]:
+        - img [ref=e97]
+      - generic [ref=e102]:
+        - button "Open issues overlay" [ref=e103]:
+          - generic [ref=e104]:
+            - generic [ref=e105]: "0"
+            - generic [ref=e106]: "1"
+          - generic [ref=e107]: Issue
+        - button "Collapse issues badge" [ref=e108]:
+          - img [ref=e109]
+  - iframe [ref=e111]
+  - generic [ref=e113]:
+    - 'heading "Application error: a server-side exception has occurred while loading localhost (see the server logs for more information)." [level=2] [ref=e114]'
+    - paragraph [ref=e115]: "Digest: 1591844770"
+```

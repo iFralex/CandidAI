@@ -35,27 +35,35 @@ async function mockUser(
   page: Page,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
 }
 
 async function mockAccount(page: Page) {
+  const accountData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {},
-      }),
+      body: JSON.stringify(accountData),
     });
   });
 }
@@ -91,14 +99,15 @@ function buildMockPayments() {
 }
 
 async function mockBillingHistory(page: Page, payments = buildMockPayments()) {
+  const billingData = { success: true, payments };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/billing', response: billingData },
+  });
   await page.route("**/api/protected/billing**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        payments,
-      }),
+      body: JSON.stringify(billingData),
     });
   });
 }
@@ -262,7 +271,7 @@ test.describe("Billing - Payment Row Data", () => {
 
     // "succeeded" status badge should be visible in the table
     await expect(
-      page.getByText("succeeded")
+      page.getByText("succeeded").first()
     ).toBeVisible({ timeout: 15000 });
   });
 

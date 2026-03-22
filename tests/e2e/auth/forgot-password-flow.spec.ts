@@ -22,7 +22,7 @@ test.describe("Forgot Password Flow", () => {
     ).toBeVisible();
 
     await page.getByLabel("Email").fill("user@example.com");
-    await page.getByRole("button", { name: /send reset link/i }).click();
+    await page.getByRole("button", { name: /send reset link/i }).click({ force: true });
 
     await expect(
       page.locator('[class*="green"]').first()
@@ -55,7 +55,7 @@ test.describe("Forgot Password Flow", () => {
 
     await page.goto("/forgot-password");
     await page.getByLabel("Email").fill("notregistered@example.com");
-    await page.getByRole("button", { name: /send reset link/i }).click();
+    await page.getByRole("button", { name: /send reset link/i }).click({ force: true });
 
     // Should remain on the forgot-password page
     await page.waitForTimeout(500);

@@ -36,27 +36,35 @@ async function mockUser(
   page: Page,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
 }
 
 async function mockAccount(page: Page) {
+  const accountData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {},
-      }),
+      body: JSON.stringify(accountData),
     });
   });
 }
@@ -102,6 +110,12 @@ async function injectStripeMock(
 
       var mockStripe = {
         elements: function(options) { return mockElements; },
+        createToken: function(options) {
+          return Promise.resolve({
+            token: { id: 'tok_mock_test' },
+            error: null,
+          });
+        },
         createPaymentMethod: function(options) {
           return Promise.resolve({
             paymentMethod: { id: 'pm_mock_plan_4242_123' },
@@ -275,7 +289,7 @@ test.describe("Plan & Credits - Plan Upgrade Payment Flow", () => {
       .click();
 
     await expect(
-      page.getByText(new RegExp(TEST_USER.email, "i"))
+      page.getByText(new RegExp(TEST_USER.email, "i")).first()
     ).toBeVisible({ timeout: 15000 });
   });
 
@@ -338,13 +352,21 @@ test.describe("Plan & Credits - Header Badge After Plan Purchase", () => {
     await page.goto("/dashboard/plan-and-credits");
 
     // Credits badge shows 150 initially
-    await expect(page.getByText("150")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("150").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("header shows updated credits after Pro plan purchase and reload", async ({
     page,
   }) => {
     let callCount = 0;
+
+    // Set __playwright_user__ cookie so the dashboard layout SSR can authenticate
+    await page.context().addCookies([{
+      name: '__playwright_user__',
+      value: Buffer.from(JSON.stringify(buildMockUser({ credits: 150, plan: 'base' }))).toString('base64'),
+      domain: 'localhost',
+      path: '/',
+    }]);
 
     // First call: user is on base plan with 150 credits
     // After purchase: Pro plan gives 1000 credits + existing 150 = 1150
@@ -367,7 +389,7 @@ test.describe("Plan & Credits - Header Badge After Plan Purchase", () => {
     await mockCreatePaymentSuccess(page);
 
     await page.goto("/dashboard/plan-and-credits");
-    await expect(page.getByText("150")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("150").first()).toBeVisible({ timeout: 15000 });
 
     // Purchase Pro plan
     const buyPlanButtons = page.getByRole("button", { name: /Buy Plan/i });
@@ -377,19 +399,27 @@ test.describe("Plan & Credits - Header Badge After Plan Purchase", () => {
       .getByRole("dialog")
       .getByRole("button", { name: /Pay/i })
       .click();
-    await expect(page.getByText(/Payment successful!/i)).toBeVisible({
+    await expect(page.getByText(/Payment successful!/i).first()).toBeVisible({
       timeout: 15000,
     });
 
     // Reload: second API call returns updated credits
     await page.reload();
-    await expect(page.getByText("1150")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("1150").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("header shows updated credits after Ultra plan purchase and reload", async ({
     page,
   }) => {
     let callCount = 0;
+
+    // Set __playwright_user__ cookie so the dashboard layout SSR can authenticate
+    await page.context().addCookies([{
+      name: '__playwright_user__',
+      value: Buffer.from(JSON.stringify(buildMockUser({ credits: 150, plan: 'base' }))).toString('base64'),
+      domain: 'localhost',
+      path: '/',
+    }]);
 
     // Ultra plan gives 2500 credits
     await page.route("**/api/protected/user**", async (route) => {
@@ -411,7 +441,7 @@ test.describe("Plan & Credits - Header Badge After Plan Purchase", () => {
     await mockCreatePaymentSuccess(page);
 
     await page.goto("/dashboard/plan-and-credits");
-    await expect(page.getByText("150")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("150").first()).toBeVisible({ timeout: 15000 });
 
     const buyPlanButtons = page.getByRole("button", { name: /Buy Plan/i });
     await buyPlanButtons.nth(2).click();
@@ -419,12 +449,12 @@ test.describe("Plan & Credits - Header Badge After Plan Purchase", () => {
       .getByRole("dialog")
       .getByRole("button", { name: /Pay/i })
       .click();
-    await expect(page.getByText(/Payment successful!/i)).toBeVisible({
+    await expect(page.getByText(/Payment successful!/i).first()).toBeVisible({
       timeout: 15000,
     });
 
     await page.reload();
-    await expect(page.getByText("2650")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("2650").first()).toBeVisible({ timeout: 15000 });
   });
 });
 
@@ -451,6 +481,14 @@ test.describe("Plan & Credits - maxCompanies After Plan Purchase", () => {
     page,
   }) => {
     let callCount = 0;
+
+    // Set __playwright_user__ cookie so the dashboard layout SSR can authenticate
+    await page.context().addCookies([{
+      name: '__playwright_user__',
+      value: Buffer.from(JSON.stringify(buildMockUser({ plan: 'base', maxCompanies: 20 }))).toString('base64'),
+      domain: 'localhost',
+      path: '/',
+    }]);
 
     await page.route("**/api/protected/user**", async (route) => {
       callCount++;
@@ -479,7 +517,7 @@ test.describe("Plan & Credits - maxCompanies After Plan Purchase", () => {
       .getByRole("dialog")
       .getByRole("button", { name: /Pay/i })
       .click();
-    await expect(page.getByText(/Payment successful!/i)).toBeVisible({
+    await expect(page.getByText(/Payment successful!/i).first()).toBeVisible({
       timeout: 15000,
     });
 

@@ -51,71 +51,96 @@ async function setupAuthMocks(page: Page) {
     }
   });
 
+  const authUserData = {
+    uid: TEST_USER.uid,
+    name: TEST_USER.name,
+    email: TEST_USER.email,
+    onboardingStep: 50,
+    plan: "base",
+    credits: 100,
+    emailVerified: true,
+  };
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(authUserData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: {
-          uid: TEST_USER.uid,
-          name: TEST_USER.name,
-          email: TEST_USER.email,
-          onboardingStep: 50,
-          plan: "base",
-          credits: 100,
-          emailVerified: true,
-        },
+        user: authUserData,
       }),
     });
   });
 }
 
 async function setupDashboardMocks(page: Page) {
+  const dashUserData = {
+    uid: TEST_USER.uid,
+    name: TEST_USER.name,
+    email: TEST_USER.email,
+    onboardingStep: 50,
+    plan: "base",
+    credits: 100,
+    emailVerified: true,
+  };
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(dashUserData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: {
-          uid: TEST_USER.uid,
-          name: TEST_USER.name,
-          email: TEST_USER.email,
-          onboardingStep: 50,
-          plan: "base",
-          credits: 100,
-          emailVerified: true,
-        },
+        user: dashUserData,
       }),
     });
   });
 
+  const accountData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ success: true, data: {} }),
+      body: JSON.stringify(accountData),
     });
   });
 }
 
 async function setupOnboardingMocks(page: Page) {
+  const onboardingUserData = {
+    uid: TEST_USER.uid,
+    name: TEST_USER.name,
+    email: TEST_USER.email,
+    onboardingStep: 0,
+    plan: "free_trial",
+    credits: 0,
+    emailVerified: true,
+  };
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(onboardingUserData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: {
-          uid: TEST_USER.uid,
-          name: TEST_USER.name,
-          email: TEST_USER.email,
-          onboardingStep: 0,
-          plan: "free_trial",
-          credits: 0,
-          emailVerified: true,
-        },
+        user: onboardingUserData,
       }),
     });
   });
@@ -149,6 +174,12 @@ async function injectStripeMock(
 
       var mockStripe = {
         elements: function(options) { return mockElements; },
+        createToken: function(options) {
+          return Promise.resolve({
+            token: { id: 'tok_mock_cross_browser' },
+            error: null,
+          });
+        },
         createPaymentMethod: function(options) {
           return Promise.resolve({
             paymentMethod: { id: 'pm_mock_cross_browser_4242' },
@@ -234,7 +265,8 @@ test.describe("Cross-Browser: Auth - Login Form", () => {
   test("register link navigates to /register on all browsers", async ({ page }) => {
     await page.goto("/login");
 
-    const registerLink = page.getByRole("link", { name: /register/i });
+    // The login page has a "Sign up" link pointing to /register
+    const registerLink = page.getByRole("link", { name: /sign up/i });
     await expect(registerLink).toBeVisible();
     await expect(registerLink).toHaveAttribute("href", /register/);
   });
@@ -243,7 +275,7 @@ test.describe("Cross-Browser: Auth - Login Form", () => {
     await page.goto("/login");
 
     const forgotLink = page.getByRole("link", {
-      name: /forgot password/i,
+      name: /forgot.*password/i,
     });
     await expect(forgotLink).toBeVisible();
     await expect(forgotLink).toHaveAttribute("href", /forgot-password/);
@@ -260,9 +292,10 @@ test.describe("Cross-Browser: Auth - Register Form", () => {
 
     await expect(page.getByLabel(/name/i)).toBeVisible();
     await expect(page.getByLabel(/email/i)).toBeVisible();
-    await expect(page.getByLabel(/password/i)).toBeVisible();
+    // Use exact match to avoid matching "Confirm Password" label too
+    await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /register/i })
+      page.getByRole("button", { name: /create account/i })
     ).toBeVisible();
   });
 
@@ -271,11 +304,12 @@ test.describe("Cross-Browser: Auth - Register Form", () => {
 
     await page.getByLabel(/name/i).fill(TEST_USER.name);
     await page.getByLabel(/email/i).fill(TEST_USER.email);
-    await page.getByLabel(/password/i).fill(TEST_USER.password);
+    // Use exact match to avoid matching "Confirm Password" label too
+    await page.getByLabel("Password", { exact: true }).fill(TEST_USER.password);
 
     await expect(page.getByLabel(/name/i)).toHaveValue(TEST_USER.name);
     await expect(page.getByLabel(/email/i)).toHaveValue(TEST_USER.email);
-    await expect(page.getByLabel(/password/i)).toHaveValue(
+    await expect(page.getByLabel("Password", { exact: true })).toHaveValue(
       TEST_USER.password
     );
   });
@@ -306,7 +340,7 @@ test.describe("Cross-Browser: Dashboard - Navigation", () => {
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText(TEST_USER.name)).toBeVisible({
+    await expect(page.getByText(TEST_USER.name).first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -316,9 +350,9 @@ test.describe("Cross-Browser: Dashboard - Navigation", () => {
 
     await page.goto("/dashboard");
 
-    // Sidebar should be visible
-    const nav = page.getByRole("navigation");
-    await expect(nav).toBeVisible({ timeout: 15000 });
+    // Sidebar should be visible (uses data-sidebar attribute from Shadcn UI)
+    const sidebar = page.locator('[data-sidebar="sidebar"]').first();
+    await expect(sidebar).toBeVisible({ timeout: 15000 });
   });
 });
 
@@ -453,14 +487,14 @@ test.describe("Cross-Browser: Stripe Elements", () => {
       .locator("section")
       .filter({ hasText: /Top Up Credits/i });
     await creditSection.getByRole("button", { name: /Buy/i }).first().click();
-    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 15000 });
 
-    await page
-      .getByRole("dialog")
-      .getByRole("button", { name: /Pay/i })
-      .click();
+    const payBtn = page.getByRole("dialog").getByRole("button", { name: /Pay/i });
+    await expect(payBtn).toBeVisible({ timeout: 15000 });
+    // Wait for Stripe Elements to initialize fully before clicking Pay
+    await page.waitForTimeout(1000);
+    await payBtn.click();
 
-    await expect(page.getByText(/Payment successful!/i)).toBeVisible({
+    await expect(page.getByText(/Payment successful!/i).first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -489,12 +523,13 @@ test.describe("Cross-Browser: Stripe Elements", () => {
     await creditSection.getByRole("button", { name: /Buy/i }).first().click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 15000 });
 
-    await page
-      .getByRole("dialog")
-      .getByRole("button", { name: /Pay/i })
-      .click();
+    const payBtnError = page.getByRole("dialog").getByRole("button", { name: /Pay/i });
+    await expect(payBtnError).toBeVisible({ timeout: 15000 });
+    // Wait for Stripe Elements to initialize fully before clicking Pay
+    await page.waitForTimeout(1000);
+    await payBtnError.click();
 
-    await expect(page.getByText(/Your card was declined/i)).toBeVisible({
+    await expect(page.getByText(/Your card was declined/i).first()).toBeVisible({
       timeout: 15000,
     });
   });

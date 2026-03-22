@@ -1,0 +1,173 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - img "Logo" [ref=e11]
+        - generic [ref=e12]: CandidAI
+      - list [ref=e16]:
+        - listitem [ref=e17]:
+          - link "Dashboard" [ref=e18]:
+            - /url: /dashboard
+            - img [ref=e19]
+            - generic [ref=e22]: Dashboard
+        - listitem [ref=e23]:
+          - link "Send All" [ref=e24]:
+            - /url: /dashboard/send-all
+            - img [ref=e25]
+            - generic [ref=e27]: Send All
+        - listitem [ref=e28]:
+          - link "Follow Ups" [ref=e29]:
+            - /url: /dashboard/follow-ups
+            - img [ref=e30]
+            - generic [ref=e33]: Follow Ups
+        - listitem [ref=e34]:
+          - link "Plan & Credits" [ref=e35]:
+            - /url: /dashboard/plan-and-credits
+            - img [ref=e36]
+            - generic [ref=e38]: Plan & Credits
+        - listitem [ref=e39]:
+          - link "Settings" [ref=e40]:
+            - /url: /dashboard/settings
+            - img [ref=e41]
+            - generic [ref=e44]: Settings
+      - generic [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: P
+        - generic [ref=e49]:
+          - paragraph [ref=e50]: Profile Pic User
+          - paragraph [ref=e51]: profile-pic@example.com
+    - generic [ref=e52]:
+      - banner [ref=e53]:
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - button "Toggle Sidebar" [ref=e56]:
+              - img [ref=e57]
+              - generic [ref=e59]: Toggle Sidebar
+            - heading "Dashboard" [level=1] [ref=e61]
+          - generic [ref=e62]:
+            - generic [ref=e64]:
+              - img [ref=e65]
+              - generic [ref=e67]: "200"
+            - link [ref=e68]:
+              - /url: /dashboard/plan-and-credits
+              - button "Buy credits or upgrade plan" [ref=e69]:
+                - img [ref=e70]
+      - main [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - heading "Profile" [level=1] [ref=e74]
+            - paragraph [ref=e75]: Manage your profile information and account preferences.
+          - generic [ref=e76]:
+            - generic [ref=e77]:
+              - generic [ref=e78]:
+                - img [ref=e79]
+                - heading "Basic Info" [level=2] [ref=e82]
+              - generic [ref=e83]:
+                - img "Profile" [ref=e86] [cursor=pointer]
+                - generic [ref=e87]:
+                  - paragraph [ref=e88]: Profile Picture
+                  - button "Upload new photo" [ref=e89]
+              - generic [ref=e90]:
+                - generic [ref=e91]: Display Name
+                - textbox "Display Name" [ref=e94]:
+                  - /placeholder: Your name
+              - button "Save Changes" [ref=e96]
+            - generic [ref=e97]:
+              - generic [ref=e98]:
+                - img [ref=e99]
+                - heading "Email Address" [level=2] [ref=e102]
+              - paragraph [ref=e103]: Enter a new email address. A verification link will be sent to the new address.
+              - generic [ref=e104]:
+                - generic [ref=e105]: New Email Address
+                - textbox "New Email Address" [ref=e108]:
+                  - /placeholder: new@example.com
+              - button "Update Email" [disabled] [ref=e110]
+            - generic [ref=e111]:
+              - generic [ref=e112]:
+                - img [ref=e113]
+                - heading "Account Data" [level=2] [ref=e116]
+              - generic [ref=e117]:
+                - generic [ref=e118]:
+                  - heading "User Profile" [level=3] [ref=e119]
+                  - paragraph [ref=e120]: Update your skills, experience, and education.
+                - generic [ref=e121]:
+                  - generic [ref=e122]:
+                    - heading "Connect Your LinkedIn Profile" [level=2] [ref=e123]
+                    - paragraph [ref=e124]: Our AI will analyze your profile to understand your background and create the perfect recruiter matching strategy.
+                  - generic [ref=e125]:
+                    - generic [ref=e126]:
+                      - generic [ref=e127]: LinkedIn Profile URL
+                      - generic [ref=e128]:
+                        - img [ref=e130]
+                        - textbox "e.g. https://www.linkedin.com/in/..." [ref=e133]
+                    - generic [ref=e134]:
+                      - generic [ref=e135]: Upload Your CV
+                      - generic [ref=e137] [cursor=pointer]:
+                        - img [ref=e138]
+                        - generic [ref=e141]: Click or drag your CV here
+                        - generic [ref=e142]: PDF, DOC, DOCX up to 5MB
+                    - generic [ref=e143]:
+                      - heading "🔒 Privacy & Security" [level=3] [ref=e144]
+                      - paragraph [ref=e145]: We only read your public profile information and your uploaded CV to understand your background. We never share your data without consent.
+                    - button "Analyze My Profile" [disabled] [ref=e147]:
+                      - img [ref=e148]
+                      - generic [ref=e156]: Analyze My Profile
+              - generic [ref=e157]:
+                - generic [ref=e158]:
+                  - heading "Default Recruiter Criteria" [level=3] [ref=e159]
+                  - paragraph [ref=e160]: Adjust the filters used to find recruiters.
+                - generic [ref=e162]:
+                  - generic [ref=e163]:
+                    - generic [ref=e164]:
+                      - heading "Strategy Priority Order" [level=3] [ref=e165]:
+                        - img [ref=e167]
+                        - generic [ref=e171]: Strategy Priority Order
+                      - generic: 0 / 30 strategies
+                    - list [ref=e172]:
+                      - button "Add Strategy Create a new query" [ref=e173]:
+                        - generic [ref=e174]:
+                          - img [ref=e178]
+                          - generic [ref=e179]:
+                            - generic [ref=e180]: Add Strategy
+                            - generic [ref=e181]: Create a new query
+                      - button "Add Strategy Create a new query" [ref=e183]:
+                        - generic [ref=e184]:
+                          - img [ref=e188]
+                          - generic [ref=e189]:
+                            - generic [ref=e190]: Add Strategy
+                            - generic [ref=e191]: Create a new query
+                  - generic [ref=e193]:
+                    - button "Reset to Default" [disabled] [ref=e194]:
+                      - img [ref=e196]
+                      - generic [ref=e199]: Reset to Default
+                    - button "Save Changes" [ref=e200]:
+                      - generic [ref=e201]: Save Changes
+              - generic [ref=e202]:
+                - generic [ref=e203]:
+                  - heading "Default Custom Prompt" [level=3] [ref=e204]
+                  - paragraph [ref=e205]: Set the default position description and custom instructions for email generation.
+                - generic [ref=e206]:
+                  - generic [ref=e207]:
+                    - heading "Target Position Description" [level=3] [ref=e208]
+                    - textbox "I want to be..." [ref=e209]
+                  - generic [ref=e210]:
+                    - heading "Custom Instructions" [level=3] [ref=e211]
+                    - textbox "Anything you want to specify; your instructions will be added in the mail generation prompt." [ref=e212]
+                - generic [ref=e213]:
+                  - button "Save Changes" [disabled] [ref=e214]:
+                    - img [ref=e215]
+                    - generic [ref=e217]: Save Changes
+                  - generic [ref=e218]:
+                    - generic [ref=e219]:
+                      - img [ref=e220]
+                      - generic [ref=e223]: "Processing: 24hrs - 7 days"
+                    - generic [ref=e224]:
+                      - img [ref=e225]
+                      - generic [ref=e228]: Email updates included
+                    - generic [ref=e229]:
+                      - img [ref=e230]
+                      - generic [ref=e232]: Premium queue priority
+  - alert [ref=e233]
+```

@@ -1,0 +1,18 @@
+0 verbose cli /usr/bin/node /usr/bin/npm
+1 info using npm@11.6.3
+2 info using node@v24.13.0
+3 silly config load:file:/usr/lib/node_modules/npm/npmrc
+4 silly config load:file:/workspace/.npmrc
+5 silly config load:file:/home/app/.npmrc
+6 silly config load:file:/etc/npmrc
+7 verbose title npm run test:unit
+8 verbose argv "--cache" "/workspace/.npm-cache" "run" "test:unit"
+9 verbose logfile logs-max:10 dir:/workspace/.npm-cache/_logs/2026-03-15T05_58_47_554Z-
+10 verbose logfile /workspace/.npm-cache/_logs/2026-03-15T05_58_47_554Z-debug-0.log
+11 silly logfile done cleaning log files
+12 verbose cwd /workspace
+13 verbose os Linux 6.12.5-linuxkit
+14 verbose node v24.13.0
+15 verbose npm  v11.6.3
+16 verbose exit 0
+17 info ok

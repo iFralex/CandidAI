@@ -1,7 +1,3 @@
-Hai ragione, mi scuso per l'errore. Nel tentativo di formattare il testo, alcuni punti elenco erano stati accorpati riducendo il numero totale di checkbox.
-
-Ecco la traduzione integrale e fedele di ogni singolo punto del file originale, senza alcuna sintesi, mantenendo il rapporto 1:1 tra i contenuti originali e i task, seguendo rigorosamente il formato richiesto.
-
 # Comprehensive Test Plan — CandidAI
 
 ## Overview

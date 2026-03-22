@@ -1,0 +1,49 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - banner [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - button "Toggle Sidebar" [ref=e8]:
+            - img [ref=e9]
+            - generic [ref=e11]: Toggle Sidebar
+          - heading "Dashboard" [level=1] [ref=e13]
+        - generic [ref=e14]:
+          - generic [ref=e16]:
+            - img [ref=e17]
+            - generic [ref=e19]: "100"
+          - link [ref=e20] [cursor=pointer]:
+            - /url: /dashboard/plan-and-credits
+            - button "Buy credits or upgrade plan" [ref=e21]:
+              - img [ref=e22]
+    - main [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - heading "Settings" [level=1] [ref=e26]
+          - paragraph [ref=e27]: Manage your notification preferences and account settings.
+        - generic [ref=e28]:
+          - generic [ref=e29]:
+            - generic [ref=e30]:
+              - heading "Email Preferences" [level=2] [ref=e31]
+              - paragraph [ref=e32]: Control how we communicate with you.
+            - generic [ref=e33]:
+              - generic [ref=e34]:
+                - generic [ref=e35]: Marketing Emails
+                - paragraph [ref=e36]: Receive updates, tips, and promotional offers from CandidAI.
+              - switch "Marketing Emails" [checked] [ref=e37] [cursor=pointer]
+          - generic [ref=e38]:
+            - generic [ref=e39]:
+              - heading "Reminder Emails" [level=2] [ref=e40]
+              - paragraph [ref=e41]: How often should we remind you to follow up on sent emails.
+            - generic [ref=e42]:
+              - generic [ref=e43]: Reminder Frequency
+              - combobox [ref=e44]:
+                - generic: Weekly
+                - img
+          - button "Save Settings" [ref=e46]
+  - button "Open Next.js Dev Tools" [ref=e52] [cursor=pointer]:
+    - img [ref=e53]
+  - alert [ref=e56]
+```

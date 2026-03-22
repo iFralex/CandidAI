@@ -34,44 +34,63 @@ async function mockUser(
   page: Page,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
 }
 
 async function mockResults(page: Page) {
+  const resultsData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/results', response: resultsData },
+  });
   await page.route("**/api/protected/results**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ success: true, data: {} }),
+      body: JSON.stringify(resultsData),
     });
   });
 }
 
 async function mockAccount(page: Page) {
+  const accountData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ success: true, data: {} }),
+      body: JSON.stringify(accountData),
     });
   });
 }
 
 async function mockEmails(page: Page) {
+  const emailsData = { success: true, data: [] };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/emails', response: emailsData },
+  });
   await page.route("**/api/protected/emails**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ success: true, data: [] }),
+      body: JSON.stringify(emailsData),
     });
   });
 }
@@ -287,7 +306,7 @@ test.describe("Sidebar - Credit Badge", () => {
     await page.goto("/dashboard");
 
     // The header has a credit badge showing the credit count
-    await expect(page.getByText("250")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("250").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("credit badge shows updated credits after navigating to plan page", async ({
@@ -298,7 +317,7 @@ test.describe("Sidebar - Credit Badge", () => {
     await mockResults(page);
 
     await page.goto("/dashboard");
-    await expect(page.getByText("250")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("250").first()).toBeVisible({ timeout: 15000 });
 
     // Simulate: after purchase, user gets more credits
     // Re-mock user with updated credits
@@ -310,7 +329,7 @@ test.describe("Sidebar - Credit Badge", () => {
     await page.goto("/dashboard");
 
     // Header should now show updated credits
-    await expect(page.getByText("1250")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("1250").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("credit badge is visible in the dashboard header for onboarded user", async ({

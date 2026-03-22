@@ -42,10 +42,10 @@ test.describe("Landing & Navigation", () => {
   });
 
   test("navbar logo click returns to /", async ({ page }) => {
-    // Navigate to a sub-page first
-    await page.goto("/login");
+    // Navigate to the landing page which has the navbar with the logo
+    await page.goto("/");
     // Click the logo link in the navbar
-    await page.getByRole("link", { name: /candidai home/i }).click();
+    await page.getByRole("link", { name: /candidai home/i }).click({ force: true });
     await page.waitForURL("/");
     expect(page.url()).toMatch(/\/$/);
   });

@@ -8,42 +8,56 @@ const TEST_USER = {
 
 async function setupUnverifiedUserMocks(page: Page) {
   // Mock /api/protected/user returning an unverified user
+  const unverifiedUserData = {
+    uid: TEST_USER.uid,
+    name: TEST_USER.name,
+    email: TEST_USER.email,
+    onboardingStep: 50,
+    plan: "base",
+    credits: 100,
+    emailVerified: false,
+  };
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(unverifiedUserData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: {
-          uid: TEST_USER.uid,
-          name: TEST_USER.name,
-          email: TEST_USER.email,
-          onboardingStep: 50,
-          plan: "base",
-          credits: 100,
-          emailVerified: false,
-        },
+        user: unverifiedUserData,
       }),
     });
   });
 }
 
 async function setupVerifiedUserMocks(page: Page) {
+  const verifiedUserData = {
+    uid: TEST_USER.uid,
+    name: TEST_USER.name,
+    email: TEST_USER.email,
+    onboardingStep: 50,
+    plan: "base",
+    credits: 100,
+    emailVerified: true,
+  };
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(verifiedUserData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: {
-          uid: TEST_USER.uid,
-          name: TEST_USER.name,
-          email: TEST_USER.email,
-          onboardingStep: 50,
-          plan: "base",
-          credits: 100,
-          emailVerified: true,
-        },
+        user: verifiedUserData,
       }),
     });
   });

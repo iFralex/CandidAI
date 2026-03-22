@@ -30,27 +30,35 @@ function buildMockUser(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 async function mockUser(page: Page, overrides: Partial<Record<string, unknown>> = {}) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
 }
 
 async function mockAccount(page: Page) {
+  const accountData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {},
-      }),
+      body: JSON.stringify(accountData),
     });
   });
 }
@@ -124,7 +132,7 @@ test.describe("Plan & Credits - Current Plan Display", () => {
 
     await page.goto("/dashboard/plan-and-credits");
 
-    await expect(page.getByText("Base")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Base").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("plan grid shows Pro plan", async ({ page }) => {
@@ -133,7 +141,7 @@ test.describe("Plan & Credits - Current Plan Display", () => {
 
     await page.goto("/dashboard/plan-and-credits");
 
-    await expect(page.getByText("Pro")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Pro").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("plan grid shows Ultra plan", async ({ page }) => {
@@ -142,7 +150,7 @@ test.describe("Plan & Credits - Current Plan Display", () => {
 
     await page.goto("/dashboard/plan-and-credits");
 
-    await expect(page.getByText("Ultra")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Ultra").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("plan grid does NOT show Free Trial plan (excluded)", async ({ page }) => {
@@ -175,7 +183,7 @@ test.describe("Plan & Credits - Current Plan Display", () => {
 
     // Plans display prices (Base is €30, Pro is €69, Ultra is €139)
     // At least one formatted price should be visible
-    await expect(page.getByText(/€/)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/€/).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("plan cards show 'one-time purchase' label", async ({ page }) => {
@@ -253,7 +261,7 @@ test.describe("Plan & Credits - Credit Packages", () => {
     await page.goto("/dashboard/plan-and-credits");
 
     // pkg_1000 shows "1,000 credits"
-    await expect(page.getByText(/1,000/)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/1,000/).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("credit packages section shows 2,500 credits package", async ({ page }) => {
@@ -263,7 +271,7 @@ test.describe("Plan & Credits - Credit Packages", () => {
     await page.goto("/dashboard/plan-and-credits");
 
     // pkg_2500 shows "2,500 credits"
-    await expect(page.getByText(/2,500/)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/2,500/).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("credit packages section shows 5,000 credits package", async ({ page }) => {
@@ -273,7 +281,7 @@ test.describe("Plan & Credits - Credit Packages", () => {
     await page.goto("/dashboard/plan-and-credits");
 
     // pkg_5000 shows "5,000 credits"
-    await expect(page.getByText(/5,000/)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/5,000/).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("credit packages show 'credits' label", async ({ page }) => {
@@ -307,9 +315,9 @@ test.describe("Plan & Credits - Credit Packages", () => {
     await page.goto("/dashboard/plan-and-credits");
 
     // CreditSelector shows labels from packageLabels map
-    await expect(page.getByText("Starter")).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText("Popular")).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText("Power")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Starter").first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Popular").first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Power").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("credit packages show package descriptions", async ({ page }) => {
@@ -357,7 +365,7 @@ test.describe("Plan & Credits - Checkout Dialog", () => {
 
     // Dialog title should say "Purchase <PlanName> Plan"
     await expect(
-      page.getByRole("dialog").getByText(/Purchase/i)
+      page.getByRole("dialog").getByRole("heading", { name: /Purchase/i })
     ).toBeVisible({ timeout: 15000 });
   });
 

@@ -1,0 +1,94 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - banner:
+          - generic:
+            - generic:
+              - button:
+                - img
+                - generic: Toggle Sidebar
+              - generic:
+                - heading [level=1]: Dashboard
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic: "250"
+              - link:
+                - /url: /dashboard/plan-and-credits
+                - button:
+                  - img
+        - main:
+          - generic:
+            - generic:
+              - heading [level=1]: Settings
+              - paragraph: Manage your notification preferences and account settings.
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=2]: Email Preferences
+                  - paragraph: Control how we communicate with you.
+                - generic:
+                  - generic:
+                    - generic: Marketing Emails
+                    - paragraph: Receive updates, tips, and promotional offers from CandidAI.
+                  - switch [checked]
+              - generic:
+                - generic:
+                  - heading [level=2]: Reminder Emails
+                  - paragraph: How often should we remind you to follow up on sent emails.
+                - generic:
+                  - generic: Reminder Frequency
+                  - combobox:
+                    - generic: Weekly
+                    - img
+              - generic:
+                - button: Save Settings
+  - button "Open Next.js Dev Tools" [ref=e6] [cursor=pointer]:
+    - img [ref=e7]
+  - alert
+  - iframe [ref=e12]
+  - dialog "Sidebar" [active] [ref=e14]:
+    - generic [ref=e15]:
+      - heading "Sidebar" [level=2]
+      - paragraph: Displays the mobile sidebar.
+    - generic [ref=e16]:
+      - generic [ref=e19]:
+        - img "Logo" [ref=e21]
+        - generic [ref=e22]: CandidAI
+      - list [ref=e26]:
+        - listitem [ref=e27]:
+          - link "Dashboard" [ref=e28]:
+            - /url: /dashboard
+            - img [ref=e29]
+            - generic [ref=e32]: Dashboard
+        - listitem [ref=e33]:
+          - link "Send All" [ref=e34]:
+            - /url: /dashboard/send-all
+            - img [ref=e35]
+            - generic [ref=e37]: Send All
+        - listitem [ref=e38]:
+          - link "Follow Ups" [ref=e39]:
+            - /url: /dashboard/follow-ups
+            - img [ref=e40]
+            - generic [ref=e43]: Follow Ups
+        - listitem [ref=e44]:
+          - link "Plan & Credits" [ref=e45]:
+            - /url: /dashboard/plan-and-credits
+            - img [ref=e46]
+            - generic [ref=e48]: Plan & Credits
+        - listitem [ref=e49]:
+          - link "Settings" [ref=e50]:
+            - /url: /dashboard/settings
+            - img [ref=e51]
+            - generic [ref=e54]: Settings
+      - generic [ref=e57] [cursor=pointer]:
+        - generic [ref=e58]: S
+        - generic [ref=e59]:
+          - paragraph [ref=e60]: Sidebar Nav User
+          - paragraph [ref=e61]: sidebar-nav@example.com
+```

@@ -36,27 +36,35 @@ async function mockUser(
   page: Page,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
 }
 
 async function mockAccount(page: Page) {
+  const accountData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {},
-      }),
+      body: JSON.stringify(accountData),
     });
   });
 }
@@ -132,7 +140,7 @@ test.describe("Settings - Marketing Emails Toggle", () => {
 
     await page.goto("/dashboard/settings");
 
-    await expect(page.getByText("Marketing Emails")).toBeVisible({
+    await expect(page.getByText("Marketing Emails").first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -143,7 +151,7 @@ test.describe("Settings - Marketing Emails Toggle", () => {
 
     await page.goto("/dashboard/settings");
 
-    await expect(page.getByText("Email Preferences")).toBeVisible({
+    await expect(page.getByText("Email Preferences").first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -304,7 +312,7 @@ test.describe("Settings - Save Settings", () => {
     await expect(saveBtn).toBeVisible({ timeout: 15000 });
     await saveBtn.click();
 
-    await expect(page.getByText("Email Preferences")).toBeVisible({
+    await expect(page.getByText("Email Preferences").first()).toBeVisible({
       timeout: 10000,
     });
   });
@@ -321,7 +329,7 @@ test.describe("Settings - Reminder Frequency", () => {
 
     await page.goto("/dashboard/settings");
 
-    await expect(page.getByText("Reminder Emails")).toBeVisible({
+    await expect(page.getByText("Reminder Emails").first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -332,7 +340,7 @@ test.describe("Settings - Reminder Frequency", () => {
 
     await page.goto("/dashboard/settings");
 
-    await expect(page.getByText("Reminder Frequency")).toBeVisible({
+    await expect(page.getByText("Reminder Frequency").first()).toBeVisible({
       timeout: 15000,
     });
   });

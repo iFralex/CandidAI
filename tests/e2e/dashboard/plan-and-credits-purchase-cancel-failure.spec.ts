@@ -35,27 +35,35 @@ async function mockUser(
   page: Page,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
 }
 
 async function mockAccount(page: Page) {
+  const accountData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {},
-      }),
+      body: JSON.stringify(accountData),
     });
   });
 }
@@ -101,6 +109,12 @@ async function injectStripeMockWithError(page: Page, errorMessage: string) {
 
       var mockStripe = {
         elements: function(options) { return mockElements; },
+        createToken: function(options) {
+          return Promise.resolve({
+            token: { id: 'tok_mock_test' },
+            error: null,
+          });
+        },
         createPaymentMethod: function(options) {
           return Promise.resolve({
             paymentMethod: { id: 'pm_mock_error' },
@@ -160,6 +174,12 @@ async function injectStripeMockSuccess(page: Page) {
 
       var mockStripe = {
         elements: function(options) { return mockElements; },
+        createToken: function(options) {
+          return Promise.resolve({
+            token: { id: 'tok_mock_test' },
+            error: null,
+          });
+        },
         createPaymentMethod: function(options) {
           return Promise.resolve({
             paymentMethod: { id: 'pm_mock_success' },
@@ -238,7 +258,7 @@ test.describe("Plan & Credits - Cancel via Cancel/X Button", () => {
     await page.goto("/dashboard/plan-and-credits");
 
     // Verify initial credit count
-    await expect(page.getByText("200")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("200").first()).toBeVisible({ timeout: 15000 });
 
     await openCreditsDialog(page);
 
@@ -251,7 +271,7 @@ test.describe("Plan & Credits - Cancel via Cancel/X Button", () => {
     await expect(dialog).not.toBeVisible({ timeout: 10000 });
 
     // Credits should still be 200 (no payment made)
-    await expect(page.getByText("200")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("200").first()).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -282,13 +302,13 @@ test.describe("Plan & Credits - Cancel via ESC Key", () => {
     await mockCreatePaymentSuccess(page);
 
     await page.goto("/dashboard/plan-and-credits");
-    await expect(page.getByText("200")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("200").first()).toBeVisible({ timeout: 15000 });
 
     await openCreditsDialog(page);
     await page.keyboard.press("Escape");
 
     await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("200")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("200").first()).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -341,7 +361,7 @@ test.describe("Plan & Credits - Card Declined Error", () => {
     await page.getByRole("dialog").getByRole("button", { name: /Pay/i }).click();
 
     // Wait for error message, dialog should still be open
-    await expect(page.getByText(/Your card was declined/i)).toBeVisible({
+    await expect(page.getByText(/Your card was declined/i).first()).toBeVisible({
       timeout: 15000,
     });
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
@@ -448,7 +468,7 @@ test.describe("Plan & Credits - Cancel After Error", () => {
 
     // Trigger error
     await page.getByRole("dialog").getByRole("button", { name: /Pay/i }).click();
-    await expect(page.getByText(/Your card was declined/i)).toBeVisible({
+    await expect(page.getByText(/Your card was declined/i).first()).toBeVisible({
       timeout: 15000,
     });
 
@@ -471,13 +491,13 @@ test.describe("Plan & Credits - Cancel After Error", () => {
     await mockCreatePaymentSuccess(page);
 
     await page.goto("/dashboard/plan-and-credits");
-    await expect(page.getByText("200")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("200").first()).toBeVisible({ timeout: 15000 });
 
     await openCreditsDialog(page);
 
     // Trigger error
     await page.getByRole("dialog").getByRole("button", { name: /Pay/i }).click();
-    await expect(page.getByText(/Your card was declined/i)).toBeVisible({
+    await expect(page.getByText(/Your card was declined/i).first()).toBeVisible({
       timeout: 15000,
     });
 
@@ -490,7 +510,7 @@ test.describe("Plan & Credits - Cancel After Error", () => {
     await expect(dialog).not.toBeVisible({ timeout: 10000 });
 
     // Credits should still be 200
-    await expect(page.getByText("200")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("200").first()).toBeVisible({ timeout: 10000 });
   });
 
   test("ESC closes dialog after payment error", async ({ page }) => {
@@ -504,7 +524,7 @@ test.describe("Plan & Credits - Cancel After Error", () => {
 
     // Trigger error
     await page.getByRole("dialog").getByRole("button", { name: /Pay/i }).click();
-    await expect(page.getByText(/Your card was declined/i)).toBeVisible({
+    await expect(page.getByText(/Your card was declined/i).first()).toBeVisible({
       timeout: 15000,
     });
 

@@ -26,7 +26,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <Script type="text/javascript" src="https://embeds.iubenda.com/widgets/71eada8f-b797-45de-97dd-e9467691d6b4.js" />
+        {process.env.NODE_ENV === "production" && (
+          <Script type="text/javascript" src="https://embeds.iubenda.com/widgets/71eada8f-b797-45de-97dd-e9467691d6b4.js" />
+        )}
       </head>
       <body
         className={`dark ${geistSans.variable} ${geistMono.variable} antialiased`}

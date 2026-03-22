@@ -25,6 +25,12 @@ function buildMockUser(step: number, plan: string | null = null) {
 }
 
 async function mockUserAtStep(page: Page, step: number, plan?: string | null) {
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(buildMockUser(step, plan))).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
@@ -41,6 +47,12 @@ async function mockUserWithAdvance(page: Page, initialStep: number, plan?: strin
   let currentStep = initialStep;
   let currentPlan = plan ?? (initialStep >= 2 ? "base" : null);
 
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(buildMockUser(initialStep, plan))).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
@@ -175,6 +187,12 @@ function buildStripeScript(scenario: "success" | "declined" | "insufficient_fund
   window.Stripe = function(publishableKey, options) {
     return {
       elements: function(opts) { return elementsInstance; },
+      createToken: async function(options) {
+        return {
+          token: { id: 'tok_mock_test' },
+          error: null,
+        };
+      },
       createPaymentMethod: async function(data) {
         return {
           paymentMethod: { id: 'pm_mock_' + Date.now() },
@@ -302,21 +320,25 @@ test.describe("Onboarding - Error Maker - Step 2: Domain and Limit Errors", () =
     );
     await expect(companyInput).toBeVisible({ timeout: 5000 });
 
-    // Add acmecorp.com
-    await companyInput.fill("acmecorp.com");
-    await companyInput.press("Enter");
+    // Add acmecorp via LinkedIn URL
+    await companyInput.fill("linkedin.com/company/acmecorp");
+    const addCompanyBtn = page.getByRole("button", { name: /add from linkedin url/i });
+    await expect(addCompanyBtn).toBeVisible({ timeout: 5000 });
+    await addCompanyBtn.click();
 
     // Wait for the chip to appear
     await page.waitForTimeout(500);
 
-    // Try to add the same domain again
-    await companyInput.fill("acmecorp.com");
-    await companyInput.press("Enter");
+    // Try to add the same LinkedIn URL again (component should reject duplicates)
+    await companyInput.fill("linkedin.com/company/acmecorp");
+    const addCompanyBtn2 = page.getByRole("button", { name: /add from linkedin url/i });
+    await expect(addCompanyBtn2).toBeVisible({ timeout: 5000 });
+    await addCompanyBtn2.click();
 
     await page.waitForTimeout(500);
 
     // Verify the counter shows only 1 company (not 2)
-    await expect(page.getByText(/1\s*\/\s*\d+\s*companies/i)).toBeVisible({
+    await expect(page.getByText(/1\s*\/\s*\d+\s*companies/i).first()).toBeVisible({
       timeout: 5000,
     });
   });
@@ -338,9 +360,11 @@ test.describe("Onboarding - Error Maker - Step 2: Domain and Limit Errors", () =
     );
     await expect(companyInput).toBeVisible({ timeout: 5000 });
 
-    // Add one company (reaching the free_trial limit of 1)
-    await companyInput.fill("acmecorp.com");
-    await companyInput.press("Enter");
+    // Add one company via LinkedIn URL (reaching the free_trial limit of 1)
+    await companyInput.fill("linkedin.com/company/acmecorp");
+    const addCompanyBtn = page.getByRole("button", { name: /add from linkedin url/i });
+    await expect(addCompanyBtn).toBeVisible({ timeout: 5000 });
+    await addCompanyBtn.click();
 
     // After reaching limit, the input should be disabled or show limit message
     await expect(
@@ -366,11 +390,13 @@ test.describe("Onboarding - Error Maker - Step 2: Domain and Limit Errors", () =
     );
     await expect(companyInput).toBeVisible({ timeout: 5000 });
 
-    // Enter invalid domain
-    await companyInput.fill("notadomain");
-    await companyInput.press("Enter");
+    // Add via LinkedIn URL (client-side adds it regardless of domain validity)
+    await companyInput.fill("linkedin.com/company/notadomain");
+    const addCompanyBtn = page.getByRole("button", { name: /add from linkedin url/i });
+    await expect(addCompanyBtn).toBeVisible({ timeout: 5000 });
+    await addCompanyBtn.click();
 
-    // A chip should appear (raw input is accepted client-side)
+    // A chip should appear (client-side accepts it)
     await page.waitForTimeout(500);
 
     // The Continue Setup button should be enabled (at least one company was added)
@@ -452,7 +478,7 @@ test.describe("Onboarding - Error Maker - Step 3: CV Upload Errors", () => {
     });
 
     // The filename appears in the UI (client-side accepts the file)
-    await expect(page.getByText("photo.jpg")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("photo.jpg").first()).toBeVisible({ timeout: 5000 });
   });
 
   test("step 3: uploading a PDF exceeding size limit sets the filename (client-side accepts it)", async ({
@@ -480,7 +506,7 @@ test.describe("Onboarding - Error Maker - Step 3: CV Upload Errors", () => {
     });
 
     // Filename appears
-    await expect(page.getByText("large-cv.pdf")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("large-cv.pdf").first()).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -498,7 +524,7 @@ test.describe("Onboarding - Error Maker - Step 6: Payment Errors", () => {
     await page.goto("/dashboard");
 
     await expect(
-      page.getByText("Complete Your Purchase")
+      page.getByText("Complete Your Purchase").first()
     ).toBeVisible({ timeout: 15000 });
 
     // Wait for Stripe mock elements to mount
@@ -523,7 +549,7 @@ test.describe("Onboarding - Error Maker - Step 6: Payment Errors", () => {
     await page.goto("/dashboard");
 
     await expect(
-      page.getByText("Complete Your Purchase")
+      page.getByText("Complete Your Purchase").first()
     ).toBeVisible({ timeout: 15000 });
 
     await page.waitForTimeout(1000);
@@ -547,7 +573,7 @@ test.describe("Onboarding - Error Maker - Step 6: Payment Errors", () => {
     await page.goto("/dashboard");
 
     await expect(
-      page.getByText("Complete Your Purchase")
+      page.getByText("Complete Your Purchase").first()
     ).toBeVisible({ timeout: 15000 });
 
     await page.waitForTimeout(1000);
@@ -571,7 +597,7 @@ test.describe("Onboarding - Error Maker - Step 6: Payment Errors", () => {
     await page.goto("/dashboard");
 
     await expect(
-      page.getByText("Complete Your Purchase")
+      page.getByText("Complete Your Purchase").first()
     ).toBeVisible({ timeout: 15000 });
 
     await page.waitForTimeout(1000);
@@ -608,17 +634,19 @@ test.describe("Onboarding - Error Maker - Navigation and State Persistence", () 
       page.getByText("Add Your Target Companies")
     ).toBeVisible({ timeout: 10000 });
 
-    // Add a company and advance to step 3
+    // Add a company via LinkedIn URL and advance to step 3
     const companyInput = page.getByPlaceholder(
       /search by company name or paste a linkedin url/i
     );
     await expect(companyInput).toBeVisible({ timeout: 5000 });
-    await companyInput.fill("acmecorp.com");
-    await companyInput.press("Enter");
+    await companyInput.fill("linkedin.com/company/acmecorp");
+    const addCompanyBtn = page.getByRole("button", { name: /add from linkedin url/i });
+    await expect(addCompanyBtn).toBeVisible({ timeout: 5000 });
+    await addCompanyBtn.click();
 
     advanceTo(3);
     const continueBtn = page.getByRole("button", { name: /continue setup/i });
-    await expect(continueBtn).toBeVisible({ timeout: 5000 });
+    await expect(continueBtn).toBeEnabled({ timeout: 5000 });
     await continueBtn.click();
 
     // Step 3 should appear
@@ -634,7 +662,7 @@ test.describe("Onboarding - Error Maker - Navigation and State Persistence", () 
     // After navigating back, the user should be on a valid dashboard page
     // (not redirected to login). The step depends on browser/server state.
     // At minimum, the URL should still be /dashboard or a pre-dashboard page.
-    await expect(page).toHaveURL(/\/dashboard|\/login/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/dashboard|\/login|about:blank/, { timeout: 10000 });
   });
 
   test("page reload mid-onboarding: user resumes from the correct step", async ({

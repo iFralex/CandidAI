@@ -27,6 +27,12 @@ function buildMockUser(step: number, plan: string | null = null) {
 }
 
 async function mockUserAtStep(page: Page, step: number, plan?: string | null) {
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(buildMockUser(step, plan))).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
@@ -168,7 +174,7 @@ test.describe("Onboarding - Step Navigation - Fully Onboarded User (step=50)", (
     await page.goto("/dashboard");
 
     // Main dashboard header should be visible
-    await expect(page.getByText("Dashboard")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Dashboard").first()).toBeVisible({ timeout: 10000 });
 
     // Onboarding UI should NOT be present
     await expect(
@@ -205,7 +211,7 @@ test.describe("Onboarding - Step Navigation - Fully Onboarded User (step=50)", (
     await page.goto("/dashboard");
 
     // Main dashboard, not onboarding
-    await expect(page.getByText("Dashboard")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Dashboard").first()).toBeVisible({ timeout: 10000 });
 
     await expect(
       page.getByText("Choose Your Success Plan")
@@ -241,13 +247,15 @@ test.describe("Onboarding - Step Navigation - Completed Steps Not Shown Again", 
   test("user at step 4 does not see step 1, 2, or 3 content", async ({
     page,
   }) => {
-    await mockUserAtStep(page, 4, "free_trial");
+    // Use "pro" plan: for free_trial, step 4 auto-executes server-side (submitQueries)
+    // which requires real Firebase auth. Pro plan shows the Advanced Recruiter Filters UI.
+    await mockUserAtStep(page, 4, "pro");
 
     await page.goto("/dashboard");
 
-    // Step 4 is "Setup Complete"
+    // Step 4 with pro plan shows Advanced Recruiter Filters
     await expect(
-      page.getByText("Setup Complete")
+      page.getByText("Advanced Recruiter Filters")
     ).toBeVisible({ timeout: 10000 });
 
     // Earlier steps should not be visible

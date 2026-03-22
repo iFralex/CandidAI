@@ -1,0 +1,285 @@
+# Page snapshot
+
+```yaml
+- generic [active]:
+  - generic [ref=e5] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e6]:
+      - img [ref=e7]
+    - generic [ref=e11]:
+      - button "Open issues overlay" [ref=e12]:
+        - generic [ref=e13]:
+          - generic [ref=e14]: "0"
+          - generic [ref=e15]: "1"
+        - generic [ref=e16]: Issue
+      - button "Collapse issues badge" [ref=e17]:
+        - img [ref=e18]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                  - generic: CandidAI
+            - generic:
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /dashboard
+                        - img
+                        - generic: Dashboard
+                    - listitem:
+                      - link:
+                        - /url: /dashboard/send-all
+                        - img
+                        - generic: Send All
+                    - listitem:
+                      - link:
+                        - /url: /dashboard/follow-ups
+                        - img
+                        - generic: Follow Ups
+                    - listitem:
+                      - link:
+                        - /url: /dashboard/plan-and-credits
+                        - img
+                        - generic: Plan & Credits
+                    - listitem:
+                      - link:
+                        - /url: /dashboard/settings
+                        - img
+                        - generic: Settings
+            - generic:
+              - generic:
+                - generic:
+                  - generic: P
+                  - generic:
+                    - paragraph: Plan Credits Purchase User
+                    - paragraph: plan-credits-purchase@example.com
+      - generic:
+        - banner:
+          - generic:
+            - generic:
+              - button:
+                - img
+                - generic: Toggle Sidebar
+              - generic:
+                - heading [level=1]: Dashboard
+            - generic:
+              - generic:
+                - generic:
+                  - img
+                  - generic: "150"
+              - link:
+                - /url: /dashboard/plan-and-credits
+                - button:
+                  - img
+        - main:
+          - generic:
+            - generic:
+              - heading [level=1]: Plan & Credits
+              - paragraph: Upgrade your plan or top up your credits to keep generating personalised outreach emails.
+            - generic:
+              - generic:
+                - generic:
+                  - heading [level=2]: Choose a Plan
+                  - paragraph: One-time purchase — pay once, use until your company limit is reached.
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - heading [level=3]: Base
+                        - paragraph: Perfect for targeted job search
+                        - generic: €30.00
+                        - generic: one-time purchase
+                      - list:
+                        - listitem:
+                          - img
+                          - generic: 20 companies maximum
+                        - listitem:
+                          - img
+                          - generic: X credits included
+                        - listitem:
+                          - img
+                          - generic: Custom Instructions
+                        - listitem:
+                          - img
+                          - generic: Custom strategy for recruiter search with X criteria
+                        - listitem:
+                          - img
+                          - generic: Follow-up email automation
+                        - listitem:
+                          - img
+                          - generic: Company confirmation calls
+                        - listitem:
+                          - img
+                          - generic: Company information deep-dive reports
+                        - listitem:
+                          - img
+                          - generic: AI company recommendations
+                        - listitem:
+                          - img
+                          - generic: Generation priority
+                      - button:
+                        - text: Buy Plan
+                        - generic:
+                          - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Most Popular
+                      - generic:
+                        - generic:
+                          - img
+                        - heading [level=3]: Pro
+                        - paragraph: For serious job seekers
+                        - generic: €69.00
+                        - generic: one-time purchase
+                      - list:
+                        - listitem:
+                          - img
+                          - generic: 50 companies maximum
+                        - listitem:
+                          - img
+                          - generic: 1000 credits included
+                        - listitem:
+                          - img
+                          - generic: Custom Instructions
+                        - listitem:
+                          - img
+                          - generic: Custom strategy for recruiter search with 30 criteria
+                        - listitem:
+                          - img
+                          - generic: Follow-up email automation
+                        - listitem:
+                          - img
+                          - generic: Company confirmation calls
+                        - listitem:
+                          - img
+                          - generic: Company information deep-dive reports
+                        - listitem:
+                          - img
+                          - generic: AI company recommendations
+                        - listitem:
+                          - img
+                          - generic: Generation priority
+                      - button:
+                        - text: Buy Plan
+                        - generic:
+                          - img
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                        - heading [level=3]: Ultra
+                        - paragraph: Maximum job search power
+                        - generic: €139.00
+                        - generic: one-time purchase
+                      - list:
+                        - listitem:
+                          - img
+                          - generic: 100 companies maximum
+                        - listitem:
+                          - img
+                          - generic: 2500 credits included
+                        - listitem:
+                          - img
+                          - generic: Custom Instructions
+                        - listitem:
+                          - img
+                          - generic: Custom strategy for recruiter search with 50 criteria
+                        - listitem:
+                          - img
+                          - generic: Follow-up email automation
+                        - listitem:
+                          - img
+                          - generic: Company confirmation calls
+                        - listitem:
+                          - img
+                          - generic: Company information deep-dive reports
+                        - listitem:
+                          - img
+                          - generic: AI company recommendations
+                        - listitem:
+                          - img
+                          - generic: Generation priority
+                      - button:
+                        - text: Buy Plan
+                        - generic:
+                          - img
+              - generic:
+                - generic:
+                  - heading [level=2]: Top Up Credits
+                  - paragraph: Add credits to your account instantly. Credits are used to generate personalised emails.
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic: Starter
+                      - generic:
+                        - generic: 1,000credits
+                        - generic: €10.00
+                        - generic: Great for occasional use
+                      - button: Buy €10.00
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Most Popular
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic: Popular
+                      - generic:
+                        - generic: 2,500credits
+                        - generic: €20.00
+                        - generic: Best value per credit
+                      - button: Buy €20.00
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                          - generic: Power
+                      - generic:
+                        - generic: 5,000credits
+                        - generic: €30.00
+                        - generic: For heavy job seekers
+                      - button: Buy €30.00
+  - alert
+  - dialog "Buy 1,000 Credits" [ref=e21]:
+    - heading "Buy 1,000 Credits" [level=2] [ref=e23]
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - generic [ref=e28]:
+          - generic [ref=e29]:
+            - generic [ref=e30]: 1,000 Credits
+            - generic [ref=e31]: One-time purchase
+          - generic [ref=e32]: €10.00
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - generic [ref=e35]: Payment method
+            - generic [ref=e36]:
+              - text: Secure
+              - img
+          - generic [ref=e37]: Card details are processed securely by Stripe — we never see full card numbers.
+      - generic [ref=e38]:
+        - heading "Payment details" [level=3] [ref=e39]
+        - generic [ref=e43]:
+          - generic [ref=e44]: Payment successful!
+          - generic [ref=e45]: A receipt has been sent to plan-credits-purchase@example.com
+    - button "Close" [ref=e46]:
+      - img [ref=e47]
+      - generic [ref=e50]: Close
+```

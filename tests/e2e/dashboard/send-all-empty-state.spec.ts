@@ -59,13 +59,20 @@ async function mockUser(
   page: Page,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
@@ -75,15 +82,15 @@ async function mockEmails(
   page: Page,
   data: Record<string, unknown> = buildEmptyEmailsData()
 ) {
+  const emailsData = { success: true, data, userId: TEST_USER.uid };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/emails', response: emailsData },
+  });
   await page.route("**/api/protected/emails**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data,
-        userId: TEST_USER.uid,
-      }),
+      body: JSON.stringify(emailsData),
     });
   });
 }
