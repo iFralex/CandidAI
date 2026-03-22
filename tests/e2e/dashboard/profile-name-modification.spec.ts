@@ -34,33 +34,48 @@ async function mockUser(
   page: Page,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
 }
 
 async function mockAccount(page: Page) {
+  const accountData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {},
-      }),
+      body: JSON.stringify(accountData),
     });
   });
 }
 
 // Mock PUT /api/protected/user for name update calls
 async function mockUserUpdateSuccess(page: Page, updatedName: string) {
+  const userData = buildMockUser();
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     if (route.request().method() === "PUT") {
       await route.fulfill({
@@ -78,7 +93,7 @@ async function mockUserUpdateSuccess(page: Page, updatedName: string) {
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          user: buildMockUser(),
+          user: userData,
         }),
       });
     }
@@ -86,6 +101,13 @@ async function mockUserUpdateSuccess(page: Page, updatedName: string) {
 }
 
 async function mockUserUpdateError(page: Page) {
+  const userData = buildMockUser();
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     if (route.request().method() === "PUT") {
       await route.fulfill({
@@ -101,7 +123,7 @@ async function mockUserUpdateError(page: Page) {
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          user: buildMockUser(),
+          user: userData,
         }),
       });
     }
@@ -161,7 +183,7 @@ test.describe("Profile - Name Edit Interaction", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.fill("Modified Name");
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await expect(saveBtn).toBeVisible({ timeout: 15000 });
     await expect(saveBtn).toBeEnabled({ timeout: 15000 });
   });
@@ -178,7 +200,7 @@ test.describe("Profile - Name Edit Interaction", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.fill("New Name");
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await expect(saveBtn).toBeVisible({ timeout: 15000 });
     await saveBtn.click();
 
@@ -199,7 +221,7 @@ test.describe("Profile - Name Edit Interaction", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.fill("Saving Name");
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await expect(saveBtn).toBeEnabled({ timeout: 15000 });
     await saveBtn.click();
 
@@ -226,7 +248,7 @@ test.describe("Profile - Name Save Success", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.fill("Updated Success Name");
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     // User should remain on the profile page
@@ -245,7 +267,7 @@ test.describe("Profile - Name Save Success", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.fill("Stay On Page Name");
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     await expect(page).not.toHaveURL(/login/, { timeout: 5000 });
@@ -264,11 +286,11 @@ test.describe("Profile - Name Save Success", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.fill("Name For Section Check");
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     // Basic Info section should still be visible
-    await expect(page.getByText("Basic Info")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Basic Info").first()).toBeVisible({ timeout: 10000 });
   });
 
   test("sidebar is visible after save action", async ({ page }) => {
@@ -281,7 +303,7 @@ test.describe("Profile - Name Save Success", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.fill("Sidebar Check Name");
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     // Sidebar should remain visible after save
@@ -323,7 +345,7 @@ test.describe("Profile - Empty Name Validation", () => {
     await nameInput.clear();
 
     // Button should still be visible (whether disabled or enabled depends on implementation)
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await expect(saveBtn).toBeVisible({ timeout: 15000 });
   });
 
@@ -339,7 +361,7 @@ test.describe("Profile - Empty Name Validation", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.clear();
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     // Page should not crash
@@ -359,7 +381,7 @@ test.describe("Profile - Empty Name Validation", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.clear();
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     // Should remain on profile page
@@ -402,7 +424,7 @@ test.describe("Profile - Unchanged Name Save", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
 
     // Do NOT change the name - just click save
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     // Should remain on profile page
@@ -421,7 +443,7 @@ test.describe("Profile - Unchanged Name Save", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
 
     // Click save without modifying
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     await expect(page.locator("body")).toBeVisible({ timeout: 5000 });
@@ -443,7 +465,7 @@ test.describe("Profile - Unchanged Name Save", () => {
     const initialValue = await nameInput.inputValue();
 
     // Click save without changing
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     // After clicking save, the input value should not change
@@ -460,7 +482,7 @@ test.describe("Profile - Unchanged Name Save", () => {
 
     await page.goto("/dashboard/profile");
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await expect(saveBtn).toBeVisible({ timeout: 15000 });
     await saveBtn.click();
 
@@ -488,7 +510,7 @@ test.describe("Profile - Name Save Error Handling", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.fill("Error Test Name");
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     // Page should not crash even if the API returns an error
@@ -507,7 +529,7 @@ test.describe("Profile - Name Save Error Handling", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.fill("Fail Test Name");
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     // User should remain on the profile page (no redirect to error page)
@@ -526,7 +548,7 @@ test.describe("Profile - Name Save Error Handling", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.fill("Recovery Test Name");
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     // The name input should still be visible and accessible after error
@@ -563,7 +585,7 @@ test.describe("Profile - Name Save Error Handling", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.clear();
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     await expect(page).not.toHaveURL(/error/, { timeout: 5000 });
@@ -582,10 +604,10 @@ test.describe("Profile - Name Save Error Handling", () => {
     await expect(nameInput).toBeVisible({ timeout: 15000 });
     await nameInput.fill("Error Section Test");
 
-    const saveBtn = page.getByRole("button", { name: /Save Changes/i });
+    const saveBtn = page.getByRole("button", { name: /Save Changes/i }).first();
     await saveBtn.click();
 
     await page.waitForTimeout(1000);
-    await expect(page.getByText("Basic Info")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Basic Info").first()).toBeVisible({ timeout: 10000 });
   });
 });

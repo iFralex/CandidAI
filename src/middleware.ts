@@ -7,6 +7,11 @@ import { Path } from "next-firebase-auth-edge/next/middleware";
 const PUBLIC_PATHS: Path = [/^(?!\/dashboard).*/];
 
 export async function middleware(request: NextRequest) {
+  // Test mode bypass (non-production only)
+  if (process.env.NODE_ENV !== 'production' && request.cookies.get('__playwright_user__')?.value) {
+    return NextResponse.next();
+  }
+
   // Add cookie for referral tracking
   const url = request.nextUrl.clone();
   const referralCode = url.searchParams.get('ref');

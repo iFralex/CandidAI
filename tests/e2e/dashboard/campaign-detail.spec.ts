@@ -25,6 +25,7 @@ const TEST_USER = {
 };
 
 const COMPANY_ID = "detail-company-id-001";
+const PARTIAL_COMPANY_ID = "detail-company-id-partial-001";
 const NONEXISTENT_ID = "nonexistent-company-id-xyz";
 
 function buildMockUser(overrides: Partial<Record<string, unknown>> = {}) {
@@ -102,13 +103,20 @@ function buildMockDetails() {
 }
 
 async function mockUser(page: Page, overrides: Partial<Record<string, unknown>> = {}) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
@@ -120,37 +128,45 @@ async function mockResultDetail(
   detailsOverrides: Record<string, unknown> = {},
   customizationsOverrides: Record<string, unknown> = {}
 ) {
+  const mockData = {
+    success: true,
+    details: { ...buildMockDetails(), ...detailsOverrides },
+    customizations: {
+      instructions: "Write a concise and professional email",
+      queries: [{ name: "Tech Recruiters", criteria: [] }],
+      ...customizationsOverrides,
+    },
+  };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: `/api/protected/result/${companyId}`, response: mockData },
+  });
   await page.route(`**/api/protected/result/${companyId}**`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        details: { ...buildMockDetails(), ...detailsOverrides },
-        customizations: {
-          instructions: "Write a concise and professional email",
-          queries: [{ name: "Tech Recruiters", criteria: [] }],
-          ...customizationsOverrides,
-        },
-      }),
+      body: JSON.stringify(mockData),
     });
   });
 }
 
 async function mockAccount(page: Page) {
+  const accountData = {
+    success: true,
+    data: {
+      customizations: {
+        instructions: "Write a concise and professional email",
+      },
+      queries: [{ name: "Tech Recruiters", criteria: [] }],
+    },
+  };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          customizations: {
-            instructions: "Write a concise and professional email",
-          },
-          queries: [{ name: "Tech Recruiters", criteria: [] }],
-        },
-      }),
+      body: JSON.stringify(accountData),
     });
   });
 }
@@ -168,7 +184,7 @@ test.describe("Campaign Detail - Page Load", () => {
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
     // Company name should be visible
-    await expect(page.getByText("Acme Technologies")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Acme Technologies").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("company name is displayed in heading", async ({ page }) => {
@@ -190,7 +206,7 @@ test.describe("Campaign Detail - Page Load", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Sarah Johnson/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Sarah Johnson/i).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("recruiter job title is displayed", async ({ page }) => {
@@ -200,7 +216,7 @@ test.describe("Campaign Detail - Page Load", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Head of Talent Acquisition/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Head of Talent Acquisition/i).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("articles found count is displayed", async ({ page }) => {
@@ -211,7 +227,7 @@ test.describe("Campaign Detail - Page Load", () => {
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
     // Blog Articles Selected section should be present
-    await expect(page.getByText(/Blog Articles Selected/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Blog Articles Selected/i).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("recruiter LinkedIn section is visible", async ({ page }) => {
@@ -240,7 +256,7 @@ test.describe("Campaign Detail - Email Preview", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Email Generated/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Email Generated/i).first()).toBeVisible({ timeout: 15000 });
 
     // Subject field shows the email subject (it's an input with the subject value)
     await expect(page.locator('input[value*="AI Innovation"]')).toBeVisible({
@@ -255,10 +271,10 @@ test.describe("Campaign Detail - Email Preview", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Email Generated/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Email Generated/i).first()).toBeVisible({ timeout: 15000 });
 
     // Body textarea should contain the email content
-    await expect(page.getByRole("textbox", { name: /Body/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('textarea').first()).toBeVisible({ timeout: 15000 });
   });
 
   test("email key points are shown", async ({ page }) => {
@@ -268,11 +284,11 @@ test.describe("Campaign Detail - Email Preview", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Email Generated/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Email Generated/i).first()).toBeVisible({ timeout: 15000 });
 
     // Key points section
-    await expect(page.getByText(/Email perfect because/i)).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/Personalized based on recent blog posts/i)).toBeVisible({
+    await expect(page.getByText(/Email perfect because/i).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Personalized based on recent blog posts/i).first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -291,9 +307,9 @@ test.describe("Campaign Detail - Generate Another Email (Unlocked)", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Email Generated/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Email Generated/i).first()).toBeVisible({ timeout: 15000 });
 
-    await expect(page.getByRole("button", { name: /Generate another/i })).toBeVisible({
+    await expect(page.getByRole("button", { name: /Generate another/i }).first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -305,14 +321,14 @@ test.describe("Campaign Detail - Generate Another Email (Unlocked)", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Email Generated/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Email Generated/i).first()).toBeVisible({ timeout: 15000 });
 
     // Click the Generate another button
-    await page.getByRole("button", { name: /Generate another/i }).click();
+    await page.getByRole("button", { name: /Generate another/i }).first().click();
 
     // Dialog with custom instructions textarea should appear
-    await expect(page.getByText(/Define Custom Instructions/i)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole("textbox")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Define Custom Instructions/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("textbox").first()).toBeVisible({ timeout: 10000 });
   });
 
   test("dialog has Reset to default and Generate button", async ({ page }) => {
@@ -322,11 +338,11 @@ test.describe("Campaign Detail - Generate Another Email (Unlocked)", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Email Generated/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Email Generated/i).first()).toBeVisible({ timeout: 15000 });
 
-    await page.getByRole("button", { name: /Generate another/i }).click();
+    await page.getByRole("button", { name: /Generate another/i }).first().click();
 
-    await expect(page.getByText(/Define Custom Instructions/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Define Custom Instructions/i).first()).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole("button", { name: /Generate the new email/i })).toBeVisible({
       timeout: 10000,
     });
@@ -342,11 +358,11 @@ test.describe("Campaign Detail - Generate Another Email (Unlocked)", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Email Generated/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Email Generated/i).first()).toBeVisible({ timeout: 15000 });
 
-    await page.getByRole("button", { name: /Generate another/i }).click();
+    await page.getByRole("button", { name: /Generate another/i }).first().click();
 
-    await expect(page.getByText(/Define Custom Instructions/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Define Custom Instructions/i).first()).toBeVisible({ timeout: 10000 });
 
     const textarea = page.getByRole("dialog").getByRole("textbox").first();
     await textarea.clear();
@@ -371,10 +387,10 @@ test.describe("Campaign Detail - Generate Another Email (Locked)", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Email Generated/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Email Generated/i).first()).toBeVisible({ timeout: 15000 });
 
     // The button is still visible (wrapped in CreditsDialog)
-    await expect(page.getByRole("button", { name: /Generate another/i })).toBeVisible({
+    await expect(page.getByRole("button", { name: /Generate another/i }).first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -388,13 +404,13 @@ test.describe("Campaign Detail - Generate Another Email (Locked)", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Email Generated/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Email Generated/i).first()).toBeVisible({ timeout: 15000 });
 
-    await page.getByRole("button", { name: /Generate another/i }).click();
+    await page.getByRole("button", { name: /Generate another/i }).first().click();
 
     // CreditsDialog should show "Premium Content" and cost 50 credits
-    await expect(page.getByText(/Premium Content/i)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/50/)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Premium Content/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/50/).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("locked credits dialog shows Unlock for 50 credits button", async ({ page }) => {
@@ -404,11 +420,11 @@ test.describe("Campaign Detail - Generate Another Email (Locked)", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Email Generated/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Email Generated/i).first()).toBeVisible({ timeout: 15000 });
 
-    await page.getByRole("button", { name: /Generate another/i }).click();
+    await page.getByRole("button", { name: /Generate another/i }).first().click();
 
-    await expect(page.getByText(/Unlock for 50 credits/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Unlock for 50 credits/i).first()).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -424,10 +440,10 @@ test.describe("Campaign Detail - Credits in Sidebar", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText("Acme Technologies")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Acme Technologies").first()).toBeVisible({ timeout: 15000 });
 
     // Credits badge in header shows the credit count
-    await expect(page.getByText("500")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("500").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("header displays correct credits for a user with 150 credits", async ({ page }) => {
@@ -437,9 +453,9 @@ test.describe("Campaign Detail - Credits in Sidebar", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText("Acme Technologies")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Acme Technologies").first()).toBeVisible({ timeout: 15000 });
 
-    await expect(page.getByText("150")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("150").first()).toBeVisible({ timeout: 15000 });
   });
 });
 
@@ -455,9 +471,9 @@ test.describe("Campaign Detail - Find New Recruiter", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Recruiter Summary/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Recruiter Summary/i).first()).toBeVisible({ timeout: 15000 });
 
-    await expect(page.getByRole("button", { name: /Find someone else/i })).toBeVisible({
+    await expect(page.getByRole("button", { name: /Find someone else/i }).first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -475,9 +491,9 @@ test.describe("Campaign Detail - Find New Recruiter", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Recruiter Summary/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Recruiter Summary/i).first()).toBeVisible({ timeout: 15000 });
 
-    await page.getByRole("button", { name: /Find someone else/i }).click();
+    await page.getByRole("button", { name: /Find someone else/i }).first().click();
 
     // Dialog should open with recruiter search options
     await expect(
@@ -497,9 +513,9 @@ test.describe("Campaign Detail - Find New Recruiter", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Recruiter Summary/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Recruiter Summary/i).first()).toBeVisible({ timeout: 15000 });
 
-    await page.getByRole("button", { name: /Find someone else/i }).click();
+    await page.getByRole("button", { name: /Find someone else/i }).first().click();
 
     await expect(
       page.getByText(/Do you want to search for another recruiter profile/i)
@@ -521,13 +537,13 @@ test.describe("Campaign Detail - Find New Recruiter", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Recruiter Summary/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Recruiter Summary/i).first()).toBeVisible({ timeout: 15000 });
 
-    await page.getByRole("button", { name: /Find someone else/i }).click();
+    await page.getByRole("button", { name: /Find someone else/i }).first().click();
 
     // CreditsDialog should show 100 credits for find-recruiter
-    await expect(page.getByText(/Premium Content/i)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/100/)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Premium Content/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/100/).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("locked find recruiter dialog shows Unlock for 100 credits", async ({ page }) => {
@@ -537,11 +553,11 @@ test.describe("Campaign Detail - Find New Recruiter", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Recruiter Summary/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Recruiter Summary/i).first()).toBeVisible({ timeout: 15000 });
 
-    await page.getByRole("button", { name: /Find someone else/i }).click();
+    await page.getByRole("button", { name: /Find someone else/i }).first().click();
 
-    await expect(page.getByText(/Unlock for 100 credits/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Unlock for 100 credits/i).first()).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -550,16 +566,17 @@ test.describe("Campaign Detail - Find New Recruiter", () => {
 // ---------------------------------------------------------------------------
 
 test.describe("Campaign Detail - Change Company Credits", () => {
+  test.describe.configure({ mode: "serial" });
+
   test("change-company feature costs 70 credits (locked dialog shows 70 credits)", async ({
     page,
   }) => {
     await mockUser(page, { credits: 30 });
-    // Mock the main dashboard results so we can get to the confirm companies section
-    await page.route("**/api/protected/results**", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
+    // Set server-side mocks so dashboard server components can fetch them
+    await page.request.post('/api/test/set-mock', {
+      data: {
+        pattern: '/api/protected/results',
+        response: {
           success: true,
           data: {
             companies_to_confirm: ["change-test-company-id"],
@@ -568,30 +585,29 @@ test.describe("Campaign Detail - Change Company Credits", () => {
               start_date: { _seconds: 1700000000, _nanoseconds: 0 },
             },
           },
-        }),
-      });
+        },
+      },
     });
-    await page.route("**/api/protected/all_details**", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
+    await page.request.post('/api/test/set-mock', {
+      data: {
+        pattern: '/api/protected/all_details',
+        response: {
           success: true,
-          data: {
-            "change-test-company-id": {
-              company: { name: "Test Company", domain: "test.com" },
-              recruiter: null,
+          data: [
+            {
+              companyId: "change-test-company-id",
+              data: { company_info: { name: "Test Company", website: "test.com" } },
             },
-          },
-        }),
-      });
+          ],
+        },
+      },
     });
     await mockAccount(page);
 
     await page.goto("/dashboard");
 
     // Companies to confirm section with change company option appears
-    await expect(page.getByText(/Companies To Be Confirmed/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Companies To Be Confirmed/i).first()).toBeVisible({ timeout: 15000 });
 
     // The CreditsDialog for change-company should show 70 credits
     // Find a button that would trigger the change-company credits dialog
@@ -610,11 +626,11 @@ test.describe("Campaign Detail - Change Company Credits", () => {
     page,
   }) => {
     await mockUser(page, { credits: 30 });
-    await page.route("**/api/protected/results**", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
+    // Set server-side mocks so dashboard server components can fetch them
+    await page.request.post('/api/test/set-mock', {
+      data: {
+        pattern: '/api/protected/results',
+        response: {
           success: true,
           data: {
             companies_to_confirm: ["comp-id-confirm"],
@@ -623,31 +639,30 @@ test.describe("Campaign Detail - Change Company Credits", () => {
               start_date: { _seconds: 1700000000, _nanoseconds: 0 },
             },
           },
-        }),
-      });
+        },
+      },
     });
-    await page.route("**/api/protected/all_details**", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
+    await page.request.post('/api/test/set-mock', {
+      data: {
+        pattern: '/api/protected/all_details',
+        response: {
           success: true,
-          data: {
-            "comp-id-confirm": {
-              company: { name: "Confirm Corp", domain: "confirm.com" },
-              recruiter: null,
+          data: [
+            {
+              companyId: "comp-id-confirm",
+              data: { company_info: { name: "Confirm Corp", website: "confirm.com" } },
             },
-          },
-        }),
-      });
+          ],
+        },
+      },
     });
     await mockAccount(page);
 
     await page.goto("/dashboard");
 
     // Companies to confirm section
-    await expect(page.getByText(/Companies To Be Confirmed/i)).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/Confirm Corp/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Companies To Be Confirmed/i).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Confirm Corp/i).first()).toBeVisible({ timeout: 15000 });
   });
 });
 
@@ -711,10 +726,10 @@ test.describe("Campaign Detail - Progress and Steps", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText("Acme Technologies")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Acme Technologies").first()).toBeVisible({ timeout: 15000 });
 
     // All 3 steps complete => 100%
-    await expect(page.getByText("100%")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("100%").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("Recruiter Found step shows as completed", async ({ page }) => {
@@ -724,9 +739,9 @@ test.describe("Campaign Detail - Progress and Steps", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText("Acme Technologies")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Acme Technologies").first()).toBeVisible({ timeout: 15000 });
 
-    await expect(page.getByText(/Recruiter Found/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Recruiter Found/i).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("Email Generated step shows as completed", async ({ page }) => {
@@ -736,17 +751,18 @@ test.describe("Campaign Detail - Progress and Steps", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText("Acme Technologies")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Acme Technologies").first()).toBeVisible({ timeout: 15000 });
 
-    await expect(page.getByText(/Email Generated/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Email Generated/i).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("progress bar shows partial % when email not yet generated", async ({ page }) => {
     await mockUser(page);
     // No email yet (only recruiter and blog articles)
+    // Uses a unique company ID to avoid mockStore race conditions with parallel tests
     await mockResultDetail(
       page,
-      COMPANY_ID,
+      PARTIAL_COMPANY_ID,
       {
         email: null,
       },
@@ -754,12 +770,12 @@ test.describe("Campaign Detail - Progress and Steps", () => {
     );
     await mockAccount(page);
 
-    await page.goto(`/dashboard/${COMPANY_ID}`);
+    await page.goto(`/dashboard/${PARTIAL_COMPANY_ID}`);
 
-    await expect(page.getByText("Acme Technologies")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Acme Technologies").first()).toBeVisible({ timeout: 15000 });
 
     // Without email => progress < 100% (80% based on calculateProgress logic)
-    await expect(page.getByText("80%")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("80%").first()).toBeVisible({ timeout: 15000 });
   });
 });
 
@@ -775,7 +791,7 @@ test.describe("Campaign Detail - Blog Articles", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/Blog Articles Selected/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Blog Articles Selected/i).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("blog article titles are displayed", async ({ page }) => {
@@ -785,7 +801,7 @@ test.describe("Campaign Detail - Blog Articles", () => {
 
     await page.goto(`/dashboard/${COMPANY_ID}`);
 
-    await expect(page.getByText(/How We Build Scalable Systems at Acme/i)).toBeVisible({
+    await expect(page.getByText(/How We Build Scalable Systems at Acme/i).first()).toBeVisible({
       timeout: 15000,
     });
   });

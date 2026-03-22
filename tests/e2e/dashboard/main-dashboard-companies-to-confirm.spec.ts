@@ -34,13 +34,20 @@ async function mockUser(
   page: Page,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
@@ -51,23 +58,27 @@ async function mockUser(
  * one active campaign.
  */
 async function mockResultsWithConfirm(page: Page) {
+  const resultsData = {
+    success: true,
+    data: {
+      companies_to_confirm: ["ctc-company-id-1"],
+      // Active campaign not in companies_to_confirm
+      "active-company-id-1": {
+        company: { name: "Active Corp", domain: "activecorp.com" },
+        recruiter: { name: "John Doe", job_title: "HR Director" },
+        blog_articles: 2,
+        start_date: { _seconds: 1700000000, _nanoseconds: 0 },
+      },
+    },
+  };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/results', response: resultsData },
+  });
   await page.route("**/api/protected/results**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          companies_to_confirm: ["ctc-company-id-1"],
-          // Active campaign not in companies_to_confirm
-          "active-company-id-1": {
-            company: { name: "Active Corp", domain: "activecorp.com" },
-            recruiter: { name: "John Doe", job_title: "HR Director" },
-            blog_articles: 2,
-            start_date: { _seconds: 1700000000, _nanoseconds: 0 },
-          },
-        },
-      }),
+      body: JSON.stringify(resultsData),
     });
   });
 }
@@ -77,21 +88,25 @@ async function mockResultsWithConfirm(page: Page) {
  * verify that multiple entries are listed.
  */
 async function mockResultsWithMultipleConfirm(page: Page) {
+  const resultsData = {
+    success: true,
+    data: {
+      companies_to_confirm: ["ctc-company-id-1", "ctc-company-id-2"],
+      "active-company-id-1": {
+        company: { name: "Active Corp", domain: "activecorp.com" },
+        blog_articles: 1,
+        start_date: { _seconds: 1700000000, _nanoseconds: 0 },
+      },
+    },
+  };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/results', response: resultsData },
+  });
   await page.route("**/api/protected/results**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          companies_to_confirm: ["ctc-company-id-1", "ctc-company-id-2"],
-          "active-company-id-1": {
-            company: { name: "Active Corp", domain: "activecorp.com" },
-            blog_articles: 1,
-            start_date: { _seconds: 1700000000, _nanoseconds: 0 },
-          },
-        },
-      }),
+      body: JSON.stringify(resultsData),
     });
   });
 }
@@ -101,119 +116,135 @@ async function mockResultsWithMultipleConfirm(page: Page) {
  * no pending confirmations).
  */
 async function mockResultsWithoutConfirm(page: Page) {
+  const resultsData = {
+    success: true,
+    data: {
+      "active-company-id-1": {
+        company: { name: "Active Corp", domain: "activecorp.com" },
+        blog_articles: 1,
+        start_date: { _seconds: 1700000000, _nanoseconds: 0 },
+      },
+    },
+  };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/results', response: resultsData },
+  });
   await page.route("**/api/protected/results**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          "active-company-id-1": {
-            company: { name: "Active Corp", domain: "activecorp.com" },
-            blog_articles: 1,
-            start_date: { _seconds: 1700000000, _nanoseconds: 0 },
-          },
-        },
-      }),
+      body: JSON.stringify(resultsData),
     });
   });
 }
 
 /** Mock /api/protected/all_details POST for one company */
 async function mockAllDetails(page: Page) {
+  const allDetailsData = {
+    success: true,
+    data: [
+      {
+        companyId: "ctc-company-id-1",
+        data: {
+          company_info: {
+            display_name: "Confirm Corp",
+            name: "Confirm Corp",
+            website: "confirmcorp.com",
+            headline: "An innovative company awaiting confirmation",
+            location: { name: "San Francisco, CA" },
+            employee_count: 500,
+            industry_v2: "Technology",
+          },
+          company: {
+            name: "Confirm Corp",
+            domain: "confirmcorp.com",
+            linkedin_url:
+              "https://linkedin.com/company/confirmcorp",
+          },
+        },
+      },
+    ],
+  };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/all_details', response: allDetailsData },
+  });
   await page.route("**/api/protected/all_details**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: [
-          {
-            companyId: "ctc-company-id-1",
-            data: {
-              company_info: {
-                display_name: "Confirm Corp",
-                name: "Confirm Corp",
-                website: "confirmcorp.com",
-                headline: "An innovative company awaiting confirmation",
-                location: { name: "San Francisco, CA" },
-                employee_count: 500,
-                industry_v2: "Technology",
-              },
-              company: {
-                name: "Confirm Corp",
-                domain: "confirmcorp.com",
-                linkedin_url:
-                  "https://linkedin.com/company/confirmcorp",
-              },
-            },
-          },
-        ],
-      }),
+      body: JSON.stringify(allDetailsData),
     });
   });
 }
 
 /** Mock /api/protected/all_details POST for two companies */
 async function mockAllDetailsMultiple(page: Page) {
+  const allDetailsData = {
+    success: true,
+    data: [
+      {
+        companyId: "ctc-company-id-1",
+        data: {
+          company_info: {
+            display_name: "Confirm Corp",
+            name: "Confirm Corp",
+            website: "confirmcorp.com",
+          },
+          company: {
+            name: "Confirm Corp",
+            domain: "confirmcorp.com",
+          },
+        },
+      },
+      {
+        companyId: "ctc-company-id-2",
+        data: {
+          company_info: {
+            display_name: "Second Confirm Corp",
+            name: "Second Confirm Corp",
+            website: "secondconfirmcorp.com",
+          },
+          company: {
+            name: "Second Confirm Corp",
+            domain: "secondconfirmcorp.com",
+          },
+        },
+      },
+    ],
+  };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/all_details', response: allDetailsData },
+  });
   await page.route("**/api/protected/all_details**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: [
-          {
-            companyId: "ctc-company-id-1",
-            data: {
-              company_info: {
-                display_name: "Confirm Corp",
-                name: "Confirm Corp",
-                website: "confirmcorp.com",
-              },
-              company: {
-                name: "Confirm Corp",
-                domain: "confirmcorp.com",
-              },
-            },
-          },
-          {
-            companyId: "ctc-company-id-2",
-            data: {
-              company_info: {
-                display_name: "Second Confirm Corp",
-                name: "Second Confirm Corp",
-                website: "secondconfirmcorp.com",
-              },
-              company: {
-                name: "Second Confirm Corp",
-                domain: "secondconfirmcorp.com",
-              },
-            },
-          },
-        ],
-      }),
+      body: JSON.stringify(allDetailsData),
     });
   });
 }
 
 /** Mock /api/protected/account GET */
 async function mockAccount(page: Page) {
+  const accountData = {
+    success: true,
+    data: {
+      queries: [
+        { name: "Software Engineer", domain: "tech", icon: null },
+      ],
+      customizations: {
+        instructions: "Default email instructions for outreach",
+      },
+    },
+  };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          queries: [
-            { name: "Software Engineer", domain: "tech", icon: null },
-          ],
-          customizations: {
-            instructions: "Default email instructions for outreach",
-          },
-        },
-      }),
+      body: JSON.stringify(accountData),
     });
   });
 }
@@ -249,7 +280,7 @@ test.describe("Main Dashboard - Companies To Confirm - Section Visibility", () =
     await page.goto("/dashboard");
 
     // Badge shows "1 total" for one company
-    await expect(page.getByText(/1 total/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/1 total/i).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("section is NOT shown when companies_to_confirm is absent", async ({
@@ -285,7 +316,7 @@ test.describe("Main Dashboard - Companies To Confirm - List With Data", () => {
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
   });
@@ -300,10 +331,10 @@ test.describe("Main Dashboard - Companies To Confirm - List With Data", () => {
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.getByText("Second Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Second Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
   });
@@ -318,7 +349,7 @@ test.describe("Main Dashboard - Companies To Confirm - List With Data", () => {
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -348,7 +379,7 @@ test.describe('Main Dashboard - Companies To Confirm - "Confirm" Button', () => 
     await page.goto("/dashboard");
 
     // Wait for company to load
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -371,7 +402,7 @@ test.describe('Main Dashboard - Companies To Confirm - "Confirm" Button', () => 
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -393,14 +424,14 @@ test.describe('Main Dashboard - Companies To Confirm - "Confirm" Button', () => 
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
     await page.getByRole("button", { name: /^Confirm$/i }).first().click();
 
     // Floating bar shows "N changes pending"
-    await expect(page.getByText(/changes pending/i)).toBeVisible({
+    await expect(page.getByText(/changes pending/i).first()).toBeVisible({
       timeout: 5000,
     });
   });
@@ -415,14 +446,14 @@ test.describe('Main Dashboard - Companies To Confirm - "Confirm" Button', () => 
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
     await page.getByRole("button", { name: /^Confirm$/i }).first().click();
 
     // Floating bar shows "1 confirmed"
-    await expect(page.getByText(/1 confirmed/i)).toBeVisible({
+    await expect(page.getByText(/1 confirmed/i).first()).toBeVisible({
       timeout: 5000,
     });
   });
@@ -443,7 +474,7 @@ test.describe('Main Dashboard - Companies To Confirm - "Wrong Company" Form', ()
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -469,7 +500,7 @@ test.describe('Main Dashboard - Companies To Confirm - "Wrong Company" Form', ()
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -500,7 +531,7 @@ test.describe('Main Dashboard - Companies To Confirm - "Wrong Company" Form', ()
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -529,7 +560,7 @@ test.describe('Main Dashboard - Companies To Confirm - "Wrong Company" Form', ()
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -541,7 +572,8 @@ test.describe('Main Dashboard - Companies To Confirm - "Wrong Company" Form', ()
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
 
     // The name field should be pre-filled with "Confirm Corp"
-    await expect(page.getByLabel(/New name/i)).toHaveValue("Confirm Corp", {
+    // Note: label is not htmlFor-linked, use placeholder to find the input
+    await expect(page.getByPlaceholder(/Acme Corporation/i)).toHaveValue("Confirm Corp", {
       timeout: 5000,
     });
   });
@@ -556,7 +588,7 @@ test.describe('Main Dashboard - Companies To Confirm - "Wrong Company" Form', ()
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -578,7 +610,7 @@ test.describe('Main Dashboard - Companies To Confirm - "Wrong Company" Form', ()
     await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: 5000 });
 
     // Company card is still in the list
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 5000,
     });
 
@@ -607,7 +639,7 @@ test.describe("Main Dashboard - Companies To Confirm - Cancel Selection", () => 
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -630,7 +662,7 @@ test.describe("Main Dashboard - Companies To Confirm - Cancel Selection", () => 
     });
 
     // Company card is still in the list
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 5000,
     });
   });
@@ -645,7 +677,7 @@ test.describe("Main Dashboard - Companies To Confirm - Cancel Selection", () => 
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -675,14 +707,14 @@ test.describe("Main Dashboard - Companies To Confirm - Cancel Selection", () => 
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
     await page.getByRole("button", { name: /^Confirm$/i }).first().click();
 
     // Floating bar visible after selection
-    await expect(page.getByText(/changes pending/i)).toBeVisible({
+    await expect(page.getByText(/changes pending/i).first()).toBeVisible({
       timeout: 5000,
     });
 
@@ -743,7 +775,7 @@ test.describe("Main Dashboard - Companies To Confirm - Correct Confirmation", ()
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -765,7 +797,7 @@ test.describe("Main Dashboard - Companies To Confirm - Correct Confirmation", ()
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Confirm Corp")).toBeVisible({
+    await expect(page.getByText("Confirm Corp").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -783,7 +815,7 @@ test.describe("Main Dashboard - Companies To Confirm - Correct Confirmation", ()
     }
 
     // Floating bar should be visible
-    await expect(page.getByText(/changes pending/i)).toBeVisible({
+    await expect(page.getByText(/changes pending/i).first()).toBeVisible({
       timeout: 5000,
     });
 

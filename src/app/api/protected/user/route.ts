@@ -6,8 +6,33 @@ import { clientConfig, serverConfig } from '@/config';
 import { getApiRequestTokens, getTokens } from 'next-firebase-auth-edge';
 import { cookies } from 'next/headers';
 import { refreshCookiesWithIdToken } from 'next-firebase-auth-edge/next/cookies';
+import { getTestMock } from '@/app/api/test/set-mock/route';
 
 export async function GET(request) {
+  // Test bypass for non-production environments
+  if (process.env.NODE_ENV !== 'production') {
+    const testUserCookie = request.cookies.get('__playwright_user__')?.value;
+    if (testUserCookie) {
+      try {
+        const cookieUser = JSON.parse(Buffer.from(testUserCookie, 'base64').toString('utf-8'));
+        // Check server-side mock store for a step-advanced version of this user.
+        // setTestMock is used by server components that can't set cookies (e.g. AdvancedFiltersServer).
+        // Only use the mock if it's for the same user AND its step is >= the cookie step
+        // (prevents stale mocks from prior tests from overriding fresher cookie state).
+        const mock = getTestMock('/api/protected/user') as { user?: { uid?: string; onboardingStep?: number } } | null;
+        if (
+          mock?.user?.uid === cookieUser.uid &&
+          (mock.user.onboardingStep ?? 0) >= (cookieUser.onboardingStep ?? 0)
+        ) {
+          return NextResponse.json(mock);
+        }
+        return NextResponse.json({ success: true, user: cookieUser });
+      } catch (e) {
+        // Fall through to normal auth
+      }
+    }
+  }
+
   try {
     const tokens = await getTokens(request.cookies, {
       apiKey: clientConfig.apiKey,

@@ -44,27 +44,35 @@ async function mockUser(
   page: Page,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
 }
 
 async function mockAccount(page: Page) {
+  const accountData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {},
-      }),
+      body: JSON.stringify(accountData),
     });
   });
 }
@@ -333,7 +341,7 @@ test.describe("Profile - Non-Image File Handling", () => {
     });
 
     // Profile page structure should remain intact
-    await expect(page.getByText("Basic Info")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Basic Info").first()).toBeVisible({ timeout: 10000 });
     await expect(
       page.getByRole("button", { name: /Save Changes/i })
     ).toBeVisible({ timeout: 10000 });
@@ -440,10 +448,10 @@ test.describe("Profile - Large Image File Handling", () => {
     });
 
     // Profile Picture section should still be visible
-    await expect(page.getByText("Profile Picture")).toBeVisible({
+    await expect(page.getByText("Profile Picture").first()).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.getByText(/Upload new photo/i)).toBeVisible({
+    await expect(page.getByText(/Upload new photo/i).first()).toBeVisible({
       timeout: 10000,
     });
   });

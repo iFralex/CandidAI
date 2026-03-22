@@ -3,8 +3,33 @@ import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { clientConfig, serverConfig } from '@/config';
 import { getTokens } from 'next-firebase-auth-edge';
+import { getTestMock } from '@/app/api/test/set-mock/route';
 
 export async function GET(request) {
+    // Test bypass
+    if (process.env.NODE_ENV !== 'production') {
+        // Empty-results override takes highest priority (beats the shared mock store)
+        // so parallel tests that need empty state don't get another test's mock data.
+        if (request.cookies.get('__playwright_empty_results__')?.value) {
+            return NextResponse.json({ success: true, data: {} });
+        }
+        // Per-test results data via cookie (isolated per browser context, beats shared mock store)
+        const resultsCookie = request.cookies.get('__playwright_results__')?.value;
+        if (resultsCookie) {
+            try {
+                const data = JSON.parse(Buffer.from(resultsCookie, 'base64').toString('utf-8'));
+                return NextResponse.json(data);
+            } catch (e) { /* fall through */ }
+        }
+        const mock = getTestMock('/api/protected/results');
+        if (mock) return NextResponse.json(mock);
+        // Fallback: if __playwright_user__ cookie is present, return empty results
+        // so the dashboard SSR can render without a real Firebase session.
+        if (request.cookies.get('__playwright_user__')?.value) {
+            return NextResponse.json({ success: true, data: {} });
+        }
+    }
+
     let decodedToken;
 
     try {

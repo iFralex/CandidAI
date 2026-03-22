@@ -41,21 +41,31 @@ async function setupRegisterSuccessMocks(page: Page) {
     }
   });
 
+  const userData = {
+    uid: TEST_USER.uid,
+    name: TEST_USER.name,
+    email: TEST_USER.email,
+    onboardingStep: 1,
+    plan: "free_trial",
+    credits: 0,
+    emailVerified: false,
+  };
+
+  // Set __playwright_user__ cookie so the middleware bypasses Firebase auth
+  await page.context().addCookies([{
+    name: "__playwright_user__",
+    value: Buffer.from(JSON.stringify(userData)).toString("base64"),
+    domain: "localhost",
+    path: "/",
+  }]);
+
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: {
-          uid: TEST_USER.uid,
-          name: TEST_USER.name,
-          email: TEST_USER.email,
-          onboardingStep: 1,
-          plan: "free_trial",
-          credits: 0,
-          emailVerified: false,
-        },
+        user: userData,
       }),
     });
   });

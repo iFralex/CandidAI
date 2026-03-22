@@ -43,6 +43,24 @@ async function setupLoginMocks(page: Page) {
     }
   });
 
+  const userData = {
+    uid: TEST_USER.uid,
+    name: TEST_USER.name,
+    email: TEST_USER.email,
+    onboardingStep: 50,
+    plan: "base",
+    credits: 100,
+    emailVerified: true,
+  };
+
+  // Set __playwright_user__ cookie so the middleware bypasses Firebase auth
+  await page.context().addCookies([{
+    name: "__playwright_user__",
+    value: Buffer.from(JSON.stringify(userData)).toString("base64"),
+    domain: "localhost",
+    path: "/",
+  }]);
+
   // Mock /api/protected/user — dashboard layout fetches user data server-side
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
@@ -50,15 +68,7 @@ async function setupLoginMocks(page: Page) {
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: {
-          uid: TEST_USER.uid,
-          name: TEST_USER.name,
-          email: TEST_USER.email,
-          onboardingStep: 50,
-          plan: "base",
-          credits: 100,
-          emailVerified: true,
-        },
+        user: userData,
       }),
     });
   });
@@ -127,6 +137,6 @@ test.describe("Login Flow - Success", () => {
     await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
     // The sidebar footer displays the logged-in user's name
-    await expect(page.getByText(TEST_USER.name)).toBeVisible();
+    await expect(page.getByText(TEST_USER.name).first()).toBeVisible();
   });
 });

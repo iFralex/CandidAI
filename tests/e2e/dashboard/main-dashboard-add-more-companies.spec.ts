@@ -36,34 +36,45 @@ async function mockUser(
   page: Page,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
 }
 
 async function mockResults(page: Page) {
+  const resultsData = {
+    success: true,
+    data: {
+      "active-company-id-1": {
+        company: { name: "Active Corp", domain: "activecorp.com" },
+        recruiter: { name: "John Doe", job_title: "HR Director" },
+        blog_articles: 2,
+        start_date: { _seconds: 1700000000, _nanoseconds: 0 },
+      },
+    },
+  };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/results', response: resultsData },
+  });
   await page.route("**/api/protected/results**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          "active-company-id-1": {
-            company: { name: "Active Corp", domain: "activecorp.com" },
-            recruiter: { name: "John Doe", job_title: "HR Director" },
-            blog_articles: 2,
-            start_date: { _seconds: 1700000000, _nanoseconds: 0 },
-          },
-        },
-      }),
+      body: JSON.stringify(resultsData),
     });
   });
 }
@@ -83,49 +94,25 @@ async function mockBrandfetchEmpty(page: Page) {
 }
 
 /**
- * Mock the Next.js server action POST to /dashboard.
- * Returns a successful action response so the component receives
- * { success: true } and closes the dialog.
- *
- * The response uses the React Flight format for server action returns:
- *   0:["$@1"]    -> root references element 1
- *   1:{...}      -> element 1 is the action's return value
+ * Mock the addNewCompanies server action via the server-side test mock store.
+ * Returns { success: true } so the component closes the dialog.
  */
 async function mockAddCompaniesSuccess(page: Page) {
-  await page.route("**/dashboard", async (route) => {
-    if (
-      route.request().method() === "POST" &&
-      route.request().headers()["next-action"]
-    ) {
-      await route.fulfill({
-        status: 200,
-        contentType: "text/x-component",
-        body: '1:{"success":true}\n0:["$@1"]\n',
-      });
-    } else {
-      await route.continue();
-    }
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/actions/addNewCompanies', response: { success: true } },
   });
 }
 
 /**
- * Mock the Next.js server action POST to return a limit-exceeded error.
+ * Mock the addNewCompanies server action to return a limit-exceeded error.
  * The component will call setError() with the error message, showing it inline.
  */
 async function mockAddCompaniesLimitError(page: Page) {
-  await page.route("**/dashboard", async (route) => {
-    if (
-      route.request().method() === "POST" &&
-      route.request().headers()["next-action"]
-    ) {
-      await route.fulfill({
-        status: 200,
-        contentType: "text/x-component",
-        body: '1:{"success":false,"error":"Exceeds plan limit (3/3 used)."}\n0:["$@1"]\n',
-      });
-    } else {
-      await route.continue();
-    }
+  await page.request.post('/api/test/set-mock', {
+    data: {
+      pattern: '/actions/addNewCompanies',
+      response: { success: false, error: 'Exceeds plan limit (3/3 used).' },
+    },
   });
 }
 
@@ -479,8 +466,12 @@ test.describe("Main Dashboard - Add More Companies - Company Selection", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Test group 4: Submit - valid companies (uses server action mock)
+// Test groups 4 & 5: Both use /actions/addNewCompanies mock key — must be serial
+// to prevent race conditions where success/error mocks overwrite each other.
 // ---------------------------------------------------------------------------
+
+test.describe("Main Dashboard - Add More Companies - Action Tests", () => {
+  test.describe.configure({ mode: "serial" });
 
 test.describe("Main Dashboard - Add More Companies - Valid Submit", () => {
   test("submit button shows loading state ('Adding...') when clicked", async ({
@@ -582,3 +573,5 @@ test.describe("Main Dashboard - Add More Companies - Server Error", () => {
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
   });
 });
+
+}); // End: Action Tests (serial wrapper)

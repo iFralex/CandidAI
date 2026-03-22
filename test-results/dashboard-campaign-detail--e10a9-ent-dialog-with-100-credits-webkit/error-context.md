@@ -1,0 +1,219 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - img "Logo" [ref=e11]
+        - generic [ref=e12]: CandidAI
+      - list [ref=e16]:
+        - listitem [ref=e17]:
+          - link "Dashboard" [ref=e18]:
+            - /url: /dashboard
+            - img [ref=e19]
+            - generic [ref=e22]: Dashboard
+        - listitem [ref=e23]:
+          - link "Send All" [ref=e24]:
+            - /url: /dashboard/send-all
+            - img [ref=e25]
+            - generic [ref=e27]: Send All
+        - listitem [ref=e28]:
+          - link "Follow Ups" [ref=e29]:
+            - /url: /dashboard/follow-ups
+            - img [ref=e30]
+            - generic [ref=e33]: Follow Ups
+        - listitem [ref=e34]:
+          - link "Plan & Credits" [ref=e35]:
+            - /url: /dashboard/plan-and-credits
+            - img [ref=e36]
+            - generic [ref=e38]: Plan & Credits
+        - listitem [ref=e39]:
+          - link "Settings" [ref=e40]:
+            - /url: /dashboard/settings
+            - img [ref=e41]
+            - generic [ref=e44]: Settings
+      - generic [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: C
+        - generic [ref=e49]:
+          - paragraph [ref=e50]: Campaign Detail User
+          - paragraph [ref=e51]: campaign-detail@example.com
+    - generic [ref=e52]:
+      - banner [ref=e53]:
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - button "Toggle Sidebar" [ref=e56]:
+              - img [ref=e57]
+              - generic [ref=e59]: Toggle Sidebar
+            - heading "Dashboard" [level=1] [ref=e61]
+          - generic [ref=e62]:
+            - generic [ref=e64]:
+              - img [ref=e65]
+              - generic [ref=e67]: "500"
+            - link [ref=e68]:
+              - /url: /dashboard/plan-and-credits
+              - button "Buy credits or upgrade plan" [ref=e69]:
+                - img [ref=e70]
+      - main [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - img "acmetech.com logo" [ref=e76]
+            - generic [ref=e77]:
+              - generic [ref=e80]:
+                - heading "Acme Technologies" [level=1] [ref=e82]
+                - generic [ref=e83]:
+                  - link [ref=e85]:
+                    - /url: https://acmetech.com
+                    - img [ref=e87]
+                  - link [ref=e91]:
+                    - /url: https://linkedin.com/company/acmetech
+                    - img [ref=e93]
+              - generic [ref=e97]:
+                - generic [ref=e102]: 100%
+                - generic [ref=e103]:
+                  - generic [ref=e104]:
+                    - img [ref=e106]
+                    - generic [ref=e108]: Recruiter Found
+                  - generic [ref=e109]:
+                    - img [ref=e111]
+                    - generic [ref=e113]: Blog posts Found
+                  - generic [ref=e114]:
+                    - img [ref=e116]
+                    - generic [ref=e118]: Email Generated
+          - generic [ref=e120]:
+            - heading "Email Generated" [level=3] [ref=e121]:
+              - img [ref=e122]
+              - text: Email Generated
+            - generic [ref=e125]:
+              - generic [ref=e126]:
+                - generic [ref=e127]:
+                  - generic [ref=e128]: Subject
+                  - textbox [ref=e131]: AI Innovation at Acme Technologies
+                - generic [ref=e132]:
+                  - generic [ref=e133]: Body
+                  - textbox [ref=e134]: Dear Sarah, I noticed your impressive work at Acme Technologies...
+                - button "View Prompt" [ref=e136]:
+                  - button "View Prompt" [ref=e137]
+              - generic [ref=e138]:
+                - link "Send email" [ref=e140]:
+                  - /url: mailto:sarah.johnson@acmetech.com?subject=AI%20Innovation%20at%20Acme%20Technologies&body=Dear%20Sarah%2C%0A%0AI%20noticed%20your%20impressive%20work%20at%20Acme%20Technologies...
+                  - button "Send email" [ref=e141]
+                - button "Generate another" [ref=e142]:
+                  - button "Generate another" [ref=e143]
+                - generic [ref=e144]:
+                  - heading "Email perfect because:" [level=2] [ref=e145]
+                  - list [ref=e146]:
+                    - listitem [ref=e147]:
+                      - img [ref=e148]
+                      - generic [ref=e150]: Personalized based on recent blog posts
+                    - listitem [ref=e151]:
+                      - img [ref=e152]
+                      - generic [ref=e154]: References specific technical achievements
+                    - listitem [ref=e155]:
+                      - img [ref=e156]
+                      - generic [ref=e158]: Clear call to action
+          - generic [ref=e160]:
+            - heading "Recruiter Summary" [level=3] [ref=e161]:
+              - img [ref=e162]
+              - text: Recruiter Summary
+            - generic [ref=e165]:
+              - generic [ref=e166]:
+                - generic [ref=e167]:
+                  - generic [ref=e168]:
+                    - generic [ref=e169]:
+                      - generic [ref=e170]: SJ
+                      - generic [ref=e171]:
+                        - heading "Sarah Johnson" [level=3] [ref=e172]
+                        - paragraph [ref=e173]: Head of Talent Acquisition
+                        - paragraph [ref=e174]:
+                          - img [ref=e175]
+                          - generic [ref=e178]: United States
+                    - link "View on Linkedin" [ref=e180]:
+                      - /url: https://linkedin.com/in/sarahjohnson
+                      - button "View on Linkedin" [ref=e182]
+                    - button "Find someone else" [ref=e184]:
+                      - button "Find someone else" [ref=e186]
+                  - generic [ref=e187]:
+                    - paragraph [ref=e188]: Key Skills
+                    - generic [ref=e189]:
+                      - generic [ref=e191]: Recruiting
+                      - generic [ref=e193]: Talent Management
+                      - generic [ref=e195]: HR Strategy
+                - generic [ref=e196]:
+                  - generic [ref=e197]:
+                    - paragraph [ref=e198]: Experience
+                    - list [ref=e199]:
+                      - link "Acme Technologies logo Head of Talent Acquisition Acme Technologies 2020-01 → Current" [ref=e200]:
+                        - /url: "#"
+                        - listitem [ref=e201]:
+                          - generic [ref=e202]:
+                            - img "Acme Technologies logo" [ref=e204]
+                            - generic [ref=e205]:
+                              - paragraph [ref=e206]: Head of Talent Acquisition
+                              - paragraph [ref=e207]: Acme Technologies
+                              - paragraph [ref=e208]: 2020-01 → Current
+                  - generic [ref=e209]:
+                    - paragraph [ref=e210]: Education
+                    - list [ref=e211]:
+                      - listitem [ref=e212]: No education
+              - generic [ref=e213]:
+                - paragraph [ref=e214]: Sarah Johnson matches this criteria - Tech Recruiters Strategy
+                - generic [ref=e216]:
+                  - img [ref=e217]
+                  - generic [ref=e220]:
+                    - text: "Seniority Level:"
+                    - strong [ref=e221]: Senior
+                    - generic [ref=e222]: or
+                    - strong [ref=e223]: Manager
+          - generic [ref=e225]:
+            - heading "Blog Articles Selected" [level=3] [ref=e226]:
+              - img [ref=e227]
+              - text: Blog Articles Selected
+            - generic [ref=e230]:
+              - generic [ref=e231]:
+                - article [ref=e233]:
+                  - heading "How We Build Scalable Systems at Acme" [level=2] [ref=e234]
+                  - paragraph [ref=e235]: In this article we discuss our architecture...
+                  - link "Read more" [ref=e237]:
+                    - /url: https://blog.acmetech.com/scalable-systems
+                    - text: Read more
+                    - img [ref=e239]
+                - article [ref=e242]:
+                  - heading "Our Engineering Culture" [level=2] [ref=e243]
+                  - paragraph [ref=e244]: At Acme we value collaboration and innovation...
+                  - link "Read more" [ref=e246]:
+                    - /url: https://blog.acmetech.com/engineering-culture
+                    - text: Read more
+                    - img [ref=e248]
+              - generic [ref=e250]:
+                - generic [ref=e253]:
+                  - generic [ref=e254]:
+                    - paragraph [ref=e255]: Posts found
+                    - paragraph [ref=e256]: "12"
+                  - img [ref=e258]
+                - generic [ref=e263]:
+                  - generic [ref=e264]:
+                    - paragraph [ref=e265]: Posts Deeply Analyzed
+                    - paragraph [ref=e266]: "2"
+                  - img [ref=e268]
+                - generic [ref=e278]:
+                  - generic [ref=e279]:
+                    - paragraph [ref=e280]: Blogs found
+                    - paragraph [ref=e281]: "3"
+                  - img [ref=e283]
+  - generic [ref=e290] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e291]:
+      - img [ref=e292]
+    - generic [ref=e297]:
+      - button "Open issues overlay" [ref=e298]:
+        - generic [ref=e299]:
+          - generic [ref=e300]: "3"
+          - generic [ref=e301]: "4"
+        - generic [ref=e302]:
+          - text: Issue
+          - generic [ref=e303]: s
+      - button "Collapse issues badge" [ref=e304]:
+        - img [ref=e305]
+  - alert [ref=e307]
+  - iframe [ref=e308]
+```

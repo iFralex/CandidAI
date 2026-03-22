@@ -26,6 +26,12 @@ function buildMockUser(step: number) {
  * Register a static /api/protected/user mock that always returns the given step.
  */
 async function mockUserAtStep(page: Page, step: number) {
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(buildMockUser(step))).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
@@ -45,6 +51,12 @@ async function mockUserAtStep(page: Page, step: number) {
 async function mockUserWithAdvance(page: Page, initialStep: number) {
   let currentStep = initialStep;
 
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(buildMockUser(initialStep))).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
@@ -121,6 +133,12 @@ async function mockStripeJs(page: Page) {
   window.Stripe = function(publishableKey, options) {
     return {
       elements: function(opts) { return elementsInstance; },
+      createToken: async function(options) {
+        return {
+          token: { id: 'tok_mock_test' },
+          error: null,
+        };
+      },
       createPaymentMethod: async function(data) {
         return {
           paymentMethod: { id: 'pm_mock_' + Date.now() },
@@ -189,15 +207,17 @@ test.describe("Onboarding - Ultra Plan - Step 1 (Plan Selection)", () => {
       page.getByText("Choose Your Success Plan")
     ).toBeVisible({ timeout: 10000 });
 
+    // "Select Plan" buttons are ordered Base(0), Pro(1), Ultra(2) in PlanSelector
     const selectUltraBtn = page
-      .getByRole("button", { name: /ultra/i })
-      .first();
+      .getByRole("button", { name: "Select Plan" })
+      .nth(2);
     await expect(selectUltraBtn).toBeVisible({ timeout: 10000 });
     await selectUltraBtn.click();
 
+    // After selecting a paid plan, the global "Continue Setup" button becomes enabled
     await expect(
-      page.getByRole("button", { name: /selected/i }).first()
-    ).toBeVisible({ timeout: 5000 });
+      page.getByRole("button", { name: /continue setup/i })
+    ).toBeEnabled({ timeout: 5000 });
   });
 
   test("step 1: selecting Ultra Plan and clicking submit advances to step 2", async ({
@@ -218,17 +238,17 @@ test.describe("Onboarding - Ultra Plan - Step 1 (Plan Selection)", () => {
       page.getByText("Choose Your Success Plan")
     ).toBeVisible({ timeout: 10000 });
 
+    // "Select Plan" buttons ordered Base(0), Pro(1), Ultra(2)
     const selectUltraBtn = page
-      .getByRole("button", { name: /ultra/i })
-      .first();
+      .getByRole("button", { name: "Select Plan" })
+      .nth(2);
     await expect(selectUltraBtn).toBeVisible({ timeout: 10000 });
     await selectUltraBtn.click();
 
     advanceTo(2);
 
     const submitBtn = page
-      .getByRole("button", { name: /ultra/i })
-      .last();
+      .getByRole("button", { name: /continue setup/i });
     await expect(submitBtn).toBeEnabled({ timeout: 5000 });
     await submitBtn.click();
 
@@ -280,13 +300,15 @@ test.describe("Onboarding - Ultra Plan - Step 2 (Company Input)", () => {
       /search by company name or paste a linkedin url/i
     );
     await expect(companyInput).toBeVisible({ timeout: 5000 });
-    await companyInput.fill("ultratech.com");
-    await companyInput.press("Enter");
+    await companyInput.fill("linkedin.com/company/ultratech");
+    const addCompanyBtn = page.getByRole("button", { name: /add from linkedin url/i });
+    await expect(addCompanyBtn).toBeVisible({ timeout: 5000 });
+    await addCompanyBtn.click();
 
     const continueBtn = page.getByRole("button", {
       name: /continue setup/i,
     });
-    await expect(continueBtn).toBeVisible({ timeout: 5000 });
+    await expect(continueBtn).toBeEnabled({ timeout: 5000 });
 
     advanceTo(3);
     await continueBtn.click();
@@ -394,13 +416,13 @@ test.describe("Onboarding - Ultra Plan - Step 4 (Advanced Recruiter Filters)", (
       page.getByText("Advanced Recruiter Filters")
     ).toBeVisible({ timeout: 10000 });
 
-    // Ultra plan allows 50 filters
-    await expect(page.getByText(/0 \/ 50 filters selected/i)).toBeVisible({
+    // Ultra plan allows 50 filters — badge text: "{n} / 50 strategies"
+    await expect(page.getByText(/\/ 50 strategies/i).first()).toBeVisible({
       timeout: 5000,
     });
   });
 
-  test("step 4: clicking 'Skip Filters' advances to step 5", async ({
+  test("step 4: clicking 'Continue Setup' without filters advances to step 5", async ({
     page,
   }) => {
     const advanceTo = await mockUserWithAdvance(page, 4);
@@ -412,16 +434,17 @@ test.describe("Onboarding - Ultra Plan - Step 4 (Advanced Recruiter Filters)", (
 
     advanceTo(5);
 
-    const skipBtn = page.getByRole("button", { name: /skip filters/i });
-    await expect(skipBtn).toBeVisible({ timeout: 5000 });
-    await skipBtn.click();
+    // The wrapper only has "Reset to Default" and "Continue Setup" buttons (no "Skip Filters")
+    const continueBtn = page.getByRole("button", { name: /continue setup/i });
+    await expect(continueBtn).toBeVisible({ timeout: 5000 });
+    await continueBtn.click();
 
     await expect(
       page.getByText("Setup Complete!")
     ).toBeVisible({ timeout: 10000 });
   });
 
-  test("step 4: selecting a filter and clicking Continue Setup advances to step 5", async ({
+  test("step 4: selecting a strategy and clicking Continue Setup advances to step 5", async ({
     page,
   }) => {
     const advanceTo = await mockUserWithAdvance(page, 4);
@@ -430,11 +453,6 @@ test.describe("Onboarding - Ultra Plan - Step 4 (Advanced Recruiter Filters)", (
     await expect(
       page.getByText("Advanced Recruiter Filters")
     ).toBeVisible({ timeout: 10000 });
-
-    // Click the "Location" filter card to select it
-    const locationCard = page.getByText("Location").first();
-    await expect(locationCard).toBeVisible({ timeout: 5000 });
-    await locationCard.click();
 
     advanceTo(5);
 
@@ -458,7 +476,7 @@ test.describe("Onboarding - Ultra Plan - Step 5 (Custom Instructions)", () => {
   }) => {
     await mockUserAtStep(page, 5);
     await page.goto("/dashboard");
-    await expect(page.getByText("Setup Complete!")).toBeVisible({
+    await expect(page.getByText("Setup Complete!").first()).toBeVisible({
       timeout: 10000,
     });
   });
@@ -469,7 +487,7 @@ test.describe("Onboarding - Ultra Plan - Step 5 (Custom Instructions)", () => {
     const advanceTo = await mockUserWithAdvance(page, 5);
 
     await page.goto("/dashboard");
-    await expect(page.getByText("Setup Complete!")).toBeVisible({
+    await expect(page.getByText("Setup Complete!").first()).toBeVisible({
       timeout: 10000,
     });
 
@@ -688,16 +706,15 @@ test.describe("Onboarding - Ultra Plan - Full End-to-End Flow", () => {
     ).toBeVisible({ timeout: 10000 });
 
     const selectUltraBtn = page
-      .getByRole("button", { name: /ultra/i })
-      .first();
+      .getByRole("button", { name: "Select Plan" })
+      .nth(2);
     await expect(selectUltraBtn).toBeVisible({ timeout: 10000 });
     await selectUltraBtn.click();
 
     advanceTo(2);
 
     const submitStep1Btn = page
-      .getByRole("button", { name: /ultra/i })
-      .last();
+      .getByRole("button", { name: /continue setup/i });
     await expect(submitStep1Btn).toBeEnabled({ timeout: 5000 });
     await submitStep1Btn.click();
 
@@ -710,13 +727,15 @@ test.describe("Onboarding - Ultra Plan - Full End-to-End Flow", () => {
       /search by company name or paste a linkedin url/i
     );
     await expect(companyInput).toBeVisible({ timeout: 5000 });
-    await companyInput.fill("ultratech.com");
-    await companyInput.press("Enter");
+    await companyInput.fill("linkedin.com/company/ultratech");
+    const addCompanyBtn = page.getByRole("button", { name: /add from linkedin url/i });
+    await expect(addCompanyBtn).toBeVisible({ timeout: 5000 });
+    await addCompanyBtn.click();
 
     const continueBtn = page.getByRole("button", {
       name: /continue setup/i,
     });
-    await expect(continueBtn).toBeVisible({ timeout: 5000 });
+    await expect(continueBtn).toBeEnabled({ timeout: 5000 });
 
     advanceTo(3);
     await continueBtn.click();
@@ -762,8 +781,8 @@ test.describe("Onboarding - Ultra Plan - Full End-to-End Flow", () => {
 
     advanceTo(5);
 
-    // Skip the advanced filters for simplicity
-    const skipBtn = page.getByRole("button", { name: /skip filters/i });
+    // Continue Setup (no "Skip Filters" button — only "Reset to Default" and "Continue Setup")
+    const skipBtn = page.getByRole("button", { name: /continue setup/i });
     await expect(skipBtn).toBeVisible({ timeout: 5000 });
     await skipBtn.click();
 
@@ -809,6 +828,13 @@ test.describe("Onboarding - Ultra Plan - Full End-to-End Flow", () => {
     // --- Simulate webhook receipt: advance to step 50 ---
     // Webhook sets onboardingStep=50, plan=ultra, maxCompanies=100, credits=2500.
     advanceTo(50);
+    // Update cookie so SSR sees step=50 (server action set cookie to step=6; webhook advances it)
+    await page.context().addCookies([{
+      name: '__playwright_user__',
+      value: Buffer.from(JSON.stringify(buildMockUser(50))).toString('base64'),
+      domain: 'localhost',
+      path: '/',
+    }]);
 
     // Navigate to dashboard to verify the main dashboard is now unlocked
     await page.goto("/dashboard");

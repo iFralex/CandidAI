@@ -1,0 +1,42 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - banner [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e8]:
+          - heading "Onboarding" [level=1] [ref=e9]
+          - paragraph [ref=e10]: "Setup Progress: Step 5 of 4"
+        - generic [ref=e15]: 125%
+    - main [ref=e16]:
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - img [ref=e21]
+          - heading "Setup Complete! 🎉" [level=2] [ref=e24]
+          - paragraph [ref=e25]: Great! Before we start generating your personalized emails, let's customize the style and focus to match your preferences.
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - heading "Target Position Description" [level=3] [ref=e28]
+            - textbox "I want to be..." [active] [ref=e29]: I want to be a Senior Software Engineer at a fintech startup
+          - generic [ref=e30]:
+            - heading "Custom Instructions" [level=3] [ref=e31]
+            - textbox "Anything you want to specify; your instructions will be added in the mail generation prompt." [ref=e32]
+        - generic [ref=e33]:
+          - button "Start Email Generation" [disabled] [ref=e34]:
+            - img [ref=e35]
+            - generic [ref=e40]: Start Email Generation
+          - generic [ref=e41]:
+            - generic [ref=e42]:
+              - img [ref=e43]
+              - generic [ref=e46]: "Processing: 24hrs - 7 days"
+            - generic [ref=e47]:
+              - img [ref=e48]
+              - generic [ref=e51]: Email updates included
+            - generic [ref=e52]:
+              - img [ref=e53]
+              - generic [ref=e55]: Premium queue priority
+  - button "Open Next.js Dev Tools" [ref=e61] [cursor=pointer]:
+    - img [ref=e62]
+  - alert [ref=e67]
+```

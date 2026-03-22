@@ -31,13 +31,20 @@ function buildMockUser(overrides: Partial<Record<string, unknown>> = {}) {
 
 /** Mock /api/protected/user for a fully-onboarded user */
 async function mockUser(page: Page, overrides: Partial<Record<string, unknown>> = {}) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
@@ -53,58 +60,72 @@ async function mockUser(page: Page, overrides: Partial<Record<string, unknown>> 
  *   Articles Found = 7  (sum of blog_articles)
  */
 async function mockResultsWithData(page: Page) {
+  const resultsData = {
+    success: true,
+    data: {
+      // Processing campaign 1 – no email_sent key
+      "company-id-1": {
+        company: { name: "Acme Corp", domain: "acme.com" },
+        recruiter: { name: "Alice Smith", job_title: "HR Manager" },
+        blog_articles: 3,
+        start_date: { _seconds: 1700000000, _nanoseconds: 0 },
+      },
+      // Processing campaign 2 – no email_sent key
+      "company-id-2": {
+        company: { name: "Beta Ltd", domain: "beta.com" },
+        blog_articles: 2,
+        start_date: { _seconds: 1700000100, _nanoseconds: 0 },
+      },
+      // Ready to Send – email_sent._seconds === 0
+      "company-id-3": {
+        company: { name: "Gamma Inc", domain: "gamma.com" },
+        recruiter: { name: "Bob Jones", job_title: "Tech Lead" },
+        blog_articles: 1,
+        email_sent: { _seconds: 0, _nanoseconds: 0 },
+        start_date: { _seconds: 1700000200, _nanoseconds: 0 },
+      },
+      // Sent – email_sent._seconds > 0
+      "company-id-4": {
+        company: { name: "Delta Co", domain: "delta.com" },
+        recruiter: { name: "Carol White", job_title: "CTO" },
+        blog_articles: 1,
+        email_sent: { _seconds: 1700100000, _nanoseconds: 0 },
+        start_date: { _seconds: 1700000300, _nanoseconds: 0 },
+      },
+    },
+  };
+  // Use cookie to isolate results data per browser context (avoids shared mock store race conditions)
+  await page.context().addCookies([{
+    name: '__playwright_results__',
+    value: Buffer.from(JSON.stringify(resultsData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/results**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          // Processing campaign 1 – no email_sent key
-          "company-id-1": {
-            company: { name: "Acme Corp", domain: "acme.com" },
-            recruiter: { name: "Alice Smith", job_title: "HR Manager" },
-            blog_articles: 3,
-            start_date: { _seconds: 1700000000, _nanoseconds: 0 },
-          },
-          // Processing campaign 2 – no email_sent key
-          "company-id-2": {
-            company: { name: "Beta Ltd", domain: "beta.com" },
-            blog_articles: 2,
-            start_date: { _seconds: 1700000100, _nanoseconds: 0 },
-          },
-          // Ready to Send – email_sent._seconds === 0
-          "company-id-3": {
-            company: { name: "Gamma Inc", domain: "gamma.com" },
-            recruiter: { name: "Bob Jones", job_title: "Tech Lead" },
-            blog_articles: 1,
-            email_sent: { _seconds: 0, _nanoseconds: 0 },
-            start_date: { _seconds: 1700000200, _nanoseconds: 0 },
-          },
-          // Sent – email_sent._seconds > 0
-          "company-id-4": {
-            company: { name: "Delta Co", domain: "delta.com" },
-            recruiter: { name: "Carol White", job_title: "CTO" },
-            blog_articles: 1,
-            email_sent: { _seconds: 1700100000, _nanoseconds: 0 },
-            start_date: { _seconds: 1700000300, _nanoseconds: 0 },
-          },
-        },
-      }),
+      body: JSON.stringify(resultsData),
     });
   });
 }
 
 /** Mock /api/protected/results with no campaign data (empty state) */
 async function mockResultsEmpty(page: Page) {
+  const resultsData = { success: true, data: {} };
+  // Use a dedicated cookie that takes priority over the shared mock store,
+  // preventing race conditions with parallel tests setting non-empty results.
+  await page.context().addCookies([{
+    name: '__playwright_empty_results__',
+    value: '1',
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/results**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {},
-      }),
+      body: JSON.stringify(resultsData),
     });
   });
 }
@@ -121,7 +142,7 @@ test.describe("Main Dashboard - Loading and Structure", () => {
     await page.goto("/dashboard");
 
     // Header text
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Dashboard", exact: true }).first()).toBeVisible({
       timeout: 10000,
     });
   });
@@ -179,12 +200,12 @@ test.describe("Main Dashboard - Stats Cards", () => {
 
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Processing")).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("Ready to Send")).toBeVisible({
+    await expect(page.getByText("Processing").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Ready to Send").first()).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.getByText("Emails Sent")).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("Articles Found")).toBeVisible({
+    await expect(page.getByText("Emails Sent").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Articles Found").first()).toBeVisible({
       timeout: 10000,
     });
   });
@@ -293,7 +314,7 @@ test.describe("Main Dashboard - Empty State", () => {
     await page.goto("/dashboard");
 
     // The Results component renders "No companies found." when results is empty
-    await expect(page.getByText(/No companies found/i)).toBeVisible({
+    await expect(page.getByText(/No companies found/i).first()).toBeVisible({
       timeout: 10000,
     });
   });

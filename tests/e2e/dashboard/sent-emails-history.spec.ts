@@ -108,13 +108,20 @@ function buildMockResultsNoSentEmails() {
 }
 
 async function mockUser(page: Page, overrides: Partial<Record<string, unknown>> = {}) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
@@ -124,40 +131,43 @@ async function mockResults(
   page: Page,
   data: Record<string, unknown> = buildMockResultsWithSentEmails()
 ) {
+  const resultsData = { success: true, data };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/results', response: resultsData },
+  });
   await page.route("**/api/protected/results**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data,
-      }),
+      body: JSON.stringify(resultsData),
     });
   });
 }
 
 async function mockResultsEmpty(page: Page) {
+  const resultsData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/results', response: resultsData },
+  });
   await page.route("**/api/protected/results**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {},
-      }),
+      body: JSON.stringify(resultsData),
     });
   });
 }
 
 async function mockResultsNoSentEmails(page: Page) {
+  const resultsData = { success: true, data: buildMockResultsNoSentEmails() };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/results', response: resultsData },
+  });
   await page.route("**/api/protected/results**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: buildMockResultsNoSentEmails(),
-      }),
+      body: JSON.stringify(resultsData),
     });
   });
 }
@@ -207,8 +217,8 @@ test.describe("Sent Emails - Page Load with Sent Emails", () => {
     await page.goto("/dashboard/sent-emails");
 
     // Alpha Corp and Beta IO have sent emails — their names should appear
-    await expect(page.getByText("Alpha Corp")).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText("Beta IO")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Alpha Corp").first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Beta IO").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("companies without sent email are not shown", async ({ page }) => {
@@ -233,8 +243,8 @@ test.describe("Sent Emails - Card Data Display", () => {
 
     await page.goto("/dashboard/sent-emails");
 
-    await expect(page.getByText("Alpha Corp")).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText("Beta IO")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Alpha Corp").first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Beta IO").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("card shows recruiter name", async ({ page }) => {
@@ -244,8 +254,8 @@ test.describe("Sent Emails - Card Data Display", () => {
     await page.goto("/dashboard/sent-emails");
 
     // Recruiter names are shown in the card subtitle
-    await expect(page.getByText(/Alice Johnson/i)).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/Bob Williams/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Alice Johnson/i).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Bob Williams/i).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("card shows send date (started date formatted as localeDate)", async ({
@@ -280,9 +290,9 @@ test.describe("Sent Emails - Card Data Display", () => {
     await page.goto("/dashboard/sent-emails");
 
     // All three companies with sent emails should be visible
-    await expect(page.getByText("Alpha Corp")).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText("Beta IO")).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText("Gamma Technologies")).toBeVisible({
+    await expect(page.getByText("Alpha Corp").first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Beta IO").first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Gamma Technologies").first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -386,7 +396,7 @@ test.describe("Sent Emails - Date Filter Controls", () => {
     await page.goto("/dashboard/sent-emails");
 
     // SentEmailsFilter renders a count like "3 emails sent"
-    await expect(page.getByText(/email.*sent/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/email.*sent/i).first()).toBeVisible({ timeout: 15000 });
   });
 });
 
@@ -453,7 +463,7 @@ test.describe("Sent Emails - Empty State", () => {
     await page.goto("/dashboard/sent-emails");
 
     // "0 emails sent" label
-    await expect(page.getByText(/0 email/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/0 email/i).first()).toBeVisible({ timeout: 15000 });
   });
 });
 
@@ -476,7 +486,7 @@ test.describe("Sent Emails - Date Filters - Last 7 Days Preset", () => {
     await page.goto("/dashboard/sent-emails?preset=7");
 
     // Alpha Corp (3 days ago) is within 7 days — should be visible
-    await expect(page.getByText("Alpha Corp")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Alpha Corp").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("?preset=7 excludes emails older than 7 days", async ({ page }) => {
@@ -508,7 +518,7 @@ test.describe("Sent Emails - Date Filters - Last 7 Days Preset", () => {
     await page.goto("/dashboard/sent-emails?preset=7");
 
     // Only 1 email in last 7 days (Alpha Corp)
-    await expect(page.getByText(/1 email sent/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/1 email sent/i).first()).toBeVisible({ timeout: 15000 });
   });
 });
 
@@ -520,8 +530,8 @@ test.describe("Sent Emails - Date Filters - Last 30 Days Preset", () => {
     await page.goto("/dashboard/sent-emails?preset=30");
 
     // Alpha Corp (3 days ago) and Beta IO (10 days ago) are both within 30 days
-    await expect(page.getByText("Alpha Corp")).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText("Beta IO")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Alpha Corp").first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Beta IO").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("?preset=30 excludes emails older than 30 days", async ({ page }) => {
@@ -543,7 +553,7 @@ test.describe("Sent Emails - Date Filters - Last 30 Days Preset", () => {
     await page.goto("/dashboard/sent-emails?preset=30");
 
     // 2 emails in last 30 days (Alpha Corp + Beta IO)
-    await expect(page.getByText(/2 emails sent/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/2 emails sent/i).first()).toBeVisible({ timeout: 15000 });
   });
 });
 
@@ -587,7 +597,7 @@ test.describe("Sent Emails - Date Filters - Custom Range", () => {
     );
 
     // Alpha Corp (3 days ago) is inside [5 days ago, today]
-    await expect(page.getByText("Alpha Corp")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Alpha Corp").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("custom range from 5 days ago to today excludes older emails", async ({
@@ -626,7 +636,7 @@ test.describe("Sent Emails - Date Filters - Custom Range", () => {
     );
 
     // Only 1 email within [5 days ago, today]
-    await expect(page.getByText(/1 email sent/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/1 email sent/i).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("?preset=custom with no from/to shows all campaigns (no date constraint)", async ({
@@ -639,9 +649,9 @@ test.describe("Sent Emails - Date Filters - Custom Range", () => {
     await page.goto("/dashboard/sent-emails?preset=custom");
 
     // All 3 companies with sent emails should be visible
-    await expect(page.getByText("Alpha Corp")).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText("Beta IO")).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText("Gamma Technologies")).toBeVisible({
+    await expect(page.getByText("Alpha Corp").first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Beta IO").first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Gamma Technologies").first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -665,7 +675,7 @@ test.describe("Sent Emails - Date Filters - Edge Cases", () => {
     );
 
     // Server filter: d >= fromDate AND d <= toDate is unsatisfiable → empty
-    await expect(page.getByText(/No companies found/i)).toBeVisible({
+    await expect(page.getByText(/No companies found/i).first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -681,7 +691,7 @@ test.describe("Sent Emails - Date Filters - Edge Cases", () => {
       "/dashboard/sent-emails?preset=custom&from=2099-01-01&to=2099-12-31"
     );
 
-    await expect(page.getByText(/No companies found/i)).toBeVisible({
+    await expect(page.getByText(/No companies found/i).first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -709,6 +719,6 @@ test.describe("Sent Emails - Date Filters - Edge Cases", () => {
     );
 
     // "0 emails sent" count
-    await expect(page.getByText(/0 email/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/0 email/i).first()).toBeVisible({ timeout: 15000 });
   });
 });

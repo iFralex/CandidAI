@@ -36,13 +36,20 @@ async function mockUser(
   page: Page,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
@@ -50,14 +57,15 @@ async function mockUser(
 
 // Mock the /api/protected/account endpoint
 async function mockAccount(page: Page) {
+  const accountData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {},
-      }),
+      body: JSON.stringify(accountData),
     });
   });
 }
@@ -123,6 +131,12 @@ async function injectStripeMock(
       // Stripe mock instance
       var mockStripe = {
         elements: function(options) { return mockElements; },
+        createToken: function(options) {
+          return Promise.resolve({
+            token: { id: 'tok_mock_test' },
+            error: null,
+          });
+        },
         createPaymentMethod: function(options) {
           return Promise.resolve({
             paymentMethod: { id: 'pm_mock_test_4242_123' },
@@ -202,7 +216,7 @@ test.describe("Plan & Credits - Credit Purchase Success - pkg_1000", () => {
     await buyButton.click();
 
     await expect(
-      page.getByRole("dialog").getByText(/1,000/i)
+      page.getByRole("dialog").getByText(/1,000/i).first()
     ).toBeVisible({ timeout: 15000 });
   });
 
@@ -293,13 +307,20 @@ test.describe("Plan & Credits - Credit Badge After Purchase", () => {
     await page.goto("/dashboard/plan-and-credits");
 
     // The header badge shows the current credits (150)
-    await expect(page.getByText("150")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("150").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("header shows updated credits (+1000) after page reload following purchase", async ({
     page,
   }) => {
     let callCount = 0;
+
+    await page.context().addCookies([{
+      name: '__playwright_user__',
+      value: Buffer.from(JSON.stringify(buildMockUser({ credits: 150 }))).toString('base64'),
+      domain: 'localhost',
+      path: '/',
+    }]);
 
     // First call returns 150 credits; subsequent calls return 1150 (after purchase)
     await page.route("**/api/protected/user**", async (route) => {
@@ -321,7 +342,7 @@ test.describe("Plan & Credits - Credit Badge After Purchase", () => {
 
     // Initial page load — badge shows 150
     await page.goto("/dashboard/plan-and-credits");
-    await expect(page.getByText("150")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("150").first()).toBeVisible({ timeout: 15000 });
 
     // Purchase credits
     const creditSection = page
@@ -330,19 +351,32 @@ test.describe("Plan & Credits - Credit Badge After Purchase", () => {
     await creditSection.getByRole("button", { name: /Buy/i }).first().click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 15000 });
     await page.getByRole("dialog").getByRole("button", { name: /Pay/i }).click();
-    await expect(page.getByText(/Payment successful!/i)).toBeVisible({
+    await expect(page.getByText(/Payment successful!/i).first()).toBeVisible({
       timeout: 15000,
     });
 
-    // Reload the page; second call to user API returns 1150 credits
+    // Update the cookie to reflect the new credits, then reload
+    await page.context().addCookies([{
+      name: '__playwright_user__',
+      value: Buffer.from(JSON.stringify(buildMockUser({ credits: 1150 }))).toString('base64'),
+      domain: 'localhost',
+      path: '/',
+    }]);
     await page.reload();
-    await expect(page.getByText("1150")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("1150").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("header shows updated credits (+2500) after pkg_2500 purchase and reload", async ({
     page,
   }) => {
     let callCount = 0;
+
+    await page.context().addCookies([{
+      name: '__playwright_user__',
+      value: Buffer.from(JSON.stringify(buildMockUser({ credits: 150 }))).toString('base64'),
+      domain: 'localhost',
+      path: '/',
+    }]);
 
     await page.route("**/api/protected/user**", async (route) => {
       callCount++;
@@ -362,7 +396,7 @@ test.describe("Plan & Credits - Credit Badge After Purchase", () => {
     await mockCreatePaymentSuccess(page);
 
     await page.goto("/dashboard/plan-and-credits");
-    await expect(page.getByText("150")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("150").first()).toBeVisible({ timeout: 15000 });
 
     // Click the second Buy button (pkg_2500)
     const creditSection = page
@@ -372,18 +406,31 @@ test.describe("Plan & Credits - Credit Badge After Purchase", () => {
     await buyButtons.nth(1).click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 15000 });
     await page.getByRole("dialog").getByRole("button", { name: /Pay/i }).click();
-    await expect(page.getByText(/Payment successful!/i)).toBeVisible({
+    await expect(page.getByText(/Payment successful!/i).first()).toBeVisible({
       timeout: 15000,
     });
 
+    await page.context().addCookies([{
+      name: '__playwright_user__',
+      value: Buffer.from(JSON.stringify(buildMockUser({ credits: 2650 }))).toString('base64'),
+      domain: 'localhost',
+      path: '/',
+    }]);
     await page.reload();
-    await expect(page.getByText("2650")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("2650").first()).toBeVisible({ timeout: 15000 });
   });
 
   test("header shows updated credits (+5000) after pkg_5000 purchase and reload", async ({
     page,
   }) => {
     let callCount = 0;
+
+    await page.context().addCookies([{
+      name: '__playwright_user__',
+      value: Buffer.from(JSON.stringify(buildMockUser({ credits: 150 }))).toString('base64'),
+      domain: 'localhost',
+      path: '/',
+    }]);
 
     await page.route("**/api/protected/user**", async (route) => {
       callCount++;
@@ -403,7 +450,7 @@ test.describe("Plan & Credits - Credit Badge After Purchase", () => {
     await mockCreatePaymentSuccess(page);
 
     await page.goto("/dashboard/plan-and-credits");
-    await expect(page.getByText("150")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("150").first()).toBeVisible({ timeout: 15000 });
 
     // Click the third Buy button (pkg_5000)
     const creditSection = page
@@ -413,12 +460,18 @@ test.describe("Plan & Credits - Credit Badge After Purchase", () => {
     await buyButtons.nth(2).click();
     await expect(page.getByRole("dialog")).toBeVisible({ timeout: 15000 });
     await page.getByRole("dialog").getByRole("button", { name: /Pay/i }).click();
-    await expect(page.getByText(/Payment successful!/i)).toBeVisible({
+    await expect(page.getByText(/Payment successful!/i).first()).toBeVisible({
       timeout: 15000,
     });
 
+    await page.context().addCookies([{
+      name: '__playwright_user__',
+      value: Buffer.from(JSON.stringify(buildMockUser({ credits: 5150 }))).toString('base64'),
+      domain: 'localhost',
+      path: '/',
+    }]);
     await page.reload();
-    await expect(page.getByText("5150")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("5150").first()).toBeVisible({ timeout: 15000 });
   });
 });
 
@@ -444,7 +497,7 @@ test.describe("Plan & Credits - Success Flow for Each Package", () => {
 
     // Dialog title says "Buy 1,000 Credits"
     await expect(
-      page.getByRole("dialog").getByText(/1,000 Credits/i)
+      page.getByRole("dialog").getByText(/1,000 Credits/i).first()
     ).toBeVisible({ timeout: 15000 });
   });
 
@@ -464,7 +517,7 @@ test.describe("Plan & Credits - Success Flow for Each Package", () => {
     await creditSection.getByRole("button", { name: /Buy/i }).nth(1).click();
 
     await expect(
-      page.getByRole("dialog").getByText(/2,500 Credits/i)
+      page.getByRole("dialog").getByText(/2,500 Credits/i).first()
     ).toBeVisible({ timeout: 15000 });
   });
 
@@ -484,7 +537,7 @@ test.describe("Plan & Credits - Success Flow for Each Package", () => {
     await creditSection.getByRole("button", { name: /Buy/i }).nth(2).click();
 
     await expect(
-      page.getByRole("dialog").getByText(/5,000 Credits/i)
+      page.getByRole("dialog").getByText(/5,000 Credits/i).first()
     ).toBeVisible({ timeout: 15000 });
   });
 
@@ -504,7 +557,7 @@ test.describe("Plan & Credits - Success Flow for Each Package", () => {
     await creditSection.getByRole("button", { name: /Buy/i }).first().click();
     await page.getByRole("dialog").getByRole("button", { name: /Pay/i }).click();
 
-    await expect(page.getByText(/Payment successful!/i)).toBeVisible({
+    await expect(page.getByText(/Payment successful!/i).first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -525,7 +578,7 @@ test.describe("Plan & Credits - Success Flow for Each Package", () => {
     await creditSection.getByRole("button", { name: /Buy/i }).nth(1).click();
     await page.getByRole("dialog").getByRole("button", { name: /Pay/i }).click();
 
-    await expect(page.getByText(/Payment successful!/i)).toBeVisible({
+    await expect(page.getByText(/Payment successful!/i).first()).toBeVisible({
       timeout: 15000,
     });
   });
@@ -546,7 +599,7 @@ test.describe("Plan & Credits - Success Flow for Each Package", () => {
     await creditSection.getByRole("button", { name: /Buy/i }).nth(2).click();
     await page.getByRole("dialog").getByRole("button", { name: /Pay/i }).click();
 
-    await expect(page.getByText(/Payment successful!/i)).toBeVisible({
+    await expect(page.getByText(/Payment successful!/i).first()).toBeVisible({
       timeout: 15000,
     });
   });

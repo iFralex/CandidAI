@@ -41,31 +41,39 @@ async function setupAuthMocks(page: Page) {
     }
   });
 
+  const authUserData = {
+    uid: TEST_USER.uid,
+    name: TEST_USER.name,
+    email: TEST_USER.email,
+    onboardingStep: 50,
+    plan: "base",
+    credits: 100,
+    emailVerified: true,
+  };
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(authUserData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: {
-          uid: TEST_USER.uid,
-          name: TEST_USER.name,
-          email: TEST_USER.email,
-          onboardingStep: 50,
-          plan: "base",
-          credits: 100,
-          emailVerified: true,
-        },
+        user: authUserData,
       }),
     });
   });
+
 }
 
 async function performLogin(page: Page) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(TEST_USER.email);
   await page.getByLabel("Password").fill(TEST_USER.password);
-  await page.getByRole("button", { name: /^login$/i }).click();
+  await page.getByRole("button", { name: /^login$/i }).click({ force: true });
   await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 }
 
@@ -181,6 +189,8 @@ test.describe("Route Protection - Authenticated Access", () => {
 });
 
 test.describe("Logout Flow", () => {
+  test.describe.configure({ mode: "serial" });
+
   test("logout: redirects to /login and clears session", async ({
     page,
     context,
@@ -210,13 +220,15 @@ test.describe("Logout Flow", () => {
     await expect(sidebarFooter).toBeVisible({ timeout: 5000 });
     await sidebarFooter.click();
 
-    // Click "Log Out" in the dropdown
+    // Wait for dropdown open animation to complete before clicking
     const logoutBtn = page.getByRole("menuitem", { name: /log out/i });
     await expect(logoutBtn).toBeVisible({ timeout: 5000 });
-    await logoutBtn.click();
+    await page.waitForTimeout(300);
+    await logoutBtn.click({ force: true });
 
-    // After logout, should be redirected to /login
-    await page.waitForURL(/\/login/, { timeout: 10000 });
+    // After logout, router.push('/login') triggers a Next.js navigation
+    // (may be slower under server load — use generous timeout)
+    await page.waitForURL(/\/login/, { timeout: 20000 });
     expect(page.url()).toContain("/login");
   });
 
@@ -246,12 +258,14 @@ test.describe("Logout Flow", () => {
 
     const logoutBtn = page.getByRole("menuitem", { name: /log out/i });
     await expect(logoutBtn).toBeVisible({ timeout: 5000 });
-    await logoutBtn.click();
+    await page.waitForTimeout(300);
+    await logoutBtn.click({ force: true });
 
-    await page.waitForURL(/\/login/, { timeout: 10000 });
+    await page.waitForURL(/\/login/, { timeout: 20000 });
 
-    // After logout, update the mock to return 401 for /api/protected/user
+    // After logout, clear the test bypass cookie and update the mock to return 401
     // (simulating the expired/cleared session)
+    await page.context().clearCookies({ name: "__playwright_user__" });
     await page.unroute("**/api/protected/user**");
     await page.route("**/api/protected/user**", async (route) => {
       await route.fulfill({

@@ -20,11 +20,11 @@ test.describe("Login UX", () => {
     await page.getByLabel("Email").fill("test@example.com");
     await page.getByLabel("Password").fill("wrongpassword");
 
-    const submitButton = page.getByRole("button", { name: /^login$/i });
-    await submitButton.click();
+    await page.getByRole("button", { name: /^login$/i }).click();
 
-    // While request is in flight the button should be disabled
-    await expect(submitButton).toBeDisabled({ timeout: 2000 });
+    // While request is in flight the submit button should be disabled
+    // Note: button text changes to "Logging in..." when loading, so we use a type selector
+    await expect(page.locator("button[type='submit']")).toBeDisabled({ timeout: 2000 });
   });
 
   test("password field is type password (hidden text)", async ({ page }) => {

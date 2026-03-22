@@ -1,0 +1,113 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - img "Logo" [ref=e11]
+        - generic [ref=e12]: CandidAI
+      - list [ref=e16]:
+        - listitem [ref=e17]:
+          - link "Dashboard" [ref=e18]:
+            - /url: /dashboard
+            - img [ref=e19]
+            - generic [ref=e22]: Dashboard
+        - listitem [ref=e23]:
+          - link "Send All" [ref=e24]:
+            - /url: /dashboard/send-all
+            - img [ref=e25]
+            - generic [ref=e27]: Send All
+        - listitem [ref=e28]:
+          - link "Follow Ups" [ref=e29]:
+            - /url: /dashboard/follow-ups
+            - img [ref=e30]
+            - generic [ref=e33]: Follow Ups
+        - listitem [ref=e34]:
+          - link "Plan & Credits" [ref=e35]:
+            - /url: /dashboard/plan-and-credits
+            - img [ref=e36]
+            - generic [ref=e38]: Plan & Credits
+        - listitem [ref=e39]:
+          - link "Settings" [ref=e40]:
+            - /url: /dashboard/settings
+            - img [ref=e41]
+            - generic [ref=e44]: Settings
+      - generic [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: A
+        - generic [ref=e49]:
+          - paragraph [ref=e50]: Accessibility User
+          - paragraph [ref=e51]: accessibility@example.com
+    - generic [ref=e52]:
+      - banner [ref=e53]:
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - button "Toggle Sidebar" [ref=e56]:
+              - img [ref=e57]
+              - generic [ref=e59]: Toggle Sidebar
+            - heading "Dashboard" [level=1] [ref=e61]
+          - generic [ref=e62]:
+            - generic [ref=e64]:
+              - img [ref=e65]
+              - generic [ref=e67]: "100"
+            - link [ref=e68]:
+              - /url: /dashboard/plan-and-credits
+              - button "Buy credits or upgrade plan" [ref=e69]:
+                - img [ref=e70]
+      - main [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - generic [ref=e74]:
+              - heading "Welcome back Accessibility User! 👋" [level=1] [ref=e75]
+              - paragraph [ref=e76]: Here's what's happening with your work email generation
+            - button "New Campaign" [ref=e77]:
+              - text: New Campaign
+              - img [ref=e79]
+          - generic [ref=e80]:
+            - generic [ref=e82]:
+              - generic [ref=e83]:
+                - paragraph [ref=e84]: Processing
+                - paragraph [ref=e85]: "0"
+              - img [ref=e87]
+            - generic [ref=e93]:
+              - generic [ref=e94]:
+                - paragraph [ref=e95]: Ready to Send
+                - paragraph [ref=e96]: "0"
+              - img [ref=e98]
+            - generic [ref=e102]:
+              - generic [ref=e103]:
+                - paragraph [ref=e104]: Emails Sent
+                - paragraph [ref=e105]: "0"
+              - img [ref=e107]
+            - generic [ref=e111]:
+              - generic [ref=e112]:
+                - paragraph [ref=e113]: Articles Found
+                - paragraph [ref=e114]: "0"
+              - img [ref=e116]
+          - generic [ref=e119]:
+            - generic [ref=e120]:
+              - heading "Active Campaigns" [level=2] [ref=e121]
+              - button "Add More Companies" [ref=e122]:
+                - text: Add More Companies
+                - img [ref=e124]
+            - paragraph [ref=e125]: No companies found.
+          - generic [ref=e126]:
+            - generic [ref=e127]:
+              - heading "Need Help?" [level=3] [ref=e128]
+              - paragraph [ref=e129]: Check out our guides and tips to maximize your job search success.
+              - button "View Resources" [ref=e130]:
+                - text: View Resources
+                - img [ref=e132]
+            - generic [ref=e136]:
+              - heading "Upgrade Plan" [level=3] [ref=e137]
+              - paragraph [ref=e138]: Get more companies, advanced filters, and priority processing with Pro or Ultra plans.
+              - link "Upgrade Now" [ref=e139]:
+                - /url: /dashboard/plan-and-credits
+                - button "Upgrade Now" [ref=e140]:
+                  - text: Upgrade Now
+                  - img [ref=e142]
+  - button "Open Next.js Dev Tools" [ref=e149] [cursor=pointer]:
+    - img [ref=e150]
+  - alert [ref=e155]
+  - iframe [ref=e156]
+```

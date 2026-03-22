@@ -1,0 +1,199 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - img "Logo" [ref=e11]
+        - generic [ref=e12]: CandidAI
+      - list [ref=e16]:
+        - listitem [ref=e17]:
+          - link "Dashboard" [ref=e18] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e19]
+            - generic [ref=e22]: Dashboard
+        - listitem [ref=e23]:
+          - link "Send All" [ref=e24] [cursor=pointer]:
+            - /url: /dashboard/send-all
+            - img [ref=e25]
+            - generic [ref=e27]: Send All
+        - listitem [ref=e28]:
+          - link "Follow Ups" [ref=e29] [cursor=pointer]:
+            - /url: /dashboard/follow-ups
+            - img [ref=e30]
+            - generic [ref=e33]: Follow Ups
+        - listitem [ref=e34]:
+          - link "Plan & Credits" [ref=e35] [cursor=pointer]:
+            - /url: /dashboard/plan-and-credits
+            - img [ref=e36]
+            - generic [ref=e41]: Plan & Credits
+        - listitem [ref=e42]:
+          - link "Settings" [ref=e43] [cursor=pointer]:
+            - /url: /dashboard/settings
+            - img [ref=e44]
+            - generic [ref=e47]: Settings
+      - generic [ref=e50] [cursor=pointer]:
+        - generic [ref=e51]: D
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Dashboard Confirm User
+          - paragraph [ref=e54]: dashboard-confirm@example.com
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - button "Toggle Sidebar" [ref=e59]:
+              - img [ref=e60]
+              - generic [ref=e63]: Toggle Sidebar
+            - heading "Dashboard" [level=1] [ref=e65]
+          - generic [ref=e66]:
+            - generic [ref=e68]:
+              - img [ref=e69]
+              - generic [ref=e71]: "100"
+            - link [ref=e72] [cursor=pointer]:
+              - /url: /dashboard/plan-and-credits
+              - button "Buy credits or upgrade plan" [ref=e73]:
+                - img [ref=e74]
+      - main [ref=e77]:
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - generic [ref=e80]:
+              - heading "Welcome back Dashboard Confirm User! 👋" [level=1] [ref=e81]
+              - paragraph [ref=e82]: Here's what's happening with your work email generation
+            - button "New Campaign" [ref=e83]:
+              - text: New Campaign
+              - img [ref=e85]
+          - generic [ref=e88]:
+            - generic [ref=e90]:
+              - generic [ref=e91]:
+                - paragraph [ref=e92]: Processing
+                - paragraph [ref=e93]: "1"
+              - img [ref=e95]
+            - generic [ref=e101]:
+              - generic [ref=e102]:
+                - paragraph [ref=e103]: Ready to Send
+                - paragraph [ref=e104]: "0"
+              - img [ref=e106]
+            - generic [ref=e110]:
+              - generic [ref=e111]:
+                - paragraph [ref=e112]: Emails Sent
+                - paragraph [ref=e113]: "0"
+              - img [ref=e115]
+            - generic [ref=e119]:
+              - generic [ref=e120]:
+                - paragraph [ref=e121]: Articles Found
+                - paragraph [ref=e122]: "2"
+              - img [ref=e124]
+          - generic [ref=e127]:
+            - generic [ref=e128]:
+              - heading "Companies To Be Confirmed" [level=2] [ref=e129]
+              - generic [ref=e130]: 1 total
+            - generic [ref=e131]:
+              - generic [ref=e138]:
+                - generic [ref=e140]:
+                  - img [ref=e141]
+                  - text: Confirmed
+                - generic [ref=e143]:
+                  - generic [ref=e144]:
+                    - generic [ref=e145]: C
+                    - generic [ref=e146]:
+                      - heading "Confirm Corp" [level=3] [ref=e147]
+                      - paragraph [ref=e148]: An innovative company awaiting confirmation
+                      - generic [ref=e149]:
+                        - link "confirmcorp.com" [ref=e150] [cursor=pointer]:
+                          - /url: https://confirmcorp.com
+                          - img [ref=e151]
+                          - text: confirmcorp.com
+                        - generic [ref=e155]:
+                          - img [ref=e156]
+                          - text: San Francisco, CA
+                  - generic [ref=e159]:
+                    - button "Cancel Selection" [ref=e160]:
+                      - text: Cancel Selection
+                      - img [ref=e162]
+                    - button "Custom Strategy" [ref=e165]:
+                      - text: Custom Strategy
+                      - img [ref=e167]
+                    - button "Custom Instructions" [ref=e170]:
+                      - text: Custom Instructions
+                      - img [ref=e172]
+                - img [ref=e177] [cursor=pointer]
+                - generic [ref=e179]:
+                  - generic [ref=e180]:
+                    - generic [ref=e181]:
+                      - img [ref=e182]
+                      - text: EMPLOYEES
+                    - generic [ref=e187]: "500"
+                  - generic [ref=e188]:
+                    - generic [ref=e189]:
+                      - img [ref=e190]
+                      - text: INDUSTRY
+                    - generic [ref=e198]: Technology
+              - generic [ref=e201]:
+                - generic [ref=e202]:
+                  - img [ref=e204]
+                  - generic [ref=e208]:
+                    - generic [ref=e209]: 1 changes pending
+                    - generic [ref=e210]: 1 confirmed
+                - generic [ref=e211]:
+                  - button "Reset" [ref=e212]:
+                    - text: Reset
+                    - img [ref=e214]
+                  - button "Save All" [ref=e217]:
+                    - button "Save All" [ref=e218]:
+                      - text: Save All
+                      - img [ref=e220]
+          - generic [ref=e224]:
+            - generic [ref=e225]:
+              - heading "Active Campaigns" [level=2] [ref=e226]
+              - button "Add More Companies" [ref=e227]:
+                - text: Add More Companies
+                - img [ref=e229]
+            - 'link "activecorp.com logo Active Corp John Doe • HR Director Info Generating email 80% Started: 14/11/2023 ETA: 16/11/2023" [ref=e234] [cursor=pointer]':
+              - /url: /dashboard/active-company-id-1
+              - generic [ref=e235]:
+                - generic [ref=e236]:
+                  - generic [ref=e237]:
+                    - img "activecorp.com logo" [ref=e239]
+                    - generic [ref=e240]:
+                      - heading "Active Corp" [level=3] [ref=e241]
+                      - paragraph [ref=e242]: John Doe • HR Director
+                  - button "Info" [ref=e244]:
+                    - text: Info
+                    - img [ref=e246]
+                - generic [ref=e250]:
+                  - generic [ref=e251]: Generating email
+                  - generic [ref=e252]: 80%
+                - generic [ref=e256]:
+                  - generic [ref=e257]: "Started: 14/11/2023"
+                  - generic [ref=e258]: "ETA: 16/11/2023"
+          - generic [ref=e259]:
+            - generic [ref=e260]:
+              - heading "Need Help?" [level=3] [ref=e261]
+              - paragraph [ref=e262]: Check out our guides and tips to maximize your job search success.
+              - button "View Resources" [ref=e263]:
+                - text: View Resources
+                - img [ref=e265]
+            - generic [ref=e269]:
+              - heading "Upgrade Plan" [level=3] [ref=e270]
+              - paragraph [ref=e271]: Get more companies, advanced filters, and priority processing with Pro or Ultra plans.
+              - link "Upgrade Now" [ref=e272] [cursor=pointer]:
+                - /url: /dashboard/plan-and-credits
+                - button "Upgrade Now" [ref=e273]:
+                  - text: Upgrade Now
+                  - img [ref=e275]
+  - generic [ref=e282] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e283]:
+      - img [ref=e284]
+    - generic [ref=e288]:
+      - button "Open issues overlay" [ref=e289]:
+        - generic [ref=e290]:
+          - generic [ref=e291]: "1"
+          - generic [ref=e292]: "2"
+        - generic [ref=e293]:
+          - text: Issue
+          - generic [ref=e294]: s
+      - button "Collapse issues badge" [ref=e295]:
+        - img [ref=e296]
+  - alert [ref=e298]
+```

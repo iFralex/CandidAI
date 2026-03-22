@@ -31,13 +31,20 @@ function buildMockUser(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 async function mockUser(page: Page, overrides: Partial<Record<string, unknown>> = {}) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
@@ -58,51 +65,55 @@ async function mockUser(page: Page, overrides: Partial<Record<string, unknown>> 
  *   sent-corp        (company-id-sent):  email_sent._seconds>0 → filtered out by parseResults
  */
 async function mockResultsWithCampaigns(page: Page) {
+  const resultsData = {
+    success: true,
+    data: {
+      // Processing campaign – recruiter found, articles analyzed
+      "company-id-proc": {
+        company: { name: "Processing Corp", domain: "processing-corp.com" },
+        recruiter: {
+          name: "Alice Smith",
+          job_title: "HR Manager",
+          email: "alice@processing-corp.com",
+        },
+        blog_articles: 3,
+        start_date: { _seconds: 1700000000, _nanoseconds: 0 },
+      },
+      // Early processing – nothing found yet
+      "company-id-early": {
+        company: { name: "Early Corp", domain: "early-corp.com" },
+        start_date: { _seconds: 1700000100, _nanoseconds: 0 },
+      },
+      // Ready to send – all stages complete, email generated but not sent
+      "company-id-ready": {
+        company: { name: "Ready Corp", domain: "ready-corp.com" },
+        recruiter: {
+          name: "Bob Jones",
+          job_title: "Tech Lead",
+          email: "bob@ready-corp.com",
+        },
+        blog_articles: 2,
+        email_sent: { _seconds: 0, _nanoseconds: 0 },
+        start_date: { _seconds: 1700000200, _nanoseconds: 0 },
+      },
+      // Sent – filtered out by parseResults (email_sent._seconds > 0)
+      "company-id-sent": {
+        company: { name: "Sent Corp", domain: "sent-corp.com" },
+        recruiter: { name: "Carol White", job_title: "CTO" },
+        blog_articles: 1,
+        email_sent: { _seconds: 1700100000, _nanoseconds: 0 },
+        start_date: { _seconds: 1700000300, _nanoseconds: 0 },
+      },
+    },
+  };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/results', response: resultsData },
+  });
   await page.route("**/api/protected/results**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          // Processing campaign – recruiter found, articles analyzed
-          "company-id-proc": {
-            company: { name: "Processing Corp", domain: "processing-corp.com" },
-            recruiter: {
-              name: "Alice Smith",
-              job_title: "HR Manager",
-              email: "alice@processing-corp.com",
-            },
-            blog_articles: 3,
-            start_date: { _seconds: 1700000000, _nanoseconds: 0 },
-          },
-          // Early processing – nothing found yet
-          "company-id-early": {
-            company: { name: "Early Corp", domain: "early-corp.com" },
-            start_date: { _seconds: 1700000100, _nanoseconds: 0 },
-          },
-          // Ready to send – all stages complete, email generated but not sent
-          "company-id-ready": {
-            company: { name: "Ready Corp", domain: "ready-corp.com" },
-            recruiter: {
-              name: "Bob Jones",
-              job_title: "Tech Lead",
-              email: "bob@ready-corp.com",
-            },
-            blog_articles: 2,
-            email_sent: { _seconds: 0, _nanoseconds: 0 },
-            start_date: { _seconds: 1700000200, _nanoseconds: 0 },
-          },
-          // Sent – filtered out by parseResults (email_sent._seconds > 0)
-          "company-id-sent": {
-            company: { name: "Sent Corp", domain: "sent-corp.com" },
-            recruiter: { name: "Carol White", job_title: "CTO" },
-            blog_articles: 1,
-            email_sent: { _seconds: 1700100000, _nanoseconds: 0 },
-            start_date: { _seconds: 1700000300, _nanoseconds: 0 },
-          },
-        },
-      }),
+      body: JSON.stringify(resultsData),
     });
   });
 }
@@ -154,9 +165,9 @@ test.describe("Main Dashboard - Active Campaigns - Card Rendering", () => {
     await page.goto("/dashboard");
 
     // Alice Smith on Processing Corp card
-    await expect(page.getByText(/Alice Smith/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Alice Smith/i).first()).toBeVisible({ timeout: 10000 });
     // Bob Jones on Ready Corp card
-    await expect(page.getByText(/Bob Jones/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Bob Jones/i).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("card does not show recruiter line when no recruiter found yet", async ({ page }) => {

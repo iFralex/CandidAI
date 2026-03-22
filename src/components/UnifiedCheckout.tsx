@@ -322,7 +322,7 @@ export function UnifiedCheckout({ purchaseType, itemId, email = "", onSuccess }:
                     </div>
 
                     <Card className="p-6">
-                        <h3 className="text-lg font-semibold text-white mb-4">Complete your purchase</h3>
+                        <h3 className="text-lg font-semibold text-white mb-4">Payment details</h3>
                         <CheckoutForm
                             email={email}
                             purchaseType={purchaseType}

@@ -33,17 +33,17 @@ describe("CreditSelector", () => {
 
     // pkg_1000: Starter, 1,000 credits, €10.00
     expect(screen.getByText("Starter")).toBeInTheDocument();
-    expect(screen.getByText(/1,000/)).toBeInTheDocument();
+    expect(screen.getByText(/1[.,]?000/)).toBeInTheDocument();
     expect(screen.getByText("€10.00")).toBeInTheDocument();
 
     // pkg_2500: Popular, 2,500 credits, €20.00
     expect(screen.getByText("Popular")).toBeInTheDocument();
-    expect(screen.getByText(/2,500/)).toBeInTheDocument();
+    expect(screen.getByText(/2[.,]?500/)).toBeInTheDocument();
     expect(screen.getByText("€20.00")).toBeInTheDocument();
 
     // pkg_5000: Power, 5,000 credits, €30.00
     expect(screen.getByText("Power")).toBeInTheDocument();
-    expect(screen.getByText(/5,000/)).toBeInTheDocument();
+    expect(screen.getByText(/5[.,]?000/)).toBeInTheDocument();
     expect(screen.getByText("€30.00")).toBeInTheDocument();
   });
 

@@ -33,79 +33,108 @@ async function mockUser(
   page: Page,
   overrides: Partial<Record<string, unknown>> = {}
 ) {
+  const userData = buildMockUser(overrides);
+  await page.context().addCookies([{
+    name: '__playwright_user__',
+    value: Buffer.from(JSON.stringify(userData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/user**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        user: buildMockUser(overrides),
+        user: userData,
       }),
     });
   });
 }
 
 async function mockResults(page: Page) {
+  const resultsData = {
+    success: true,
+    data: {
+      [COMPANY_ID]: {
+        company: {
+          name: "Back Button Corp",
+          domain: "backbuttoncorp.com",
+          linkedin_url: "linkedin.com/company/backbuttoncorp",
+        },
+        status: "completed",
+        step: 5,
+      },
+    },
+  };
+  // Use cookie to isolate results data per browser context (avoids shared mock store race conditions)
+  await page.context().addCookies([{
+    name: '__playwright_results__',
+    value: Buffer.from(JSON.stringify(resultsData)).toString('base64'),
+    domain: 'localhost',
+    path: '/',
+  }]);
   await page.route("**/api/protected/results**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          [COMPANY_ID]: {
-            company: {
-              name: "Back Button Corp",
-              domain: "backbuttoncorp.com",
-              linkedin_url: "linkedin.com/company/backbuttoncorp",
-            },
-            status: "completed",
-            step: 5,
-          },
-        },
-      }),
+      body: JSON.stringify(resultsData),
     });
   });
+  // Abort external logo API calls to prevent networkidle delays
+  await page.route("**brandfetch.io**", (route) => route.abort());
 }
 
 async function mockCampaignDetail(page: Page) {
+  const detailData = {
+    success: true,
+    details: {
+      company: {
+        name: "Back Button Corp",
+        domain: "backbuttoncorp.com",
+        linkedin_url: "linkedin.com/company/backbuttoncorp",
+      },
+      recruiter: {
+        name: "Jane Recruiter",
+        title: "HR Manager",
+        email: "jane@backbuttoncorp.com",
+        linkedin_url: "linkedin.com/in/jane-recruiter",
+      },
+      email: {
+        subject: "Exciting Opportunity",
+        body: "Dear Jane, I would love to connect...",
+      },
+      articles: [],
+      status: "completed",
+      step: 5,
+    },
+    customizations: {
+      instructions: null,
+      queries: null,
+    },
+  };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: `/api/protected/result/${COMPANY_ID}`, response: detailData },
+  });
   await page.route(`**/api/protected/result/${COMPANY_ID}**`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        data: {
-          company: {
-            name: "Back Button Corp",
-            domain: "backbuttoncorp.com",
-            linkedin_url: "linkedin.com/company/backbuttoncorp",
-          },
-          recruiter: {
-            name: "Jane Recruiter",
-            title: "HR Manager",
-            email: "jane@backbuttoncorp.com",
-            linkedin_url: "linkedin.com/in/jane-recruiter",
-          },
-          email: {
-            subject: "Exciting Opportunity",
-            body: "Dear Jane, I would love to connect...",
-          },
-          articles: [],
-          status: "completed",
-          step: 5,
-        },
-      }),
+      body: JSON.stringify(detailData),
     });
   });
 }
 
 async function mockAccount(page: Page) {
+  const accountData = { success: true, data: {} };
+  await page.request.post('/api/test/set-mock', {
+    data: { pattern: '/api/protected/account', response: accountData },
+  });
   await page.route("**/api/protected/account**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ success: true, data: {} }),
+      body: JSON.stringify(accountData),
     });
   });
 }
@@ -121,6 +150,7 @@ test.describe("Back Button - Dashboard to Campaign Detail", () => {
     await mockUser(page);
     await mockResults(page);
     await mockCampaignDetail(page);
+    await mockAccount(page);
 
     // Start at dashboard
     await page.goto("/dashboard");
@@ -150,6 +180,7 @@ test.describe("Back Button - Dashboard to Campaign Detail", () => {
     await mockUser(page);
     await mockResults(page);
     await mockCampaignDetail(page);
+    await mockAccount(page);
 
     // Navigate: dashboard -> campaign detail
     await page.goto("/dashboard");
@@ -174,6 +205,7 @@ test.describe("Back Button - Dashboard to Campaign Detail", () => {
     await mockUser(page);
     await mockResults(page);
     await mockCampaignDetail(page);
+    await mockAccount(page);
 
     // Navigate to campaign detail
     await page.goto("/dashboard");
@@ -196,6 +228,7 @@ test.describe("Back Button - Dashboard to Campaign Detail", () => {
     await mockUser(page);
     await mockResults(page);
     await mockCampaignDetail(page);
+    await mockAccount(page);
 
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle").catch(() => {});
