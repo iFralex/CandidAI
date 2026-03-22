@@ -6,8 +6,31 @@ import { adminDb } from '@/lib/firebase-admin';
 import { clientConfig, serverConfig } from '@/config';
 import { getApiRequestTokens, getTokens } from 'next-firebase-auth-edge';
 import { cookies } from 'next/headers';
+import { getTestMock } from '@/app/api/test/set-mock/route';
 
 export async function GET(request) {
+  // Test bypass
+  if (process.env.NODE_ENV !== 'production') {
+    const mock = getTestMock('/api/protected/account');
+    if (mock) return NextResponse.json(mock);
+    // Cookie bypass: test users don't have Firebase tokens, return minimal mock
+    if (request.cookies.get('__playwright_user__')?.value) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          profileSummary: {
+            experience: [],
+            education: [],
+            skills: [],
+            location: {}
+          },
+          queries: [],
+          customizations: { instructions: null }
+        }
+      });
+    }
+  }
+
   try {
     const tokens = await getTokens(request.cookies, {
       apiKey: clientConfig.apiKey,
