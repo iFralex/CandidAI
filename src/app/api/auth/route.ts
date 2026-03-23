@@ -68,8 +68,26 @@ export async function POST(req: Request) {
         })
       });
 
+      // Sign in immediately to get an idToken for the session cookie
+      const signInRes = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, returnSecureToken: true }),
+        }
+      );
+
+      const signInData = await signInRes.json();
+      if (!signInRes.ok) {
+        return NextResponse.json(
+          { success: false, error: signInData?.error?.message ?? "SIGN_IN_ERROR" },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json(
-        { success: true, requiresVerification: true },
+        { success: true, idToken: signInData.idToken, uid },
         { status: 201 }
       );
     }
