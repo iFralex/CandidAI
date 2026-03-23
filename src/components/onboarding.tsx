@@ -2075,6 +2075,7 @@ interface Experience {
     };
     start_date?: string;
     end_date?: string;
+    description?: string;
     logo?: string | null;
 }
 
@@ -2083,10 +2084,11 @@ interface Education {
         name: string;
         website?: string;
     };
-    debree: string;
+    degree: string;
     majors?: string[];
     start_date?: string;
     end_date?: string;
+    description?: string;
     logo?: string | null;
 }
 
@@ -2106,10 +2108,10 @@ interface Certification {
     expired: boolean;
 }
 
-interface ProfileSummary {
+export interface ProfileSummary {
     name: string;
     title: string;
-    location?: string;
+    location?: { country: string; continent: string };
     skills: string[];
     experience: Experience[];
     education: Education[];
@@ -2294,6 +2296,7 @@ function ExperienceEditor({ profileSummary, setProfileSummary }: any) {
         logo: "",
         start_date: "",
         end_date: "",
+        description: "",
     });
 
     const handleEdit = (index: number | null) => {
@@ -2305,6 +2308,7 @@ function ExperienceEditor({ profileSummary, setProfileSummary }: any) {
                 logo: "",
                 start_date: "",
                 end_date: "",
+                description: "",
             }
         );
     };
@@ -2368,12 +2372,18 @@ function ExperienceEditor({ profileSummary, setProfileSummary }: any) {
                                 })
                             }
                         />
+                        <Textarea
+                            placeholder="Responsibilities, achievements, technologies used..."
+                            value={tempExp.description || ""}
+                            onChange={(e) => setTempExp({ ...tempExp, description: e.target.value })}
+                            rows={4}
+                        />
                     </div>
 
                     <DialogFooter>
                         {editingIndex !== null && (
                             <DialogClose asChild>
-                                <Button variant="destructive" onClick={() => handleDelete(editingIndex)}>
+                                <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10" onClick={() => handleDelete(editingIndex)}>
                                     <Trash2 className="w-4 h-4" /> Delete
                                 </Button>
                             </DialogClose>
@@ -2396,6 +2406,7 @@ function ExperienceSection({ profileSummary, setProfileSummary }: any) {
         logo: "",
         start_date: "",
         end_date: "",
+        description: "",
     });
 
     // Apri dialog per aggiungere o modificare
@@ -2410,6 +2421,7 @@ function ExperienceSection({ profileSummary, setProfileSummary }: any) {
                 logo: "",
                 start_date: "",
                 end_date: "",
+                description: "",
             });
         }
     };
@@ -2494,6 +2506,13 @@ function ExperienceSection({ profileSummary, setProfileSummary }: any) {
                                     {(exp.start_date || exp.end_date) && (
                                         <p className="text-gray-400 text-xs mt-1">
                                             {exp.start_date || "?"} → {exp.end_date || "Current"}
+                                        </p>
+                                    )}
+
+                                    {/* Description */}
+                                    {exp.description && (
+                                        <p className="text-gray-400 text-xs mt-2 leading-relaxed line-clamp-3">
+                                            {exp.description}
                                         </p>
                                     )}
                                 </div>
@@ -2597,6 +2616,16 @@ function ExperienceSection({ profileSummary, setProfileSummary }: any) {
                                     />
                                 </div>
                             </div>
+
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm text-gray-400">Description</label>
+                                <Textarea
+                                    value={tempExp.description || ""}
+                                    onChange={(e) => setTempExp({ ...tempExp, description: e.target.value })}
+                                    placeholder="Responsibilities, achievements, technologies used..."
+                                    rows={4}
+                                />
+                            </div>
                         </div>
                         <ScrollBar orientation='vertical' />
                     </ScrollArea>
@@ -2604,7 +2633,7 @@ function ExperienceSection({ profileSummary, setProfileSummary }: any) {
                     <DialogFooter>
                         <DialogClose asChild>
                             {editingIndex !== null && (
-                                <Button variant="destructive" onClick={() => handleDelete(editingIndex)}>
+                                <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10" onClick={() => handleDelete(editingIndex)}>
                                     <Trash2 className="w-4 h-4" /> Delete
                                 </Button>
                             )}
@@ -2628,6 +2657,7 @@ function EducationEditor({ profileSummary, setProfileSummary }: any) {
         logo: "",
         start_date: "",
         end_date: "",
+        description: "",
     });
 
     const handleEdit = (index: number | null) => {
@@ -2640,6 +2670,7 @@ function EducationEditor({ profileSummary, setProfileSummary }: any) {
                 logo: "",
                 start_date: "",
                 end_date: "",
+                description: "",
             }
         );
     };
@@ -2767,12 +2798,23 @@ function EducationEditor({ profileSummary, setProfileSummary }: any) {
                                 />
                             </div>
                         </div>
+
+                        {/* Description */}
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm text-gray-400">Description</label>
+                            <Textarea
+                                value={tempEdu.description || ""}
+                                onChange={(e) => setTempEdu({ ...tempEdu, description: e.target.value })}
+                                placeholder="Thesis, honours, notable activities, exchange programme..."
+                                rows={4}
+                            />
+                        </div>
                     </div>
 
                     <DialogFooter>
                         {editingIndex !== null && (
                             <DialogClose asChild>
-                                <Button variant="destructive" onClick={() => handleDelete(editingIndex!)}>
+                                <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10" onClick={() => handleDelete(editingIndex!)}>
                                     <Trash2 className="w-4 h-4" /> Delete
                                 </Button>
                             </DialogClose>
@@ -2796,6 +2838,7 @@ function EducationSection({ profileSummary, setProfileSummary }: any) {
         logo: "",
         start_date: "",
         end_date: "",
+        description: "",
     });
 
     // Apri dialog per aggiungere o modificare
@@ -2811,6 +2854,7 @@ function EducationSection({ profileSummary, setProfileSummary }: any) {
                 logo: "",
                 start_date: "",
                 end_date: "",
+                description: "",
             });
         }
     };
@@ -2890,6 +2934,13 @@ function EducationSection({ profileSummary, setProfileSummary }: any) {
                                     {(edu.start_date || edu.end_date || edu.degree) && (
                                         <p className="text-gray-400 text-xs mt-1">
                                             {edu.degree && <>{edu.degree} | </>}{edu.start_date || "?"} → {edu.end_date || "?"}
+                                        </p>
+                                    )}
+
+                                    {/* Description */}
+                                    {edu.description && (
+                                        <p className="text-gray-400 text-xs mt-2 leading-relaxed line-clamp-3">
+                                            {edu.description}
                                         </p>
                                     )}
                                 </div>
@@ -3000,13 +3051,24 @@ function EducationSection({ profileSummary, setProfileSummary }: any) {
                                     />
                                 </div>
                             </div>
+
+                            {/* Description */}
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm text-gray-400">Description</label>
+                                <Textarea
+                                    value={tempEdu.description || ""}
+                                    onChange={(e) => setTempEdu({ ...tempEdu, description: e.target.value })}
+                                    placeholder="Thesis, honours, notable activities, exchange programme..."
+                                    rows={4}
+                                />
+                            </div>
                         </div>
                         <ScrollBar orientation='vertical' />
                     </ScrollArea>
                     <DialogFooter>
                         <DialogClose asChild>
                             {editingIndex !== null && (
-                                <Button variant="destructive" onClick={() => handleDelete(editingIndex)}>
+                                <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10" onClick={() => handleDelete(editingIndex)}>
                                     <Trash2 className="w-4 h-4" /> Delete
                                 </Button>
                             )}
@@ -3178,7 +3240,7 @@ function CertificationsSection({ profileSummary, setProfileSummary }: any) {
                     <DialogFooter>
                         <DialogClose asChild>
                             {editingIndex !== null && (
-                                <Button variant="destructive" onClick={() => handleDelete(editingIndex)}>
+                                <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10" onClick={() => handleDelete(editingIndex)}>
                                     <Trash2 className="w-4 h-4" /> Delete
                                 </Button>
                             )}
@@ -3269,7 +3331,7 @@ function ProjectsSection({ profileSummary, setProfileSummary }: any) {
                         >
                             <div className="flex items-start gap-3">
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-white font-medium">{proj.title || "Untitled Project"}</p>
+                                    <p className="text-white font-medium">{proj.name || "Untitled Project"}</p>
                                     {proj.description && (
                                         <p className="text-gray-300 text-sm line-clamp-3">{proj.description}</p>
                                     )}
@@ -3389,7 +3451,7 @@ function ProjectsSection({ profileSummary, setProfileSummary }: any) {
                     <DialogFooter>
                         <DialogClose asChild>
                             {editingIndex !== null && (
-                                <Button variant="destructive" onClick={() => handleDelete(editingIndex)}>
+                                <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10" onClick={() => handleDelete(editingIndex)}>
                                     <Trash2 className="w-4 h-4" /> Delete
                                 </Button>
                             )}
@@ -3436,7 +3498,7 @@ export function ProfileSummaryCard({
                             </div>
                             <label className="md:w-auto w-full flex justify-center bg-white/10 hover:bg-white/20 text-white font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer inline-flex items-center space-x-2">
                                 <Upload className="w-4 h-4" />
-                                <span>Change CV</span>
+                                <span className="whitespace-nowrap">Change CV</span>
                                 <input
                                     type="file"
                                     className="hidden"
@@ -3494,78 +3556,60 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
     const [saved, setSaved] = useState(false)
 
     const analyzeProfile = async () => {
+        if (!cvFile) return;
         let localProfile: ProfileSummary | null = null
         try {
             setAnalyzing(true)
 
-            // Parametri di ricerca (qui puoi passare anche un'email o altri identificatori)
-            const record = await enrichProfile(
-                linkedinUrl
-            );
-
-            if (!record) {
-                throw new Error("Profilo non trovato")
+            // PDL enrichment — optional, tolerate failures. No logo fetching here:
+            // logos are fetched after the Gemini merge, using the websites the server preserves.
+            let pdlProfile: ProfileSummary | null = null;
+            try {
+                const record = await enrichProfilePDL(linkedinUrl);
+                if (record) {
+                    pdlProfile = {
+                        name: record.full_name || "",
+                        title: record.job_title || "",
+                        experience: (record.experience || []).map((exp: any) => ({ ...exp, logo: null })),
+                        education: (record.education || []).map((edu: any) => ({ ...edu, logo: null })),
+                        skills: record.skills || [],
+                        location: { country: record.location_country ?? "", continent: record.location_continent ?? "" },
+                        projects: [],
+                        certifications: [],
+                    };
+                }
+            } catch (e) {
+                console.warn("PDL enrichment failed, proceeding with CV only:", e);
             }
 
-            // Mappiamo i dati del record in un formato simile al mock
-            const profileSummary: ProfileSummary = {
-                name: record.full_name || "",
-                title: record.job_title || "",
-                experience: await Promise.all((record.experience || []).map(async (exp) => {
-                    let logo = null;
-                    if (exp.company?.website) {
-                        try {
-                            const domain = exp.company.website
-                                .replace(/^https?:\/\//i, "")
-                                .replace(/^www\./i, "")
-                                .split(/[/?#]/)[0];
+            // AI enrichment — always runs, with or without PDL data.
+            // The server merges PDL + CV and guarantees all known websites are preserved.
+            const cvData = new FormData();
+            cvData.append("cv", cvFile.blob);
+            const merged = await enrichProfileAI(pdlProfile, cvData);
 
-                            const res = await fetch(
-                                `https://api.brandfetch.io/v2/search/${encodeURIComponent(domain)}?limit=1`,
-                                { cache: "force-cache" }
-                            );
-
-                            if (res.ok) {
-                                const data = await res.json();
-                                if (Array.isArray(data) && data[0]?.icon) {
-                                    logo = data[0].icon;
-                                }
-                            }
-                        } catch (e) {
-                            console.warn("Logo fetch failed for", exp.company?.name, e);
-                        }
+            // Fetch logos client-side from the websites the server returned
+            const fetchLogo = async (website?: string): Promise<string | null> => {
+                if (!website) return null;
+                try {
+                    const domain = website.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split(/[/?#]/)[0];
+                    const res = await fetch(`https://api.brandfetch.io/v2/search/${encodeURIComponent(domain)}?limit=1`, { cache: "force-cache" });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (Array.isArray(data) && data[0]?.icon) return data[0].icon;
                     }
-                    return { ...exp, logo };
-                })),
-                skills: record.skills || [],
-                education: await Promise.all((record.education || []).map(async (edu) => {
-                    let logo = null;
-                    if (edu.school?.website) {
-                        try {
-                            const domain = edu.school.website
-                                .replace(/^https?:\/\//i, "")
-                                .replace(/^www\./i, "")
-                                .split(/[/?#]/)[0];
+                } catch (e) {
+                    console.warn("Logo fetch failed for", website, e);
+                }
+                return null;
+            };
 
-                            const res = await fetch(
-                                `https://api.brandfetch.io/v2/search/${encodeURIComponent(domain)}?limit=1`
-                            );
-                            if (res.ok) {
-                                const data = await res.json();
-                                if (Array.isArray(data) && data[0]?.icon) {
-                                    logo = data[0].icon;
-                                }
-                            }
-                        } catch (e) {
-                            console.warn("Logo fetch failed for", edu.school?.name, e);
-                        }
-                    }
-                    return { ...edu, logo };
-                })),
-                location: { country: record.location_country, continent: record.location_continent },
-                projects: [],
-                certifications: [],
-            }
+            const [experience, education] = await Promise.all([
+                Promise.all(merged.experience.map(async (exp: any) => ({ ...exp, logo: await fetchLogo(exp.company?.website) }))),
+                Promise.all(merged.education.map(async (edu: any) => ({ ...edu, logo: await fetchLogo(edu.school?.website) }))),
+            ]);
+
+            const profileSummary: ProfileSummary = { ...merged, experience, education };
 
             localProfile = profileSummary
             setProfileSummary(profileSummary)
@@ -3587,12 +3631,6 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
             setAnalysisComplete(true)
         } finally {
             setAnalyzing(false)
-        }
-        // Auto-submit in onboarding flow when CV is already uploaded
-        if (!onSave && cvFile && localProfile) {
-            startTransition(async () => {
-                await submitProfile(plan, { linkedinUrl, profileSummary: localProfile }, cvFile.blob)
-            })
         }
     }
 
@@ -3667,8 +3705,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
                     <div className="text-center mb-8">
                         <h2 className="text-3xl font-bold text-white mb-4">Connect Your LinkedIn Profile</h2>
                         <p className="text-lg text-gray-400">
-                            Our AI will analyze your profile to understand your background and create the perfect recruiter
-                            matching strategy.
+                            Our AI will analyze your profile to understand your background and create the perfect recruiter matching strategy.
                         </p>
                     </div>
 
@@ -3920,7 +3957,7 @@ import React, {
     useCallback,
     useEffect,
 } from "react";
-import { enrichProfile, translateSkillsToEnglish } from '@/actions/pdl'
+import { enrichProfileAI, enrichProfilePDL, translateSkillsToEnglish } from '@/actions/pdl'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
 import { Checkbox } from './ui/checkbox'
 import { ScrollArea, ScrollBar } from './ui/scroll-area'
@@ -4375,7 +4412,7 @@ export function PlanSelectionClient({ userId = 'user123' }) {
                                 <div className="text-left">
                                     <div className="flex items-center gap-3 mb-2">
                                         <h3 className="text-2xl font-bold text-white">{freePlan.name}</h3>
-                                        <Badge variant="success">Free</Badge>
+                                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Free</Badge>
                                     </div>
                                     <p className="text-gray-400 mb-2">{freePlan.description}</p>
                                 </div>

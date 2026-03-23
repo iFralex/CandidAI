@@ -105,8 +105,8 @@ export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersSer
         throw new Error(data.error)
 
     const profileSummary = data.data.profileSummary
-    const companies = profileSummary?.experience?.map(e => e.company.name) ?? []
-    const universities = profileSummary?.education?.map(e => e.school.name) ?? []
+    const companies = [...new Set(profileSummary?.experience?.map(e => e.company?.name).filter(Boolean) ?? [])]
+    const universities = [...new Set(profileSummary?.education?.map(e => e.school?.name).filter(Boolean) ?? [])]
     const location = profileSummary?.location ?? {}
 
     // Funzione helper per generare l'array di criteria in base alle condizioni

@@ -102,7 +102,6 @@ CandidAI/
 │   │   ├── onboardingServer.tsx      # Onboarding server wrapper (server)
 │   │   ├── dashboard.tsx             # Main dashboard UI (client)
 │   │   ├── dashboardServer.tsx       # Dashboard server wrapper (server)
-│   │   ├── homeboarding.tsx          # Home onboarding flow (client)
 │   │   ├── detailsServer.tsx         # Campaign detail server component
 │   │   └── SidebarClientWrapper.tsx  # Sidebar navigation (client)
 │   │
