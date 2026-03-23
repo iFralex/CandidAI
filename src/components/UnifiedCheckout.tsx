@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { computePriceInCents, formatPrice, getPlanById } from "@/lib/utils";
+import { computePriceInCents, formatPrice, getPlanById, getDiscountCode, applyDiscount } from "@/lib/utils";
 import { CREDIT_PACKAGES } from "@/config";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -132,17 +132,19 @@ interface CheckoutFormProps {
     email: string;
     purchaseType: "plan" | "credits";
     itemId: string;
+    discountCode?: string | null;
     onSuccess?: (data: any) => void;
 }
 
-function CheckoutForm({ email, purchaseType, itemId, onSuccess }: CheckoutFormProps) {
+function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: CheckoutFormProps) {
     const stripe = useStripe();
     const elements = useElements();
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    const amountCents = computePriceInCents(purchaseType, itemId);
+    const baseAmountCents = computePriceInCents(purchaseType, itemId);
+    const amountCents = discountCode ? applyDiscount(baseAmountCents, discountCode) : baseAmountCents;
 
     const handlePay = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -174,7 +176,7 @@ function CheckoutForm({ email, purchaseType, itemId, onSuccess }: CheckoutFormPr
             const res = await fetch("/api/create-payment", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ payment_method_id: paymentMethod!.id, purchaseType, itemId }),
+                body: JSON.stringify({ payment_method_id: paymentMethod!.id, purchaseType, itemId, discountCode }),
             });
 
             const data = await res.json();
@@ -251,10 +253,13 @@ function CheckoutForm({ email, purchaseType, itemId, onSuccess }: CheckoutFormPr
 interface PurchaseSummaryProps {
     purchaseType: "plan" | "credits";
     itemId: string;
+    discountCode?: string | null;
 }
 
-function PurchaseSummary({ purchaseType, itemId }: PurchaseSummaryProps) {
-    const amountCents = computePriceInCents(purchaseType, itemId);
+function PurchaseSummary({ purchaseType, itemId, discountCode }: PurchaseSummaryProps) {
+    const baseAmountCents = computePriceInCents(purchaseType, itemId);
+    const amountCents = discountCode ? applyDiscount(baseAmountCents, discountCode) : baseAmountCents;
+    const hasDiscount = discountCode && amountCents !== baseAmountCents;
 
     if (purchaseType === "credits") {
         const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId);
@@ -266,7 +271,10 @@ function PurchaseSummary({ purchaseType, itemId }: PurchaseSummaryProps) {
                         <div className="text-white font-semibold">{pkg.credits.toLocaleString()} Credits</div>
                         <div className="text-sm text-gray-400">One-time purchase</div>
                     </div>
-                    <div className="text-white font-bold text-xl">{formatPrice(amountCents)}</div>
+                    <div className="text-right">
+                        {hasDiscount && <div className="text-sm text-gray-400 line-through">{formatPrice(baseAmountCents)}</div>}
+                        <div className="text-white font-bold text-xl">{formatPrice(amountCents)}</div>
+                    </div>
                 </div>
             </Card>
         );
@@ -282,7 +290,10 @@ function PurchaseSummary({ purchaseType, itemId }: PurchaseSummaryProps) {
                     <div className="text-white font-semibold">{plan.name} Plan</div>
                     <div className="text-sm text-gray-400">{plan.description}</div>
                 </div>
-                <div className="text-white font-bold text-xl">{formatPrice(amountCents)}</div>
+                <div className="text-right">
+                    {hasDiscount && <div className="text-sm text-gray-400 line-through">{formatPrice(baseAmountCents)}</div>}
+                    <div className="text-white font-bold text-xl">{formatPrice(amountCents)}</div>
+                </div>
             </div>
             <ul className="space-y-1">
                 {plan.features.slice(0, 4).map((feature, idx) => (
@@ -304,12 +315,18 @@ export interface UnifiedCheckoutProps {
 }
 
 export function UnifiedCheckout({ purchaseType, itemId, email = "", onSuccess }: UnifiedCheckoutProps) {
+    const [discountCode, setDiscountCode] = useState<string | null>(null);
+
+    useEffect(() => {
+        setDiscountCode(getDiscountCode());
+    }, []);
+
     return (
         <div className="no-scrollbar overflow-y-auto space-y-4">
             <Elements stripe={stripePromise}>
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                        <PurchaseSummary purchaseType={purchaseType} itemId={itemId} />
+                        <PurchaseSummary purchaseType={purchaseType} itemId={itemId} discountCode={discountCode} />
                         <Card className="p-4">
                             <div className="flex items-center justify-between">
                                 <div className="text-sm text-gray-300">Payment method</div>
@@ -327,6 +344,7 @@ export function UnifiedCheckout({ purchaseType, itemId, email = "", onSuccess }:
                             email={email}
                             purchaseType={purchaseType}
                             itemId={itemId}
+                            discountCode={discountCode}
                             onSuccess={onSuccess}
                         />
                     </Card>

@@ -10,6 +10,7 @@ import { Card } from './ui/card'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from './ui/hover-card'
 import { submitProfile } from '@/actions/onboarding-actions'
 import { Textarea } from './ui/textarea'
 import { submitQueries } from '@/actions/onboarding-actions'
@@ -4448,13 +4449,31 @@ export function CompanyInputClient({
 
                 {isUltraPlan && (
                     <motion.div className="flex justify-end mt-6" variants={itemVariants}>
-                        <button
-                            type="button"
-                            className="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center space-x-2"
-                        >
-                            <Wand2 className="w-4 h-4" />
-                            <span>Let AI Recommend</span>
-                        </button>
+                        <HoverCard openDelay={100}>
+                            <HoverCardTrigger asChild>
+                                <button
+                                    type="button"
+                                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center space-x-2"
+                                >
+                                    <Wand2 className="w-4 h-4" />
+                                    <span>Let AI Recommend</span>
+                                </button>
+                            </HoverCardTrigger>
+                            <HoverCardContent className="w-80 bg-gray-900 border-white/20 text-white" side="top">
+                                <div className="space-y-2">
+                                    <div className="flex items-center space-x-2">
+                                        <Wand2 className="w-4 h-4 text-violet-400 shrink-0" />
+                                        <p className="text-sm font-semibold text-violet-300">Available after checkout</p>
+                                    </div>
+                                    <p className="text-sm text-gray-300">
+                                        This feature will be unlocked once you complete the onboarding and checkout. You can come back and let AI suggest companies for you at any time.
+                                    </p>
+                                    <p className="text-xs text-gray-400">
+                                        You can skip this step and add companies later from your dashboard.
+                                    </p>
+                                </div>
+                            </HoverCardContent>
+                        </HoverCard>
                     </motion.div>
                 )}
             </motion.div >
@@ -4472,7 +4491,7 @@ export function CompanyInputClient({
                 )}
                 <button
                     onClick={handleContinue}
-                    disabled={selectedCompanies.length === 0 || isPending}
+                    disabled={isPending}
                     className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2"
                 >
                     {isPending ? (

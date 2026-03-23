@@ -12,15 +12,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Add cookie for referral tracking
+  // Add cookies for referral and discount tracking
   const url = request.nextUrl.clone();
   const referralCode = url.searchParams.get('ref');
+  const discountCode = url.searchParams.get('discount');
 
-  if (referralCode) {
+  if (referralCode || discountCode) {
     const response = NextResponse.next();
-    response.cookies.set('referral', referralCode, {
-      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-    });
+    if (referralCode) {
+      response.cookies.set('referral', referralCode, {
+        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      });
+    }
+    if (discountCode) {
+      response.cookies.set('discount', discountCode, {
+        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      });
+    }
     return response;
   }
 

@@ -164,11 +164,7 @@ export async function submitCompanies(companies: { name: string, domain: string 
     }
 
     // Input validation (before auth)
-    if (!companies || companies.length === 0) {
-        return { success: false, error: "At least 1 company is required" };
-    }
-
-    for (const company of companies) {
+    for (const company of (companies || [])) {
         if (!company.name || !company.name.trim()) {
             return { success: false, error: "Company name cannot be empty" };
         }
@@ -177,7 +173,7 @@ export async function submitCompanies(companies: { name: string, domain: string 
         }
     }
 
-    const domains = companies.map(c => c.domain.toLowerCase());
+    const domains = (companies || []).map(c => c.domain.toLowerCase());
     if (new Set(domains).size < domains.length) {
         return { success: false, error: "Duplicate companies found" };
     }
