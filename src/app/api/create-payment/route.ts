@@ -3,11 +3,12 @@ import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { plansInfo, CREDIT_PACKAGES } from "@/config";
+import { applyDiscount } from "@/lib/utils";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-16" });
 
 export async function POST(req: Request) {
-    const { payment_method_id, purchaseType, itemId } = await req.json();
+    const { payment_method_id, purchaseType, itemId, discountCode } = await req.json();
 
     if (!payment_method_id || !purchaseType || !itemId) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -47,6 +48,10 @@ export async function POST(req: Request) {
             amountInCents = pkg.price;
         } else {
             return NextResponse.json({ error: "purchaseType non valido" }, { status: 400 });
+        }
+
+        if (discountCode) {
+            amountInCents = applyDiscount(amountInCents, discountCode);
         }
 
         const paymentIntent = await stripe.paymentIntents.create({

@@ -198,3 +198,8 @@ export const CREDIT_PACKAGES = [
 export const referralCodes = {
   "afk": 20,
 }
+
+export const discountCodes: Record<string, { type: 'percentage' | 'fixed'; value: number }> = {
+  "test": { type: 'fixed', value: 1 },
+  "dev":  { type: 'fixed', value: 1 },
+}
