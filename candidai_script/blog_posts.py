@@ -290,19 +290,19 @@ def ai_chat(
     
     # Configurazione proxy
     PROXY = {
-        "http": "http://6XMm4ayErrcUhUfi:hoSabxA8QKzkEWUi@geo.g-w.info:10443",
-        "https": "https://6XMm4ayErrcUhUfi:hoSabxA8QKzkEWUi@geo.g-w.info:10443"
+        "http": os.getenv("PROXY_HTTP_URL"),
+        "https": os.getenv("PROXY_HTTPS_URL"),
     }
-    
+
     API_URL = "https://openrouter.ai/api/v1/chat/completions"
     MAX_RETRIES = 12
     INITIAL_BACKOFF = 2
-    
+
     # Stato della richiesta
     current_api_key_idx = 0
     current_model_idx = FALLBACK_MODELS.index(model) if model in FALLBACK_MODELS else 0
     use_proxy = False
-    
+
     # Contatori per strategie multi-step
     error_counters = {
         429: 0,  # Rate limit
@@ -312,7 +312,7 @@ def ai_chat(
         408: 0,  # Timeout
         'timeout': 0,
         'connection': 0,
-        'proxy_error': 0
+        'proxy_error': 0,
     }
     
     def handle_429_strategy(attempt: int) -> tuple[bool, int]:
@@ -735,7 +735,7 @@ def search_on_google(query, exclude_url="", num_results=3):
     """
     Esegue una ricerca su Google Custom Search e restituisce i primi risultati utili.
     """
-    api_key = "AIzaSyC4Nn_YIeAPpH3ZTngej9KWR7MJZzYfZSY"
+    api_key = os.getenv("GEMINI_API_KEY")
     cx = "a1c899d7f0d0446fd"
     url = (
         f"https://www.googleapis.com/customsearch/v1"
@@ -4485,7 +4485,7 @@ def get_tech_recruiter_emails(company_name: str):
 
     domain = get_company_domain(company_name)
     
-    api_key = "6f3491ede7cbfb100ba45cd947266dce3511b58c"
+    api_key = os.getenv("HUNTER_API_KEY")
     url = "https://api.hunter.io/v2/domain-search"
     params = {
         "domain": domain,
@@ -4556,7 +4556,7 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
 
     def execute_search(query):
         """Execute search with given query parameters using RocketReach API"""
-        api_key = "1a67520k2f617e5e7b7938a033825dd341579c7f"
+        api_key = os.getenv("ROCKETREACH_API_KEY")
         url = "https://api.rocketreach.co/api/v2/person/search"
        
         payload = {
