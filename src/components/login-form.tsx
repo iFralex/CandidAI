@@ -2,8 +2,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { signInWithRedirect, GoogleAuthProvider, createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, updateProfile, getRedirectResult, useDeviceLanguage } from 'firebase/auth';
-import app, { auth, db } from '@/lib/firebase';
+import { signInWithRedirect, GoogleAuthProvider, getRedirectResult } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
-const internLogin = async idToken => {
+const internLogin = async (idToken: string) => {
   const internalLogin = await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/login`,
     {
       method: "POST",
@@ -86,23 +86,29 @@ export function LoginForm({
           const userDocRef = doc(db, 'users', user.uid);
           const userDoc = await getDoc(userDocRef);
 
+          const now = new Date().toISOString();
           if (!userDoc.exists()) {
             // Crea il documento se non esiste
             await setDoc(userDocRef, {
               name: user.displayName || 'Google User',
               email: user.email,
-              createdAt: new Date().toISOString(),
-              lastLogin: new Date().toISOString(),
+              createdAt: now,
+              lastLogin: now,
+              onboardingStep: 1,
+              plan: "free_trial",
+              credits: 0,
+              emailVerified: true,
             });
           } else {
             await updateDoc(userDocRef, {
-              lastLogin: new Date().toISOString(),
+              lastLogin: now,
             });
           }
 
           const idToken = await user.getIdToken();
 
           await fetch("/api/login", {
+            method: "POST",
             headers: {
               Authorization: `Bearer ${idToken}`,
             },
@@ -301,23 +307,29 @@ export function RegisterForm({
           const userDocRef = doc(db, 'users', user.uid);
           const userDoc = await getDoc(userDocRef);
 
+          const now = new Date().toISOString();
           if (!userDoc.exists()) {
             // Crea il documento se non esiste
             await setDoc(userDocRef, {
               name: user.displayName || 'Google User',
               email: user.email,
-              createdAt: new Date().toISOString(),
-              lastLogin: new Date().toISOString(),
+              createdAt: now,
+              lastLogin: now,
+              onboardingStep: 1,
+              plan: "free_trial",
+              credits: 0,
+              emailVerified: true,
             });
           } else {
             await updateDoc(userDocRef, {
-              lastLogin: new Date().toISOString(),
+              lastLogin: now,
             });
           }
 
           const idToken = await user.getIdToken();
 
           await fetch("/api/login", {
+            method: "POST",
             headers: {
               Authorization: `Bearer ${idToken}`,
             },
@@ -473,8 +485,6 @@ export function ForgotPasswordForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const router = useRouter();
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
