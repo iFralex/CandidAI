@@ -1,5 +1,5 @@
 import { CheckCircle, CreditCard, Wand2 } from 'lucide-react'
-import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient } from '@/components/onboarding'
+import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, ScrollToTop } from '@/components/onboarding'
 import { ProfileAnalysisClient } from '@/components/onboarding';
 import { UnifiedCheckout } from '@/components/UnifiedCheckout';
 import { startServer, submitQueries } from '@/actions/onboarding-actions'
@@ -12,9 +12,17 @@ import { getPlanById } from '@/lib/utils';
 
 interface SetupCompleteServerProps {
     userId: string
+    currentStep: number
+    plan: string
 }
 
-export function SetupCompleteServer({ userId }: SetupCompleteServerProps) {
+export async function SetupCompleteServer({ userId, currentStep, plan }: SetupCompleteServerProps) {
+    let defaultCustomizations = {}
+    try {
+        const accountSnap = await adminDb.collection("users").doc(userId).collection("data").doc("account").get()
+        defaultCustomizations = accountSnap.data()?.customizations || {}
+    } catch (e) { /* fall through */ }
+
     return (
         <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
@@ -30,7 +38,7 @@ export function SetupCompleteServer({ userId }: SetupCompleteServerProps) {
                 </p>
             </div>
 
-            <SetupCompleteClient userId={userId} />
+            <SetupCompleteClient userId={userId} defaultCustomizations={defaultCustomizations} currentStep={currentStep} plan={plan} />
         </div>
     )
 }
@@ -85,9 +93,10 @@ export async function PaymentStripeServer({ userId, plan, email }: { userId: str
 interface AdvancedFiltersServerProps {
     userId: string
     plan: string
+    currentStep: number
 }
 
-export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersServerProps) {
+export async function AdvancedFiltersServer({ userId, plan, currentStep }: AdvancedFiltersServerProps) {
     const maxFilters = plan === 'ultra' ? 50 : 30
     const res = await fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/protected/account", {
         cache: "no-cache",
@@ -205,6 +214,10 @@ export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersSer
         return await submitQueries(defaultStrategy)
     }
 
+    // Use saved queries if available, otherwise use generated defaults
+    const existingQueries = data.data.queries
+    const strategyToUse = existingQueries && existingQueries.length > 0 ? existingQueries : defaultStrategy
+
     return (
         <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8">
@@ -217,7 +230,7 @@ export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersSer
                 </p>
             </div>
 
-            <AdvancedFiltersClientWrapper userId={userId} maxStrategies={maxFilters} defaultStrategy={defaultStrategy} />
+            <AdvancedFiltersClientWrapper userId={userId} maxStrategies={maxFilters} defaultStrategy={strategyToUse} currentStep={currentStep} plan={plan} />
 
             <div className="text-center mt-6">
                 <p className="text-sm text-gray-500">
@@ -231,23 +244,38 @@ export async function AdvancedFiltersServer({ userId, plan }: AdvancedFiltersSer
 interface ProfileAnalysisServerProps {
     userId: string
     plan: string
+    currentStep: number
 }
 
-export function ProfileAnalysisServer({ userId, plan }: ProfileAnalysisServerProps) {
+export async function ProfileAnalysisServer({ userId, plan, currentStep }: ProfileAnalysisServerProps) {
+    let initialProfile = null
+    let initialCvUrl = null
+    try {
+        const accountSnap = await adminDb.collection("users").doc(userId).collection("data").doc("account").get()
+        initialProfile = accountSnap.data()?.profileSummary || null
+        initialCvUrl = accountSnap.data()?.cvUrl || null
+    } catch (e) { /* fall through */ }
+
     return (
-        <ProfileAnalysisClient userId={userId} plan={plan} />
+        <ProfileAnalysisClient userId={userId} plan={plan} initialProfile={initialProfile} initialCvUrl={initialCvUrl} currentStep={currentStep} />
     )
 }
 
 interface CompanyInputServerProps {
     userId: string
     plan: string
+    currentStep: number
 }
 
-export function CompanyInputServer({ userId, plan }: CompanyInputServerProps) {
+export async function CompanyInputServer({ userId, plan, currentStep }: CompanyInputServerProps) {
     const maxCompanies = plansData[plan]?.maxCompanies || 1
-
     const isUltraPlan = plan === 'ultra'
+
+    let initialCompanies: any[] = []
+    try {
+        const accountSnap = await adminDb.collection("users").doc(userId).collection("data").doc("account").get()
+        initialCompanies = accountSnap.data()?.companies || []
+    } catch (e) { /* fall through */ }
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -268,6 +296,9 @@ export function CompanyInputServer({ userId, plan }: CompanyInputServerProps) {
                 maxCompanies={maxCompanies}
                 planType={plan}
                 isUltraPlan={isUltraPlan}
+                initialCompanies={initialCompanies}
+                currentStep={currentStep}
+                plan={plan}
             />
 
             <div className="text-center mt-6">
@@ -281,9 +312,10 @@ export function CompanyInputServer({ userId, plan }: CompanyInputServerProps) {
 
 interface PlanSelectionServerProps {
     userId: string
+    currentPlan?: string
 }
 
-export function PlanSelectionServer({ userId }: PlanSelectionServerProps) {
+export function PlanSelectionServer({ userId, currentPlan }: PlanSelectionServerProps) {
     return (
         <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
@@ -300,7 +332,7 @@ export function PlanSelectionServer({ userId }: PlanSelectionServerProps) {
                 </p>
             </div>
 
-            <PlanSelectionClient userId={userId} plans={plansInfo} />
+            <PlanSelectionClient userId={userId} plans={plansInfo} selectedPlan={currentPlan} />
         </div>
     )
 }
@@ -308,30 +340,33 @@ export function PlanSelectionServer({ userId }: PlanSelectionServerProps) {
 export default async function OnboardingPage({ user, currentStep }) {
     return (
         <div className="container mx-auto px-4 py-8">
+            <ScrollToTop step={currentStep} />
             {currentStep === 1 && (
-                <PlanSelectionServer userId={user.uid} />
+                <PlanSelectionServer userId={user.uid} currentPlan={user.plan} />
             )}
 
             {currentStep === 2 && (
                 <CompanyInputServer
                     userId={user.uid}
                     plan={user.plan}
+                    currentStep={currentStep}
                 />
             )}
 
             {currentStep === 3 && (
-                <ProfileAnalysisServer userId={user.uid} plan={user.plan} />
+                <ProfileAnalysisServer userId={user.uid} plan={user.plan} currentStep={currentStep} />
             )}
 
             {currentStep === 4 && (
                 <AdvancedFiltersServer
                     userId={user.uid}
                     plan={user.plan}
+                    currentStep={currentStep}
                 />
             )}
 
             {currentStep === 5 && (
-                <SetupCompleteServer userId={user.uid} />
+                <SetupCompleteServer userId={user.uid} currentStep={currentStep} plan={user.plan} />
             )}
 
             {currentStep === 6 && (
