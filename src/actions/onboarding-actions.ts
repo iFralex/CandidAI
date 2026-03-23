@@ -10,6 +10,69 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { Resend } from 'resend'
 import { getTestMock } from '@/app/api/test/set-mock/route'
 
+export async function deleteProfile() {
+    if (process.env.NODE_ENV !== 'production') {
+        const cookieStore = await cookies();
+        const testCookie = cookieStore.get('__playwright_user__')?.value;
+        if (testCookie) {
+            revalidatePath('/dashboard');
+            return;
+        }
+    }
+
+    const userId = await checkAuth();
+
+    const userRef = adminDb.collection("users").doc(userId);
+    const accountRef = adminDb.collection("users").doc(userId).collection("data").doc("account");
+
+    const batch = adminDb.batch();
+    batch.set(accountRef, {
+        profileSummary: FieldValue.delete(),
+        cvUrl: FieldValue.delete(),
+        queries: FieldValue.delete(),
+        customizations: FieldValue.delete(),
+    }, { merge: true });
+    batch.update(userRef, { onboardingStep: 3, maxOnboardingStep: 3 });
+
+    await batch.commit();
+    revalidatePath('/dashboard');
+}
+
+export async function goBackStep(currentStep: number, plan: string) {
+    if (process.env.NODE_ENV !== 'production') {
+        const cookieStore = await cookies();
+        const testCookie = cookieStore.get('__playwright_user__')?.value;
+        if (testCookie) {
+            try {
+                const userData = JSON.parse(Buffer.from(testCookie, 'base64').toString('utf-8'));
+                const maxStep = Math.max(currentStep, userData.maxOnboardingStep || currentStep);
+                let prevStep = currentStep - 1;
+                if (currentStep === 5 && plan !== 'pro' && plan !== 'ultra') prevStep = 3;
+                if (prevStep >= 1) {
+                    userData.onboardingStep = prevStep;
+                    userData.maxOnboardingStep = maxStep;
+                    cookieStore.set('__playwright_user__', Buffer.from(JSON.stringify(userData)).toString('base64'), { path: '/' });
+                }
+            } catch (e) { /* fall through */ }
+            revalidatePath('/dashboard');
+            return;
+        }
+    }
+
+    const userId = await checkAuth();
+    let prevStep = currentStep - 1;
+    if (currentStep === 5 && plan !== 'pro' && plan !== 'ultra') prevStep = 3;
+    if (prevStep < 1) return;
+
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+    const existingMax = userSnap.data()?.maxOnboardingStep || currentStep;
+    const maxOnboardingStep = Math.max(currentStep, existingMax);
+
+    await userRef.update({ onboardingStep: prevStep, maxOnboardingStep });
+    revalidatePath('/dashboard');
+}
+
 export async function startServer(userId = null) {
     if (!userId)
         userId = await checkAuth()
@@ -34,8 +97,11 @@ export async function selectPlan(planId: string) {
         if (testCookie) {
             try {
                 const userData = JSON.parse(Buffer.from(testCookie, 'base64').toString('utf-8'));
-                userData.onboardingStep = 2;
+                const planChanged = userData.plan !== planId;
+                const maxOnboardingStep = planChanged ? 2 : Math.max(2, userData.maxOnboardingStep || 2);
+                userData.onboardingStep = maxOnboardingStep;
                 userData.plan = planId;
+                userData.maxOnboardingStep = maxOnboardingStep;
                 cookieStore.set('__playwright_user__', Buffer.from(JSON.stringify(userData)).toString('base64'), { path: '/' });
             } catch (e) { /* fall through */ }
             revalidatePath('/dashboard');
@@ -45,22 +111,34 @@ export async function selectPlan(planId: string) {
 
     const userId = await checkAuth()
 
-    // Riferimento al documento utente
-    const ref = adminDb.collection("users").doc(userId)
+    const userRef = adminDb.collection("users").doc(userId)
+    const userSnap = await userRef.get()
+    const existingPlan = userSnap.data()?.plan
+    const existingMax = userSnap.data()?.maxOnboardingStep || 2
+    const planChanged = existingPlan && existingPlan !== planId
 
-    // Batch write
     const batch = adminDb.batch()
 
-    batch.update(ref, {
+    batch.update(userRef, {
         onboardingStep: 2,
+        maxOnboardingStep: planChanged ? 2 : Math.max(2, existingMax),
         plan: planId,
         credits: plansData[planId].credits || 0,
     })
 
-    // Esegui batch
+    if (planChanged) {
+        const accountRef = adminDb.collection("users").doc(userId).collection("data").doc("account")
+        batch.set(accountRef, {
+            companies: FieldValue.delete(),
+            profileSummary: FieldValue.delete(),
+            cvUrl: FieldValue.delete(),
+            queries: FieldValue.delete(),
+            customizations: FieldValue.delete(),
+        }, { merge: true })
+    }
+
     await batch.commit()
 
-    // Revalida la pagina per mostrare il nuovo step
     revalidatePath('/dashboard')
 }
 
@@ -107,26 +185,39 @@ export async function submitCompanies(companies: { name: string, domain: string 
     const userId = await checkAuth()
 
     const userRef = adminDb.collection("users").doc(userId)
+    const accountRef = adminDb.collection("users").doc(userId).collection("data").doc("account")
 
     // Enforce plan limits
-    const userSnap = await userRef.get()
+    const [userSnap, accountSnap] = await Promise.all([userRef.get(), accountRef.get()])
     const plan: string = userSnap.data()?.plan || "free_trial"
     const maxCompanies: number = (plansData as any)[plan]?.maxCompanies ?? 1
+    const existingMax: number = userSnap.data()?.maxOnboardingStep || 3
 
     if (companies.length > maxCompanies) {
         return { success: false, error: `Exceeds plan limit of ${maxCompanies} companies` }
     }
 
-    const accountRef = adminDb.collection("users").doc(userId).collection("data").doc("account")
+    const existingCompanies: any[] = accountSnap.data()?.companies || []
+    const sortKey = (c: any) => c.domain || c.linkedin_url || c.name || ''
+    const normalize = (arr: any[]) => JSON.stringify(
+        [...arr].sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
+    )
+    const dataChanged = normalize(companies) !== normalize(existingCompanies)
 
-    // Batch per unire le due operazioni in un'unica commit
+    const accountData: Record<string, any> = { companies }
+    if (dataChanged) {
+        accountData.profileSummary = FieldValue.delete()
+        accountData.cvUrl = FieldValue.delete()
+        accountData.queries = FieldValue.delete()
+        accountData.customizations = FieldValue.delete()
+    }
+
     const batch = adminDb.batch()
-
-    // Equivalente a setDoc(..., { merge: true })
-    batch.set(accountRef, { companies }, { merge: true })
-
-    // Equivalente a updateDoc(...)
-    batch.update(userRef, { onboardingStep: 3 })
+    batch.set(accountRef, accountData, { merge: true })
+    batch.update(userRef, {
+        onboardingStep: 3,
+        maxOnboardingStep: Math.max(3, existingMax),
+    })
 
     await batch.commit()
 
@@ -174,9 +265,9 @@ export async function submitProfile(
         }
     }
 
-    // For initial onboarding (not profile updates): CV and experience are mandatory
+    // For initial onboarding (not profile updates): CV or existing cvUrl is required
     if (!skipOnboardingStep) {
-        if (!cv) {
+        if (!cv && !profileData?.cvUrl) {
             return { success: false, error: "CV is required" };
         }
         if (
@@ -234,15 +325,35 @@ export async function submitProfile(
 
     const userRef = adminDb.collection("users").doc(userId);
 
-    batch.update(accountRef, updatedProfile);
     if (!skipOnboardingStep) {
-        batch.update(userRef, { onboardingStep: 4 });
+        const [userSnap, accountSnap] = await Promise.all([userRef.get(), accountRef.get()]);
+        const existingMax: number = userSnap.data()?.maxOnboardingStep || 4;
+        const existingProfile = accountSnap.data()?.profileSummary;
+        const profileChanged = !!cv || JSON.stringify(profileData?.profileSummary) !== JSON.stringify(existingProfile);
+        const nextStepBase = (plan === 'pro' || plan === 'ultra') ? 4 : 5;
+
+        const accountData: Record<string, any> = { ...updatedProfile };
+        if (profileChanged) {
+            accountData.queries = FieldValue.delete();
+            accountData.customizations = FieldValue.delete();
+        }
+        batch.set(accountRef, accountData, { merge: true });
+        batch.update(userRef, {
+            onboardingStep: nextStepBase,
+            maxOnboardingStep: Math.max(nextStepBase, existingMax),
+        });
+    } else {
+        batch.update(accountRef, updatedProfile);
     }
 
     await batch.commit();
 
     // Revalida la dashboard (Next.js)
     revalidatePath("/dashboard");
+
+    if (skipOnboardingStep) {
+        return { success: true as const, cvUrl: cvUrl || undefined };
+    }
 }
 
 export async function submitQueries(queries: any) {
@@ -270,11 +381,22 @@ export async function submitQueries(queries: any) {
 
     const userRef = adminDb.collection("users").doc(userId);
 
-    // Batch: 2 scritture → 1 sola commit, più efficiente
+    const [userSnap, accountSnap] = await Promise.all([userRef.get(), accountRef.get()]);
+    const existingMax: number = userSnap.data()?.maxOnboardingStep || 5;
+    const existingQueries = accountSnap.data()?.queries;
+    const dataChanged = JSON.stringify(queries) !== JSON.stringify(existingQueries);
+
     const batch = adminDb.batch();
 
-    batch.update(accountRef, { queries: queries });
-    batch.update(userRef, { onboardingStep: 5 });
+    const accountData: Record<string, any> = { queries };
+    if (dataChanged) {
+        accountData.customizations = FieldValue.delete();
+    }
+    batch.set(accountRef, accountData, { merge: true });
+    batch.update(userRef, {
+        onboardingStep: 5,
+        maxOnboardingStep: Math.max(5, existingMax),
+    });
 
     await batch.commit();
 
@@ -308,15 +430,21 @@ export async function completeOnboarding(customizations: any) {
 
     const userRef = adminDb.collection("users").doc(userId);
 
-    // Batch: più efficiente e atomicamente equivalente
+    const userSnap = await userRef.get();
+    const planConfig = plansInfo.find(p => p.id === userSnap.data()?.plan);
+    const existingMax: number = userSnap.data()?.maxOnboardingStep || 5;
+    const nextStepBase = (planConfig?.price === 0) ? 50 : 6;
+
     const batch = adminDb.batch();
 
     batch.update(accountRef, { customizations });
-    batch.update(userRef, { onboardingStep: 6 });
+    batch.update(userRef, {
+        onboardingStep: nextStepBase,
+        maxOnboardingStep: Math.max(nextStepBase, existingMax),
+    });
 
     await batch.commit();
 
-    // Redirect identico alla versione originale
     redirect('/dashboard');
 }
 

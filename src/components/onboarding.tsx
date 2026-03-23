@@ -2,8 +2,8 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { motion, AnimatePresence } from "framer-motion"
-import { resendEmailVerification, selectPlan } from '@/actions/onboarding-actions'
-import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark, Lock } from 'lucide-react'
+import { resendEmailVerification, selectPlan, goBackStep, deleteProfile } from '@/actions/onboarding-actions'
+import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, ArrowLeft, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark, Lock } from 'lucide-react'
 import { submitCompanies } from '@/actions/onboarding-actions'
 import { Building, Plus, X, Wand2 } from 'lucide-react'
 import { Card } from './ui/card'
@@ -26,6 +26,8 @@ interface SetupCompleteClientProps {
     userId: string
     defaultCustomizations?: Partial<Customizations>
     onSave?: (data: Customizations) => Promise<void>
+    currentStep?: number
+    plan?: string
 }
 
 interface Customizations {
@@ -47,13 +49,19 @@ const lengthOptions = [
 ]
 
 
-export function SetupCompleteClient({ userId, defaultCustomizations, onSave }: SetupCompleteClientProps) {
+export function SetupCompleteClient({ userId, defaultCustomizations, onSave, currentStep, plan }: SetupCompleteClientProps) {
     const [customizations, setCustomizations] = useState<Customizations>({
         position_description: defaultCustomizations?.position_description || '',
         instructions: defaultCustomizations?.instructions || ''
     })
     const [isPending, startTransition] = useTransition()
+    const [isBackPending, startBackTransition] = useTransition()
     const [saved, setSaved] = useState(false)
+
+    const handleBack = () => {
+        if (!currentStep || !plan) return
+        startBackTransition(() => goBackStep(currentStep, plan))
+    }
 
     const handleStartGeneration = () => {
         startTransition(async () => {
@@ -169,11 +177,21 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave }: S
 
             {/* Call to Action */}
             <motion.div
-                className="text-center"
+                className="flex flex-wrap items-center justify-center gap-3"
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6, duration: 0.7, ease: "easeOut" }}
             >
+                {currentStep && plan && !onSave && (
+                    <button
+                        onClick={handleBack}
+                        disabled={isBackPending || isPending}
+                        className="inline-flex items-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
+                    >
+                        {isBackPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowLeft className="w-5 h-5" />}
+                        <span>Back</span>
+                    </button>
+                )}
                 <button
                     onClick={handleStartGeneration}
                     disabled={isPending || !customizations.position_description.trim()}
@@ -191,7 +209,7 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave }: S
                         </>
                     )}
                 </button>
-                {saved && <span className="ml-4 text-green-400 text-sm">Saved successfully.</span>}
+                {saved && <span className="text-green-400 text-sm">Saved successfully.</span>}
 
                 <div className="mt-6 grid md:grid-cols-3 gap-4 text-sm text-gray-400">
                     <div className="flex items-center justify-center space-x-2">
@@ -1226,9 +1244,10 @@ export function AddStrategyButton({
     );
 }
 
-export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, userId, onSave }: { defaultStrategy: any; maxStrategies: number; userId: string; onSave?: (strategy: any) => Promise<void> }) {
+export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, userId, onSave, currentStep, plan }: { defaultStrategy: any; maxStrategies: number; userId: string; onSave?: (strategy: any) => Promise<void>; currentStep?: number; plan?: string }) {
     const [strategy, setStrategy] = useState(defaultStrategy);
     const [isPending, startTransition] = useTransition();
+    const [isBackPending, startBackTransition] = useTransition();
     const [hasChanges, setHasChanges] = useState(false);
     const [saved, setSaved] = useState(false);
 
@@ -1252,6 +1271,11 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
         })
     };
 
+    const handleBack = () => {
+        if (!currentStep || !plan) return
+        startBackTransition(() => goBackStep(currentStep, plan))
+    };
+
     return (
         <AdvancedFiltersClient strategy={strategy} setStrategy={setStrategy} maxStrategies={maxStrategies}>
             {/* Action Buttons */}
@@ -1261,6 +1285,18 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
             >
+                {currentStep && plan && !onSave && (
+                    <motion.button
+                        onClick={handleBack}
+                        disabled={isBackPending || isPending}
+                        className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-6 rounded-lg transition-all flex items-center space-x-2 border border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        {isBackPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowLeft className="w-5 h-5" />}
+                        <span>Back</span>
+                    </motion.button>
+                )}
                 <motion.button
                     onClick={resetStrategy}
                     disabled={!hasChanges}
@@ -2124,7 +2160,9 @@ interface ProfileAnalysisClientProps {
     userId: string;
     plan: string;
     initialProfile?: any;
+    initialCvUrl?: string | null;
     onSave?: (plan: string, profileData: any, cv?: File | null) => Promise<void>;
+    currentStep?: number;
 }
 
 function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
@@ -3283,7 +3321,7 @@ function ProjectsSection({ profileSummary, setProfileSummary }: any) {
 
     // Salvataggio
     const handleSave = () => {
-        if (!tempProject.title.trim()) return;
+        if (!tempProject.name.trim()) return;
 
         setProfileSummary((prev: any) => {
             if (!prev) return prev;
@@ -3390,7 +3428,7 @@ function ProjectsSection({ profileSummary, setProfileSummary }: any) {
                                 <label className="text-sm text-gray-400">Title</label>
                                 <Input
                                     type="text"
-                                    value={tempProject.title}
+                                    value={tempProject.name}
                                     onChange={(e) => setTempProject({ ...tempProject, title: e.target.value })}
                                     maxLength={100}
                                 />
@@ -3544,16 +3582,31 @@ export function ProfileSummaryCard({
     )
 }
 
-export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: ProfileAnalysisClientProps) {
+export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvUrl, onSave, currentStep }: ProfileAnalysisClientProps) {
+    const router = useRouter()
     const [linkedinUrl, setLinkedinUrl] = useState('')
     const [analyzing, setAnalyzing] = useState(false)
     const [analysisComplete, setAnalysisComplete] = useState(!!initialProfile)
     const [profileSummary, setProfileSummary] = useState<ProfileSummary>(initialProfile || null)
     const [recruiterPersona, setRecruiterPersona] = useState('')
     const [isPending, startTransition] = useTransition()
+    const [isBackPending, startBackTransition] = useTransition()
+    const [isDeletePending, startDeleteTransition] = useTransition()
     const [cvFile, setCvFile] = useState<{ name: string, blob: any } | null>()
+    const [localCvUrl, setLocalCvUrl] = useState<string | undefined>(initialCvUrl ?? undefined)
+    const [isDraftSaving, setIsDraftSaving] = useState(false)
     const [isRecalculating, setIsRecalculating] = useState(false)
     const [saved, setSaved] = useState(false)
+
+    // Reset state when profile is deleted (initialProfile becomes null after router.refresh())
+    useEffect(() => {
+        if (!initialProfile && !initialCvUrl) {
+            setAnalysisComplete(false)
+            setProfileSummary(null)
+            setCvFile(null)
+            setLocalCvUrl(undefined)
+        }
+    }, [initialProfile, initialCvUrl])
 
     const analyzeProfile = async () => {
         if (!cvFile) return;
@@ -3632,6 +3685,19 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
         } finally {
             setAnalyzing(false)
         }
+
+        // Save draft immediately so a page refresh doesn't lose the profile
+        if (localProfile && !onSave) {
+            try {
+                setIsDraftSaving(true)
+                const result = await submitProfile(plan, { linkedinUrl, profileSummary: localProfile }, cvFile?.blob, true)
+                if (result?.cvUrl) setLocalCvUrl(result.cvUrl)
+            } catch (e) {
+                console.warn("Draft save failed:", e)
+            } finally {
+                setIsDraftSaving(false)
+            }
+        }
     }
 
     const handleRecalculatePersona = async () => {
@@ -3651,17 +3717,32 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
         }
     }
 
+    const effectiveCvUrl = localCvUrl || initialCvUrl
+
     const handleContinue = () => {
-        if (!onSave && !cvFile) return alert("Please upload your CV before continuing.")
+        if (!onSave && !cvFile && !effectiveCvUrl) return alert("Please upload your CV before continuing.")
         startTransition(async () => {
             if (onSave) {
                 await onSave(plan, { linkedinUrl, profileSummary }, cvFile?.blob ?? null)
                 setSaved(true)
                 setTimeout(() => setSaved(false), 3000)
             } else {
-                await submitProfile(plan, { linkedinUrl, profileSummary }, cvFile?.blob)
+                // If no new CV, pass the already-saved cvUrl (from draft save or initial load)
+                await submitProfile(plan, { linkedinUrl, profileSummary, cvUrl: cvFile ? undefined : effectiveCvUrl }, cvFile?.blob)
             }
         })
+    }
+
+    const handleDeleteProfile = () => {
+        startDeleteTransition(async () => {
+            await deleteProfile()
+            router.refresh()
+        })
+    }
+
+    const handleBack = () => {
+        if (!currentStep) return
+        startBackTransition(() => goBackStep(currentStep, plan))
     }
 
     const handleCvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -3778,7 +3859,17 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
                         </div>
 
                         {/* Analyze button */}
-                        <div className="text-center">
+                        <div className="flex flex-wrap items-center justify-center gap-3">
+                            {currentStep && !onSave && (
+                                <button
+                                    onClick={handleBack}
+                                    disabled={isBackPending}
+                                    className="inline-flex items-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
+                                >
+                                    {isBackPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowLeft className="w-5 h-5" />}
+                                    <span>Back</span>
+                                </button>
+                            )}
                             <button
                                 onClick={analyzeProfile}
                                 disabled={!linkedinUrl.trim() || (!linkedinUrl.startsWith("https://linkedin.com/in/") && !linkedinUrl.startsWith("https://www.linkedin.com/in/")) || !cvFile}
@@ -3821,7 +3912,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
                             variants={{
                                 hidden: {},
                                 show: {
-                                    transition: { staggerChildren: 0.5 },
+                                    transition: { staggerChildren: 2.2, delayChildren: 0.4 },
                                 },
                             }}
                         >
@@ -3834,7 +3925,10 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
                                 <motion.div
                                     key={index}
                                     className="flex items-center space-x-3 text-gray-300"
-                                    variants={cardVariants}
+                                    variants={{
+                                        hidden: { opacity: 0, x: -16 },
+                                        show: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" } },
+                                    }}
                                 >
                                     <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
                                     <span className="text-sm">{step}</span>
@@ -3860,6 +3954,12 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
                         <p className="text-lg text-gray-400">
                             Review your profile summary and ideal recruiter persona. You can edit anything before proceeding.
                         </p>
+                        {isDraftSaving && (
+                            <p className="text-sm text-violet-400 mt-2 flex items-center justify-center gap-1">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Saving profile...
+                            </p>
+                        )}
                     </div>
 
                     <div className="grid gap-8 mb-8 w-full">
@@ -3911,31 +4011,53 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
                     </div>
 
                     <motion.div
-                        className="text-center"
+                        className="flex flex-col items-center gap-3"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5, duration: 0.6 }}
                     >
-                        <button
-                            onClick={handleContinue}
-                            disabled={isPending}
-                            className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2"
-                        >
-                            {isPending ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    <span>Saving...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span>{onSave ? "Save Changes" : "Continue Setup"}</span>
-                                    {!onSave && <ArrowRight className="w-5 h-5" />}
-                                </>
+                        <div className="flex flex-wrap items-center justify-center gap-3">
+                            {currentStep && !onSave && (
+                                <button
+                                    onClick={handleBack}
+                                    disabled={isBackPending || isPending || isDeletePending}
+                                    className="inline-flex items-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
+                                >
+                                    {isBackPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowLeft className="w-5 h-5" />}
+                                    <span>Back</span>
+                                </button>
                             )}
-                        </button>
-                        {saved && <span className="ml-4 text-green-400 text-sm">Saved successfully.</span>}
+                            {!onSave && (
+                                <button
+                                    onClick={handleDeleteProfile}
+                                    disabled={isDeletePending || isPending || isBackPending}
+                                    className="inline-flex items-center space-x-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-red-500/20"
+                                >
+                                    {isDeletePending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                                    <span>Start Over</span>
+                                </button>
+                            )}
+                            <button
+                                onClick={handleContinue}
+                                disabled={isPending || isDraftSaving}
+                                className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2"
+                            >
+                                {isPending ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <span>Saving...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>{onSave ? "Save Changes" : "Continue Setup"}</span>
+                                        {!onSave && <ArrowRight className="w-5 h-5" />}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                        {saved && <span className="text-green-400 text-sm">Saved successfully.</span>}
 
-                        <p className="text-sm text-gray-500 mt-4">
+                        <p className="text-sm text-gray-500">
                             This information helps us find the perfect recruiters for you
                         </p>
                     </motion.div>
@@ -3945,12 +4067,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, onSave }: 
     )
 }
 
-interface CompanyInputClientProps {
-    userId: string
-    maxCompanies: number
-    planType: string
-    isUltraPlan: boolean
-}
+// CompanyInputClientProps is defined below as a type
 
 import React, {
     ChangeEvent,
@@ -3987,6 +4104,9 @@ type CompanyInputClientProps = {
     maxCompanies: number;
     planType?: string;
     isUltraPlan?: boolean;
+    initialCompanies?: { name: string; domain?: string; linkedin_url?: string }[];
+    currentStep?: number;
+    plan?: string;
 };
 
 export function CompanyAutocomplete({
@@ -4137,10 +4257,24 @@ export function CompanyInputClient({
     maxCompanies,
     planType,
     isUltraPlan,
+    initialCompanies,
+    currentStep,
+    plan,
 }: CompanyInputClientProps) {
-    const [selectedCompanies, setSelectedCompanies] = useState<TQuery[]>([]);
+    const initialTQueries: TQuery[] = (initialCompanies || []).map(c => ({
+        name: c.name || '',
+        domain: c.domain || c.linkedin_url || '',
+        icon: '',
+    }));
+    const [selectedCompanies, setSelectedCompanies] = useState<TQuery[]>(initialTQueries);
     const [inputValue, setInputValue] = useState("");
     const [isPending, startTransition] = useTransition();
+    const [isBackPending, startBackTransition] = useTransition();
+
+    const handleBack = () => {
+        if (!currentStep || !plan) return
+        startBackTransition(() => goBackStep(currentStep, plan))
+    };
 
     const handleAddCompany = (company: TQuery) => {
         // Evita di aggiungere se si è raggiunto il limite
@@ -4325,7 +4459,17 @@ export function CompanyInputClient({
                 )}
             </motion.div >
 
-            <motion.div className="text-center" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+            <motion.div className="flex flex-wrap items-center justify-center gap-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                {currentStep && plan && (
+                    <button
+                        onClick={handleBack}
+                        disabled={isBackPending || isPending}
+                        className="inline-flex items-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
+                    >
+                        {isBackPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowLeft className="w-5 h-5" />}
+                        <span>Back</span>
+                    </button>
+                )}
                 <button
                     onClick={handleContinue}
                     disabled={selectedCompanies.length === 0 || isPending}
@@ -4372,13 +4516,14 @@ interface PlanSelectionClientProps {
     plans: Plan[]
 }
 
-export function PlanSelectionClient({ userId = 'user123' }) {
-    const [selectedPlan, setSelectedPlan] = useState(null);
+export function PlanSelectionClient({ userId = 'user123', plans, selectedPlan: initialSelectedPlan }: { userId?: string; plans?: any[]; selectedPlan?: string }) {
+    const [selectedPlan, setSelectedPlan] = useState(initialSelectedPlan || null);
     const [isPending, startTransition] = useTransition();
 
     const freePlan = plansInfo[0];
 
     useEffect(() => {
+        if (initialSelectedPlan) return; // already pre-selected from server
         if (typeof document === "undefined") return;
         const cookie = document.cookie.split("; ").find(c => c.startsWith("defaultPlan="));
         if (cookie) {
@@ -4535,3 +4680,10 @@ export const ResendEmailVerificationBtn = () => {
         </div>
     );
 };
+
+export function ScrollToTop({ step }: { step: number }) {
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' })
+    }, [step])
+    return null
+}
