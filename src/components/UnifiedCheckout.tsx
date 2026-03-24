@@ -61,15 +61,32 @@ function StripeCardInputs() {
     );
 }
 
+async function confirmPaymentAndNavigate(paymentIntentId: string, onSuccess?: (data: any) => void, data?: any) {
+    try {
+        await fetch("/api/payment-confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentIntentId }),
+        });
+    } catch { /* webhook will handle it as fallback */ }
+
+    if (onSuccess) {
+        onSuccess(data);
+    } else {
+        window.location.href = "/dashboard";
+    }
+}
+
 interface PaymentRequestButtonProps {
     email: string;
     amountCents: number;
     purchaseType: "plan" | "credits";
     itemId: string;
+    discountCode?: string | null;
     onSuccess?: (data: any) => void;
 }
 
-function PaymentRequestButton({ email, amountCents, purchaseType, itemId, onSuccess }: PaymentRequestButtonProps) {
+function PaymentRequestButton({ email, amountCents, purchaseType, itemId, discountCode, onSuccess }: PaymentRequestButtonProps) {
     const stripe = useStripe();
     const [paymentRequest, setPaymentRequest] = useState<any>(null);
     const [supported, setSupported] = useState(false);
@@ -93,7 +110,7 @@ function PaymentRequestButton({ email, amountCents, purchaseType, itemId, onSucc
                 const res = await fetch("/api/create-payment", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ payment_method_id: ev.paymentMethod.id, purchaseType, itemId }),
+                    body: JSON.stringify({ payment_method_id: ev.paymentMethod.id, purchaseType, itemId, discountCode }),
                 });
                 const data = await res.json();
                 if (data.error) { ev.complete("fail"); return; }
@@ -108,7 +125,7 @@ function PaymentRequestButton({ email, amountCents, purchaseType, itemId, onSucc
                     ev.complete("fail");
                 } else {
                     ev.complete("success");
-                    onSuccess?.(data);
+                    await confirmPaymentAndNavigate(data.paymentIntentId, onSuccess, data);
                 }
             } catch {
                 ev.complete("fail");
@@ -117,7 +134,7 @@ function PaymentRequestButton({ email, amountCents, purchaseType, itemId, onSucc
 
         setPaymentRequest(pr);
         return () => { try { pr?.off?.("paymentmethod"); } catch { } };
-    }, [stripe, amountCents, purchaseType, itemId]);
+    }, [stripe, amountCents, purchaseType, itemId, discountCode]);
 
     if (!supported || !paymentRequest) return null;
 
@@ -191,7 +208,7 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
 
             setSuccess(true);
             setLoading(false);
-            onSuccess?.(data);
+            await confirmPaymentAndNavigate(data.paymentIntentId, onSuccess, data);
         } catch (err: any) {
             setError(err.message || "Unexpected error");
             setLoading(false);
@@ -221,6 +238,7 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
                 amountCents={amountCents}
                 purchaseType={purchaseType}
                 itemId={itemId}
+                discountCode={discountCode}
                 onSuccess={onSuccess}
             />
 

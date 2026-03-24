@@ -68,6 +68,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
             client_secret: paymentIntent.client_secret,
+            paymentIntentId: paymentIntent.id,
             type: "one_time",
             amount: amountInCents,
         });
