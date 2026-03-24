@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     const raw = process.env.SERVER_RUNNER_URL ?? 'http://localhost';
     const { protocol, hostname } = new URL(raw);
-    const logsBase = `${protocol}//${hostname}`;
+    const logsBase = `${protocol}//${hostname}:8080`;
     return [
       { source: '/logs',        destination: logsBase,          permanent: false, basePath: false },
       { source: '/logs/:path*', destination: `${logsBase}/:path*`, permanent: false, basePath: false },
