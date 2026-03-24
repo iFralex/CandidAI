@@ -192,7 +192,9 @@ def log_ai_interaction(file_path: str, prompt: str, response: dict):
     
     # Se è la prima chiamata in questa sessione, crea un nuovo oggetto
     if not SESSION_OBJECT_CREATED:
+        from datetime import datetime, timezone
         new_data = {
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00"),
             "input": [prompt],
             "output": [output_text],
             "prompt-tokens": prompt_tokens,
@@ -613,7 +615,7 @@ def ai_chat(
             # Successo!
             if response.status_code == 200:
                 result = response.json()
-                log_ai_interaction("./candidai_script/ai_log.json", prompt, result)
+                log_ai_interaction("./logs/ai/ai_log.json", prompt, result)
                 output = result.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
                 
                 logging.info(f"✅ Richiesta completata con successo!")

@@ -17,6 +17,17 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // Redirect /logs → server Apache dei log (stesso host di SERVER_RUNNER_URL, senza porta e path)
+  async redirects() {
+    const raw = process.env.SERVER_RUNNER_URL ?? 'http://localhost';
+    const { protocol, hostname } = new URL(raw);
+    const logsBase = `${protocol}//${hostname}`;
+    return [
+      { source: '/logs',        destination: logsBase,          permanent: false, basePath: false },
+      { source: '/logs/:path*', destination: `${logsBase}/:path*`, permanent: false, basePath: false },
+    ];
+  },
+
   // Riscritture URL
   async rewrites() {
     return [

@@ -7,7 +7,7 @@ import candidai_script.main as main_module
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    filename="./candidai.log",
+    filename="./logs/server/candidai.log",
 )
 logger = logging.getLogger(__name__)
 
