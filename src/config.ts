@@ -201,5 +201,5 @@ export const referralCodes = {
 
 export const discountCodes: Record<string, { type: 'percentage' | 'fixed'; value: number }> = {
   "test": { type: 'fixed', value: 1 },
-  "dev":  { type: 'fixed', value: 50 },
+  "free": { type: 'percentage', value: 100 },
 }

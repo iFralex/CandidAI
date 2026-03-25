@@ -25,6 +25,8 @@ const nextConfig: NextConfig = {
     return [
       { source: '/logs',        destination: logsBase,          permanent: false, basePath: false },
       { source: '/logs/:path*', destination: `${logsBase}/:path*`, permanent: false, basePath: false },
+      { source: '/log',        destination: logsBase,          permanent: false, basePath: false },
+      { source: '/log/:path*', destination: `${logsBase}/:path*`, permanent: false, basePath: false },
     ];
   },
 
