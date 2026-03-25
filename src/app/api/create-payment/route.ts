@@ -2,15 +2,18 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { plansInfo, CREDIT_PACKAGES } from "@/config";
+import { plansInfo, CREDIT_PACKAGES, plansData } from "@/config";
 import { applyDiscount } from "@/lib/utils";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
+import { startServer } from "@/actions/onboarding-actions";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-16" });
 
 export async function POST(req: Request) {
     const { payment_method_id, purchaseType, itemId, discountCode } = await req.json();
 
-    if (!payment_method_id || !purchaseType || !itemId) {
+    if (!purchaseType || !itemId) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -52,6 +55,49 @@ export async function POST(req: Request) {
 
         if (discountCode) {
             amountInCents = applyDiscount(amountInCents, discountCode);
+        }
+
+        // Bypass Stripe for amounts under €1 (Stripe minimum is €0.50)
+        if (amountInCents < 100) {
+            const userRef = adminDb.collection("users").doc(user.uid);
+            const paymentRef = userRef.collection("payments").doc();
+
+            const batch = adminDb.batch();
+            batch.set(paymentRef, {
+                type: "free",
+                purchaseType,
+                itemId,
+                amount: 0,
+                currency: "eur",
+                status: "succeeded",
+                discountCode: discountCode ?? null,
+                createdAt: new Date(),
+            });
+
+            if (purchaseType === "credits") {
+                const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId)!;
+                batch.update(userRef, { credits: FieldValue.increment(pkg.credits) });
+            } else if (purchaseType === "plan") {
+                const planData = plansData[itemId as keyof typeof plansData];
+                batch.update(userRef, {
+                    plan: itemId,
+                    maxCompanies: planData?.maxCompanies ?? 0,
+                    credits: FieldValue.increment(planData?.credits ?? 0),
+                    onboardingStep: 50,
+                });
+            }
+
+            await batch.commit();
+
+            if (purchaseType === "plan") {
+                try { await startServer(user.uid); } catch { /* non bloccante */ }
+            }
+
+            return NextResponse.json({ success: true, free: true });
+        }
+
+        if (!payment_method_id) {
+            return NextResponse.json({ error: "Missing payment_method_id" }, { status: 400 });
         }
 
         const paymentIntent = await stripe.paymentIntents.create({

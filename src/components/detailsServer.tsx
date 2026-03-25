@@ -153,7 +153,7 @@ export function EducationList({ education, editable = false, onEdit }: Education
         <>
             {education?.length ? (
                 education.map((edu, idx) => (
-                    <Link href={edu.school?.linkedin_url ? ("https://" + edu.school.linkedin_url) : "#"} target="_blank" rel="noopener noreferrer">
+                    <Link key={idx} href={edu.school?.linkedin_url ? ("https://" + edu.school.linkedin_url) : "#"} target="_blank" rel="noopener noreferrer">
                         <li
                             key={idx}
                             className="bg-white/5 hover:bg-white/10 rounded-lg p-4 border border-white/10 transition-colors"

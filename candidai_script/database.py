@@ -130,12 +130,16 @@ def save_companies_to_results(user_id, companies, changed_companies):
                     existing_id: firestore.DELETE_FIELD
                 })
             else:
-                # 1b. L'ID esiste ma NON è in changed_companies: SALTA (comportamento attuale)
-                company_to_save = results[existing_id].get("company", company)
-                print(f"L'azienda '{company_to_save['name']}' è già stata salvata con ID {existing_id}. Nessun aggiornamento.")
-                ids[f'{company_to_save["name"]}-{user_id}'] = existing_id
-                right_companies.append(company_to_save)
-                continue  # passa alla prossima azienda
+                # 1b. L'ID esiste ma NON è in changed_companies: SALTA se l'entry in results esiste
+                existing_data = results.get(existing_id) if results else None
+                if existing_data is not None:
+                    company_to_save = existing_data.get("company", company)
+                    print(f"L'azienda '{company_to_save['name']}' è già stata salvata con ID {existing_id}. Nessun aggiornamento.")
+                    ids[f'{company_to_save["name"]}-{user_id}'] = existing_id
+                    right_companies.append(company_to_save)
+                    continue  # passa alla prossima azienda
+                # Se l'entry in results è assente (stato inconsistente), ricrea l'entry
+                print(f"L'azienda '{company['name']}' ha ID {existing_id} in ids ma nessuna entry in results. Ricreo.")
         else:
             # 2. Se l'ID non esiste: CREA NUOVO ID
             new_id = generate_unique_id()
@@ -166,7 +170,7 @@ def save_companies_to_results(user_id, companies, changed_companies):
         if not existing_id_doc.exists:
              update_data[current_id]["start_date"] = firestore.SERVER_TIMESTAMP
 
-        company_doc_ref.set(update_data)
+        company_doc_ref.set(update_data, merge=True)
 
         # 2. Aggiorna o crea il documento 'details'
         details_ref = db.collection("users").document(user_id)\

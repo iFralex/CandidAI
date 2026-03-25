@@ -163,33 +163,49 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
     const baseAmountCents = computePriceInCents(purchaseType, itemId);
     const amountCents = discountCode ? applyDiscount(baseAmountCents, discountCode) : baseAmountCents;
 
+    const isFree = amountCents < 100;
+
     const handlePay = async (e?: React.FormEvent) => {
         e?.preventDefault();
-        if (!stripe || !elements) return;
-
         setLoading(true);
         setError("");
 
-        const cardNumberElement = elements.getElement(CardNumberElement);
-        if (!cardNumberElement) {
-            setError("Card element not available");
-            setLoading(false);
-            return;
-        }
-
-        const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
-            type: "card",
-            card: cardNumberElement,
-            billing_details: { email },
-        });
-
-        if (pmError) {
-            setError(pmError.message || "Payment method error");
-            setLoading(false);
-            return;
-        }
-
         try {
+            if (isFree) {
+                const res = await fetch("/api/create-payment", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ purchaseType, itemId, discountCode }),
+                });
+                const data = await res.json();
+                if (data.error) { setError(data.error); setLoading(false); return; }
+                setSuccess(true);
+                setLoading(false);
+                if (onSuccess) onSuccess(data); else window.location.href = "/dashboard";
+                return;
+            }
+
+            if (!stripe || !elements) return;
+
+            const cardNumberElement = elements.getElement(CardNumberElement);
+            if (!cardNumberElement) {
+                setError("Card element not available");
+                setLoading(false);
+                return;
+            }
+
+            const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
+                type: "card",
+                card: cardNumberElement,
+                billing_details: { email },
+            });
+
+            if (pmError) {
+                setError(pmError.message || "Payment method error");
+                setLoading(false);
+                return;
+            }
+
             const res = await fetch("/api/create-payment", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -233,16 +249,19 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
 
     return (
         <form onSubmit={handlePay} className="space-y-6">
-            <PaymentRequestButton
-                email={email}
-                amountCents={amountCents}
-                purchaseType={purchaseType}
-                itemId={itemId}
-                discountCode={discountCode}
-                onSuccess={onSuccess}
-            />
-
-            <StripeCardInputs />
+            {!isFree && (
+                <>
+                    <PaymentRequestButton
+                        email={email}
+                        amountCents={amountCents}
+                        purchaseType={purchaseType}
+                        itemId={itemId}
+                        discountCode={discountCode}
+                        onSuccess={onSuccess}
+                    />
+                    <StripeCardInputs />
+                </>
+            )}
 
             {error && <div className="text-red-400 text-sm">{error}</div>}
 
@@ -257,6 +276,10 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
                 {loading ? (
                     <span className="flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin" /> Processing...
+                    </span>
+                ) : isFree ? (
+                    <span className="flex items-center gap-2">
+                        Confirm free purchase <ArrowRight className="w-4 h-4" />
                     </span>
                 ) : (
                     <span className="flex items-center gap-2">

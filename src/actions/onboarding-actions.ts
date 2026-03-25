@@ -1000,20 +1000,26 @@ export async function addNewCompanies(companies: { name: string; domain?: string
     const accountSnap = await accountRef.get();
     const existingCompanies: any[] = accountSnap.exists ? accountSnap.data()?.companies ?? [] : [];
 
-    // Build result entries and ID mappings for all new companies
-    const resultUpdates: Record<string, any> = {};
+    const requiresConfirmation = (plansData as any)[plan]?.companyConfirmationCalls ?? false;
     const batch = adminDb.batch();
 
-    for (const company of companies) {
-        const companyKey = `${company.name}-${userId}`;
-        const newId = adminDb.collection("_generated_ids").doc().id;
-        resultUpdates[newId] = { company, start_date: Timestamp.now() };
-        batch.set(adminDb.collection("ids").doc(companyKey), { id: newId }, { merge: true });
+    if (requiresConfirmation) {
+        // For plans that require confirmation (e.g. Ultra), only update account.companies.
+        // Python will detect these as new (present in account but not in results), create
+        // their result entries, add them to companies_to_confirm, and pause for user confirmation.
+        batch.set(accountRef, { companies: [...existingCompanies, ...companies] }, { merge: true });
+    } else {
+        // For other plans, pre-create result entries so Python processes them immediately.
+        const resultUpdates: Record<string, any> = {};
+        for (const company of companies) {
+            const companyKey = `${company.name}-${userId}`;
+            const newId = adminDb.collection("_generated_ids").doc().id;
+            resultUpdates[newId] = { company, start_date: Timestamp.now() };
+            batch.set(adminDb.collection("ids").doc(companyKey), { id: newId }, { merge: true });
+        }
+        batch.set(accountRef, { companies: [...existingCompanies, ...companies] }, { merge: true });
+        batch.set(resultsRef, resultUpdates, { merge: true });
     }
-
-    // Update account.companies and pre-create result entries (no email_sent → Python will process them)
-    batch.set(accountRef, { companies: [...existingCompanies, ...companies] }, { merge: true });
-    batch.set(resultsRef, resultUpdates, { merge: true });
 
     await batch.commit();
     await startServer(userId);
