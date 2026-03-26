@@ -283,11 +283,12 @@ def ai_chat(
     
     # Modelli fallback
     FALLBACK_MODELS = [
-        "microsoft/mai-ds-r1:free",
-        "deepseek/deepseek-r1-0528:free",
-        "tngtech/deepseek-r1t2-chimera:free",
-        "tngtech/deepseek-r1t-chimera:free",
-        "deepseek/deepseek-r1-0528-qwen3-8b:free"
+        "nousresearch/hermes-3-llama-3.1-405b:free",
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "google/gemma-3-27b-it:free",
+        "z-ai/glm-4.5-air:free",
+        "nvidia/nemotron-3-super-120b-a12b:free",
+        "openai/gpt-oss-120b:free"
     ]
     
     # Configurazione proxy
