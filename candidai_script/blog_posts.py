@@ -102,46 +102,51 @@ def driver_quit_safely():
     driver = None
 
 def get_html(
-    url: str, 
-    wait_time: int = 1, 
-    scroll_pause_time: float = 1.0, 
+    url: str,
+    wait_time: int = 1,
+    scroll_pause_time: float = 1.0,
     max_scrolls: int = 50
 ) -> str:
-    driver = init_driver()  # recupera il driver esistente
-
-    # Se siamo già sulla stessa pagina, restituisci l'HTML corrente
     try:
-        current_url = driver.current_url
-        if current_url == url:
-            logging.info(f"URL già caricato: '{url}', restituisco HTML corrente senza ricaricare.")
-            return driver.page_source
-    except Exception:
-        # Se il driver non ha ancora una current_url valida, continuiamo normalmente
-        pass
+        driver = init_driver()  # recupera il driver esistente
 
-    logging.info(f"Navigating to URL: '{url}'")
-    driver.get(url)
-    time.sleep(wait_time)
+        # Se siamo già sulla stessa pagina, restituisci l'HTML corrente
+        try:
+            current_url = driver.current_url
+            if current_url == url:
+                logging.info(f"URL già caricato: '{url}', restituisco HTML corrente senza ricaricare.")
+                return driver.page_source
+        except Exception:
+            # Se il driver non ha ancora una current_url valida, continuiamo normalmente
+            pass
 
-    # Scroll dinamico
-    last_height = driver.execute_script("return document.body.scrollHeight")
-    scrolls = 0
+        logging.info(f"Navigating to URL: '{url}'")
+        driver.get(url)
+        time.sleep(wait_time)
 
-    while scrolls < max_scrolls:
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(scroll_pause_time)
+        # Scroll dinamico
+        last_height = driver.execute_script("return document.body.scrollHeight")
+        scrolls = 0
 
-        new_height = driver.execute_script("return document.body.scrollHeight")
-        if new_height == last_height:
-            break
+        while scrolls < max_scrolls:
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(scroll_pause_time)
 
-        last_height = new_height
-        scrolls += 1
+            new_height = driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                break
 
-    # Torna all'inizio della pagina
-    driver.execute_script("window.scrollTo(0, 0);")
+            last_height = new_height
+            scrolls += 1
 
-    return driver.page_source
+        # Torna all'inizio della pagina
+        driver.execute_script("window.scrollTo(0, 0);")
+
+        return driver.page_source
+
+    except Exception as e:
+        logging.error(f"❌ get_html fallito per '{url}' — errore Chrome/WebDriver: {e}")
+        return None
 
 def close_driver():
     global driver
