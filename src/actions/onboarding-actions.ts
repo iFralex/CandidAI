@@ -1030,6 +1030,7 @@ export async function addNewCompanies(companies: { name: string; domain?: string
 export async function updateSettings(data: {
     marketingEmails: boolean;
     reminderFrequency: string;
+    emailNotificationThreshold: number;
 }) {
     const userId = await checkAuth();
 
@@ -1055,12 +1056,13 @@ export async function getSettings() {
 
     const snap = await settingsRef.get();
     if (!snap.exists) {
-        return { marketingEmails: true, reminderFrequency: "weekly" };
+        return { marketingEmails: true, reminderFrequency: "weekly", emailNotificationThreshold: 10 };
     }
     const prefs = snap.data()?.preferences ?? {};
     return {
         marketingEmails: prefs.marketingEmails ?? true,
         reminderFrequency: prefs.reminderFrequency ?? "weekly",
+        emailNotificationThreshold: prefs.emailNotificationThreshold ?? 10,
     };
 }
 

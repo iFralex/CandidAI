@@ -8,10 +8,13 @@ from candidai_script.database import (
     get_results_status,
     get_results_row,
     get_custom_queries,
+    get_user_settings,
     valid_account
 )
 import logging
+import os
 import time
+import requests
 
 def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
     """
@@ -62,6 +65,8 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
 
     logging.info(f"🚀 Avvio processi in modalità '{mode.upper()}'")
 
+    generated_email_data = []
+
     # Esegui per ogni azienda
     for company in companies:
         name = company["name"]
@@ -103,7 +108,7 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
                 if not ids[company_key] in custom_user_inscructions:
                     queries, custom_user_inscructions[ids[company_key]] = get_custom_queries(user_id, ids[f'{company["name"]}-{user_id}'])
 
-                generate_email(
+                email_result = generate_email(
                     user_id,
                     single_id,
                     single_company_list,
@@ -116,10 +121,29 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
                 )
                 logging.info(f"✅ Email generata per {name} ({time.time() - start:.2f}s)")
 
+                if email_result and name in email_result:
+                    recruiter_data = row.get("recruiter") or {}
+                    articles_list = (row.get("blog_articles") or {}).get("list", []) or []
+                    generated_email_data.append({
+                        "company": {"name": name, "domain": company.get("domain", "")},
+                        "recruiter": {
+                            "name": recruiter_data.get("full_name", ""),
+                            "jobTitle": recruiter_data.get("job_title", ""),
+                        },
+                        "articles": [
+                            {"title": a.get("title", ""), "link": a.get("link", a.get("url", ""))}
+                            for a in articles_list[:3] if isinstance(a, dict)
+                        ],
+                        "preview": (email_result[name].get("body") or ""),
+                    })
+
         except Exception as e:
             logging.error(f"❌ Errore nell'elaborazione di {name}: {e}", exc_info=True)
 
     logging.info("\n🎉 Tutti i processi terminati.")
+
+    if generated_email_data:
+        _send_notification_email(user_id, generated_email_data)
 
 
 def decide_tasks_per_company(mode, manual_tasks, current_status, companies, user_id, ids, target_companies=None):
@@ -163,6 +187,40 @@ def decide_tasks_per_company(mode, manual_tasks, current_status, companies, user
             tasks_per_company[name] = company_tasks
 
     return tasks_per_company
+
+def _send_notification_email(user_id, generated_email_data):
+    """Invia una mail riepilogativa tramite l'endpoint Next.js /api/send-email."""
+    settings = get_user_settings(user_id)
+    threshold = settings.get("emailNotificationThreshold", 1)
+
+    if threshold == 0:
+        return  # Notifiche disabilitate
+
+    if len(generated_email_data) < threshold:
+        return
+
+    domain = os.environ.get("NEXT_PUBLIC_DOMAIN", "").rstrip("/")
+    if not domain:
+        logging.warning("⚠️ NEXT_PUBLIC_DOMAIN non impostato, notifica email saltata")
+        return
+
+    try:
+        resp = requests.post(
+            f"{domain}/api/send-email",
+            json={
+                "userId": user_id,
+                "type": "new_emails_generated",
+                "data": {"newData": generated_email_data},
+            },
+            timeout=30,
+        )
+        if resp.ok:
+            logging.info(f"📧 Notifica inviata per {len(generated_email_data)} email generate")
+        else:
+            logging.warning(f"⚠️ Notifica email fallita: {resp.status_code} {resp.text}")
+    except Exception as e:
+        logging.error(f"❌ Errore invio notifica email: {e}")
+
 
 def run(user_id):
     return main(user_id=user_id, mode="auto")
