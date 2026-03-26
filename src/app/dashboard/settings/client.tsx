@@ -10,17 +10,19 @@ import { updateSettings } from "@/actions/onboarding-actions"
 interface SettingsFormProps {
     defaultMarketingEmails: boolean
     defaultReminderFrequency: string
+    defaultEmailNotificationThreshold: number
 }
 
-export function SettingsForm({ defaultMarketingEmails, defaultReminderFrequency }: SettingsFormProps) {
+export function SettingsForm({ defaultMarketingEmails, defaultReminderFrequency, defaultEmailNotificationThreshold }: SettingsFormProps) {
     const [marketingEmails, setMarketingEmails] = useState(defaultMarketingEmails)
     const [reminderFrequency, setReminderFrequency] = useState(defaultReminderFrequency)
+    const [emailNotificationThreshold, setEmailNotificationThreshold] = useState(String(defaultEmailNotificationThreshold))
     const [saved, setSaved] = useState(false)
     const [isPending, startTransition] = useTransition()
 
     const handleSave = () => {
         startTransition(async () => {
-            await updateSettings({ marketingEmails, reminderFrequency })
+            await updateSettings({ marketingEmails, reminderFrequency, emailNotificationThreshold: Number(emailNotificationThreshold) })
             setSaved(true)
             setTimeout(() => setSaved(false), 3000)
         })
@@ -71,6 +73,33 @@ export function SettingsForm({ defaultMarketingEmails, defaultReminderFrequency 
                             <SelectItem value="biweekly">Every 2 weeks</SelectItem>
                             <SelectItem value="monthly">Monthly</SelectItem>
                             <SelectItem value="never">Never</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+
+            {/* Email Generation Notifications */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
+                <div>
+                    <h2 className="text-lg font-semibold text-white">Email Generation Notifications</h2>
+                    <p className="text-gray-400 text-sm mt-1">Receive a summary email when new outreach emails have been generated for you.</p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <Label className="text-white text-sm font-medium">Notify me every</Label>
+                        <p className="text-gray-400 text-sm">Send a notification after this many emails are generated.</p>
+                    </div>
+                    <Select value={emailNotificationThreshold} onValueChange={setEmailNotificationThreshold}>
+                        <SelectTrigger className="w-48 bg-white/5 border-white/10 text-white">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="1">Every email</SelectItem>
+                            <SelectItem value="5">Every 5 emails</SelectItem>
+                            <SelectItem value="10">Every 10 emails</SelectItem>
+                            <SelectItem value="20">Every 20 emails</SelectItem>
+                            <SelectItem value="0">Never</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

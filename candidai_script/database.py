@@ -71,6 +71,16 @@ def get_changed_companies(user_id):
     else:
         return doc.to_dict()
 
+def get_user_settings(user_id):
+    doc_ref = db.collection("users").document(user_id).collection("data").document("settings")
+    doc = doc_ref.get()
+    if not doc.exists:
+        return {"emailNotificationThreshold": 1}
+    prefs = doc.to_dict().get("preferences", {})
+    return {
+        "emailNotificationThreshold": prefs.get("emailNotificationThreshold", 10),
+    }
+
 def generate_unique_id():
     return db.collection("generated_ids").document().id
 

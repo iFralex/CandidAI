@@ -14,6 +14,7 @@ export default async function SettingsPage() {
             <SettingsForm
                 defaultMarketingEmails={settings.marketingEmails}
                 defaultReminderFrequency={settings.reminderFrequency}
+                defaultEmailNotificationThreshold={settings.emailNotificationThreshold}
             />
         </div>
     )
