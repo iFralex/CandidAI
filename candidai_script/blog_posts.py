@@ -78,7 +78,7 @@ def init_driver(force_new=False):
         options.add_argument("--disable-blink-features=AutomationControlled")
 
         logging.info("🚀 Launching undetected Chrome...")
-        driver = uc.Chrome(options=options)
+        driver = uc.Chrome(version_main=146, options=options)
         logging.info("✅ Driver created")
         return driver
 
