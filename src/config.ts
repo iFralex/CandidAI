@@ -43,6 +43,10 @@ export const creditsInfo = {
     cost: 70,
     description: "Replace the selected companies with new ones and retrieve their updated data"
   },
+  "research-blog-articles": {
+    cost: 75,
+    description: "Search for new blog articles for this company"
+  },
 }
 
 export const plansData = {

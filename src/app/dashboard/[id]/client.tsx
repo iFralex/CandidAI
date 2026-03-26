@@ -1270,13 +1270,63 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
   );
 };
 
-const BlogPostsSection = ({ data }: { data: any }) => {
+const BlogPostsSection = ({ data, blogSearchUnlocked }: { data: any, blogSearchUnlocked: boolean }) => {
   const inProgress = getStepStatus(data, "blog_articles") !== "completed"
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSearch = async () => {
+    try {
+      setIsSubmitting(true);
+      await refindBlogArticles(window.location.pathname.split('/').filter(Boolean).pop()!);
+    } catch (err) {
+      console.error("Error during refindBlogArticles:", err);
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <motion.div variants={cardVariants} initial="hidden" animate="visible">
       <Card className="p-4 sm:p-6">
-        <h3 className="text-xl sm:text-2xl font-semibold text-white mb-6 flex items-center">
-          <Newspaper className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-violet-400" /> Blog Articles Selected
+        <h3 className="text-xl sm:text-2xl font-semibold text-white mb-6 flex items-center justify-between">
+          <span className="flex items-center">
+            <Newspaper className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-violet-400" /> Blog Articles Selected
+          </span>
+          <CreditsDialog unlocked={blogSearchUnlocked} contentType={"research-blog-articles"} action={async () => setDialogOpen(true)}>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button variant="outline" size="sm">Search new articles</Button>
+                </motion.div>
+              </DialogTrigger>
+              {!inProgress && blogSearchUnlocked && (
+                <DialogContent>
+                  {isSubmitting && <Overlay />}
+                  <DialogHeader>
+                    <DialogTitle>Search for new blog articles?</DialogTitle>
+                    <DialogDescription>
+                      Current articles will be deleted and a new search will start for this company.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="ghost">Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={handleSearch} disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Searching...
+                        </>
+                      ) : (
+                        "Search new articles"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              )}
+            </Dialog>
+          </CreditsDialog>
         </h3>
 
         <div className={(inProgress ? "bg-gray-900 " : "") + "relative rounded-md"}>
@@ -1379,7 +1429,7 @@ export default function ResultClient({ data, customizations, emailSent }: { data
       <CompanyHeader data={data} />
       <EmailGenerated data={data} defaultInstructions={customizations.instructions} emailSent={emailSent} />
       <RecruiterSummary originalData={data} customStrategy={customizations.queries} />
-      <BlogPostsSection data={data} />
+      <BlogPostsSection data={data} blogSearchUnlocked={customizations.blogSearch !== null} />
       {data.company_info && <CompanyCard company={data.company_info} />}
     </motion.div>
   );
@@ -1389,7 +1439,7 @@ import React from "react"
 import { Globe, MapPin, Calendar, Users, Building2, TrendingUp, Sparkles, Zap, Target, Shield, Link2, Award, BarChart3, Layers } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getFileFromFirebase, payCredits, refindRecruiter, regenerateEmail, submitEmailSent, submitUpdateEmail } from "@/actions/onboarding-actions";
+import { getFileFromFirebase, payCredits, refindBlogArticles, refindRecruiter, regenerateEmail, submitEmailSent, submitUpdateEmail } from "@/actions/onboarding-actions";
 import { creditsInfo } from "@/config";
 
 const formatNumber = (num) => {

@@ -516,6 +516,32 @@ export async function refindRecruiter(companyId: string, strategy: any, name, li
     redirect("/dashboard/" + companyId);
 }
 
+export async function refindBlogArticles(companyId: string) {
+    const userId = await checkAuth();
+
+    const detailsRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("details");
+    const rowRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("row");
+
+    const batch = adminDb.batch();
+
+    batch.update(detailsRef, {
+        blog_articles: FieldValue.delete(),
+    });
+
+    batch.update(rowRef, {
+        blog_articles: FieldValue.delete(),
+    });
+
+    await Promise.all([
+        batch.commit(),
+        deleteCreditsPaid(userId, companyId, "research-blog-articles"),
+    ]);
+
+    await startServer(userId);
+
+    redirect("/dashboard/" + companyId);
+}
+
 export async function regenerateEmail(companyId: string, instructions: string) {
     const userId = await checkAuth();
 

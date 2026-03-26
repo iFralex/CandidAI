@@ -98,6 +98,7 @@ export async function GET(request, { params }) {
         if (!unlocked.prompt && detailsData.email) detailsData.email.prompt = null
         if (!unlocked["generate-email"]) customizationsData.instructions = null
         if (!unlocked["find-recruiter"]) customizationsData.queries = null
+        customizationsData.blogSearch = unlocked["research-blog-articles"] ? true : null
 
         // 🔹 Risposta finale
         return NextResponse.json({
