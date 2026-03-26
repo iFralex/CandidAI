@@ -223,7 +223,7 @@ def log_ai_interaction(file_path: str, prompt: str, response: dict):
 def ai_chat(
     prompt: str, 
     format: str = "str", 
-    model: str = "microsoft/mai-ds-r1:free", 
+    model: str = "nvidia/nemotron-3-super-120b-a12b:free", 
     site_url: Optional[str] = None, 
     site_name: Optional[str] = None
 ) -> Optional[Union[str, Dict]]:
@@ -307,6 +307,7 @@ def ai_chat(
 
     # Contatori per strategie multi-step
     error_counters = {
+        404: 0,  # Model Not Found
         429: 0,  # Rate limit
         401: 0,  # Unauthorized
         502: 0,  # Bad Gateway
@@ -638,7 +639,14 @@ def ai_chat(
             elif response.status_code == 403:
                 logging.info(f"⚠️ Errore 403: Input moderato. Impossibile procedere.")
                 return None
-            
+
+            elif response.status_code == 404:
+                old_model = FALLBACK_MODELS[current_model_idx]
+                current_model_idx = (current_model_idx + 1) % len(FALLBACK_MODELS)
+                new_model = FALLBACK_MODELS[current_model_idx]
+                logging.info(f"⚠️ Modello non trovato (404): [{old_model}→{new_model}]")
+                continue
+
             elif response.status_code == 408:
                 error_counters[408] += 1
                 wait_time = INITIAL_BACKOFF * (2 ** min(error_counters[408], 4))
