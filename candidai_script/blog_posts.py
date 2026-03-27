@@ -19,6 +19,7 @@ import time
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import WebDriverException
 import urllib3
+from candidai_script.utils import log_pdl_call, log_rocketreach_call
 
 def loginLinkedin(email: str, password: str, cookies_file: str = 'cookies.json'):
     # Avvio browser
@@ -160,6 +161,43 @@ import json
 
 # Variabile globale per tracciare se un nuovo oggetto è già stato creato in questa sessione
 SESSION_OBJECT_CREATED = False
+
+GOOGLE_LOG_PATH = "./logs/google/google_log.json"
+
+def log_google_search(query: str, exclude_url: str, num_results: int, results: list, error: str = None):
+    """
+    Salva in un file JSON i dettagli di ogni chiamata a Google Custom Search API.
+    """
+    from datetime import datetime, timezone
+    log_file = Path(GOOGLE_LOG_PATH)
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    if log_file.exists():
+        with open(log_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    else:
+        data = []
+
+    entry = {
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00"),
+        "query": query,
+        "exclude_url": exclude_url,
+        "num_results_requested": num_results,
+        "result_count": len(results) if results else 0,
+        "results": [
+            {
+                "title": r.get("title", ""),
+                "link": r.get("link", ""),
+                "snippet": r.get("snippet", ""),
+            }
+            for r in (results or [])
+        ],
+        "error": error,
+    }
+    data.append(entry)
+
+    with open(log_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 def log_ai_interaction(file_path: str, prompt: str, response: dict):
     """
@@ -762,9 +800,12 @@ def search_on_google(query, exclude_url="", num_results=3):
     try:
         response = requests.get(url)
         data = response.json()
-        return data.get("items", [])[:num_results]
+        items = data.get("items", [])[:num_results]
+        log_google_search(query, exclude_url, num_results, items)
+        return items
     except Exception as e:
         logging.info(f"Errore nella ricerca Google: {e}")
+        log_google_search(query, exclude_url, num_results, [], error=str(e))
         return []
 
 import json
@@ -4018,8 +4059,10 @@ def get_linkedin_profile_data(profile_url):
             # Check for successful response
             if json_response.get("status") == 200:
                 record = json_response['data']
+                log_pdl_call("person_enrich", {"profile": profile_url}, 200, record)
                 return record
 
+            log_pdl_call("person_enrich", {"profile": profile_url}, json_response.get("status", 0), {}, error=json_response.get("message", "Unknown error"))
             logging.info(f"Tentativo {attempt + 1} - Errore PDL:", json_response.get("message", "Unknown error"))
 
         # Se dopo 3 tentativi non va a buon fine
@@ -4592,13 +4635,15 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
 
             data = response.json()
             profiles = data.get("profiles", [])
+            log_rocketreach_call("person_search", {"query": query}, profiles)
 
             nonlocal evaluated_names
             evaluated_names |= {f"-{p['name']}" for p in profiles if p.get("name")}
 
             return profiles
-            
+
         except requests.RequestException as e:
+            log_rocketreach_call("person_search", {"query": query}, [], error=str(e))
             logging.info(f"Error executing search: {e}")
             return []
 

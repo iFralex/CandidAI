@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CandidAI — PDL Log</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --purple: #667eea; --purple-dark: #764ba2;
+            --bg: #0f0f1a; --surface: #1a1a2e; --surface2: #16213e;
+            --border: #2a2a4a; --text: #e2e8f0; --text-dim: #94a3b8;
+            --green: #4ade80; --red: #f87171; --yellow: #fbbf24; --blue: #60a5fa;
+            --pdl: #00c4cc;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+        .topbar { background: linear-gradient(135deg, #007a7e 0%, #004d50 100%); padding: 13px 20px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.4); flex-shrink: 0; }
+        .topbar a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; }
+        .topbar a:hover { color: #fff; }
+        .topbar .sep { color: rgba(255,255,255,0.35); }
+        .topbar h1 { font-size: 17px; font-weight: 700; }
+        #ts { font-size: 12px; color: rgba(255,255,255,0.6); margin-left: auto; }
+
+        .filterbar { display: flex; align-items: center; gap: 10px; padding: 10px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); flex-wrap: wrap; flex-shrink: 0; }
+        select, input[type=number], input[type=datetime-local] { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; color: var(--text); font-size: 13px; outline: none; }
+        select:focus, input:focus { border-color: var(--pdl); }
+        input[type=number] { width: 80px; }
+        input[type=datetime-local] { width: 185px; color-scheme: dark; }
+        .btn { background: #007a7e; color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-size: 13px; cursor: pointer; transition: background .2s; white-space: nowrap; }
+        .btn:hover { background: #005f62; }
+        .btn.ghost { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); }
+        .btn.ghost:hover { color: var(--text); border-color: var(--pdl); }
+        .sep-v { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+        #counter { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+
+        .searchbar { display: flex; align-items: center; gap: 10px; padding: 8px 20px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .searchbar input[type=text] { flex: 1; max-width: 400px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; color: var(--text); font-size: 13px; }
+        .searchbar input[type=text]:focus { outline: none; border-color: var(--pdl); }
+
+        #main { flex: 1; overflow-y: auto; padding: 20px; }
+
+        .stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; }
+        .stat-v { font-size: 26px; font-weight: 700; color: var(--pdl); }
+        .stat-l { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+        .card.error { border-color: rgba(248,113,113,0.4); }
+        .card-hd { padding: 14px 18px; cursor: pointer; background: linear-gradient(to right,rgba(0,196,204,.08),rgba(0,77,80,.08)); display: flex; justify-content: space-between; align-items: center; user-select: none; }
+        .card-hd:hover { background: linear-gradient(to right,rgba(0,196,204,.16),rgba(0,77,80,.16)); }
+        .card.error .card-hd { background: linear-gradient(to right,rgba(248,113,113,.08),rgba(248,113,113,.05)); }
+        .card-left { min-width: 0; flex: 1; }
+        .card-title { font-weight: 600; font-size: 14px; word-break: break-word; }
+        .card-ts { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+        .card-meta { display: flex; gap: 10px; font-size: 12px; color: var(--text-dim); align-items: center; flex-shrink: 0; margin-left: 12px; }
+        .badge { border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+        .badge-type { background: rgba(0,196,204,.15); color: var(--pdl); }
+        .badge-ok   { background: rgba(74,222,128,.15); color: var(--green); }
+        .badge-err  { background: rgba(248,113,113,.15); color: var(--red); }
+        .badge-404  { background: rgba(251,191,36,.15); color: var(--yellow); }
+        .chevron { transition: transform .3s; font-size: 13px; }
+        .chevron.open { transform: rotate(180deg); }
+        .card-body { max-height: 0; overflow: hidden; transition: max-height .3s ease-out; }
+        .card-body.open { max-height: 200000px; transition: max-height .5s ease-in; }
+
+        .section { border-bottom: 1px solid var(--border); padding: 14px 18px; }
+        .section:last-child { border-bottom: none; }
+        .section-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--pdl); margin-bottom: 10px; }
+        .kv-grid { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: 13px; }
+        .kv-k { color: var(--text-dim); align-self: start; padding-top: 1px; }
+        .kv-v { color: var(--text); word-break: break-all; }
+        .kv-v a { color: var(--pdl); text-decoration: none; }
+        .kv-v a:hover { text-decoration: underline; }
+
+        .profile-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 12px 14px; margin-bottom: 8px; }
+        .profile-card:last-child { margin-bottom: 0; }
+        .profile-name { font-weight: 600; font-size: 13.5px; color: var(--text); margin-bottom: 6px; }
+        .profile-name a { color: var(--pdl); text-decoration: none; }
+        .profile-name a:hover { text-decoration: underline; }
+        .profile-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; color: var(--text-dim); }
+        .profile-meta span { display: flex; gap: 4px; align-items: center; }
+
+        .error-box { padding: 14px 18px; color: var(--red); font-size: 13px; background: rgba(248,113,113,.07); }
+        .empty { text-align:center; padding:60px; color:var(--text-dim); font-size:14px; }
+        .err-banner { background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.3); border-radius:6px; padding:10px 16px; color:var(--red); margin:12px 20px; font-size:13px; }
+
+        ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:var(--bg)} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px} ::-webkit-scrollbar-thumb:hover{background:var(--pdl)}
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <a href="../">← Logs</a><span class="sep">/</span><h1>People Data Labs Log</h1>
+    <span id="ts">—</span>
+</div>
+
+<div class="filterbar">
+    <select id="mode" onchange="onModeChange()">
+        <option value="entries">Ultime N chiamate</option>
+        <option value="time">Ultime N …</option>
+        <option value="range">Intervallo date</option>
+    </select>
+    <span id="g-n" style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="n" value="50" min="1" max="5000">
+        <select id="unit" style="display:none">
+            <option value="minutes">minuti</option>
+            <option value="hours" selected>ore</option>
+            <option value="days">giorni</option>
+        </select>
+    </span>
+    <span id="g-range" style="display:none;gap:8px;align-items:center">
+        <label style="font-size:12px;color:var(--text-dim)">Da</label>
+        <input type="datetime-local" id="from">
+        <label style="font-size:12px;color:var(--text-dim)">A</label>
+        <input type="datetime-local" id="to">
+    </span>
+    <button class="btn" onclick="load()">Applica</button>
+    <span class="sep-v"></span>
+    <select id="type-filter" onchange="applyFilters()">
+        <option value="">Tutti i tipi</option>
+        <option value="company_enrich">Company Enrich</option>
+        <option value="person_search">Person Search</option>
+        <option value="person_enrich">Person Enrich</option>
+    </select>
+    <span class="sep-v"></span>
+    <span id="counter">—</span>
+</div>
+
+<div class="searchbar">
+    <input type="text" id="search" placeholder="Filtra per nome azienda / persona…" oninput="applyFilters()">
+    <button class="btn ghost" onclick="document.getElementById('search').value='';applyFilters()">✕</button>
+</div>
+
+<div id="err-banner" class="err-banner" style="display:none"></div>
+<div id="main">
+    <div class="stats" id="stats" style="display:none"></div>
+    <div id="cards"><div class="empty">Caricamento…</div></div>
+</div>
+
+<script>
+let allEntries = [], totalEntries = 0;
+
+function onModeChange() {
+    const m = document.getElementById('mode').value;
+    document.getElementById('g-n').style.display     = m !== 'range' ? 'flex' : 'none';
+    document.getElementById('unit').style.display    = m === 'time'  ? ''     : 'none';
+    document.getElementById('g-range').style.display = m === 'range' ? 'flex' : 'none';
+}
+function toggleCard(idx) {
+    document.getElementById('body-'+idx).classList.toggle('open');
+    document.getElementById('chev-'+idx).classList.toggle('open');
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function applyFilters() {
+    const q    = document.getElementById('search').value.trim().toLowerCase();
+    const type = document.getElementById('type-filter').value;
+    const filtered = allEntries.filter(e => {
+        if (type && e.api_type !== type) return false;
+        if (!q) return true;
+        const hay = JSON.stringify(e).toLowerCase();
+        return hay.includes(q);
+    });
+    renderEntries(filtered, totalEntries);
+}
+
+function renderEntries(entries, total) {
+    document.getElementById('counter').textContent = entries.length + ' / ' + total + ' chiamate';
+
+    if (!entries.length) {
+        document.getElementById('stats').style.display = 'none';
+        document.getElementById('cards').innerHTML = '<div class="empty">Nessuna chiamata trovata.</div>';
+        return;
+    }
+
+    const ok     = entries.filter(e => !e.error && e.status_code === 200).length;
+    const errors = entries.filter(e => e.error).length;
+    const nf     = entries.filter(e => e.status_code === 404).length;
+    const statsEl = document.getElementById('stats');
+    statsEl.style.display = 'grid';
+    statsEl.innerHTML =
+        `<div class="stat"><div class="stat-v">${entries.length}</div><div class="stat-l">Chiamate Totali</div></div>` +
+        `<div class="stat"><div class="stat-v" style="color:var(--green)">${ok}</div><div class="stat-l">Successi (200)</div></div>` +
+        `<div class="stat"><div class="stat-v" style="color:var(--yellow)">${nf}</div><div class="stat-l">Non trovati (404)</div></div>` +
+        (errors ? `<div class="stat"><div class="stat-v" style="color:var(--red)">${errors}</div><div class="stat-l">Errori</div></div>` : '');
+
+    const reversed = [...entries].reverse();
+    document.getElementById('cards').innerHTML = reversed.map((e, idx) => {
+        const num    = entries.length - idx;
+        const tsStr  = e.timestamp ? new Date(e.timestamp).toLocaleString('it-IT') : '';
+        const hasErr = !!e.error;
+        const sc     = e.status_code || 0;
+        const badgeClass = hasErr ? 'badge-err' : sc === 200 ? 'badge-ok' : sc === 404 ? 'badge-404' : 'badge-err';
+        const badgeText  = hasErr ? '❌ Error' : sc === 404 ? '404 Not Found' : sc + ' OK';
+
+        // Title depends on api_type
+        let titleStr = '';
+        const s = e.result_summary;
+        if (e.api_type === 'company_enrich') {
+            titleStr = esc(e.params?.name || e.params?.website || '—');
+        } else if (e.api_type === 'person_enrich') {
+            titleStr = esc(e.params?.profile || '—');
+        } else {
+            titleStr = `${(s && s.length ? s.length : 0)} profiles`;
+        }
+
+        // Body: params + result
+        let paramsHtml = '';
+        if (e.params && Object.keys(e.params).length) {
+            paramsHtml = `<div class="section"><div class="section-lbl">Parametri</div><div class="kv-grid">` +
+                Object.entries(e.params).map(([k,v]) => v ? `<div class="kv-k">${esc(k)}</div><div class="kv-v">${esc(v)}</div>` : '').join('') +
+                `</div></div>`;
+        }
+
+        let resultHtml = '';
+        if (hasErr) {
+            resultHtml = `<div class="error-box">❌ ${esc(e.error)}</div>`;
+        } else if (e.api_type === 'company_enrich' && s && s.name) {
+            resultHtml = `<div class="section"><div class="section-lbl">Risultato</div><div class="kv-grid">
+                <div class="kv-k">Nome</div><div class="kv-v">${esc(s.name)}</div>
+                <div class="kv-k">Dominio</div><div class="kv-v">${esc(s.domain||'—')}</div>
+                <div class="kv-k">Industry</div><div class="kv-v">${esc(s.industry||'—')}</div>
+                <div class="kv-k">Dipendenti</div><div class="kv-v">${esc(s.size||'—')}</div>
+                <div class="kv-k">Paese</div><div class="kv-v">${esc(s.location||'—')}</div>
+                ${s.linkedin_url ? `<div class="kv-k">LinkedIn</div><div class="kv-v"><a href="${esc(s.linkedin_url)}" target="_blank">${esc(s.linkedin_url)}</a></div>` : ''}
+            </div></div>`;
+        } else if (e.api_type === 'person_enrich' && s && s.full_name) {
+            resultHtml = `<div class="section"><div class="section-lbl">Risultato</div><div class="kv-grid">
+                <div class="kv-k">Nome</div><div class="kv-v">${esc(s.full_name)}</div>
+                <div class="kv-k">Ruolo</div><div class="kv-v">${esc(s.job_title||'—')}</div>
+                <div class="kv-k">Azienda</div><div class="kv-v">${esc(s.job_company_name||'—')}</div>
+                ${s.linkedin_url ? `<div class="kv-k">LinkedIn</div><div class="kv-v"><a href="${esc(s.linkedin_url)}" target="_blank">${esc(s.linkedin_url)}</a></div>` : ''}
+                ${s.emails && s.emails.length ? `<div class="kv-k">Email</div><div class="kv-v">${s.emails.map(esc).join(', ')}</div>` : ''}
+            </div></div>`;
+        } else if (Array.isArray(s) && s.length) {
+            resultHtml = `<div class="section"><div class="section-lbl">Profili trovati</div>` +
+                s.map(p => `<div class="profile-card">
+                    <div class="profile-name">${p.linkedin_url ? `<a href="${esc(p.linkedin_url)}" target="_blank">${esc(p.full_name||'—')}</a>` : esc(p.full_name||'—')}</div>
+                    <div class="profile-meta">
+                        ${p.job_title ? `<span>💼 ${esc(p.job_title)}</span>` : ''}
+                        ${p.job_company_name ? `<span>🏢 ${esc(p.job_company_name)}</span>` : ''}
+                    </div>
+                </div>`).join('') + `</div>`;
+        }
+
+        return `<div class="card${hasErr?' error':''}">
+            <div class="card-hd" onclick="toggleCard(${idx})">
+                <div class="card-left">
+                    <div class="card-title">#${num} — ${titleStr}</div>
+                    ${tsStr ? `<div class="card-ts">${tsStr}</div>` : ''}
+                </div>
+                <div class="card-meta">
+                    <span class="badge badge-type">${esc(e.api_type||'')}</span>
+                    <span class="badge ${badgeClass}">${badgeText}</span>
+                    <span class="chevron" id="chev-${idx}">▼</span>
+                </div>
+            </div>
+            <div class="card-body" id="body-${idx}">${paramsHtml}${resultHtml}</div>
+        </div>`;
+    }).join('');
+}
+
+async function load() {
+    const mode = document.getElementById('mode').value;
+    const n    = document.getElementById('n').value;
+    const unit = document.getElementById('unit').value;
+    const from = document.getElementById('from').value;
+    const to   = document.getElementById('to').value;
+    const params = new URLSearchParams({mode, n, unit});
+    if (from) params.set('from', from.replace('T',' '));
+    if (to)   params.set('to',   to.replace('T',' '));
+    try {
+        const r = await fetch('log.php?' + params + '&_=' + Date.now());
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        document.getElementById('err-banner').style.display = 'none';
+        document.getElementById('ts').textContent = new Date().toLocaleTimeString('it-IT');
+        allEntries   = data.entries || [];
+        totalEntries = data.total  || 0;
+        applyFilters();
+    } catch(e) {
+        const el = document.getElementById('err-banner');
+        el.style.display = 'block';
+        el.textContent = 'Errore caricamento log: ' + e.message;
+        document.getElementById('cards').innerHTML = '<div class="empty">Nessun dato.</div>';
+    }
+}
+
+onModeChange();
+load();
+</script>
+</body>
+</html>
