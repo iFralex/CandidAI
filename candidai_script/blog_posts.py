@@ -751,7 +751,7 @@ def search_on_google(query, exclude_url="", num_results=3):
     """
     Esegue una ricerca su Google Custom Search e restituisce i primi risultati utili.
     """
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("SERVER_GOOGLE_API_KEY")
     cx = "a1c899d7f0d0446fd"
     url = (
         f"https://www.googleapis.com/customsearch/v1"

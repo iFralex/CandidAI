@@ -853,7 +853,7 @@ export function EmailDraftButton({
   );
 }
 
-export const CreditsDialog = ({ children, contentType, unlocked, className = "", action, number = 1, email = "" }) => {
+export const CreditsDialog = ({ children, contentType, unlocked, className = "", action, number = 1, email = "" }: { children: any, contentType: any, unlocked: any, className?: string, action?: () => Promise<any>, number?: number, email?: string }) => {
   const requiredCredits = (creditsInfo[contentType]?.cost || 0) * number;
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [error, setError] = useState(null);
@@ -1292,7 +1292,7 @@ const BlogPostsSection = ({ data, blogSearchUnlocked }: { data: any, blogSearchU
           <span className="flex items-center">
             <Newspaper className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-violet-400" /> Blog Articles Selected
           </span>
-          <CreditsDialog unlocked={blogSearchUnlocked} contentType={"research-blog-articles"} action={async () => setDialogOpen(true)}>
+          <CreditsDialog unlocked={blogSearchUnlocked} contentType={"research-blog-articles"}>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
