@@ -787,24 +787,70 @@ import requests
 
 def search_on_google(query, exclude_url="", num_results=3):
     """
-    Esegue una ricerca su Google Custom Search e restituisce i primi risultati utili.
+    Esegue una ricerca tramite Searlo e restituisce i primi risultati utili.
     """
-    api_key = os.getenv("SERVER_GOOGLE_API_KEY")
-    cx = "a1c899d7f0d0446fd"
-    url = (
-        f"https://www.googleapis.com/customsearch/v1"
-        f"?key={api_key}&cx={cx}&q={query}&num={num_results}"
-        f"&hl=en&gl=IE&siteSearch={exclude_url}&siteSearchFilter=e"
-    )
+    api_key = os.getenv("SEARLO_API_KEY")
+    url = "https://api.searlo.tech/api/v1/search"
 
-    try:
-        response = requests.get(url)
-        data = response.json()
-        items = data.get("items", [])[:num_results]
-        log_google_search(query, exclude_url, num_results, items)
-        return items
+    params = {
+        "q": query,
+        "limit": num_results,
+        "page": 1,
+    }
+
+    headers = {
+        "X-API-Key": api_key,
+        "Content-Type": "application/json",
+    }
+
+    max_retries = 5
+    retry_delays = [2, 5, 10, 20, 40]
+
+    for attempt in range(max_retries + 1):
+        try:
+            response = requests.get(url, params=params, headers=headers)
+            data = response.json()
+
+            if not response.ok:
+                status = response.status_code
+                message = data.get("message", "Request failed")
+                errors = data.get("errors", [])
+                detail = f" | Errors: {errors}" if errors else ""
+
+                if status == 429:
+                    if attempt < max_retries:
+                        wait = retry_delays[attempt]
+                        logging.warning(f"Searlo rate limit (tentativo {attempt + 1}/{max_retries}), riprovo tra {wait}s...")
+                        time.sleep(wait)
+                        continue
+                    else:
+                        raise RuntimeError(f"Searlo rate limit exceeded dopo {max_retries} tentativi: {message}")
+                elif status == 400:
+                    raise ValueError(f"Bad request: {message}{detail}")
+                elif status == 401:
+                    raise PermissionError(f"Invalid or missing Searlo API key: {message}")
+                elif status == 402:
+                    raise RuntimeError(f"Insufficient Searlo credits: {message}")
+                elif status == 404:
+                    raise ValueError(f"Searlo endpoint not found: {message}")
+                elif status == 500:
+                    raise RuntimeError(f"Searlo server error: {message}")
+                else:
+                    raise RuntimeError(f"Searlo error {status}: {message}")
+
+            items = data.get("organic", [])[:num_results]
+            log_google_search(query, exclude_url, num_results, items)
+            return items
+        except (ValueError, PermissionError, RuntimeError) as e:
+            logging.error(f"Errore nella ricerca Searlo: {e}")
+            log_google_search(query, exclude_url, num_results, [], error=str(e))
+            return []
+        except Exception as e:
+            logging.error(f"Errore imprevisto nella ricerca Searlo: {e}")
+            log_google_search(query, exclude_url, num_results, [], error=str(e))
+            return []
     except Exception as e:
-        logging.info(f"Errore nella ricerca Google: {e}")
+        logging.error(f"Errore imprevisto nella ricerca Searlo: {e}")
         log_google_search(query, exclude_url, num_results, [], error=str(e))
         return []
 
@@ -2171,6 +2217,7 @@ def try_close_overlays(driver, similarity_threshold=0.40):
 
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
+import os as _os; _os.environ.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "60")
 from sentence_transformers import SentenceTransformer, util
 from sklearn.metrics.pairwise import cosine_similarity
 
