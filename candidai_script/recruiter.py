@@ -12,6 +12,7 @@ import math
 import random
 import uuid
 from dateutil import parser as date_parser
+from candidai_script.utils import log_pdl_call, log_rocketreach_call
 
 def get_pdl_data(params):
     # --- CONFIGURAZIONE FLOPPYDATA ---
@@ -217,21 +218,27 @@ def get_pdl_data(params):
                 continue
 
             if resp.status_code == 200:
+                log_pdl_call("company_enrich", params, 200, json_response)
                 return json_response
             elif resp.status_code == 404:
                  # Profilo non trovato, ma chiamata valida (crediti spesi)
                 print("Profilo non trovato su PDL.")
+                log_pdl_call("company_enrich", params, 404, {})
                 return {}
             elif resp.status_code == 429:
                 print("Rate limit superato (anche se il check locale diceva ok).")
+                log_pdl_call("company_enrich", params, 429, {}, error="Rate limit superato")
                 # Forziamo crediti a 0 per evitare loop immediato
                 usage_entry["credits_remaining"] = 0
                 save_store(store)
                 break # O continue se vuoi provare un'altra chiave (richiederebbe refactoring loop esterno)
             else:
-                print(f"Errore API {resp.status_code}: {json_response.get('message', 'Unknown')}")
+                err_msg = json_response.get('message', 'Unknown')
+                log_pdl_call("company_enrich", params, resp.status_code, {}, error=err_msg)
+                print(f"Errore API {resp.status_code}: {err_msg}")
 
         except Exception as e:
+            log_pdl_call("company_enrich", params, 0, {}, error=str(e))
             print(f"Tentativo {attempt + 1} fallito: {str(e)}")
             time.sleep(1)
 
@@ -348,6 +355,7 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
 
             if response.get("status") == 200:
                 data = response.get('data', [])
+                log_pdl_call("person_search", {k: v for k, v in params.items() if k != "query"}, 200, data)
 
                 # Aggiungi solo profili nuovi (evita duplicati)
                 for record in data:
@@ -359,15 +367,17 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
                         # Se abbiamo raggiunto il target, fermati
                         if len(found_profiles) >= n_profiles:
                             break
-                
+
                 if data:  # Salva solo se ha trovato risultati
                     final_query = query
-                    
+
                 print(f"Query '{query['name']}' (ID: {query['id']}): trovati {len(data)} profili, totale accumulato: {len(found_profiles)}/{n_profiles}")
             else:
+                log_pdl_call("person_search", {k: v for k, v in params.items() if k != "query"}, response.get("status", 0), [], error=str(response))
                 print(f"❌ '{query['id']}': {response}")
 
         except Exception as e:
+            log_pdl_call("person_search", {}, 0, [], error=str(e))
             print(f"⚠️ Eccezione durante la query '{query['name']}': {str(e)}")
             continue
     
@@ -633,8 +643,11 @@ def get_work_email_from_rocketreach(name: str, company_domain: str) -> str:
 
         # RocketReach restituisce un oggetto con 'emails' o 'email' (dipende dal piano)
         if not data:
+            log_rocketreach_call("person_lookup", {"name": name, "company": company_domain}, {})
             return None
-        
+
+        log_rocketreach_call("person_lookup", {"name": name, "company": company_domain}, data)
+
         # 'emails' è solitamente una lista di dizionari con tipi (work, personal, ecc.)
         if "recommended_personal_email" in data:
             return data["recommended_personal_email"]
@@ -646,6 +659,7 @@ def get_work_email_from_rocketreach(name: str, company_domain: str) -> str:
         return None  # nessuna email lavorativa trovata
 
     except requests.RequestException as e:
+        log_rocketreach_call("person_lookup", {"name": name, "company": company_domain}, {}, error=str(e))
         print(f"⚠️ Errore nella richiesta RocketReach: {e}")
         return None
     
