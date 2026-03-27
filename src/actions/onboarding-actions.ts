@@ -519,10 +519,16 @@ export async function refindRecruiter(companyId: string, strategy: any, name, li
 export async function refindBlogArticles(companyId: string) {
     const userId = await checkAuth();
 
+    const resultsRef = adminDb.collection("users").doc(userId).collection("data").doc("results");
     const detailsRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("details");
     const rowRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("row");
 
     const batch = adminDb.batch();
+
+    // Cancella dal documento top-level letto dal Python server
+    batch.update(resultsRef, {
+        [`${companyId}.blog_articles`]: FieldValue.delete(),
+    });
 
     batch.update(detailsRef, {
         blog_articles: FieldValue.delete(),
