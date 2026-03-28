@@ -1,5 +1,5 @@
 from candidai_script.recruiter import find_recruiters_for_user, get_companies_info, get_pdl_data
-from candidai_script.blog_posts import get_blog_posts
+from candidai_script.blog_posts import get_blog_posts, extract_articles_content
 from candidai_script.email_generator import generate_email
 from candidai_script.database import (
     get_account_data,
@@ -9,7 +9,8 @@ from candidai_script.database import (
     get_results_row,
     get_custom_queries,
     get_user_settings,
-    valid_account
+    valid_account,
+    update_pending_articles_content,
 )
 import logging
 import os
@@ -102,7 +103,26 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
                 start = time.time()
                 row = get_results_row(user_id, ids[company_key])
 
-                result_blog = {name: row.get("blog_articles", {}).get("content", None)}
+                articles = row.get("blog_articles", {}).get("content") or []
+                pending = [a for a in articles if a.get("pending_content")]
+                if pending:
+                    logging.info(f"📥 Recupero contenuto per {len(pending)} articoli pending di {name}")
+                    fetched = extract_articles_content(
+                        [{"href": a["url"], "title": a.get("title", "")} for a in pending]
+                    )
+                    fetched_by_url = {a["url"]: f for a, f in zip(pending, fetched)}
+                    articles = [
+                        {
+                            "url": a["url"],
+                            "title": fetched_by_url[a["url"]].get("title") or a.get("title", ""),
+                            "markdown": fetched_by_url[a["url"]].get("markdown", ""),
+                        }
+                        if a.get("pending_content") else a
+                        for a in articles
+                    ]
+                    update_pending_articles_content(user_id, ids[company_key], articles)
+
+                result_blog = {name: articles}
                 result_recruiters = {name: [row.get("recruiter", None), row.get("query", None)]}
                 result_company_info = {name: row.get("company_info", None)}
                 if not ids[company_key] in custom_user_inscructions:
