@@ -517,11 +517,17 @@ export async function refindRecruiter(companyId: string, strategy: any, name, li
 }
 
 export async function refindBlogArticles(companyId: string) {
+    console.log("Refind blog articles for companyId:", companyId);
     const userId = await checkAuth();
 
     const resultsRef = adminDb.collection("users").doc(userId).collection("data").doc("results");
     const detailsRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("details");
     const rowRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("row");
+
+    const rowSnap = await rowRef.get();
+    if (!rowSnap.exists || !rowSnap.data()?.blog_articles) {
+        throw new Error("A blog article search is already in progress for this company.");
+    }
 
     const batch = adminDb.batch();
 

@@ -16,6 +16,19 @@ export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const referralCode = url.searchParams.get('ref');
   const discountCode = url.searchParams.get('discount');
+  const modeParam = url.searchParams.get('mode');
+
+  // Dev mode toggle: ?mode=dev sets the cookie, ?mode=nodev removes it
+  if (modeParam === 'dev' || modeParam === 'nodev') {
+    url.searchParams.delete('mode');
+    const response = NextResponse.redirect(url);
+    if (modeParam === 'dev') {
+      response.cookies.set('__dev_mode__', '1', { path: '/' });
+    } else {
+      response.cookies.delete('__dev_mode__');
+    }
+    return response;
+  }
 
   if (referralCode || discountCode) {
     const response = NextResponse.next();
