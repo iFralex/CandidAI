@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText, Copy, Download, ChevronRight, Lock, XCircle, Play } from "lucide-react";
+import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText, Copy, Download, ChevronRight, Lock, XCircle, Play, Pencil } from "lucide-react";
 import Link from "next/link";
 import { CreditSelector } from "@/components/CreditSelector";
 import { UnifiedCheckout } from "@/components/UnifiedCheckout";
@@ -1309,18 +1309,143 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
   );
 };
 
+const EditArticlesDialog = ({
+  articles,
+  inProgress,
+  isSubmitting,
+  onConfirm,
+}: {
+  articles: Array<{ url: string; title: string; markdown: string }>;
+  inProgress: boolean;
+  isSubmitting: boolean;
+  onConfirm: (articles: Array<{ url: string; title: string; markdown: string }>) => Promise<void>;
+}) => {
+  const MAX = 10;
+  const [open, setOpen] = useState(false);
+  const [editedList, setEditedList] = useState<Array<{ url: string; title: string; markdown: string }>>([]);
+  const [newUrl, setNewUrl] = useState("");
+
+  const handleOpenChange = (v: boolean) => {
+    if (v) setEditedList(articles.map(a => ({ url: a.url, title: a.title || "", markdown: a.markdown || "" })));
+    setNewUrl("");
+    setOpen(v);
+  };
+
+  const removeArticle = (idx: number) => setEditedList(prev => prev.filter((_, i) => i !== idx));
+
+  const addUrl = () => {
+    const url = newUrl.trim();
+    if (!url || editedList.length >= MAX || editedList.some(a => a.url === url)) return;
+    setEditedList(prev => [...prev, { url, title: "", markdown: "" }]);
+    setNewUrl("");
+  };
+
+  const originalUrls = articles.map(a => a.url).sort().join(",");
+  const currentUrls = editedList.map(a => a.url).sort().join(",");
+  const hasChanges = originalUrls !== currentUrls;
+
+  const handleConfirm = async () => {
+    await onConfirm(editedList);
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild disabled={inProgress}>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button variant="outline" size="sm" disabled={inProgress}>
+            <Pencil className="w-3 h-3 mr-1" />
+            Edit articles
+          </Button>
+        </motion.div>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        {isSubmitting && <Overlay />}
+        <DialogHeader>
+          <DialogTitle>Edit blog articles</DialogTitle>
+          <DialogDescription>
+            Remove existing articles or add new ones by URL. Max {MAX} articles.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+          {editedList.map((a, i) => (
+            <div key={i} className="flex items-center gap-2 bg-white/5 rounded-md px-3 py-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white truncate">{a.title || a.url}</p>
+                {a.title && <p className="text-xs text-gray-500 truncate">{a.url}</p>}
+              </div>
+              <button
+                onClick={() => removeArticle(i)}
+                className="shrink-0 text-gray-400 hover:text-red-400 transition-colors"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          {editedList.length === 0 && (
+            <p className="text-sm text-gray-500 text-center py-4">No articles. Add at least one.</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Input
+            value={newUrl}
+            onChange={e => setNewUrl(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addUrl()}
+            placeholder="https://..."
+            className="flex-1"
+            disabled={editedList.length >= MAX}
+          />
+          <Button onClick={addUrl} disabled={!newUrl.trim() || editedList.length >= MAX} size="sm">
+            Add
+          </Button>
+        </div>
+        <p className="text-xs text-gray-500 text-right">{editedList.length}/{MAX} articles</p>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="ghost">Cancel</Button>
+          </DialogClose>
+          <Button onClick={handleConfirm} disabled={isSubmitting || !hasChanges || editedList.length === 0}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Confirm"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const BlogPostsSection = ({ data, blogSearchUnlocked }: { data: any, blogSearchUnlocked: boolean }) => {
   const inProgress = getStepStatus(data, "blog_articles") !== "completed"
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const companyId = () => window.location.pathname.split('/').filter(Boolean).pop()!;
+
   const handleSearch = async () => {
-    console.log("Refind blog articles for companyId:");
     try {
       setIsSubmitting(true);
-      await refindBlogArticles(window.location.pathname.split('/').filter(Boolean).pop()!);
+      await refindBlogArticles(companyId());
     } catch (err) {
       console.error("Error during refindBlogArticles:", err);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditConfirm = async (editedArticles: Array<{ url: string; title: string; markdown: string }>) => {
+    try {
+      setIsSubmitting(true);
+      await updateBlogArticles(companyId(), editedArticles);
+    } catch (err) {
+      console.error("Error during updateBlogArticles:", err);
       setIsSubmitting(false);
     }
   };
@@ -1332,41 +1457,51 @@ const BlogPostsSection = ({ data, blogSearchUnlocked }: { data: any, blogSearchU
           <span className="flex items-center">
             <Newspaper className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-violet-400" /> Blog Articles Selected
           </span>
-          <CreditsDialog unlocked={blogSearchUnlocked} contentType={"research-blog-articles"}>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild disabled={inProgress}>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button variant="outline" size="sm" disabled={inProgress}>Search new articles</Button>
-                </motion.div>
-              </DialogTrigger>
-              {!inProgress && blogSearchUnlocked && (
-                <DialogContent>
-                  {isSubmitting && <Overlay />}
-                  <DialogHeader>
-                    <DialogTitle>Search for new blog articles?</DialogTitle>
-                    <DialogDescription>
-                      Current articles will be deleted and a new search will start for this company.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="ghost">Cancel</Button>
-                    </DialogClose>
-                    <Button onClick={handleSearch} disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Searching...
-                        </>
-                      ) : (
-                        "Search new articles"
-                      )}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              )}
-            </Dialog>
-          </CreditsDialog>
+          <div className="flex items-center gap-2">
+            {!inProgress && (
+              <EditArticlesDialog
+                articles={(data.blog_articles?.content as Array<{ url: string; title: string; markdown: string }>) ?? []}
+                inProgress={inProgress}
+                isSubmitting={isSubmitting}
+                onConfirm={handleEditConfirm}
+              />
+            )}
+            <CreditsDialog unlocked={blogSearchUnlocked} contentType={"research-blog-articles"}>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild disabled={inProgress}>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button variant="outline" size="sm" disabled={inProgress}>Search new articles</Button>
+                  </motion.div>
+                </DialogTrigger>
+                {!inProgress && blogSearchUnlocked && (
+                  <DialogContent>
+                    {isSubmitting && <Overlay />}
+                    <DialogHeader>
+                      <DialogTitle>Search for new blog articles?</DialogTitle>
+                      <DialogDescription>
+                        Current articles will be deleted and a new search will start for this company.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="ghost">Cancel</Button>
+                      </DialogClose>
+                      <Button onClick={handleSearch} disabled={isSubmitting}>
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Searching...
+                          </>
+                        ) : (
+                          "Search new articles"
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                )}
+              </Dialog>
+            </CreditsDialog>
+          </div>
         </h3>
 
         <div className={(inProgress ? "bg-gray-900 " : "") + "relative rounded-md"}>
@@ -1479,7 +1614,7 @@ import React from "react"
 import { Globe, MapPin, Calendar, Users, Building2, TrendingUp, Sparkles, Zap, Target, Shield, Link2, Award, BarChart3, Layers } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getFileFromFirebase, payCredits, refindBlogArticles, refindRecruiter, regenerateEmail, startServer, submitEmailSent, submitUpdateEmail } from "@/actions/onboarding-actions";
+import { getFileFromFirebase, payCredits, refindBlogArticles, refindRecruiter, regenerateEmail, startServer, submitEmailSent, submitUpdateEmail, updateBlogArticles } from "@/actions/onboarding-actions";
 import { creditsInfo } from "@/config";
 
 const formatNumber = (num) => {

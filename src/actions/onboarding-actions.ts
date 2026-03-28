@@ -554,6 +554,66 @@ export async function refindBlogArticles(companyId: string) {
     redirect("/dashboard/" + companyId);
 }
 
+export async function updateBlogArticles(
+    companyId: string,
+    articles: Array<{ url: string; title: string; markdown: string }>
+) {
+    if (articles.length === 0) throw new Error("At least one article is required.");
+    if (articles.length > 10) throw new Error("Maximum 10 articles allowed.");
+
+    const userId = await checkAuth();
+
+    const resultsRef = adminDb.collection("users").doc(userId).collection("data").doc("results");
+    const detailsRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("details");
+    const rowRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("row");
+    const emailsRef = adminDb.collection("users").doc(userId).collection("data").doc("emails");
+
+    const rowSnap = await rowRef.get();
+    if (!rowSnap.exists || !rowSnap.data()?.blog_articles) {
+        throw new Error("A blog article search is already in progress for this company.");
+    }
+
+    const truncate = (s: string, max = 300) =>
+        s && s.length > max ? s.slice(0, max).replace(/\s+\S*$/, "") + "..." : (s || "");
+
+    // Articles without markdown are new — mark for Python to fetch content
+    const fullArticles = articles.map(a =>
+        a.markdown ? { url: a.url, title: a.title, markdown: a.markdown }
+                   : { url: a.url, title: a.title || "", markdown: "", pending_content: true }
+    );
+    const truncatedArticles = fullArticles.map(a => ({ ...a, markdown: truncate(a.markdown) }));
+
+    const batch = adminDb.batch();
+
+    batch.update(detailsRef, {
+        "blog_articles.content": truncatedArticles,
+        "blog_articles.articles_found": articles.length,
+    });
+    batch.update(rowRef, {
+        "blog_articles.content": fullArticles,
+        email: FieldValue.delete(),
+    });
+    batch.update(resultsRef, {
+        [`${companyId}.blog_articles`]: articles.length,
+        [`${companyId}.email_sent`]: FieldValue.delete(),
+    });
+    batch.update(emailsRef, {
+        [companyId]: FieldValue.delete(),
+    });
+    batch.update(detailsRef, {
+        email: FieldValue.delete(),
+    });
+
+    await Promise.all([
+        batch.commit(),
+        deleteCreditsPaid(userId, companyId, "generate-email"),
+    ]);
+
+    await startServer(userId);
+
+    redirect("/dashboard/" + companyId);
+}
+
 export async function regenerateEmail(companyId: string, instructions: string) {
     const userId = await checkAuth();
 
