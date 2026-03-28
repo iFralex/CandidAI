@@ -849,10 +849,6 @@ def search_on_google(query, exclude_url="", num_results=3):
             logging.error(f"Errore imprevisto nella ricerca Searlo: {e}")
             log_google_search(query, exclude_url, num_results, [], error=str(e))
             return []
-    except Exception as e:
-        logging.error(f"Errore imprevisto nella ricerca Searlo: {e}")
-        log_google_search(query, exclude_url, num_results, [], error=str(e))
-        return []
 
 import json
 
