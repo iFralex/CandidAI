@@ -398,6 +398,36 @@ def save_articles(user_id: str, unique_id: str, articles_content: list, articles
 
     print(f"✅ Articoli salvati per utente {user_id} con ID {unique_id}")
 
+def update_pending_articles_content(user_id: str, unique_id: str, articles_content: list):
+    """
+    Aggiorna blog_articles.content in row e details dopo aver recuperato
+    il contenuto di articoli che erano stati salvati con solo l'URL (pending_content: True).
+    """
+    def truncate_markdown(content: str, max_length: int = 300) -> str:
+        if not content:
+            return ""
+        if len(content) <= max_length:
+            return content
+        return content[:max_length].rsplit(' ', 1)[0] + "..."
+
+    truncated_content = [
+        {**a, "markdown": truncate_markdown(a.get("markdown", ""))}
+        for a in articles_content
+    ]
+
+    row_ref = db.collection("users").document(user_id) \
+        .collection("data").document("results") \
+        .collection(unique_id).document("row")
+
+    details_ref = db.collection("users").document(user_id) \
+        .collection("data").document("results") \
+        .collection(unique_id).document("details")
+
+    row_ref.update({"blog_articles.content": articles_content})
+    details_ref.update({"blog_articles.content": truncated_content})
+
+    print(f"✅ Contenuto articoli pending aggiornato per ID {unique_id}")
+
 def save_email(user_id: str, unique_id: str, email, prompt, email_address, cv_url):
     """
     Salva articoli di blog in Firestore:

@@ -19,6 +19,7 @@ import { motion } from 'framer-motion';
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { useEffect, useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // ============== ANIMATION VARIANTS ==============
 const containerVariants = {
@@ -308,6 +309,26 @@ function BlogCard({ article }) {
               <ArrowRight className="w-4 h-4 ml-2" />
             </motion.div>
           </Link>
+        </div>
+      </article>
+    </motion.div>
+  );
+}
+
+function BlogCardSkeleton() {
+  return (
+    <motion.div
+      variants={cardVariants}
+      className="bg-white/5 rounded-lg p-4 sm:p-6 border border-white/10 flex flex-col"
+    >
+      <article className="flex flex-col h-full">
+        <Skeleton className="h-7 w-3/4 mb-2" />
+        <Skeleton className="h-7 w-1/2 mb-4" />
+        <Skeleton className="h-4 w-full mb-2" />
+        <Skeleton className="h-4 w-full mb-2" />
+        <Skeleton className="h-4 w-5/6 mb-6" />
+        <div className="mt-auto">
+          <Skeleton className="h-4 w-24" />
         </div>
       </article>
     </motion.div>
@@ -1516,9 +1537,11 @@ const BlogPostsSection = ({ data, blogSearchUnlocked }: { data: any, blogSearchU
           >
             {inProgress
               ? Array.from({ length: 3 }).map((_, i) => <BlogCard key={i} />)
-              : data.blog_articles.content.map((article) => (
-                <BlogCard key={article.url} article={article} />
-              ))}
+              : data.blog_articles.content.map((article) =>
+                  article.pending_content
+                    ? <BlogCardSkeleton key={article.url} />
+                    : <BlogCard key={article.url} article={article} />
+                )}
           </motion.div>
 
           <Separator className="my-5" />
