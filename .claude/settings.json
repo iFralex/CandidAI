@@ -6,7 +6,8 @@
       "Bash(grep -rn 'new Buffer\\\\b' /Users/alessioantonucci/progetti/CandidAI/node_modules --include=*.js --exclude-dir=.bin)",
       "Bash(grep -r \"\\\\.log\\\\|logging\\\\.\" /Users/alessioantonucci/progetti/CandidAI/candidai_script/ --include=*.py)",
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
-      "Bash(grep -n \"CreditsDialog\\\\|contentType\" /Users/alessioantonucci/progetti/CandidAI/src/app/dashboard/[id]/client.tsx)"
+      "Bash(grep -n \"CreditsDialog\\\\|contentType\" /Users/alessioantonucci/progetti/CandidAI/src/app/dashboard/[id]/client.tsx)",
+      "Read(//Users/alessioantonucci/projeto/CandidAI/src/app/dashboard/[id]/**)"
     ],
     "additionalDirectories": [
       "/Users/alessioantonucci/progetti/CandidAI/logs"

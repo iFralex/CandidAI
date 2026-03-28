@@ -224,8 +224,9 @@ export async function POST(req) {
           <div style="display: table; width: 100%;">
             <div style="display: table-row;">
               <div style="display: table-cell; vertical-align: top; padding-right: 12px; width: 40px;">
-                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 700; font-size: 18px;">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 8px; overflow: hidden; position: relative; color: #ffffff; font-weight: 700; font-size: 18px; text-align: center; line-height: 40px;">
                   ${item.company.name.charAt(0).toUpperCase()}
+                  ${item.company.domain ? `<img src="https://logo.clearbit.com/${item.company.domain}" width="40" height="40" alt="" style="position: absolute; top: 0; left: 0; width: 40px; height: 40px; object-fit: contain; background: white; border-radius: 8px;">` : ''}
                 </div>
               </div>
               <div style="display: table-cell; vertical-align: top;">

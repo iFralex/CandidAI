@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText, Copy, Download, ChevronRight, Lock, XCircle } from "lucide-react";
+import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText, Copy, Download, ChevronRight, Lock, XCircle, Play } from "lucide-react";
 import Link from "next/link";
 import { CreditSelector } from "@/components/CreditSelector";
 import { UnifiedCheckout } from "@/components/UnifiedCheckout";
@@ -147,6 +147,13 @@ function CompanyHeader({ data }: { data: any }) {
   const blogStatus = getStepStatus(data, 'blog_articles');
   const recruiterStatus = getStepStatus(data, 'recruiter_summary');
   const emailStatus = getStepStatus(data, 'email');
+  const [isDevMode, setIsDevMode] = useState(false);
+  const [devRunning, setDevRunning] = useState(false);
+  const [devStatus, setDevStatus] = useState<'idle' | 'ok' | 'err'>('idle');
+
+  useEffect(() => {
+    setIsDevMode(document.cookie.includes('__dev_mode__=1'));
+  }, []);
 
   let inProgressStep = '';
   if (recruiterStatus === 'pending') inProgressStep = 'recruiter';
@@ -191,6 +198,38 @@ function CompanyHeader({ data }: { data: any }) {
                         <Linkedin />
                       </div>
                     </Link>
+                  </motion.div>
+                )}
+                {isDevMode && (
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <button
+                      onClick={async () => {
+                        setDevRunning(true);
+                        setDevStatus('idle');
+                        try {
+                          await startServer();
+                          setDevStatus('ok');
+                        } catch {
+                          setDevStatus('err');
+                        } finally {
+                          setDevRunning(false);
+                        }
+                      }}
+                      disabled={devRunning}
+                      title="[DEV] Run server for this user"
+                      className={`p-2 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium ${
+                        devStatus === 'ok'
+                          ? 'bg-green-500/20 text-green-400'
+                          : devStatus === 'err'
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-orange-500/20 hover:bg-orange-500/30 text-orange-400'
+                      }`}
+                    >
+                      {devRunning
+                        ? <Loader2 size={16} className="animate-spin" />
+                        : <Play size={16} />}
+                      DEV
+                    </button>
                   </motion.div>
                 )}
               </motion.div>
@@ -278,8 +317,8 @@ function BlogCard({ article }) {
 let cachedCustomizations: any = {}; // cache globale in memoria runtime
 
 export function useAccountCustomizations() {
-  const [data, setData] = useState<any>({});
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any>(cachedCustomizations);
+  const [loading, setLoading] = useState(!Object.keys(cachedCustomizations).length);
 
   useEffect(() => {
     if (Object.keys(cachedCustomizations).length) return; // già in memoria
@@ -1276,6 +1315,7 @@ const BlogPostsSection = ({ data, blogSearchUnlocked }: { data: any, blogSearchU
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSearch = async () => {
+    console.log("Refind blog articles for companyId:");
     try {
       setIsSubmitting(true);
       await refindBlogArticles(window.location.pathname.split('/').filter(Boolean).pop()!);
@@ -1294,9 +1334,9 @@ const BlogPostsSection = ({ data, blogSearchUnlocked }: { data: any, blogSearchU
           </span>
           <CreditsDialog unlocked={blogSearchUnlocked} contentType={"research-blog-articles"}>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
+              <DialogTrigger asChild disabled={inProgress}>
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button variant="outline" size="sm">Search new articles</Button>
+                  <Button variant="outline" size="sm" disabled={inProgress}>Search new articles</Button>
                 </motion.div>
               </DialogTrigger>
               {!inProgress && blogSearchUnlocked && (
@@ -1418,7 +1458,7 @@ const BlogPostsSection = ({ data, blogSearchUnlocked }: { data: any, blogSearchU
 // ============== MAIN CLIENT COMPONENT ==============
 // Questo è il componente principale che assembla tutte le parti animate
 // e riceve i dati dal componente Server.
-export default function ResultClient({ data, customizations, emailSent }: { data: any }) {
+export default function ResultClient({ data, customizations, emailSent }: { data: any; customizations: any; emailSent: any }) {
   return (
     <motion.div
       variants={containerVariants}
@@ -1439,7 +1479,7 @@ import React from "react"
 import { Globe, MapPin, Calendar, Users, Building2, TrendingUp, Sparkles, Zap, Target, Shield, Link2, Award, BarChart3, Layers } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getFileFromFirebase, payCredits, refindBlogArticles, refindRecruiter, regenerateEmail, submitEmailSent, submitUpdateEmail } from "@/actions/onboarding-actions";
+import { getFileFromFirebase, payCredits, refindBlogArticles, refindRecruiter, regenerateEmail, startServer, submitEmailSent, submitUpdateEmail } from "@/actions/onboarding-actions";
 import { creditsInfo } from "@/config";
 
 const formatNumber = (num) => {
