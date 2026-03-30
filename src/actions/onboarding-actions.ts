@@ -558,8 +558,18 @@ export async function updateBlogArticles(
     companyId: string,
     articles: Array<{ url: string; title: string; markdown: string }>
 ) {
-    if (articles.length === 0) throw new Error("At least one article is required.");
-    if (articles.length > 10) throw new Error("Maximum 10 articles allowed.");
+    const seen = new Set<string>();
+    const deduped = articles
+        .filter(a => a.url?.trim())
+        .filter(a => {
+            const url = a.url.trim();
+            if (seen.has(url)) return false;
+            seen.add(url);
+            return true;
+        })
+        .map(a => ({ ...a, url: a.url.trim() }));
+
+    if (deduped.length > 10) throw new Error("Maximum 10 articles allowed.");
 
     const userId = await checkAuth();
 
@@ -577,7 +587,7 @@ export async function updateBlogArticles(
         s && s.length > max ? s.slice(0, max).replace(/\s+\S*$/, "") + "..." : (s || "");
 
     // Articles without markdown are new — mark for Python to fetch content
-    const fullArticles = articles.map(a =>
+    const fullArticles = deduped.map(a =>
         a.markdown ? { url: a.url, title: a.title, markdown: a.markdown }
                    : { url: a.url, title: a.title || "", markdown: "", pending_content: true }
     );
@@ -587,14 +597,14 @@ export async function updateBlogArticles(
 
     batch.update(detailsRef, {
         "blog_articles.content": truncatedArticles,
-        "blog_articles.articles_found": articles.length,
+        "blog_articles.articles_found": deduped.length,
     });
     batch.update(rowRef, {
         "blog_articles.content": fullArticles,
         email: FieldValue.delete(),
     });
     batch.update(resultsRef, {
-        [`${companyId}.blog_articles`]: articles.length,
+        [`${companyId}.blog_articles`]: deduped.length,
         [`${companyId}.email_sent`]: FieldValue.delete(),
     });
     batch.update(emailsRef, {
