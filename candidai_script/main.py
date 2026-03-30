@@ -143,7 +143,6 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
 
                 if email_result and name in email_result:
                     recruiter_data = row.get("recruiter") or {}
-                    articles_list = (row.get("blog_articles") or {}).get("list", []) or []
                     generated_email_data.append({
                         "company": {"name": name, "domain": company.get("domain", "")},
                         "recruiter": {
@@ -152,7 +151,7 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
                         },
                         "articles": [
                             {"title": a.get("title", ""), "link": a.get("link", a.get("url", ""))}
-                            for a in articles_list[:3] if isinstance(a, dict)
+                            for a in articles[:3] if isinstance(a, dict)
                         ],
                         "preview": (email_result[name].get("body") or ""),
                     })
