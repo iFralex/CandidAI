@@ -663,17 +663,62 @@ def get_work_email_from_rocketreach(name: str, company_domain: str) -> str:
         print(f"⚠️ Errore nella richiesta RocketReach: {e}")
         return None
     
+def find_recruiter_by_linkedin_urls(linkedin_urls: List[str]) -> Dict:
+    """
+    Tries to enrich a person profile from PDL using a list of LinkedIn URLs in priority order.
+    Returns the first profile found, or an empty dict if none match.
+    """
+    API_KEY = os.environ.get("PEOPLE_DATA_API_KEY")
+    PDL_URL = "https://api.peopledatalabs.com/v5/person/enrich"
+    HEADERS = {
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY
+    }
+
+    for url in linkedin_urls:
+        # Normalise: PDL expects the path without the leading https://
+        profile = url.replace("https://", "").replace("http://", "").rstrip("/")
+        params = {
+            "profile": profile,
+            "titlecase": True,
+        }
+        try:
+            response = requests.get(PDL_URL, headers=HEADERS, params=params).json()
+            if response.get("status") == 200:
+                data = response.get("data") or response  # enrich returns data at top level
+                print(f"✅ Recruiter trovato via LinkedIn URL: {url}")
+                log_pdl_call("person_enrich", {"profile": profile}, 200, [data])
+                return data
+            else:
+                log_pdl_call("person_enrich", {"profile": profile}, response.get("status", 0), [], error=str(response))
+                print(f"⚠️ Nessun profilo trovato per {url}: {response.get('status')}")
+        except Exception as e:
+            log_pdl_call("person_enrich", {"profile": profile}, 0, [], error=str(e))
+            print(f"⚠️ Eccezione per {url}: {e}")
+
+    return {}
+
+
 def find_recruiters_for_user(user_id, ids, companies, defaultQueries):
     results = {}
     user_instructions = {}
     for company in companies:
-        _queries, user_instruction = get_custom_queries(user_id, ids[f'{company["name"]}-{user_id}'])
+        _queries, user_instruction, recruiter_linkedin_urls = get_custom_queries(user_id, ids[f'{company["name"]}-{user_id}'])
         queries = _queries or defaultQueries
         user_instructions[ids[f'{company["name"]}-{user_id}']] = user_instruction
-        result, query = find_company_recruiters(company, queries)
-        result = result[0] if result else {}
+
+        print(f"🔍 [find_recruiters_for_user] company={company['name']} | company_key={company['name']}-{user_id} | id={ids[f'{company[\"name\"]}-{user_id}']} | recruiter_linkedin_urls={recruiter_linkedin_urls}")
+        if recruiter_linkedin_urls:
+            print(f"🔗 Usando LinkedIn URLs override per {company['name']}: {recruiter_linkedin_urls}")
+            result = find_recruiter_by_linkedin_urls(recruiter_linkedin_urls)
+            query = None
+        else:
+            print(f"🔎 Nessun LinkedIn URL override, uso ricerca normale per {company['name']}")
+            result_list, query = find_company_recruiters(company, queries)
+            result = result_list[0] if result_list else {}
+
         company["linkedin_url"] = result.get("job_company_linkedin_url", None)
-                                        
+
         save_recruiter_and_query(
             user_id,
             ids[f'{company["name"]}-{user_id}'],
@@ -683,7 +728,7 @@ def find_recruiters_for_user(user_id, ids, companies, defaultQueries):
         )
         results[company["name"]] = result, query
         time.sleep(2)
-    
+
     return results, user_instructions
 
 import os

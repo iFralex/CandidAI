@@ -7,7 +7,9 @@
       "Bash(grep -r \"\\\\.log\\\\|logging\\\\.\" /Users/alessioantonucci/progetti/CandidAI/candidai_script/ --include=*.py)",
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
       "Bash(grep -n \"CreditsDialog\\\\|contentType\" /Users/alessioantonucci/progetti/CandidAI/src/app/dashboard/[id]/client.tsx)",
-      "Read(//Users/alessioantonucci/projeto/CandidAI/src/app/dashboard/[id]/**)"
+      "Read(//Users/alessioantonucci/projeto/CandidAI/src/app/dashboard/[id]/**)",
+      "Bash(wc -l /Users/alessioantonucci/progetti/CandidAI/src/app/dashboard/[id]/client.tsx)",
+      "Bash(find /Users/alessioantonucci/progetti/CandidAI -name *server* -o -name *python* -o -name *candidai*)"
     ],
     "additionalDirectories": [
       "/Users/alessioantonucci/progetti/CandidAI/logs"

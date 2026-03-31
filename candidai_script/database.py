@@ -633,7 +633,11 @@ def get_custom_queries(user_id, id):
     doc = doc_ref.get()
 
     if not doc.exists:
-        return None, ""
+        print(f"⚠️ [get_custom_queries] doc NOT found for user={user_id} id={id}")
+        return None, "", []
     else:
-        print("Custom strategy for {user_id} - {id}")
-        return doc.to_dict().get("queries", []), doc.to_dict().get("instructions", "")
+        data = doc.to_dict()
+        linkedin_urls = data.get("recruiter_linkedin_urls", [])
+        queries = data.get("queries", [])
+        print(f"✅ [get_custom_queries] user={user_id} id={id} | queries={len(queries) if queries else 0} | recruiter_linkedin_urls={linkedin_urls} | keys={list(data.keys())}")
+        return queries, data.get("instructions", ""), linkedin_urls
