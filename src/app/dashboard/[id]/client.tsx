@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText, Copy, Download, ChevronRight, Lock, XCircle, Play, Pencil } from "lucide-react";
+import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText, Copy, Download, ChevronRight, Lock, XCircle, Play, Pencil, Clock } from "lucide-react";
 import Link from "next/link";
 import { CreditSelector } from "@/components/CreditSelector";
 import { UnifiedCheckout } from "@/components/UnifiedCheckout";
@@ -680,7 +680,7 @@ const RecruiterSummary = ({ originalData, customStrategy }: { data: any }) => {
   );
 };
 
-const Overlay = ({ content }) => {
+const Overlay = ({ content }: { content?: React.ReactNode }) => {
   return (
     <div className="absolute inset-0 z-50 isolate flex items-center justify-center">
       {/* Layer blur dell'overlay */}
@@ -1137,13 +1137,23 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
     key_points: ["Point 1...", "Point 2...", "Point 3..."],
   };
 
+  const companyId = typeof window !== "undefined"
+    ? window.location.pathname.split("/").filter(Boolean).pop() ?? ""
+    : "";
+
+  const [emailHistory, setEmailHistory] = useState<any[]>([]);
+
   const { data: { customizations: { instructions } = {} } = {}, loading } = useAccountCustomizations();
   const [customInstructions, setCustomInstructions] = useState(defaultInstructions);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEmailSubmitting, setIsEmailSubmitting] = useState(false); // ✅ stato di caricamento per Email Sent
   const [email, setEmail] = useState(data.email || {});
   const [emailSentSuccess, setEmailSentSuccess] = useState(false);
+  const [selectedHistoryIndex, setSelectedHistoryIndex] = useState<number | null>(null);
   const isEmailSent = (ts: any) => ts?._seconds > 0;
+
+  const viewedEmail = selectedHistoryIndex !== null ? emailHistory[selectedHistoryIndex] : email;
+  const isViewingHistory = selectedHistoryIndex !== null;
 
   const rightInstructions = defaultInstructions !== undefined ? (defaultInstructions || instructions) : instructions
   const handleSetRightInstructions = () => {
@@ -1158,7 +1168,16 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
     setEmail(data.email || {});
     setEmailSentSuccess(false)
     setIsEmailSubmitting(false)
+    setSelectedHistoryIndex(null)
   }, [data]);
+
+  useEffect(() => {
+    if (!companyId) return;
+    fetch(`/api/protected/email-history/${companyId}`)
+      .then(r => r.json())
+      .then(res => { if (res.success) setEmailHistory(res.versions || []); })
+      .catch(() => {});
+  }, [companyId]);
 
   const handleGenerate = async () => {
     try {
@@ -1215,12 +1234,57 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
     URL.revokeObjectURL(url);
   }
 
+  const handleSwitchVersion = async (historyIndex: number) => {
+    try {
+      setIsSubmitting(true);
+      await switchEmailVersion(companyId, historyIndex);
+    } catch (err) {
+      console.error("Errore durante il cambio versione:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const displayEmail = inProgress ? placeholderEmail : viewedEmail;
+
   return (
     <motion.div variants={cardVariants} initial="hidden" animate="visible">
       <Card className="p-4 sm:p-6">
-        <h3 className="text-xl sm:text-2xl font-semibold text-white mb-6 flex items-center">
-          <Mail className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-violet-400" /> Email Generated
-        </h3>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <h3 className="text-xl sm:text-2xl font-semibold text-white flex items-center">
+            <Mail className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-violet-400" /> Email Generated
+          </h3>
+
+          {/* Version selector */}
+          {emailHistory.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Clock className="w-4 h-4 text-gray-400" />
+              <button
+                onClick={() => setSelectedHistoryIndex(null)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  !isViewingHistory
+                    ? "bg-violet-600 text-white"
+                    : "bg-gray-800 text-gray-400 hover:text-white"
+                }`}
+              >
+                Current
+              </button>
+              {emailHistory.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedHistoryIndex(i)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    selectedHistoryIndex === i
+                      ? "bg-violet-600 text-white"
+                      : "bg-gray-800 text-gray-400 hover:text-white"
+                  }`}
+                >
+                  v{emailHistory.length - i}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <motion.div
           variants={containerVariants}
@@ -1235,9 +1299,9 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
             <motion.div variants={itemVariants}>
               <label className="text-gray-300 text-sm font-medium mb-2 block">Subject</label>
               <Input
-                value={(!inProgress ? email : placeholderEmail)?.subject}
-                onChange={(e) => setEmail((prev) => ({ ...prev, subject: e.target.value }))}
-                disabled={inProgress || isEmailSent(email.email_sent)}
+                value={displayEmail?.subject}
+                onChange={(e) => !isViewingHistory && setEmail((prev) => ({ ...prev, subject: e.target.value }))}
+                disabled={inProgress || isViewingHistory || isEmailSent(email.email_sent)}
               />
             </motion.div>
 
@@ -1245,118 +1309,134 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
               <label className="text-gray-300 text-sm font-medium mb-2 block">Body</label>
               <Textarea
                 rows={12}
-                value={(!inProgress ? email : placeholderEmail)?.body}
-                onChange={(e) => setEmail((prev) => ({ ...prev, body: e.target.value }))}
-                disabled={inProgress || isEmailSent(email.email_sent)}
+                value={displayEmail?.body}
+                onChange={(e) => !isViewingHistory && setEmail((prev) => ({ ...prev, body: e.target.value }))}
+                disabled={inProgress || isViewingHistory || isEmailSent(email.email_sent)}
               />
             </motion.div>
 
             <Separator />
 
             <motion.div variants={itemVariants} className="w-full flex flex-wrap justify-end gap-3">
-              <CreditsDialog unlocked={email.prompt} contentType="prompt">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="outline">View Prompt</Button>
-                  </DialogTrigger>
-                  {!inProgress && email.prompt && (
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Prompt used for the email</DialogTitle>
-                      </DialogHeader>
-                      <ScrollArea className="no-scrollbar overflow-y-auto max-h-[calc(100vh-200px)] w-full">
-                        <div className="w-full max-w-md">
-                          {email.prompt.split(/\n/).map((line, i) =>
-                            line.trim() === "" ? <br key={i} /> : <p key={i}>{line}</p>
-                          )}
-                        </div>
-                      </ScrollArea>
-                      <DialogFooter>
-                        <Button variant="outline" icon={<Download />} onClick={() => downloadTextFile("prompt", email.prompt)}>Download</Button>
-                        <Button variant="outline" icon={<Copy />} onClick={() => navigator.clipboard.writeText(email.prompt)}>Copy</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  )}
-                </Dialog>
-              </CreditsDialog>
+              {!isViewingHistory && (
+                <CreditsDialog unlocked={email.prompt} contentType="prompt">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline">View Prompt</Button>
+                    </DialogTrigger>
+                    {!inProgress && email.prompt && (
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Prompt used for the email</DialogTitle>
+                        </DialogHeader>
+                        <ScrollArea className="no-scrollbar overflow-y-auto max-h-[calc(100vh-200px)] w-full">
+                          <div className="w-full max-w-md">
+                            {email.prompt.split(/\n/).map((line, i) =>
+                              line.trim() === "" ? <br key={i} /> : <p key={i}>{line}</p>
+                            )}
+                          </div>
+                        </ScrollArea>
+                        <DialogFooter>
+                          <Button variant="outline" icon={<Download />} onClick={() => downloadTextFile("prompt", email.prompt)}>Download</Button>
+                          <Button variant="outline" icon={<Copy />} onClick={() => navigator.clipboard.writeText(email.prompt)}>Copy</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    )}
+                  </Dialog>
+                </CreditsDialog>
+              )}
 
-              {data.email && (email.body !== data.email.body || email.subject !== data.email.subject) && (
+              {!isViewingHistory && data.email && (email.body !== data.email.body || email.subject !== data.email.subject) && (
                 <>
                   <Button size="sm" variant="outline" onClick={() => setEmail(data.email || {})} disabled={isEmailSubmitting}>Reset to default</Button>
                   <Button size="sm" onClick={() => handleUpdateEmail()} disabled={isEmailSubmitting}>Update</Button>
                 </>
+              )}
+
+              {isViewingHistory && (
+                <Button
+                  size="sm"
+                  onClick={() => handleSwitchVersion(selectedHistoryIndex!)}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading...</> : "Use this version"}
+                </Button>
               )}
             </motion.div>
           </div>
 
           {/* Colonna laterale */}
           <motion.div variants={itemVariants} className="col-span-1 space-y-4 mt-4 sm:mt-0">
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              {!isEmailSent(email.email_sent) ? (
-                <EmailDialog
-                  to={email?.email_address}
-                  from={"ifralex.business@gmail.com"}
-                  subject={email?.subject}
-                  body={email?.body}
-                  attachmentUrl={email?.cv_url}
-                />
-              ) : (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  icon={isEmailSubmitting ? <Loader2 className="animate-spin w-4 h-4" /> : <Check color="green" />}
-                  onClick={handleEmailSent}
-                  disabled={isEmailSubmitting || emailSentSuccess}
-                >
-                  {isEmailSubmitting ? "Sending..." : emailSentSuccess ? "Email sent ✓" : "Email Sent"}
-                </Button>
-              )}
-            </motion.div>
+            {!isViewingHistory && (
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                {!isEmailSent(email.email_sent) ? (
+                  <EmailDialog
+                    to={email?.email_address}
+                    from={"ifralex.business@gmail.com"}
+                    subject={email?.subject}
+                    body={email?.body}
+                    attachmentUrl={email?.cv_url}
+                  />
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    icon={isEmailSubmitting ? <Loader2 className="animate-spin w-4 h-4" /> : <Check color="green" />}
+                    onClick={handleEmailSent}
+                    disabled={isEmailSubmitting || emailSentSuccess}
+                  >
+                    {isEmailSubmitting ? "Sending..." : emailSentSuccess ? "Email sent ✓" : "Email Sent"}
+                  </Button>
+                )}
+              </motion.div>
+            )}
 
             {/* Dialog per rigenerare email */}
-            <CreditsDialog contentType="generate-email" unlocked={defaultInstructions !== null} className="w-full">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full" disabled={loading}>Generate another</Button>
-                </DialogTrigger>
-                {defaultInstructions !== null && (
-                  <DialogContent className="sm:max-w-4xl w-full max-h-screen">
-                    {isSubmitting && <Overlay />}
-                    <DialogHeader>
-                      <DialogTitle className="flex">Define Custom Instructions</DialogTitle>
-                    </DialogHeader>
-                    <ScrollArea className="no-scrollbar oveflow-y-automax-h-[calc(100vh-200px)]">
-                      <div className="p-1">
-                        <Textarea rows={5} value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} />
-                      </div>
-                    </ScrollArea>
-                    <DialogFooter className="flex flex-wrap gap-2 justify-end">
-                      <DialogClose>
-                        <Button variant="ghost">Close</Button>
-                      </DialogClose>
-                      <Button variant="outline" onClick={handleSetRightInstructions} disabled={customInstructions === rightInstructions}>
-                        Reset to default
-                      </Button>
-                      <Button onClick={handleGenerate} disabled={isSubmitting}>
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating email...
-                          </>
-                        ) : (
-                          "Generate the new email with the new instructions"
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                )}
-              </Dialog>
-            </CreditsDialog>
+            {!isViewingHistory && (
+              <CreditsDialog contentType="generate-email" unlocked={defaultInstructions !== null} className="w-full">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full" disabled={loading}>Generate another</Button>
+                  </DialogTrigger>
+                  {defaultInstructions !== null && (
+                    <DialogContent className="sm:max-w-4xl w-full max-h-screen">
+                      {isSubmitting && <Overlay />}
+                      <DialogHeader>
+                        <DialogTitle className="flex">Define Custom Instructions</DialogTitle>
+                      </DialogHeader>
+                      <ScrollArea className="no-scrollbar oveflow-y-automax-h-[calc(100vh-200px)]">
+                        <div className="p-1">
+                          <Textarea rows={5} value={customInstructions} onChange={(e) => setCustomInstructions(e.target.value)} />
+                        </div>
+                      </ScrollArea>
+                      <DialogFooter className="flex flex-wrap gap-2 justify-end">
+                        <DialogClose>
+                          <Button variant="ghost">Close</Button>
+                        </DialogClose>
+                        <Button variant="outline" onClick={handleSetRightInstructions} disabled={customInstructions === rightInstructions}>
+                          Reset to default
+                        </Button>
+                        <Button onClick={handleGenerate} disabled={isSubmitting}>
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating email...
+                            </>
+                          ) : (
+                            "Generate the new email with the new instructions"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  )}
+                </Dialog>
+              </CreditsDialog>
+            )}
 
             {/* Key points */}
             <div className="p-4 font-sans">
               <h2 className="text-2xl font-semibold mb-4">Email perfect because:</h2>
               <motion.ul variants={containerVariants} initial="hidden" animate="visible" className="space-y-3">
-                {(!inProgress ? email : placeholderEmail)?.key_points.map((item: string, i: number) => (
+                {displayEmail?.key_points?.map((item: string, i: number) => (
                   <motion.li key={i} variants={itemVariants} className="flex items-center">
                     <Check className="text-green-500 mr-2 min-w-5 h-5" size={5} />
                     <span>{item}</span>
@@ -1364,6 +1444,14 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
                 ))}
               </motion.ul>
             </div>
+
+            {/* Email address (storico) */}
+            {isViewingHistory && viewedEmail?.email_address && (
+              <div className="p-3 bg-gray-800 rounded-md">
+                <p className="text-xs text-gray-400 mb-1">Email address</p>
+                <p className="text-sm text-white break-all">{viewedEmail.email_address}</p>
+              </div>
+            )}
           </motion.div>
         </motion.div>
       </Card>
@@ -1748,7 +1836,7 @@ import React from "react"
 import { Globe, MapPin, Calendar, Users, Building2, TrendingUp, Sparkles, Zap, Target, Shield, Link2, Award, BarChart3, Layers } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getFileFromFirebase, overrideRecruiterLinkedin, payCredits, refindRecruiter, regenerateEmail, startServer, submitEmailSent, submitUpdateEmail, updateBlogArticles } from "@/actions/onboarding-actions";
+import { getFileFromFirebase, overrideRecruiterLinkedin, payCredits, refindRecruiter, regenerateEmail, startServer, submitEmailSent, submitUpdateEmail, switchEmailVersion, updateBlogArticles } from "@/actions/onboarding-actions";
 import { creditsInfo } from "@/config";
 
 const formatNumber = (num) => {
