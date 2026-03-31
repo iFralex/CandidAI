@@ -660,10 +660,19 @@ const RecruiterSummary = ({ originalData, customStrategy }: { data: any }) => {
 
           <div className="p-2">
             <Separator className="my-5" />
-            <p className="text-sm text-gray-400 mb-3">
-              {data.recruiter_summary.name} matches this criteria - {data.query?.name}
-            </p>
-            <CriteriaDisplay criteria={data.query?.criteria} />
+            {data.query?.id === 'linkedin_override' ? (
+              <p className="text-sm text-gray-400 mb-1 flex items-center gap-2">
+                <LinkIcon className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+                Recruiter specified manually via LinkedIn URL
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-gray-400 mb-3">
+                  {data.recruiter_summary.name} matches this criteria - {data.query?.name}
+                </p>
+                <CriteriaDisplay criteria={data.query?.criteria} />
+              </>
+            )}
           </div>
         </div>
       </Card>
