@@ -684,8 +684,15 @@ def find_recruiter_by_linkedin_urls(linkedin_urls: List[str]) -> Dict:
         }
         try:
             response = requests.get(PDL_URL, headers=HEADERS, params=params).json()
+            if isinstance(response, list):
+                response = response[0] if response else {}
             if response.get("status") == 200:
-                data = response.get("data") or response  # enrich returns data at top level
+                data = response.get("data") or response
+                # Enrich can return data as a list (search fallback) or a dict
+                if isinstance(data, list):
+                    data = data[0] if data else {}
+                if not isinstance(data, dict) or not data:
+                    continue
                 print(f"✅ Recruiter trovato via LinkedIn URL: {url}")
                 log_pdl_call("person_enrich", {"profile": profile}, 200, [data])
                 return data
@@ -710,6 +717,8 @@ def find_recruiters_for_user(user_id, ids, companies, defaultQueries):
         if recruiter_linkedin_urls:
             print(f"🔗 Usando LinkedIn URLs override per {company['name']}: {recruiter_linkedin_urls}")
             result = find_recruiter_by_linkedin_urls(recruiter_linkedin_urls)
+            if not isinstance(result, dict):
+                result = {}
             query = None
         else:
             result_list, query = find_company_recruiters(company, queries)
