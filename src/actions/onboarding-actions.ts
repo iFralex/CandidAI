@@ -516,6 +516,50 @@ export async function refindRecruiter(companyId: string, strategy: any, name, li
     redirect("/dashboard/" + companyId);
 }
 
+export async function overrideRecruiterLinkedin(companyId: string, linkedinUrls: string[]) {
+    const userId = await checkAuth();
+
+    const resultsRef = adminDb.collection("users").doc(userId).collection("data").doc("results");
+    const detailsRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("details");
+    const rowRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("row");
+    const customizationsRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("customizations");
+    const emailsRef = adminDb.collection("users").doc(userId).collection("data").doc("emails");
+
+    const batch = adminDb.batch();
+
+    batch.set(customizationsRef, { recruiter_linkedin_urls: linkedinUrls }, { merge: true });
+
+    batch.update(resultsRef, {
+        [`${companyId}.recruiter`]: FieldValue.delete(),
+        [`${companyId}.email_sent`]: FieldValue.delete()
+    });
+
+    batch.update(detailsRef, {
+        recruiter_summary: FieldValue.delete(),
+        query: FieldValue.delete(),
+        email: FieldValue.delete(),
+    });
+
+    batch.update(rowRef, {
+        recruiter: FieldValue.delete(),
+        query: FieldValue.delete(),
+        email: FieldValue.delete(),
+    });
+
+    batch.update(emailsRef, {
+        [companyId]: FieldValue.delete(),
+    });
+
+    await Promise.all([
+        batch.commit(),
+        deleteCreditsPaid(userId, companyId, "find-recruiter"),
+    ]);
+
+    await startServer(userId);
+
+    redirect("/dashboard/" + companyId);
+}
+
 export async function refindBlogArticles(companyId: string) {
     console.log("Refind blog articles for companyId:", companyId);
     const userId = await checkAuth();

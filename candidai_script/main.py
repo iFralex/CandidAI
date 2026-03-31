@@ -126,7 +126,7 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
                 result_recruiters = {name: [row.get("recruiter", None), row.get("query", None)]}
                 result_company_info = {name: row.get("company_info", None)}
                 if not ids[company_key] in custom_user_inscructions:
-                    queries, custom_user_inscructions[ids[company_key]] = get_custom_queries(user_id, ids[f'{company["name"]}-{user_id}'])
+                    queries, custom_user_inscructions[ids[company_key]], _ = get_custom_queries(user_id, ids[f'{company["name"]}-{user_id}'])
 
                 email_result = generate_email(
                     user_id,
