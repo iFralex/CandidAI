@@ -700,8 +700,9 @@ def find_recruiter_by_linkedin_urls(linkedin_urls: List[str]) -> Dict:
                 log_pdl_call("person_enrich", {"profile": profile}, response.get("status", 0), [], error=str(response))
                 print(f"⚠️ Nessun profilo trovato per {url}: {response.get('status')}")
         except Exception as e:
+            import traceback
             log_pdl_call("person_enrich", {"profile": profile}, 0, [], error=str(e))
-            print(f"⚠️ Eccezione per {url}: {e}")
+            print(f"⚠️ Eccezione per {url}: {e}\n{traceback.format_exc()}")
 
     return {}
 

@@ -201,6 +201,13 @@ if (isset($_GET['api'])) {
         .empty { text-align: center; padding: 60px; color: var(--text-dim); font-size: 14px; }
         .err   { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 6px; padding: 10px 16px; color: var(--red); margin: 12px 20px; font-size: 13px; }
 
+        /* stack trace */
+        .lm-wrap { flex: 1; word-break: break-word; min-width: 0; }
+        .trace-toggle { display: inline-block; margin-top: 4px; background: rgba(102,126,234,0.15); border: 1px solid rgba(102,126,234,0.35); border-radius: 3px; color: var(--purple); font-size: 11px; font-family: inherit; cursor: pointer; padding: 1px 7px; line-height: 1.6; }
+        .trace-toggle:hover { background: rgba(102,126,234,0.3); }
+        .trace-body { display: none; margin-top: 5px; padding: 6px 10px; background: rgba(0,0,0,0.35); border-left: 2px solid rgba(102,126,234,0.5); border-radius: 0 4px 4px 0; font-size: 11px; color: var(--text-dim); overflow-x: auto; white-space: pre; }
+        .trace-body.open { display: block; }
+
         ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; } ::-webkit-scrollbar-thumb:hover { background: var(--purple); }
     </style>
 </head>
@@ -322,25 +329,64 @@ function renderAccessLine(line, hl) {
         `</div>`;
 }
 
-function renderErrorLine(line, hl) {
+let _traceIdx = 0;
+function toggleTrace(id) {
+    const body = document.getElementById(id);
+    const btn  = body.previousElementSibling;
+    const open = body.classList.toggle('open');
+    btn.textContent = (open ? '▼ ' : '▶ ') + body.children.length + ' lines';
+}
+
+function groupErrorLines(lines) {
+    const groups = [];
+    let cur = null;
+    for (const line of lines) {
+        if (ERROR_RE.test(line)) {
+            if (cur) groups.push(cur);
+            cur = { main: line, trace: [] };
+        } else {
+            if (cur) cur.trace.push(line);
+            else groups.push({ main: line, trace: [] });
+        }
+    }
+    if (cur) groups.push(cur);
+    return groups;
+}
+
+function renderErrorLine(entry, hl) {
+    const line  = typeof entry === 'string' ? entry : entry.main;
+    const trace = typeof entry === 'object' && entry.trace ? entry.trace : [];
     const m = ERROR_RE.exec(line);
     if (!m) return `<div class="ll${hl?' hl':''}"><span class="lraw">${esc(line)}</span></div>`;
     const [, ts, pid, level, msg] = m;
+    let traceHtml = '';
+    if (trace.length) {
+        const id = 'tr' + (++_traceIdx);
+        traceHtml = `<button class="trace-toggle" onclick="toggleTrace('${id}')">▶ ${trace.length} lines</button>` +
+            `<div class="trace-body" id="${id}">${trace.map(l => `<span>${esc(l)}</span>`).join('\n')}</div>`;
+    }
     return `<div class="ll${hl?' hl':''}">` +
         `<span class="lts">${esc(ts)}</span>` +
         `<span class="lpid">[${esc(pid)}]</span>` +
         `<span class="llv lv-${esc(level)}">${esc(level)}</span>` +
-        `<span class="lm">${esc(msg)}</span>` +
+        `<div class="lm-wrap"><span class="lm">${esc(msg)}</span>${traceHtml}</div>` +
         `</div>`;
 }
 
 function renderLines() {
     const q = document.getElementById('search').value.trim().toLowerCase();
-    const filtered = q ? rawLines.filter(l => l.toLowerCase().includes(q)) : rawLines;
-    const renderFn = currentTab === 'access' ? renderAccessLine : renderErrorLine;
-    document.getElementById('log-lines').innerHTML = filtered.length
-        ? filtered.map(l => renderFn(l, !!q)).join('')
-        : '<div class="empty">Nessun risultato.</div>';
+    let html;
+    if (currentTab === 'access') {
+        const filtered = q ? rawLines.filter(l => l.toLowerCase().includes(q)) : rawLines;
+        html = filtered.map(l => renderAccessLine(l, !!q)).join('');
+    } else {
+        const groups = groupErrorLines(rawLines);
+        const filtered = q
+            ? groups.filter(g => g.main.toLowerCase().includes(q) || g.trace.some(t => t.toLowerCase().includes(q)))
+            : groups;
+        html = filtered.map(g => renderErrorLine(g, !!q)).join('');
+    }
+    document.getElementById('log-lines').innerHTML = html || '<div class="empty">Nessun risultato.</div>';
     if (autoScroll) scrollBot();
 }
 
