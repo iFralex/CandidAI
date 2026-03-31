@@ -9,7 +9,8 @@
       "Bash(grep -n \"CreditsDialog\\\\|contentType\" /Users/alessioantonucci/progetti/CandidAI/src/app/dashboard/[id]/client.tsx)",
       "Read(//Users/alessioantonucci/projeto/CandidAI/src/app/dashboard/[id]/**)",
       "Bash(wc -l /Users/alessioantonucci/progetti/CandidAI/src/app/dashboard/[id]/client.tsx)",
-      "Bash(find /Users/alessioantonucci/progetti/CandidAI -name *server* -o -name *python* -o -name *candidai*)"
+      "Bash(find /Users/alessioantonucci/progetti/CandidAI -name *server* -o -name *python* -o -name *candidai*)",
+      "Bash(grep -n \"handleUpdateEmail\\\\|submitEmailSent\\\\|regenerateEmail\\\\|updateEmail\" /Users/alessioantonucci/progetti/CandidAI/src/app/dashboard/[id]/client.tsx)"
     ],
     "additionalDirectories": [
       "/Users/alessioantonucci/progetti/CandidAI/logs"

@@ -10,6 +10,12 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { Resend } from 'resend'
 import { getTestMock } from '@/app/api/test/set-mock/route'
 
+// Prepara un'email per l'archivio: rimuove campi privati/transitori e aggiunge archived_at
+function toEmailArchive(email: Record<string, any>) {
+    const { prompt: _p, email_sent: _s, ...rest } = email;
+    return { ...rest, archived_at: new Date().toISOString() };
+}
+
 export async function deleteProfile() {
     if (process.env.NODE_ENV !== 'production') {
         const cookieStore = await cookies();
@@ -472,6 +478,11 @@ export async function refindRecruiter(companyId: string, strategy: any, name, li
     const rowRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("row");
     const customizationsRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("customizations");
     const emailsRef = adminDb.collection("users").doc(userId).collection("data").doc("emails");
+    const emailHistoryRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("email_history");
+
+    // --- Leggi email corrente per archiviarla ---
+    const detailsSnap = await detailsRef.get();
+    const currentEmail = detailsSnap.data()?.email;
 
     // --- Batch: tutte le operazioni Firestore in un'unica commit ---
     const batch = adminDb.batch();
@@ -485,12 +496,17 @@ export async function refindRecruiter(companyId: string, strategy: any, name, li
         [`${companyId}.email_sent`]: FieldValue.delete()
     });
 
-    // updateDoc details
+    // updateDoc details: cancella email (history salvata separatamente)
     batch.update(detailsRef, {
         recruiter_summary: FieldValue.delete(),
         query: FieldValue.delete(),
         email: FieldValue.delete(),
     });
+
+    // Archivia email corrente nel documento separato email_history
+    if (currentEmail) {
+        batch.set(emailHistoryRef, { versions: FieldValue.arrayUnion(toEmailArchive(currentEmail)) }, { merge: true });
+    }
 
     // updateDoc row
     batch.update(rowRef, {
@@ -524,6 +540,10 @@ export async function overrideRecruiterLinkedin(companyId: string, linkedinUrls:
     const rowRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("row");
     const customizationsRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("customizations");
     const emailsRef = adminDb.collection("users").doc(userId).collection("data").doc("emails");
+    const emailHistoryRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("email_history");
+
+    const detailsSnap = await detailsRef.get();
+    const currentEmail = detailsSnap.data()?.email;
 
     const batch = adminDb.batch();
 
@@ -549,6 +569,10 @@ export async function overrideRecruiterLinkedin(companyId: string, linkedinUrls:
     batch.update(emailsRef, {
         [companyId]: FieldValue.delete(),
     });
+
+    if (currentEmail) {
+        batch.set(emailHistoryRef, { versions: FieldValue.arrayUnion(toEmailArchive(currentEmail)) }, { merge: true });
+    }
 
     await Promise.all([
         batch.commit(),
@@ -621,11 +645,13 @@ export async function updateBlogArticles(
     const detailsRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("details");
     const rowRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("row");
     const emailsRef = adminDb.collection("users").doc(userId).collection("data").doc("emails");
+    const emailHistoryRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("email_history");
 
-    const rowSnap = await rowRef.get();
+    const [rowSnap, detailsSnap] = await Promise.all([rowRef.get(), detailsRef.get()]);
     if (!rowSnap.exists || !rowSnap.data()?.blog_articles) {
         throw new Error("A blog article search is already in progress for this company.");
     }
+    const currentEmail = detailsSnap.data()?.email;
 
     const truncate = (s: string, max = 300) =>
         s && s.length > max ? s.slice(0, max).replace(/\s+\S*$/, "") + "..." : (s || "");
@@ -642,6 +668,7 @@ export async function updateBlogArticles(
     batch.update(detailsRef, {
         "blog_articles.content": truncatedArticles,
         "blog_articles.articles_found": deduped.length,
+        email: FieldValue.delete(),
     });
     batch.update(rowRef, {
         "blog_articles.content": fullArticles,
@@ -654,9 +681,10 @@ export async function updateBlogArticles(
     batch.update(emailsRef, {
         [companyId]: FieldValue.delete(),
     });
-    batch.update(detailsRef, {
-        email: FieldValue.delete(),
-    });
+
+    if (currentEmail) {
+        batch.set(emailHistoryRef, { versions: FieldValue.arrayUnion(toEmailArchive(currentEmail)) }, { merge: true });
+    }
 
     await Promise.all([
         batch.commit(),
@@ -708,6 +736,18 @@ export async function regenerateEmail(companyId: string, instructions: string) {
         .collection("data")
         .doc("emails");
 
+    const emailHistoryRef = adminDb
+        .collection("users")
+        .doc(userId)
+        .collection("data")
+        .doc("results")
+        .collection(companyId)
+        .doc("email_history");
+
+    // --- Leggi email corrente per archiviarla ---
+    const detailsSnap = await detailsRef.get();
+    const currentEmail = detailsSnap.data()?.email;
+
     // --- Batch Firestore: 5 operazioni in una sola commit ---
     const batch = adminDb.batch();
 
@@ -719,9 +759,9 @@ export async function regenerateEmail(companyId: string, instructions: string) {
         [`${companyId}.email_sent`]: FieldValue.delete()
     });
 
-    // details: cancelliamo email
+    // details: cancelliamo email (history salvata separatamente)
     batch.update(detailsRef, {
-        email: FieldValue.delete()
+        email: FieldValue.delete(),
     });
 
     // row: cancelliamo email
@@ -733,6 +773,11 @@ export async function regenerateEmail(companyId: string, instructions: string) {
     batch.update(emailsRef, {
         [companyId]: FieldValue.delete()
     });
+
+    // Archivia email corrente nel documento separato email_history
+    if (currentEmail) {
+        batch.set(emailHistoryRef, { versions: FieldValue.arrayUnion(toEmailArchive(currentEmail)) }, { merge: true });
+    }
 
     // --- Esegui batch e deleteCreditsPaid in parallelo ---
     await Promise.all([
@@ -975,9 +1020,6 @@ export async function submitUpdateEmail(companyId: string, subject: string | nul
     // Ottieni l'utente autenticato
     const userId = await checkAuth();
 
-    // --- Batch Firestore Admin ---
-    const batch = adminDb.batch();
-
     // Riferimenti documenti
     const emailsRef = adminDb
         .collection("users")
@@ -1001,6 +1043,26 @@ export async function submitUpdateEmail(companyId: string, subject: string | nul
         .collection(companyId)
         .doc("row");
 
+    const emailHistoryRef = adminDb
+        .collection("users")
+        .doc(userId)
+        .collection("data")
+        .doc("results")
+        .collection(companyId)
+        .doc("email_history");
+
+    // Leggi email corrente per archiviarla prima di modificarla
+    const detailsSnap = await detailsRef.get();
+    const currentEmail = detailsSnap.data()?.email;
+
+    // --- Batch Firestore Admin ---
+    const batch = adminDb.batch();
+
+    // Archivia versione precedente
+    if (currentEmail) {
+        batch.set(emailHistoryRef, { versions: FieldValue.arrayUnion(toEmailArchive(currentEmail)) }, { merge: true });
+    }
+
     // Aggiornamenti atomici
     if (body !== null) {
         batch.update(emailsRef, { [`${companyId}.body`]: body });
@@ -1018,6 +1080,39 @@ export async function submitUpdateEmail(companyId: string, subject: string | nul
     await batch.commit();
 
     // Revalida la pagina della dashboard
+    revalidatePath(`/dashboard/${companyId}`);
+}
+
+export async function switchEmailVersion(companyId: string, historyIndex: number) {
+    const userId = await checkAuth();
+
+    const detailsRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("details");
+    const rowRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("row");
+    const emailsRef = adminDb.collection("users").doc(userId).collection("data").doc("emails");
+    const emailHistoryRef = adminDb.collection("users").doc(userId).collection("data").doc("results").collection(companyId).doc("email_history");
+
+    const [detailsSnap, historySnap] = await Promise.all([detailsRef.get(), emailHistoryRef.get()]);
+    const currentEmail = detailsSnap.data()?.email;
+    const emailHistory: any[] = historySnap.data()?.versions || [];
+
+    if (historyIndex < 0 || historyIndex >= emailHistory.length) {
+        throw new Error("Invalid history index");
+    }
+
+    const { archived_at: _a, ...emailToRestore } = emailHistory[historyIndex];
+    const newHistory = emailHistory.filter((_, i) => i !== historyIndex);
+    if (currentEmail) {
+        newHistory.unshift(toEmailArchive(currentEmail));
+    }
+
+    const batch = adminDb.batch();
+    batch.update(detailsRef, { email: emailToRestore });
+    batch.set(emailHistoryRef, { versions: newHistory }, { merge: false });
+    batch.update(rowRef, { email: emailToRestore });
+    batch.update(emailsRef, { [companyId]: emailToRestore });
+
+    await batch.commit();
+
     revalidatePath(`/dashboard/${companyId}`);
 }
 
