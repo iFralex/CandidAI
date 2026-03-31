@@ -694,7 +694,7 @@ def find_recruiter_by_linkedin_urls(linkedin_urls: List[str]) -> Dict:
                 if not isinstance(data, dict) or not data:
                     continue
                 print(f"✅ Recruiter trovato via LinkedIn URL: {url}")
-                log_pdl_call("person_enrich", {"profile": profile}, 200, [data])
+                log_pdl_call("person_enrich", {"profile": profile}, 200, data)
                 return data
             else:
                 log_pdl_call("person_enrich", {"profile": profile}, response.get("status", 0), [], error=str(response))
