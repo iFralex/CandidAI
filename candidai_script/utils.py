@@ -51,7 +51,7 @@ def log_pdl_call(api_type: str, params: dict, status_code: int, result, error: s
             "job_title": result.get("job_title"),
             "job_company_name": result.get("job_company_name"),
             "linkedin_url": result.get("linkedin_url"),
-            "emails": [e.get("address") for e in (result.get("emails") or []) if isinstance(e, dict) and e.get("address")][:2],
+            "emails": [e.get("address") for e in (result.get("emails") if isinstance(result.get("emails"), list) else []) if isinstance(e, dict) and e.get("address")][:2],
         } if result else {}
         result_count = 1 if result else 0
 
