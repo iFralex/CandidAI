@@ -477,7 +477,7 @@ export async function refindRecruiter(companyId: string, strategy: any, name, li
     const batch = adminDb.batch();
 
     // setDoc(..., { merge: true })
-    batch.set(customizationsRef, { queries: strategy }, { merge: true });
+    batch.set(customizationsRef, { queries: strategy, recruiter_linkedin_urls: FieldValue.delete() }, { merge: true });
 
     // updateDoc results
     batch.update(resultsRef, {

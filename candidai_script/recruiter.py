@@ -720,7 +720,12 @@ def find_recruiters_for_user(user_id, ids, companies, defaultQueries):
             result = find_recruiter_by_linkedin_urls(recruiter_linkedin_urls)
             if not isinstance(result, dict):
                 result = {}
-            query = None
+            if result:
+                query = {"id": "linkedin_override", "name": "Manually specified via LinkedIn URL", "criteria": []}
+            else:
+                print(f"⚠️ Nessun profilo trovato via LinkedIn URL per {company['name']}, uso ricerca normale")
+                result_list, query = find_company_recruiters(company, queries)
+                result = result_list[0] if result_list else {}
         else:
             result_list, query = find_company_recruiters(company, queries)
             result = result_list[0] if result_list else {}
