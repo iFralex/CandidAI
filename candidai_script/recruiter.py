@@ -707,13 +707,11 @@ def find_recruiters_for_user(user_id, ids, companies, defaultQueries):
         queries = _queries or defaultQueries
         user_instructions[ids[f'{company["name"]}-{user_id}']] = user_instruction
 
-        print(f"🔍 [find_recruiters_for_user] company={company['name']} | company_key={company['name']}-{user_id} | id={ids[f'{company[\"name\"]}-{user_id}']} | recruiter_linkedin_urls={recruiter_linkedin_urls}")
         if recruiter_linkedin_urls:
             print(f"🔗 Usando LinkedIn URLs override per {company['name']}: {recruiter_linkedin_urls}")
             result = find_recruiter_by_linkedin_urls(recruiter_linkedin_urls)
             query = None
         else:
-            print(f"🔎 Nessun LinkedIn URL override, uso ricerca normale per {company['name']}")
             result_list, query = find_company_recruiters(company, queries)
             result = result_list[0] if result_list else {}
 
