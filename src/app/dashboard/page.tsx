@@ -1,7 +1,8 @@
 import OnboardingPage from "../../components/onboardingServer";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
-import { Results, ResultsSkeleton } from "@/components/dashboardServer";
+import { Results, ResultsSkeleton, CampaignSkeleton } from "@/components/dashboardServer";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Crown, ExternalLink, Mail, Plus, RefreshCw, Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,38 @@ import { redirect } from "next/navigation";
 import { AnimatedResults, AddMoreCompaniesDialog, ConfirmCompanies } from "@/components/dashboard";
 import { calculateProgress } from "@/components/detailsServer";
 import Link from "next/link";
+
+const DashboardSkeleton = () => (
+    <>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-8 w-12" />
+                        </div>
+                        <Skeleton className="w-12 h-12 rounded-xl" />
+                    </div>
+                </div>
+            ))}
+        </div>
+
+        {/* Active Campaigns Card */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+            <div className="flex items-center justify-between mb-6">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-10 w-36" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map((i) => (
+                    <CampaignSkeleton key={i} />
+                ))}
+            </div>
+        </div>
+    </>
+);
 
 function Card({ children, className, hover = true, gradient = false, ...props }: CardProps) {
     const baseClasses = "bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl transition-all duration-300"
@@ -274,7 +307,7 @@ const Page = async () => {
                 </Button>
             </div>
 
-            <Suspense fallback={<ResultsSkeleton />}>
+            <Suspense fallback={<DashboardSkeleton />}>
                 <ResultsWrapper userId={user.uid} />
             </Suspense>
 
