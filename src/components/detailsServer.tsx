@@ -200,9 +200,9 @@ export function EducationList({ education, editable = false, onEdit }: Education
 }
 
 export const calculateProgress = (data: any) => {
+    if (data.email || data.email_sent !== undefined) return 100;
     let progress = 0;
     if (data.blog_articles) progress += 50;
     if (data.recruiter_summary || data.recruiter) progress += 30;
-    if (data.email || data.email_sent !== undefined) progress += 20;
     return progress;
 };

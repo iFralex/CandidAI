@@ -10,7 +10,8 @@
       "Read(//Users/alessioantonucci/projeto/CandidAI/src/app/dashboard/[id]/**)",
       "Bash(wc -l /Users/alessioantonucci/progetti/CandidAI/src/app/dashboard/[id]/client.tsx)",
       "Bash(find /Users/alessioantonucci/progetti/CandidAI -name *server* -o -name *python* -o -name *candidai*)",
-      "Bash(grep -n \"handleUpdateEmail\\\\|submitEmailSent\\\\|regenerateEmail\\\\|updateEmail\" /Users/alessioantonucci/progetti/CandidAI/src/app/dashboard/[id]/client.tsx)"
+      "Bash(grep -n \"handleUpdateEmail\\\\|submitEmailSent\\\\|regenerateEmail\\\\|updateEmail\" /Users/alessioantonucci/progetti/CandidAI/src/app/dashboard/[id]/client.tsx)",
+      "Bash(grep -l loading /Users/alessioantonucci/progetti/CandidAI/src/app/dashboard/**/client.tsx)"
     ],
     "additionalDirectories": [
       "/Users/alessioantonucci/progetti/CandidAI/logs"
