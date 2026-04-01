@@ -90,13 +90,6 @@ export const CampaignCard = ({ campaign }) => {
 
                 <div className="flex items-center justify-between text-sm text-gray-400">
                     <div className="flex items-center space-x-4">
-                        <span>Started: {new Date(campaign.startDate).toLocaleDateString()}</span>
-                        {campaign.estimatedCompletion && (
-                            <span>ETA: {new Date(campaign.estimatedCompletion).toLocaleDateString()}</span>
-                        )}
-                    </div>
-
-                    <div className="flex items-center space-x-4">
                         {campaign.emailsGenerated > 0 && (
                             <span>Email  generated</span>
                         )}

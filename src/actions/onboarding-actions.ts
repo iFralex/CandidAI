@@ -940,29 +940,15 @@ export async function confirmCompany(selections: any, strategies: any, instructi
 
 export async function getFileFromFirebase(publicUrl: string) {
     try {
-        // 1️⃣ Estrai il percorso interno del file dal public URL
-        // Esempio URL:
-        // https://firebasestorage.googleapis.com/v0/b/tuo-bucket/o/offerte%2Fcliente123%2Fofferta.pdf?alt=media
-        const match = publicUrl.match(/\/o\/([^?]+)/);
-        if (!match) throw new Error("URL Firebase non valido");
+        const response = await fetch(publicUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-        const encodedPath = match[1];
-        const filePath = decodeURIComponent(encodedPath); // "offerte/cliente123/offerta.pdf"
+        const buffer = await response.arrayBuffer();
+        const mimeType = response.headers.get("content-type") || "application/octet-stream";
 
-        // 2️⃣ Recupera il file tramite Firebase Admin SDK
-        const bucket = adminStorage.bucket();
-        const file = bucket.file(filePath);
-
-        // Download del contenuto
-        const [data] = await file.download();
-
-        // 3️⃣ Recupera i metadati del file
-        const [metadata] = await file.getMetadata();
-
-        // 4️⃣ Restituisci il contenuto codificato in Base64 e il MIME type
         return {
-            base64: data.toString("base64"),
-            mimeType: metadata.contentType || "application/octet-stream",
+            base64: Buffer.from(buffer).toString("base64"),
+            mimeType,
         };
     } catch (error) {
         console.error("❌ Errore nel recupero file da Firebase:", error);

@@ -299,12 +299,7 @@ const Page = async () => {
                     </p>
                 </div>
 
-                <Button
-                    variant="primary"
-                    icon={<Plus className="w-4 h-4" />}
-                >
-                    New Campaign
-                </Button>
+                
             </div>
 
             <Suspense fallback={<DashboardSkeleton />}>
