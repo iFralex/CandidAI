@@ -190,13 +190,6 @@ const Dashboard = ({ results }) => {
                         Here's what's happening with your work email generation
                     </p>
                 </div>
-
-                <Button
-                    variant="primary"
-                    icon={<Plus className="w-4 h-4" />}
-                >
-                    New Campaign
-                </Button>
             </div>
 
             {/* Stats Cards */}

@@ -870,6 +870,24 @@ export function EmailDialog({
           </DialogClose>
 
           <Button
+            variant="outline"
+            onClick={async () => {
+              let file = fileData;
+              if (!file) file = await fetchFile();
+              if (!file) return;
+              const blob = b64toBlob(file.base64, file.mimeType);
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = attachmentName;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            Download CV
+          </Button>
+
+          <Button
             onClick={handleSubmit}
             disabled={isLoading}
           >
