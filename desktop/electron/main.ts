@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
+import { connectProvider, disconnectProvider, getProviderStatus } from './providers/connect';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -97,19 +98,16 @@ ipcMain.handle('open-external-login', async () => {
   await shell.openExternal('https://candidai.tech/desktop-login');
 });
 
-// Stub — replaced in Task 9
-ipcMain.handle('connect-provider', async (_event, _provider: string) => {
-  return 'error';
+ipcMain.handle('connect-provider', async (_event, provider: 'gmail' | 'outlook' | 'yahoo') => {
+  return connectProvider(provider);
 });
 
-// Stub — replaced in Task 9
-ipcMain.handle('disconnect-provider', async (_event, _provider: string) => {
-  return;
+ipcMain.handle('disconnect-provider', async (_event, provider: string) => {
+  return disconnectProvider(provider);
 });
 
-// Stub — replaced in Task 9
-ipcMain.handle('get-provider-status', async (_event, _provider: string) => {
-  return false;
+ipcMain.handle('get-provider-status', async (_event, provider: string) => {
+  return getProviderStatus(provider);
 });
 
 // Stub — replaced in Task 10
