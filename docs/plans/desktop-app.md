@@ -249,13 +249,13 @@ This is the core of the application. It runs entirely in the Main process.
 ---
 
 ### Task 12: CV Attachment Helper (`electron/engine/attachCV.ts`)
-- [ ] Create `desktop/electron/engine/attachCV.ts`.
-- [ ] Export `attachCV(page: Page, cvUrl: string, provider: 'gmail' | 'outlook' | 'yahoo'): Promise<void>`:
+- [x] Create `desktop/electron/engine/attachCV.ts`.
+- [x] Export `attachCV(page: Page, cvUrl: string, provider: 'gmail' | 'outlook' | 'yahoo'): Promise<void>`:
   - Download the file from `cvUrl` (which is a Firebase Storage URL) into `os.tmpdir()` using Node's `https.get`.
   - For Gmail: locate the hidden file input under the attach icon and call `inputEl.uploadFile(tmpPath)`.
   - For Outlook/Yahoo: click the attach button, wait for a file dialog, and use Electron's `dialog.showOpenDialog` workaround — or trigger the hidden `<input type="file">` directly.
   - After upload, wait for the attachment chip to appear before proceeding.
-- [ ] Mark completed.
+- [x] Mark completed.
 
 ---
 
