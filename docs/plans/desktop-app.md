@@ -101,17 +101,17 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 ---
 
 ### Task 4: Firebase Client Initialisation (`src/lib/firebase.ts`)
-- [ ] Create `desktop/src/lib/firebase.ts`.
-- [ ] Initialise the Firebase app using the **same** project credentials as the web app (`.env.local` in the **repo root** — copy the relevant `VITE_FIREBASE_*` vars to `desktop/.env`):
+- [x] Create `desktop/src/lib/firebase.ts`.
+- [x] Initialise the Firebase app using the **same** project credentials as the web app (`.env.local` in the **repo root** — copy the relevant `VITE_FIREBASE_*` vars to `desktop/.env`):
   ```
   VITE_FIREBASE_API_KEY=...
   VITE_FIREBASE_AUTH_DOMAIN=...
   VITE_FIREBASE_PROJECT_ID=...
   VITE_FIREBASE_APP_ID=...
   ```
-- [ ] Export `db` (Firestore instance) and `auth` (Firebase Auth instance).
-- [ ] Export a helper `signInWithCustomToken(token: string)` that calls `firebase/auth signInWithCustomToken` — the desktop deep-link delivers a Firebase custom token minted by the CandidAI backend.
-- [ ] Mark completed.
+- [x] Export `db` (Firestore instance) and `auth` (Firebase Auth instance).
+- [x] Export a helper `signInWithCustomToken(token: string)` that calls `firebase/auth signInWithCustomToken` — the desktop deep-link delivers a Firebase custom token minted by the CandidAI backend.
+- [x] Mark completed.
 
 ---
 
