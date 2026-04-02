@@ -144,15 +144,15 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 ---
 
 ### Task 6: Application Authentication Flow (React + Deep Link)
-- [ ] Create `desktop/src/App.tsx` as the root component with a simple router: `<LoginScreen>` when no auth token, `<Dashboard>` when authenticated.
-- [ ] In `LoginScreen`:
+- [x] Create `desktop/src/App.tsx` as the root component with a simple router: `<LoginScreen>` when no auth token, `<Dashboard>` when authenticated.
+- [x] In `LoginScreen`:
   - Show the CandidAI logo and a "Login with CandidAI" button.
   - On click: call `window.electronAPI.openExternalLogin()`.
   - The Main process handler for `open-external-login` calls `shell.openExternal('https://candidai.tech/desktop-login')`.
   - Listen to `window.electronAPI.onAuthSuccess(token => ...)`.
   - On token received: call `signInWithCustomToken(token)` → on success, transition to `<Dashboard>`.
-- [ ] Persist the Firebase auth state across restarts using `onAuthStateChanged` in `src/lib/firebase.ts` — if the user is already signed in on launch, skip `LoginScreen`.
-- [ ] Mark completed.
+- [x] Persist the Firebase auth state across restarts using `onAuthStateChanged` in `src/lib/firebase.ts` — if the user is already signed in on launch, skip `LoginScreen`.
+- [x] Mark completed.
 
 ---
 
