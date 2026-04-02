@@ -31,15 +31,15 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 
 ---
 
-## Task 1: Project Scaffold
-- [ ] Create the folder `desktop/` at the repo root.
-- [ ] Inside `desktop/`, run `npm init -y` and set `"main": "dist-electron/main.js"` in `package.json`.
-- [ ] Install dependencies:
+### Task 1: Project Scaffold
+- [x] Create the folder `desktop/` at the repo root.
+- [x] Inside `desktop/`, run `npm init -y` and set `"main": "dist-electron/main.js"` in `package.json`.
+- [x] Install dependencies:
   ```
   npm install electron react react-dom typescript tailwindcss lucide-react firebase puppeteer-core puppeteer-extra puppeteer-extra-plugin-stealth
   npm install -D vite @vitejs/plugin-react electron-builder concurrently wait-on @types/react @types/react-dom @types/node
   ```
-- [ ] Create `desktop/vite.config.ts`:
+- [x] Create `desktop/vite.config.ts`:
   ```typescript
   import { defineConfig } from 'vite';
   import react from '@vitejs/plugin-react';
@@ -49,19 +49,19 @@ The desktop app reads from and writes to the **same** Firestore project used by 
     build: { outDir: 'dist-renderer' }
   });
   ```
-- [ ] Create `desktop/tsconfig.json` targeting ES2020, with `"moduleResolution": "bundler"` and paths covering `src/` and `electron/`.
-- [ ] Create `tailwind.config.js` with `content: ['./src/**/*.{ts,tsx}']`.
-- [ ] Add `package.json` scripts:
+- [x] Create `desktop/tsconfig.json` targeting ES2020, with `"moduleResolution": "bundler"` and paths covering `src/` and `electron/`.
+- [x] Create `tailwind.config.js` with `content: ['./src/**/*.{ts,tsx}']`.
+- [x] Add `package.json` scripts:
   ```json
   "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
   "build": "vite build && tsc -p tsconfig.electron.json && electron-builder",
   "lint": "eslint src electron --ext .ts,.tsx"
   ```
-- [ ] Mark completed.
+- [x] Mark completed.
 
 ---
 
-## Task 2: Electron Main Process & IPC Skeleton (`electron/main.ts`)
+### Task 2: Electron Main Process & IPC Skeleton (`electron/main.ts`)
 - [ ] Create `desktop/electron/main.ts`.
 - [ ] In `app.whenReady()`, create the main `BrowserWindow` with `webPreferences: { preload, contextIsolation: true, nodeIntegration: false }`.
 - [ ] Register the custom protocol `candidai://` using `app.setAsDefaultProtocolClient('candidai')`.
@@ -79,7 +79,7 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 
 ---
 
-## Task 3: Preload & Context Bridge (`electron/preload.ts`)
+### Task 3: Preload & Context Bridge (`electron/preload.ts`)
 - [ ] Create `desktop/electron/preload.ts`.
 - [ ] Expose a typed `window.electronAPI` object via `contextBridge.exposeInMainWorld`:
   ```typescript
@@ -100,7 +100,7 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 
 ---
 
-## Task 4: Firebase Client Initialisation (`src/lib/firebase.ts`)
+### Task 4: Firebase Client Initialisation (`src/lib/firebase.ts`)
 - [ ] Create `desktop/src/lib/firebase.ts`.
 - [ ] Initialise the Firebase app using the **same** project credentials as the web app (`.env.local` in the **repo root** — copy the relevant `VITE_FIREBASE_*` vars to `desktop/.env`):
   ```
@@ -115,7 +115,7 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 
 ---
 
-## Task 5: Firestore Data Layer (`src/lib/firestore.ts`)
+### Task 5: Firestore Data Layer (`src/lib/firestore.ts`)
 - [ ] Create `desktop/src/lib/firestore.ts`.
 - [ ] Implement `getUnsentEmails(uid: string): Promise<EmailItem[]>`:
   - Read `users/{uid}/data/emails` (single document, keys = `unique_id`).
@@ -143,7 +143,7 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 
 ---
 
-## Task 6: Application Authentication Flow (React + Deep Link)
+### Task 6: Application Authentication Flow (React + Deep Link)
 - [ ] Create `desktop/src/App.tsx` as the root component with a simple router: `<LoginScreen>` when no auth token, `<Dashboard>` when authenticated.
 - [ ] In `LoginScreen`:
   - Show the CandidAI logo and a "Login with CandidAI" button.
@@ -156,7 +156,7 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 
 ---
 
-## Task 7: Dashboard UI (`src/components/Dashboard.tsx`)
+### Task 7: Dashboard UI (`src/components/Dashboard.tsx`)
 The dashboard is the main screen shown after authentication. It is divided into two tabs: **Pending** (unsent) and **All Emails**.
 
 - [ ] Create `desktop/src/components/Dashboard.tsx`.
@@ -174,7 +174,7 @@ The dashboard is the main screen shown after authentication. It is divided into 
 
 ---
 
-## Task 8: Email Edit Modal (`src/components/EmailEditModal.tsx`)
+### Task 8: Email Edit Modal (`src/components/EmailEditModal.tsx`)
 - [ ] Create `desktop/src/components/EmailEditModal.tsx`.
 - [ ] Fields: `To` (email address), `Subject` (text input), `Body` (textarea with monospace font for easy editing).
 - [ ] "Save" button calls `updateEmailContent(uid, id, patch)` and updates local state optimistically.
@@ -183,7 +183,7 @@ The dashboard is the main screen shown after authentication. It is divided into 
 
 ---
 
-## Task 9: Provider Connection Engine (`electron/providers/connect.ts`)
+### Task 9: Provider Connection Engine (`electron/providers/connect.ts`)
 - [ ] Create `desktop/electron/providers/connect.ts`.
 - [ ] Implement `connectProvider(provider: 'gmail' | 'outlook' | 'yahoo'): Promise<'connected' | 'error'>`:
   - Determine the `userDataDir` path: `app.getPath('userData') + '/sessions/' + provider`.
@@ -203,7 +203,7 @@ The dashboard is the main screen shown after authentication. It is divided into 
 
 ---
 
-## Task 10: Background Sending Engine (`electron/engine/sender.ts`)
+### Task 10: Background Sending Engine (`electron/engine/sender.ts`)
 This is the core of the application. It runs entirely in the Main process.
 
 - [ ] Create `desktop/electron/engine/sender.ts`.
@@ -238,7 +238,7 @@ This is the core of the application. It runs entirely in the Main process.
 
 ---
 
-## Task 11: Anti-Detection Utilities (`electron/engine/humanize.ts`)
+### Task 11: Anti-Detection Utilities (`electron/engine/humanize.ts`)
 - [ ] Create `desktop/electron/engine/humanize.ts`.
 - [ ] Export `randomBetween(min: number, max: number): number`.
 - [ ] Export `delay(ms: number): Promise<void>` — wraps `setTimeout`.
@@ -248,7 +248,7 @@ This is the core of the application. It runs entirely in the Main process.
 
 ---
 
-## Task 12: CV Attachment Helper (`electron/engine/attachCV.ts`)
+### Task 12: CV Attachment Helper (`electron/engine/attachCV.ts`)
 - [ ] Create `desktop/electron/engine/attachCV.ts`.
 - [ ] Export `attachCV(page: Page, cvUrl: string, provider: 'gmail' | 'outlook' | 'yahoo'): Promise<void>`:
   - Download the file from `cvUrl` (which is a Firebase Storage URL) into `os.tmpdir()` using Node's `https.get`.
@@ -259,7 +259,7 @@ This is the core of the application. It runs entirely in the Main process.
 
 ---
 
-## Task 13: CandidAI Backend — Desktop Login Endpoint
+### Task 13: CandidAI Backend — Desktop Login Endpoint
 The website must mint a Firebase custom token when the user visits `/desktop-login` and redirect back to the Electron app.
 
 - [ ] Open `site/src/app/desktop-login/page.tsx`. Create it as a Server Component.
@@ -271,7 +271,7 @@ The website must mint a Firebase custom token when the user visits `/desktop-log
 
 ---
 
-## Task 14: Packaging & Distribution (`electron-builder`)
+### Task 14: Packaging & Distribution (`electron-builder`)
 - [ ] Create `desktop/electron-builder.config.js`:
   ```js
   module.exports = {
@@ -291,7 +291,7 @@ The website must mint a Firebase custom token when the user visits `/desktop-log
 
 ---
 
-## Task 15: End-to-End Smoke Test (Manual Checklist)
+### Task 15: End-to-End Smoke Test (Manual Checklist)
 - [ ] `npm run dev` starts without errors; Electron window appears.
 - [ ] "Login with CandidAI" opens the browser to `candidai.tech/desktop-login`.
 - [ ] After login, the app receives `candidai://auth?token=...` and signs in; Dashboard is shown.
