@@ -62,20 +62,20 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 ---
 
 ### Task 2: Electron Main Process & IPC Skeleton (`electron/main.ts`)
-- [ ] Create `desktop/electron/main.ts`.
-- [ ] In `app.whenReady()`, create the main `BrowserWindow` with `webPreferences: { preload, contextIsolation: true, nodeIntegration: false }`.
-- [ ] Register the custom protocol `candidai://` using `app.setAsDefaultProtocolClient('candidai')`.
-- [ ] Handle deep-link token capture:
+- [x] Create `desktop/electron/main.ts`.
+- [x] In `app.whenReady()`, create the main `BrowserWindow` with `webPreferences: { preload, contextIsolation: true, nodeIntegration: false }`.
+- [x] Register the custom protocol `candidai://` using `app.setAsDefaultProtocolClient('candidai')`.
+- [x] Handle deep-link token capture:
   - On **macOS**: listen to `app.on('open-url', (_, url) => ...)`.
   - On **Windows**: parse `process.argv` on `app.on('second-instance', ...)`.
   - Extract the JWT token from `candidai://auth?token=XYZ` and send it to the renderer via `mainWindow.webContents.send('auth-success', token)`.
-- [ ] Register all IPC handlers (stubs — to be implemented in later tasks):
+- [x] Register all IPC handlers (stubs — to be implemented in later tasks):
   - `ipcMain.handle('connect-provider', ...)`
   - `ipcMain.handle('disconnect-provider', ...)`
   - `ipcMain.handle('get-provider-status', ...)`
   - `ipcMain.handle('start-campaign', ...)`
   - `ipcMain.handle('stop-campaign', ...)`
-- [ ] Mark completed.
+- [x] Mark completed.
 
 ---
 
