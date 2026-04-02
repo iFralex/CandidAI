@@ -148,7 +148,7 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 - [ ] In `LoginScreen`:
   - Show the CandidAI logo and a "Login with CandidAI" button.
   - On click: call `window.electronAPI.openExternalLogin()`.
-  - The Main process handler for `open-external-login` calls `shell.openExternal('https://candidai.it/desktop-login')`.
+  - The Main process handler for `open-external-login` calls `shell.openExternal('https://candidai.tech/desktop-login')`.
   - Listen to `window.electronAPI.onAuthSuccess(token => ...)`.
   - On token received: call `signInWithCustomToken(token)` → on success, transition to `<Dashboard>`.
 - [ ] Persist the Firebase auth state across restarts using `onAuthStateChanged` in `src/lib/firebase.ts` — if the user is already signed in on launch, skip `LoginScreen`.
@@ -275,7 +275,7 @@ The website must mint a Firebase custom token when the user visits `/desktop-log
 - [ ] Create `desktop/electron-builder.config.js`:
   ```js
   module.exports = {
-    appId: 'it.candidai.desktop',
+    appId: 'tech.candidai.desktop',
     productName: 'CandidAI',
     directories: { output: 'release' },
     protocols: [{ name: 'CandidAI', schemes: ['candidai'] }],
@@ -293,7 +293,7 @@ The website must mint a Firebase custom token when the user visits `/desktop-log
 
 ## Task 15: End-to-End Smoke Test (Manual Checklist)
 - [ ] `npm run dev` starts without errors; Electron window appears.
-- [ ] "Login with CandidAI" opens the browser to `candidai.it/desktop-login`.
+- [ ] "Login with CandidAI" opens the browser to `candidai.tech/desktop-login`.
 - [ ] After login, the app receives `candidai://auth?token=...` and signs in; Dashboard is shown.
 - [ ] Unsent emails load from Firestore and are listed correctly.
 - [ ] "Connect Gmail" opens a visible Chrome window; after manual login the status dot turns green.
