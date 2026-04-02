@@ -33,14 +33,14 @@ MOCK_MODULES = {
     "anthropic": MagicMock(),
     "dateutil": MagicMock(),
     "dateutil.parser": MagicMock(),
-    "candidai_script.recruiter": MagicMock(),
-    "candidai_script.blog_posts": MagicMock(),
-    "candidai_script.email_generator": MagicMock(),
-    "candidai_script.database": MagicMock(),
+    "server.recruiter": MagicMock(),
+    "server.blog_posts": MagicMock(),
+    "server.email_generator": MagicMock(),
+    "server.database": MagicMock(),
 }
 
 with patch.dict("sys.modules", MOCK_MODULES):
-    from candidai_script.main import decide_tasks_per_company
+    from server.main import decide_tasks_per_company
 
 
 # ---------------------------------------------------------------------------

@@ -50,12 +50,12 @@ def server_mod():
         "anthropic": MagicMock(),
         "dateutil": MagicMock(),
         "dateutil.parser": MagicMock(),
-        "candidai_script": MagicMock(),
-        "candidai_script.main": MagicMock(),
-        "candidai_script.recruiter": MagicMock(),
-        "candidai_script.database": MagicMock(),
-        "candidai_script.blog_posts": MagicMock(),
-        "candidai_script.email_generator": MagicMock(),
+        "server": MagicMock(),
+        "server.main": MagicMock(),
+        "server.recruiter": MagicMock(),
+        "server.database": MagicMock(),
+        "server.blog_posts": MagicMock(),
+        "server.email_generator": MagicMock(),
     }
     with patch.dict("sys.modules", stubs):
         spec = importlib.util.spec_from_file_location("_test_server_auth", _SERVER_PATH)

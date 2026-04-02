@@ -3,13 +3,13 @@ conftest.py for Python unit/integration tests.
 
 Pre-populates sys.modules with MagicMock stubs for packages that are not
 installed in this environment (firebase_admin, requests, pytz, etc.) so that
-the candidai_script package can be imported without errors.
+the server package can be imported without errors.
 """
 
 import sys
 from unittest.mock import MagicMock
 
-# Must run before any fixture or test imports candidai_script.
+# Must run before any fixture or test imports server.
 _MOCK_MODULES = [
     "firebase_admin",
     "firebase_admin.credentials",

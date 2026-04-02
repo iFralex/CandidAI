@@ -52,12 +52,12 @@ def server_mod():
         "anthropic": MagicMock(),
         "dateutil": MagicMock(),
         "dateutil.parser": MagicMock(),
-        "candidai_script": MagicMock(),
-        "candidai_script.main": MagicMock(),
-        "candidai_script.recruiter": MagicMock(),
-        "candidai_script.database": MagicMock(),
-        "candidai_script.blog_posts": MagicMock(),
-        "candidai_script.email_generator": MagicMock(),
+        "server": MagicMock(),
+        "server.main": MagicMock(),
+        "server.recruiter": MagicMock(),
+        "server.database": MagicMock(),
+        "server.blog_posts": MagicMock(),
+        "server.email_generator": MagicMock(),
     }
     with patch.dict("sys.modules", stubs):
         spec = importlib.util.spec_from_file_location("_test_server", _SERVER_PATH)
@@ -65,7 +65,7 @@ def server_mod():
         spec.loader.exec_module(mod)
         mod.app.config["TESTING"] = True
         yield mod
-    # patch.dict restores sys.modules here; candidai_script stubs are gone
+    # patch.dict restores sys.modules here; server stubs are gone
 
 
 @pytest.fixture
@@ -100,7 +100,7 @@ class TestRunModuleValidRequest:
         mock_enqueue.assert_called_once()
 
     def test_valid_user_id_enqueue_called_with_correct_func_and_args(self, client, server_mod):
-        """enqueue_job is called with run_candidai_script and user_id as args."""
+        """enqueue_job is called with run_server and user_id as args."""
         with patch.object(server_mod, "enqueue_job") as mock_enqueue:
             client.post(
                 "/run_module",
@@ -111,7 +111,7 @@ class TestRunModuleValidRequest:
         call_args = mock_enqueue.call_args
         # First positional arg is the function
         func_arg = call_args[0][0]
-        assert func_arg is server_mod.run_candidai_script
+        assert func_arg is server_mod.run_server
         # keyword 'args' contains the user_id tuple
         passed_args = call_args[1].get("args") or call_args[0][1]
         assert passed_args == ("test123",)
