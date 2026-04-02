@@ -159,18 +159,18 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 ### Task 7: Dashboard UI (`src/components/Dashboard.tsx`)
 The dashboard is the main screen shown after authentication. It is divided into two tabs: **Pending** (unsent) and **All Emails**.
 
-- [ ] Create `desktop/src/components/Dashboard.tsx`.
-- [ ] On mount, call `getUnsentEmails(uid)` and store results in state.
-- [ ] Render a table/list of emails with columns: Company, Recruiter, To, Subject (truncated), Status badge (Pending / Sent).
-- [ ] Add a toolbar with:
+- [x] Create `desktop/src/components/Dashboard.tsx`.
+- [x] On mount, call `getUnsentEmails(uid)` and store results in state.
+- [x] Render a table/list of emails with columns: Company, Recruiter, To, Subject (truncated), Status badge (Pending / Sent).
+- [x] Add a toolbar with:
   - **Provider selector** — dropdown: Gmail / Outlook / Yahoo, with a "Connect" button per provider. Connection state (connected / disconnected) shown as a coloured dot.
   - **"Send All Pending"** button — disabled until a provider is connected.
   - **Progress bar** — appears during an active campaign (listens to `onCampaignProgress`).
-- [ ] Each row has:
+- [x] Each row has:
   - **Edit** icon (opens `EmailEditModal`).
   - **Send** icon (sends this single email immediately).
   - **CV chip** — shows the attached CV filename; clicking opens a file picker to attach a different CV for this email.
-- [ ] Mark completed.
+- [x] Mark completed.
 
 ---
 
