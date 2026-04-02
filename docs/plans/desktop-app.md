@@ -272,7 +272,7 @@ The website must mint a Firebase custom token when the user visits `/desktop-log
 ---
 
 ### Task 14: Packaging & Distribution (`electron-builder`)
-- [ ] Create `desktop/electron-builder.config.js`:
+- [x] Create `desktop/electron-builder.config.js`:
   ```js
   module.exports = {
     appId: 'tech.candidai.desktop',
@@ -284,10 +284,10 @@ The website must mint a Firebase custom token when the user visits `/desktop-log
     files: ['dist-renderer/**', 'dist-electron/**', 'package.json'],
   };
   ```
-- [ ] Add `assets/icon.icns` and `assets/icon.ico` (convert from `site/public/logo.png`).
-- [ ] Ensure `app.setAsDefaultProtocolClient('candidai')` is called in `main.ts` only when not in dev (use `app.isPackaged`).
-- [ ] Add `"build": "npm run build && electron-builder"` to `package.json` scripts.
-- [ ] Mark completed.
+- [x] Add `assets/icon.icns` and `assets/icon.ico` (convert from `site/public/logo.png`).
+- [x] Ensure `app.setAsDefaultProtocolClient('candidai')` is called in `main.ts` only when not in dev (use `app.isPackaged`).
+- [x] Add `"build": "npm run build && electron-builder"` to `package.json` scripts.
+- [x] Mark completed.
 
 ---
 
