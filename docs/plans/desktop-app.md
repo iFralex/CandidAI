@@ -292,13 +292,13 @@ The website must mint a Firebase custom token when the user visits `/desktop-log
 ---
 
 ### Task 15: End-to-End Smoke Test (Manual Checklist)
-- [ ] `npm run dev` starts without errors; Electron window appears.
-- [ ] "Login with CandidAI" opens the browser to `candidai.tech/desktop-login`.
-- [ ] After login, the app receives `candidai://auth?token=...` and signs in; Dashboard is shown.
-- [ ] Unsent emails load from Firestore and are listed correctly.
-- [ ] "Connect Gmail" opens a visible Chrome window; after manual login the status dot turns green.
-- [ ] Editing an email and saving updates Firestore.
-- [ ] "Send All Pending" triggers the headless automation; progress bar advances; after each send, the row moves out of the Pending tab.
-- [ ] Stopping mid-campaign halts the loop without crashing.
-- [ ] Disconnecting a provider deletes the session folder.
-- [ ] Mark completed.
+- [x] `npm run dev` starts without errors; Electron window appears.
+- [x] "Login with CandidAI" opens the browser to `candidai.tech/desktop-login`.
+- [x] After login, the app receives `candidai://auth?token=...` and signs in; Dashboard is shown.
+- [x] Unsent emails load from Firestore and are listed correctly.
+- [x] "Connect Gmail" opens a visible Chrome window; after manual login the status dot turns green.
+- [x] Editing an email and saving updates Firestore.
+- [x] "Send All Pending" triggers the headless automation; progress bar advances; after each send, the row moves out of the Pending tab.
+- [x] Stopping mid-campaign halts the loop without crashing.
+- [x] Disconnecting a provider deletes the session folder.
+- [x] Mark completed.
