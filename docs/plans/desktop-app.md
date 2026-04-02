@@ -116,8 +116,8 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 ---
 
 ### Task 5: Firestore Data Layer (`src/lib/firestore.ts`)
-- [ ] Create `desktop/src/lib/firestore.ts`.
-- [ ] Implement `getUnsentEmails(uid: string): Promise<EmailItem[]>`:
+- [x] Create `desktop/src/lib/firestore.ts`.
+- [x] Implement `getUnsentEmails(uid: string): Promise<EmailItem[]>`:
   - Read `users/{uid}/data/emails` (single document, keys = `unique_id`).
   - Read `users/{uid}/data/results` (single document, keys = `unique_id`).
   - Join on `unique_id`: keep only entries where `results[id].email_sent` is epoch (`1970-01-01`).
@@ -134,12 +134,12 @@ The desktop app reads from and writes to the **same** Firestore project used by 
       recruiterTitle: string;
     }
     ```
-- [ ] Implement `getAllEmails(uid: string): Promise<EmailItem[]>` — same join but without the epoch filter (for the "all emails" view).
-- [ ] Implement `updateEmailSent(uid: string, uniqueId: string, sent: boolean): Promise<void>`:
+- [x] Implement `getAllEmails(uid: string): Promise<EmailItem[]>` — same join but without the epoch filter (for the "all emails" view).
+- [x] Implement `updateEmailSent(uid: string, uniqueId: string, sent: boolean): Promise<void>`:
   - If `sent === true`: set `users/{uid}/data/results → { [uniqueId]: { email_sent: serverTimestamp() } }` (merge).
   - If `sent === false`: set `email_sent` back to epoch Timestamp (`Timestamp.fromDate(new Date('1970-01-01'))`).
-- [ ] Implement `updateEmailContent(uid: string, uniqueId: string, patch: Partial<Pick<EmailItem, 'subject' | 'body' | 'to'>>): Promise<void>` — updates `users/{uid}/data/emails → { [uniqueId]: patch }` with merge.
-- [ ] Mark completed.
+- [x] Implement `updateEmailContent(uid: string, uniqueId: string, patch: Partial<Pick<EmailItem, 'subject' | 'body' | 'to'>>): Promise<void>` — updates `users/{uid}/data/emails → { [uniqueId]: patch }` with merge.
+- [x] Mark completed.
 
 ---
 
