@@ -184,8 +184,8 @@ The dashboard is the main screen shown after authentication. It is divided into 
 ---
 
 ### Task 9: Provider Connection Engine (`electron/providers/connect.ts`)
-- [ ] Create `desktop/electron/providers/connect.ts`.
-- [ ] Implement `connectProvider(provider: 'gmail' | 'outlook' | 'yahoo'): Promise<'connected' | 'error'>`:
+- [x] Create `desktop/electron/providers/connect.ts`.
+- [x] Implement `connectProvider(provider: 'gmail' | 'outlook' | 'yahoo'): Promise<'connected' | 'error'>`:
   - Determine the `userDataDir` path: `app.getPath('userData') + '/sessions/' + provider`.
   - Determine the login URL:
     - `gmail` → `https://mail.google.com`
@@ -196,10 +196,10 @@ The dashboard is the main screen shown after authentication. It is divided into 
   - Poll `page.url()` every 2 seconds. When the URL includes the provider's inbox indicator (Gmail: `/mail/u/`, Outlook: `/mail/`, Yahoo: `/d/folders/1`), the user is logged in.
   - Call `browser.close()` and return `'connected'`.
   - Wrap everything in try/catch; on error return `'error'`.
-- [ ] Implement `getProviderStatus(provider: string): boolean` — checks if `userDataDir` exists and is non-empty (cookies saved). Returns true if directory exists with at least one `Cookies` file.
-- [ ] Implement `disconnectProvider(provider: string): Promise<void>` — deletes `userDataDir` using `fs.rmSync(path, { recursive: true })`.
-- [ ] Register these as IPC handlers in `main.ts` (replacing the stubs from Task 2).
-- [ ] Mark completed.
+- [x] Implement `getProviderStatus(provider: string): boolean` — checks if `userDataDir` exists and is non-empty (cookies saved). Returns true if directory exists with at least one `Cookies` file.
+- [x] Implement `disconnectProvider(provider: string): Promise<void>` — deletes `userDataDir` using `fs.rmSync(path, { recursive: true })`.
+- [x] Register these as IPC handlers in `main.ts` (replacing the stubs from Task 2).
+- [x] Mark completed.
 
 ---
 
