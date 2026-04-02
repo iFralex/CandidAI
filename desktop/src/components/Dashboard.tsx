@@ -6,6 +6,7 @@ import {
   getAllEmails,
   getUnsentEmails,
   updateEmailContent,
+  updateEmailSent,
 } from '../lib/firestore';
 import type { EmailItem } from '../lib/firestore';
 import EmailEditModal from './EmailEditModal';
@@ -100,6 +101,25 @@ export default function Dashboard({ user, onSignOut }: Props) {
       setCampaign((prev) => ({ ...prev, active: false }));
     });
   }, [loadEmails]);
+
+  // Update Firestore and local state when main process marks an email as sent
+  useEffect(() => {
+    const api = window.electronAPI;
+    if (!api) return;
+    api.onMarkEmailSent(async (id) => {
+      try {
+        await updateEmailSent(user.uid, id, true);
+      } catch {
+        // Firestore update failed silently — UI state still updated
+      }
+      setUnsentIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      setPendingEmails((prev) => prev.filter((e) => e.id !== id));
+    });
+  }, [user.uid]);
 
   async function handleConnect() {
     const api = window.electronAPI;

@@ -46,4 +46,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   onCampaignError: (cb: (msg: string) => void) =>
     ipcRenderer.on('campaign-error', (_event, m: string) => cb(m)),
+
+  onMarkEmailSent: (cb: (id: string) => void) =>
+    ipcRenderer.on('mark-email-sent', (_event, id: string) => cb(id)),
 });

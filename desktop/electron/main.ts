@@ -1,6 +1,8 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import { connectProvider, disconnectProvider, getProviderStatus } from './providers/connect';
+import { runCampaign, stopCampaign } from './engine/sender';
+import type { EmailItem } from './engine/sender';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -110,12 +112,16 @@ ipcMain.handle('get-provider-status', async (_event, provider: string) => {
   return getProviderStatus(provider);
 });
 
-// Stub — replaced in Task 10
-ipcMain.handle('start-campaign', async (_event, _payload: unknown) => {
-  return;
+ipcMain.handle('start-campaign', (_event, payload: { emails: EmailItem[]; provider: string }) => {
+  if (!mainWindow) return;
+  const { emails, provider } = payload;
+  const onEmailSent = async (id: string): Promise<void> => {
+    mainWindow?.webContents.send('mark-email-sent', id);
+  };
+  // Fire and forget — progress reported via IPC events
+  void runCampaign(emails, provider, mainWindow, onEmailSent);
 });
 
-// Stub — replaced in Task 10
-ipcMain.handle('stop-campaign', async () => {
-  return;
+ipcMain.handle('stop-campaign', () => {
+  stopCampaign();
 });
