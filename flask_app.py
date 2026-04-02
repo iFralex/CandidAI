@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import threading
 import queue
 import logging
-import candidai_script.main as main_module
+import server.main as main_module
 
 logging.basicConfig(
     level=logging.INFO,

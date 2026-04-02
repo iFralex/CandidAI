@@ -1,7 +1,7 @@
 """
 Task 11.1: Backend Python - Firestore Emulator Integration - save_companies_to_results
 
-Tests for save_companies_to_results in candidai_script/database.py.
+Tests for save_companies_to_results in server/database.py.
 Uses mock Firestore (no live emulator required) to verify Firestore interaction
 behavior:
 
@@ -197,7 +197,7 @@ _mock_firestore.DELETE_FIELD = object()
 @pytest.fixture(scope="module")
 def db_mod():
     """
-    Load candidai_script.database with all external dependencies mocked.
+    Load server.database with all external dependencies mocked.
     Returns the module so tests can call save_companies_to_results.
     """
     _MOCK_MODULES["firebase_admin.firestore"].SERVER_TIMESTAMP = SENTINEL_TIMESTAMP
@@ -205,12 +205,12 @@ def db_mod():
     mock_candidai = MagicMock()
     mock_candidai.db = None  # will be replaced per-test
 
-    with patch.dict("sys.modules", {**_MOCK_MODULES, "candidai_script": mock_candidai}):
+    with patch.dict("sys.modules", {**_MOCK_MODULES, "server": mock_candidai}):
         import importlib
         import importlib.util
         spec = importlib.util.spec_from_file_location(
             "_db_under_test",
-            os.path.join(os.path.dirname(__file__), "..", "..", "..", "candidai_script", "database.py"),
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "server", "database.py"),
         )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)

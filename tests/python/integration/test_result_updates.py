@@ -1,7 +1,7 @@
 """
 Task 11.4: Backend Python - Firestore Emulator Integration - Result Updates
 
-Tests for save_email in candidai_script/database.py.
+Tests for save_email in server/database.py.
 Uses mock Firestore (no live emulator required) to verify that:
 
 - update_email_sent: save_email correctly sets email_sent timestamp in
@@ -140,17 +140,17 @@ _MOCK_MODULES = {
 
 @pytest.fixture(scope="module")
 def db_mod():
-    """Load candidai_script.database with all external dependencies mocked."""
+    """Load server.database with all external dependencies mocked."""
     mock_candidai = MagicMock()
     mock_candidai.db = None  # replaced per-test via patch.object
 
-    with patch.dict("sys.modules", {**_MOCK_MODULES, "candidai_script": mock_candidai}):
+    with patch.dict("sys.modules", {**_MOCK_MODULES, "server": mock_candidai}):
         import importlib.util
         spec = importlib.util.spec_from_file_location(
             "_db_result_updates",
             os.path.join(
                 os.path.dirname(__file__), "..", "..", "..",
-                "candidai_script", "database.py"
+                "server", "database.py"
             ),
         )
         mod = importlib.util.module_from_spec(spec)

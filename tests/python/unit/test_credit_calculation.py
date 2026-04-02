@@ -33,9 +33,9 @@ MOCK_MODULES = {
     "anthropic": MagicMock(),
     "dateutil": MagicMock(),
     "dateutil.parser": MagicMock(),
-    "candidai_script.database": MagicMock(),
-    "candidai_script.blog_posts": MagicMock(),
-    "candidai_script.email_generator": MagicMock(),
+    "server.database": MagicMock(),
+    "server.blog_posts": MagicMock(),
+    "server.email_generator": MagicMock(),
 }
 
 # Configure pytz mock to use real UTC so datetime.now(pytz.UTC) works
@@ -49,7 +49,7 @@ MOCK_MODULES["dateutil.parser"].parse = MagicMock(
 )
 
 with patch.dict("sys.modules", MOCK_MODULES):
-    from candidai_script.recruiter import get_pdl_data, get_companies_info
+    from server.recruiter import get_pdl_data, get_companies_info
 
 # Reference to the mocked requests module used inside recruiter.py
 _mock_requests = MOCK_MODULES["requests"]
@@ -169,13 +169,13 @@ class TestCreditDeductionPerTaskType:
         PDL credit budget is independent of the recruiter module's budget.
         """
         blog_src_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "..", "candidai_script", "blog_posts.py"
+            os.path.dirname(__file__), "..", "..", "..", "server", "blog_posts.py"
         )
         with open(os.path.abspath(blog_src_path)) as f:
             source = f.read()
 
         # blog_posts must not import get_pdl_data from recruiter
-        assert "from candidai_script.recruiter import get_pdl_data" not in source, (
+        assert "from server.recruiter import get_pdl_data" not in source, (
             "blog_posts must not import get_pdl_data from recruiter"
         )
         # But it does define its own local get_pdl_data (confirming PDL is used locally)
@@ -189,7 +189,7 @@ class TestCreditDeductionPerTaskType:
         Email generation never consumes PDL credits.
         """
         email_src_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "..", "candidai_script", "email_generator.py"
+            os.path.dirname(__file__), "..", "..", "..", "server", "email_generator.py"
         )
         with open(os.path.abspath(email_src_path)) as f:
             source = f.read()
@@ -275,7 +275,7 @@ class TestInsufficientCredits:
         """
         store = make_store(credits_remaining=0)
 
-        mock_save = MOCK_MODULES["candidai_script.database"].save_company_info
+        mock_save = MOCK_MODULES["server.database"].save_company_info
         mock_save.reset_mock()
 
         companies = [{"name": "NoCreditCo", "domain": "nocredit.com"}]
