@@ -80,8 +80,8 @@ The desktop app reads from and writes to the **same** Firestore project used by 
 ---
 
 ### Task 3: Preload & Context Bridge (`electron/preload.ts`)
-- [ ] Create `desktop/electron/preload.ts`.
-- [ ] Expose a typed `window.electronAPI` object via `contextBridge.exposeInMainWorld`:
+- [x] Create `desktop/electron/preload.ts`.
+- [x] Expose a typed `window.electronAPI` object via `contextBridge.exposeInMainWorld`:
   ```typescript
   window.electronAPI = {
     onAuthSuccess: (cb: (token: string) => void) => ipcRenderer.on('auth-success', (_, t) => cb(t)),
@@ -95,8 +95,8 @@ The desktop app reads from and writes to the **same** Firestore project used by 
     onCampaignError: (cb: (msg: string) => void) => ipcRenderer.on('campaign-error', (_, m) => cb(m)),
   };
   ```
-- [ ] Create `desktop/src/electron.d.ts` with the matching TypeScript interface so the Renderer has full type-safety.
-- [ ] Mark completed.
+- [x] Create `desktop/src/electron.d.ts` with the matching TypeScript interface so the Renderer has full type-safety.
+- [x] Mark completed.
 
 ---
 
