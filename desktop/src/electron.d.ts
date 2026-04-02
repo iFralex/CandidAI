@@ -29,6 +29,7 @@ export interface ElectronAPI {
   stopCampaign: () => Promise<void>;
   onCampaignProgress: (cb: (p: ProgressPayload) => void) => void;
   onCampaignError: (cb: (msg: string) => void) => void;
+  onMarkEmailSent: (cb: (id: string) => void) => void;
 }
 
 declare global {

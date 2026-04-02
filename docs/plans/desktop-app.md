@@ -206,8 +206,8 @@ The dashboard is the main screen shown after authentication. It is divided into 
 ### Task 10: Background Sending Engine (`electron/engine/sender.ts`)
 This is the core of the application. It runs entirely in the Main process.
 
-- [ ] Create `desktop/electron/engine/sender.ts`.
-- [ ] Export `runCampaign(emails: EmailItem[], provider: string, mainWindow: BrowserWindow): Promise<void>`:
+- [x] Create `desktop/electron/engine/sender.ts`.
+- [x] Export `runCampaign(emails: EmailItem[], provider: string, mainWindow: BrowserWindow): Promise<void>`:
   - Launch Puppeteer **headless** (`headless: "new"`), `userDataDir` (same as connect step — session already saved), stealth plugin.
   - Navigate to the provider's inbox URL.
   - **For Gmail:**
@@ -232,9 +232,9 @@ This is the core of the application. It runs entirely in the Main process.
     - Emit progress: `mainWindow.webContents.send('campaign-progress', { sent: i + 1, total: emails.length })`.
     - Wait random delay: `await delay(randomBetween(30_000, 60_000))`.
   - On selector timeout or any puppeteer error: catch, close browser, emit `mainWindow.webContents.send('campaign-error', 'Connection lost or UI changed. Please reconnect your provider.')`, and return.
-- [ ] Add a `stopCampaign()` escape hatch (set a `shouldStop` flag checked at the top of each loop iteration).
-- [ ] Register `start-campaign` and `stop-campaign` IPC handlers in `main.ts`.
-- [ ] Mark completed.
+- [x] Add a `stopCampaign()` escape hatch (set a `shouldStop` flag checked at the top of each loop iteration).
+- [x] Register `start-campaign` and `stop-campaign` IPC handlers in `main.ts`.
+- [x] Mark completed.
 
 ---
 
