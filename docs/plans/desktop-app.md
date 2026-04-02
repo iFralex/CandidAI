@@ -262,12 +262,12 @@ This is the core of the application. It runs entirely in the Main process.
 ### Task 13: CandidAI Backend — Desktop Login Endpoint
 The website must mint a Firebase custom token when the user visits `/desktop-login` and redirect back to the Electron app.
 
-- [ ] Open `site/src/app/desktop-login/page.tsx`. Create it as a Server Component.
-- [ ] The page requires the user to already be authenticated (Firebase session cookie).
-- [ ] Call Firebase Admin SDK: `admin.auth().createCustomToken(uid)` to mint a short-lived token.
-- [ ] Redirect to `candidai://auth?token=<customToken>` using `redirect()`.
-- [ ] If the user is not authenticated, redirect to `/login?next=/desktop-login`.
-- [ ] Mark completed.
+- [x] Open `site/src/app/desktop-login/page.tsx`. Create it as a Server Component.
+- [x] The page requires the user to already be authenticated (Firebase session cookie).
+- [x] Call Firebase Admin SDK: `admin.auth().createCustomToken(uid)` to mint a short-lived token.
+- [x] Redirect to `candidai://auth?token=<customToken>` using `redirect()`.
+- [x] If the user is not authenticated, redirect to `/login?next=/desktop-login`.
+- [x] Mark completed.
 
 ---
 
