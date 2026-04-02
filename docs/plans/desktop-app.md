@@ -175,11 +175,11 @@ The dashboard is the main screen shown after authentication. It is divided into 
 ---
 
 ### Task 8: Email Edit Modal (`src/components/EmailEditModal.tsx`)
-- [ ] Create `desktop/src/components/EmailEditModal.tsx`.
-- [ ] Fields: `To` (email address), `Subject` (text input), `Body` (textarea with monospace font for easy editing).
-- [ ] "Save" button calls `updateEmailContent(uid, id, patch)` and updates local state optimistically.
-- [ ] "Send Now" button calls `window.electronAPI.startCampaign({ emails: [thisEmail], provider })` immediately after saving.
-- [ ] Mark completed.
+- [x] Create `desktop/src/components/EmailEditModal.tsx`.
+- [x] Fields: `To` (email address), `Subject` (text input), `Body` (textarea with monospace font for easy editing).
+- [x] "Save" button calls `updateEmailContent(uid, id, patch)` and updates local state optimistically.
+- [x] "Send Now" button calls `window.electronAPI.startCampaign({ emails: [thisEmail], provider })` immediately after saving.
+- [x] Mark completed.
 
 ---
 

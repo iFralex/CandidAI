@@ -11,7 +11,6 @@ interface Props {
   onClose: () => void;
 }
 
-// Stub — fully implemented in Task 8
 export default function EmailEditModal({ email, provider, isProviderConnected, onSave, onSendNow, onClose }: Props) {
   const [to, setTo] = useState(email.to);
   const [subject, setSubject] = useState(email.subject);
