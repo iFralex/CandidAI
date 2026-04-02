@@ -239,12 +239,12 @@ This is the core of the application. It runs entirely in the Main process.
 ---
 
 ### Task 11: Anti-Detection Utilities (`electron/engine/humanize.ts`)
-- [ ] Create `desktop/electron/engine/humanize.ts`.
-- [ ] Export `randomBetween(min: number, max: number): number`.
-- [ ] Export `delay(ms: number): Promise<void>` — wraps `setTimeout`.
-- [ ] Export `humanType(page: Page, selector: string, text: string): Promise<void>`:
+- [x] Create `desktop/electron/engine/humanize.ts`.
+- [x] Export `randomBetween(min: number, max: number): number`.
+- [x] Export `delay(ms: number): Promise<void>` — wraps `setTimeout`.
+- [x] Export `humanType(page: Page, selector: string, text: string): Promise<void>`:
   - Always uses `page.type(selector, text, { delay: 30 })`. Never `page.fill()` or `page.evaluate`.
-- [ ] Mark completed.
+- [x] Mark completed.
 
 ---
 
