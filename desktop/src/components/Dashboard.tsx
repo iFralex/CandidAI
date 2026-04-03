@@ -47,6 +47,7 @@ export default function Dashboard({ user, onSignOut }: Props) {
     total: 0,
   });
   const [campaignError, setCampaignError] = useState<string | null>(null);
+  const [connectError, setConnectError] = useState<string | null>(null);
   const [editingEmail, setEditingEmail] = useState<EmailItem | null>(null);
 
   // Per-row CV override refs
@@ -124,12 +125,17 @@ export default function Dashboard({ user, onSignOut }: Props) {
   async function handleConnect() {
     const api = window.electronAPI;
     if (!api) return;
+    setConnectError(null);
     setProviderStatuses((prev) => ({ ...prev, [selectedProvider]: 'connecting' }));
     const result = await api.connectProvider(selectedProvider);
-    setProviderStatuses((prev) => ({
-      ...prev,
-      [selectedProvider]: result === 'connected' ? 'connected' : 'disconnected',
-    }));
+    if (result === 'connected') {
+      setProviderStatuses((prev) => ({ ...prev, [selectedProvider]: 'connected' }));
+    } else {
+      setProviderStatuses((prev) => ({ ...prev, [selectedProvider]: 'disconnected' }));
+      setConnectError(
+        `Could not connect ${selectedProvider}. Make sure Google Chrome is installed and try again.`
+      );
+    }
   }
 
   async function handleDisconnect() {
@@ -325,6 +331,19 @@ export default function Dashboard({ user, onSignOut }: Props) {
               {campaign.sent} / {campaign.total} sent
             </span>
           </div>
+        </div>
+      )}
+
+      {/* Connect error banner */}
+      {connectError && (
+        <div className="px-6 py-2 bg-red-900/40 border-b border-red-700 text-red-300 text-sm shrink-0 flex items-center justify-between">
+          <span>{connectError}</span>
+          <button
+            onClick={() => setConnectError(null)}
+            className="text-red-400 hover:text-red-200 ml-4 shrink-0"
+          >
+            ✕
+          </button>
         </div>
       )}
 

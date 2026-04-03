@@ -4,8 +4,11 @@
   "description": "CandidAI Desktop App",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "concurrently \"vite\" \"tsc -p tsconfig.electron.json --watch\" \"wait-on http://localhost:5173 dist-electron/main.js && electron .\"",
+    "dev": "NODE_ENV=development concurrently --names \"VITE,TSC,ELECTRON\" --prefix-colors \"cyan,yellow,green\" --kill-others-on-fail \"vite\" \"tsc -p tsconfig.electron.json --watch\" \"wait-on http://localhost:5173 dist-electron/main.js && electron .\"",
     "build": "vite build && tsc -p tsconfig.electron.json && electron-builder",
+    "build:dir": "vite build && tsc -p tsconfig.electron.json && electron-builder --dir",
+    "run:app": "dist/mac-arm64/desktop.app/Contents/MacOS/desktop",
+    "logs": "open \"$HOME/Library/Logs/desktop\" 2>/dev/null || echo 'Log directory not found. Run the packaged app first.'",
     "lint": "eslint src electron"
   },
   "keywords": [],
