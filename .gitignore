@@ -56,3 +56,4 @@ output/
 .playwright-cache/
 .npm-cache/
 dist/
+desktop/.vite/
