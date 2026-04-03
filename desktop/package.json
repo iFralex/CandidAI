@@ -1,7 +1,7 @@
 {
   "name": "desktop",
   "version": "1.0.0",
-  "description": "",
+  "description": "CandidAI Desktop App",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "concurrently \"vite\" \"tsc -p tsconfig.electron.json --watch\" \"wait-on http://localhost:5173 dist-electron/main.js && electron .\"",
@@ -50,7 +50,6 @@
     "degenerator": "^5.0.1",
     "detect-node": "^2.1.0",
     "devtools-protocol": "^0.0.1581282",
-    "electron": "^41.1.1",
     "emoji-regex": "^8.0.0",
     "end-of-stream": "^1.4.5",
     "env-paths": "^2.2.1",
@@ -190,6 +189,7 @@
     "@typescript-eslint/parser": "^8.58.0",
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^9.2.1",
+    "electron": "^41.1.1",
     "electron-builder": "^26.8.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react": "^7.37.5",

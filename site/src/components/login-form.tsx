@@ -30,11 +30,13 @@ const internLogin = async (idToken: string) => {
 export function LoginForm({
   className,
   defaultEmail,
+  next,
   onSuccess,
   onSwitchToRegister,
   ...props
 }: React.ComponentProps<"form"> & {
   defaultEmail?: string;
+  next?: string;
   onSuccess?: (user: any) => void;
   onSwitchToRegister?: () => void;
 }) {
@@ -66,7 +68,7 @@ export function LoginForm({
 
       await internLogin(idToken)
 
-      router.push("/dashboard");
+      router.push(next || "/dashboard");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -114,7 +116,9 @@ export function LoginForm({
             },
           });
 
-          router.push('/dashboard');
+          const redirectTo = sessionStorage.getItem('loginNext') || '/dashboard';
+          sessionStorage.removeItem('loginNext');
+          router.push(redirectTo);
         }
       } catch (err: any) {
         console.error('Errore Google redirect:', err);
@@ -132,6 +136,7 @@ export function LoginForm({
     setError('');
 
     try {
+      if (next) sessionStorage.setItem('loginNext', next);
       const provider = new GoogleAuthProvider();
       provider.addScope('profile');
       provider.addScope('email');
