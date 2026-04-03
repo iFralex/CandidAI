@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import logo from '../assets/logo.png';
 import type { User } from 'firebase/auth';
 import { signInWithCustomToken } from '../lib/firebase';
 
@@ -36,8 +37,8 @@ export default function LoginScreen({ onAuthenticated }: Props) {
       <div className="flex flex-col items-center gap-8 max-w-sm w-full px-6">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-2xl">C</span>
+          <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg">
+            <img src={logo} alt="CandidAI" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight">CandidAI</h1>
           <p className="text-gray-400 text-sm text-center">

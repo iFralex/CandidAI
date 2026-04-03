@@ -16,7 +16,10 @@
       "Bash(mkdir -p site)",
       "Bash(git mv:*)",
       "Bash(mv /Users/alessioantonucci/progetti/CandidAI/node_modules /Users/alessioantonucci/progetti/CandidAI/site/node_modules)",
-      "Bash(mv /Users/alessioantonucci/progetti/CandidAI/.next /Users/alessioantonucci/progetti/CandidAI/site/.next)"
+      "Bash(mv /Users/alessioantonucci/progetti/CandidAI/.next /Users/alessioantonucci/progetti/CandidAI/site/.next)",
+      "Bash(rm -rf node_modules package-lock.json)",
+      "Bash(npm install:*)",
+      "Bash(npm list:*)"
     ],
     "additionalDirectories": [
       "/Users/alessioantonucci/progetti/CandidAI/logs"

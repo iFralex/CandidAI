@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev": "concurrently \"vite\" \"tsc -p tsconfig.electron.json --watch\" \"wait-on http://localhost:5173 dist-electron/main.js && electron .\"",
     "build": "vite build && tsc -p tsconfig.electron.json && electron-builder",
     "lint": "eslint src electron"
   },
@@ -13,6 +13,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@tailwindcss/vite": "^4.2.2",
     "agent-base": "^7.1.4",
     "ansi-regex": "^5.0.1",
     "ansi-styles": "^4.3.0",
