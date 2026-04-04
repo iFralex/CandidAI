@@ -136,7 +136,7 @@ async def send_gmail(page, email: dict) -> None:
             await page.wait_for_timeout(random.randint(1500, 2500))
         except Exception as e:
             logger.warning(f"[gmail] CV allegato fallito: {e}")
-    await page.keyboard.press("Control+Return")
+    await page.keyboard.press("Control+Enter")
     await page.wait_for_timeout(random.randint(800, 1500))
 
 
