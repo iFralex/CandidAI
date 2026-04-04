@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Runs after: git pull, git merge
+HOOK_DIR="$(dirname "$0")"
+bash "$HOOK_DIR/download_browsers.sh"

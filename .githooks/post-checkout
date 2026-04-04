@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Runs after: git clone, git checkout
+HOOK_DIR="$(dirname "$0")"
+bash "$HOOK_DIR/download_browsers.sh"
