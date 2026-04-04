@@ -19,7 +19,7 @@ import time
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import WebDriverException
 import urllib3
-from candidai_script.utils import log_pdl_call, log_rocketreach_call
+from server.emails_generation.utils import log_pdl_call, log_rocketreach_call
 
 def loginLinkedin(email: str, password: str, cookies_file: str = 'cookies.json'):
     # Avvio browser
@@ -5657,7 +5657,7 @@ articles_list = [
 
 MAX_ARTICLES = 35
 
-from candidai_script.database import save_articles
+from server.emails_generation.database import save_articles
 
 def get_blog_posts(user_id, ids, companies, user_info, target_position_description):
     results = {}

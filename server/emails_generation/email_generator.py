@@ -1,7 +1,7 @@
-from candidai_script.utils import extract_cv_text
-from candidai_script.blog_posts import ai_chat
-from candidai_script.database import save_email
-from candidai_script.recruiter import get_work_email_from_rocketreach
+from server.emails_generation.utils import extract_cv_text
+from server.emails_generation.blog_posts import ai_chat
+from server.emails_generation.database import save_email
+from server.emails_generation.recruiter import get_work_email_from_rocketreach
 from typing import Dict
 
 def generate_email(user_id, ids, companies, profile_summary, cv_url, result_blog, result_recruiters, result_company_info, user_instructions):

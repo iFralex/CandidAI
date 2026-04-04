@@ -1,7 +1,7 @@
-from candidai_script.recruiter import find_recruiters_for_user, get_companies_info, get_pdl_data
-from candidai_script.blog_posts import get_blog_posts, extract_articles_content
-from candidai_script.email_generator import generate_email
-from candidai_script.database import (
+from server.emails_generation.recruiter import find_recruiters_for_user, get_companies_info, get_pdl_data
+from server.emails_generation.blog_posts import get_blog_posts, extract_articles_content
+from server.emails_generation.email_generator import generate_email
+from server.emails_generation.database import (
     get_account_data,
     get_changed_companies,
     save_companies_to_results,

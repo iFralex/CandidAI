@@ -1,7 +1,7 @@
 """
 Task 10.2: Backend Python - API Routes Test - Auth and Security
 
-Tests documenting the authentication and security behavior of POST /run_module.
+Tests documenting the authentication and security behavior of POST /start_emails_generation.
 
 Current server.py implementation has no authentication mechanism and no IP
 whitelist/firewall. These tests document the CURRENT behavior:
@@ -92,7 +92,7 @@ class TestNoAuthRequired:
         """
         with patch.object(server_mod, "enqueue_job"):
             response = client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "user_no_auth"}),
                 content_type="application/json",
             )
@@ -104,7 +104,7 @@ class TestNoAuthRequired:
         """
         with patch.object(server_mod, "enqueue_job"):
             response = client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "user_no_auth"}),
                 content_type="application/json",
             )
@@ -118,7 +118,7 @@ class TestNoAuthRequired:
         Validation errors are independent of authentication.
         """
         response = client.post(
-            "/run_module",
+            "/start_emails_generation",
             data=json.dumps({}),
             content_type="application/json",
         )
@@ -147,7 +147,7 @@ class TestInvalidAuthorizationHeader:
         """
         with patch.object(server_mod, "enqueue_job"):
             response = client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "user_bad_token"}),
                 content_type="application/json",
                 headers={"Authorization": "Bearer invalid_token_xyz"},
@@ -161,7 +161,7 @@ class TestInvalidAuthorizationHeader:
         """
         with patch.object(server_mod, "enqueue_job"):
             response = client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "user_bad_header"}),
                 content_type="application/json",
                 headers={"Authorization": "not-bearer-format"},
@@ -175,7 +175,7 @@ class TestInvalidAuthorizationHeader:
         """
         with patch.object(server_mod, "enqueue_job"):
             response = client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "user_empty_auth"}),
                 content_type="application/json",
                 headers={"Authorization": ""},
@@ -187,7 +187,7 @@ class TestInvalidAuthorizationHeader:
         Invalid auth header with missing user_id: body validation still applies.
         """
         response = client.post(
-            "/run_module",
+            "/start_emails_generation",
             data=json.dumps({}),
             content_type="application/json",
             headers={"Authorization": "Bearer bad_token"},
@@ -200,7 +200,7 @@ class TestInvalidAuthorizationHeader:
         """
         with patch.object(server_mod, "enqueue_job"):
             response = client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "user_garbage"}),
                 content_type="application/json",
                 headers={"Authorization": "!@#$%^&*()_+"},
@@ -230,7 +230,7 @@ class TestIPWhitelist:
         """
         with patch.object(server_mod, "enqueue_job"):
             response = client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "user_loopback"}),
                 content_type="application/json",
                 environ_base={"REMOTE_ADDR": "127.0.0.1"},
@@ -244,7 +244,7 @@ class TestIPWhitelist:
         """
         with patch.object(server_mod, "enqueue_job"):
             response = client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "user_external"}),
                 content_type="application/json",
                 environ_base={"REMOTE_ADDR": "203.0.113.42"},
@@ -258,7 +258,7 @@ class TestIPWhitelist:
         """
         with patch.object(server_mod, "enqueue_job"):
             response = client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "user_private_net"}),
                 content_type="application/json",
                 environ_base={"REMOTE_ADDR": "10.0.0.5"},

@@ -1,4 +1,4 @@
-from candidai_script import db
+from server.emails_generation import db
 from firebase_admin import firestore
 from typing import Dict
 from datetime import datetime, timezone

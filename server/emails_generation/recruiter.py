@@ -4,15 +4,15 @@ import json
 import time
 import requests
 from typing import List, Dict, Optional, Any
-from candidai_script import db
-from candidai_script.database import get_account_data, save_recruiter_and_query, save_company_info, get_custom_queries
+from server.emails_generation import db
+from server.emails_generation.database import get_account_data, save_recruiter_and_query, save_company_info, get_custom_queries
 from datetime import datetime, timezone
 import pytz
 import math
 import random
 import uuid
 from dateutil import parser as date_parser
-from candidai_script.utils import log_pdl_call, log_rocketreach_call
+from server.emails_generation.utils import log_pdl_call, log_rocketreach_call
 
 def get_pdl_data(params):
     # --- CONFIGURAZIONE FLOPPYDATA ---

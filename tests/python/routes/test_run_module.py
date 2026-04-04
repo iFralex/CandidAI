@@ -1,7 +1,7 @@
 """
-Task 10.1: Backend Python - API Routes Test - POST /run_module
+Task 10.1: Backend Python - API Routes Test - POST /start_emails_generation
 
-Tests for the Flask endpoint POST /run_module in server.py:
+Tests for the Flask endpoint POST /start_emails_generation in server.py:
 - Valid request with mocked enqueue_job: returns {"status": "queued"} with status 200
 - Missing user_id in body: returns status 400 with error message
 - Malformed JSON body: returns status 400
@@ -75,7 +75,7 @@ def client(server_mod):
 
 
 # ---------------------------------------------------------------------------
-# Tests: POST /run_module - valid request
+# Tests: POST /start_emails_generation - valid request
 # ---------------------------------------------------------------------------
 
 
@@ -89,7 +89,7 @@ class TestRunModuleValidRequest:
         """
         with patch.object(server_mod, "enqueue_job") as mock_enqueue:
             response = client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "test123"}),
                 content_type="application/json",
             )
@@ -103,7 +103,7 @@ class TestRunModuleValidRequest:
         """enqueue_job is called with run_server and user_id as args."""
         with patch.object(server_mod, "enqueue_job") as mock_enqueue:
             client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "test123"}),
                 content_type="application/json",
             )
@@ -118,7 +118,7 @@ class TestRunModuleValidRequest:
 
 
 # ---------------------------------------------------------------------------
-# Tests: POST /run_module - missing user_id
+# Tests: POST /start_emails_generation - missing user_id
 # ---------------------------------------------------------------------------
 
 
@@ -128,7 +128,7 @@ class TestRunModuleMissingUserId:
     def test_missing_user_id_returns_400(self, client):
         """Body without user_id key returns HTTP 400."""
         response = client.post(
-            "/run_module",
+            "/start_emails_generation",
             data=json.dumps({"other_key": "value"}),
             content_type="application/json",
         )
@@ -137,7 +137,7 @@ class TestRunModuleMissingUserId:
     def test_missing_user_id_returns_error_message(self, client):
         """Response body contains an error field."""
         response = client.post(
-            "/run_module",
+            "/start_emails_generation",
             data=json.dumps({"other_key": "value"}),
             content_type="application/json",
         )
@@ -147,7 +147,7 @@ class TestRunModuleMissingUserId:
 
 
 # ---------------------------------------------------------------------------
-# Tests: POST /run_module - malformed JSON body
+# Tests: POST /start_emails_generation - malformed JSON body
 # ---------------------------------------------------------------------------
 
 
@@ -157,7 +157,7 @@ class TestRunModuleMalformedJSON:
     def test_malformed_json_returns_400(self, client):
         """Sending invalid JSON with application/json content-type returns 400."""
         response = client.post(
-            "/run_module",
+            "/start_emails_generation",
             data=b"{this is not valid json",
             content_type="application/json",
         )
@@ -166,7 +166,7 @@ class TestRunModuleMalformedJSON:
     def test_partial_json_returns_400(self, client):
         """Truncated JSON object returns 400."""
         response = client.post(
-            "/run_module",
+            "/start_emails_generation",
             data=b'{"user_id":',
             content_type="application/json",
         )
@@ -174,7 +174,7 @@ class TestRunModuleMalformedJSON:
 
 
 # ---------------------------------------------------------------------------
-# Tests: POST /run_module - empty body
+# Tests: POST /start_emails_generation - empty body
 # ---------------------------------------------------------------------------
 
 
@@ -183,13 +183,13 @@ class TestRunModuleEmptyBody:
 
     def test_no_body_returns_400(self, client):
         """POST with no body (Content-Type: application/json) returns 400."""
-        response = client.post("/run_module", content_type="application/json")
+        response = client.post("/start_emails_generation", content_type="application/json")
         assert response.status_code == 400
 
     def test_empty_json_object_missing_user_id_returns_400(self, client):
         """POST with {} (no user_id key) returns 400."""
         response = client.post(
-            "/run_module",
+            "/start_emails_generation",
             data=json.dumps({}),
             content_type="application/json",
         )
@@ -197,7 +197,7 @@ class TestRunModuleEmptyBody:
 
 
 # ---------------------------------------------------------------------------
-# Tests: POST /run_module - empty string user_id
+# Tests: POST /start_emails_generation - empty string user_id
 # ---------------------------------------------------------------------------
 
 
@@ -207,7 +207,7 @@ class TestRunModuleEmptyStringUserId:
     def test_empty_string_user_id_returns_400(self, client):
         """user_id="" is not valid and must return HTTP 400."""
         response = client.post(
-            "/run_module",
+            "/start_emails_generation",
             data=json.dumps({"user_id": ""}),
             content_type="application/json",
         )
@@ -216,7 +216,7 @@ class TestRunModuleEmptyStringUserId:
     def test_empty_string_user_id_returns_error_message(self, client):
         """Response body contains an error field for empty string user_id."""
         response = client.post(
-            "/run_module",
+            "/start_emails_generation",
             data=json.dumps({"user_id": ""}),
             content_type="application/json",
         )
@@ -226,7 +226,7 @@ class TestRunModuleEmptyStringUserId:
 
 
 # ---------------------------------------------------------------------------
-# Tests: POST /run_module - enqueue_job exception
+# Tests: POST /start_emails_generation - enqueue_job exception
 # ---------------------------------------------------------------------------
 
 
@@ -239,7 +239,7 @@ class TestRunModuleEnqueueException:
             server_mod, "enqueue_job", side_effect=RuntimeError("queue full")
         ):
             response = client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "user_error"}),
                 content_type="application/json",
             )
@@ -252,7 +252,7 @@ class TestRunModuleEnqueueException:
             server_mod, "enqueue_job", side_effect=Exception("unexpected error")
         ):
             response = client.post(
-                "/run_module",
+                "/start_emails_generation",
                 data=json.dumps({"user_id": "user_error"}),
                 content_type="application/json",
             )

@@ -5,8 +5,8 @@ import { auth } from '../lib/firebase';
 import {
   getAllEmails,
   getUnsentEmails,
+  subscribeToResults,
   updateEmailContent,
-  updateEmailSent,
 } from '../lib/firestore';
 import type { EmailItem } from '../lib/firestore';
 import EmailEditModal from './EmailEditModal';
@@ -41,16 +41,14 @@ export default function Dashboard({ user, onSignOut }: Props) {
     yahoo: 'disconnected',
   });
 
-  const [campaign, setCampaign] = useState<{ active: boolean; sent: number; total: number }>({
+  const [campaign, setCampaign] = useState<{ active: boolean; queued: number }>({
     active: false,
-    sent: 0,
-    total: 0,
+    queued: 0,
   });
   const [campaignError, setCampaignError] = useState<string | null>(null);
   const [connectError, setConnectError] = useState<string | null>(null);
   const [editingEmail, setEditingEmail] = useState<EmailItem | null>(null);
 
-  // Per-row CV override refs
   const cvInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [cvOverrides, setCvOverrides] = useState<Record<string, string>>({});
 
@@ -86,48 +84,45 @@ export default function Dashboard({ user, onSignOut }: Props) {
     checkProviderStatuses();
   }, [loadEmails, checkProviderStatuses]);
 
-  // Listen for campaign progress and errors
+  // Firestore realtime listener: aggiorna la UI quando il server invia email
+  useEffect(() => {
+    const unsubscribe = subscribeToResults(user.uid, (sentIds) => {
+      setUnsentIds((prev) => {
+        // Se non ci sono cambiamenti, non aggiornare
+        if (prev.size === sentIds.size && [...prev].every((id) => !sentIds.has(id))) return prev;
+        return new Set([...prev].filter((id) => !sentIds.has(id)));
+      });
+      setPendingEmails((prev) => prev.filter((e) => !sentIds.has(e.id)));
+    });
+    return unsubscribe;
+  }, [user.uid]);
+
+  // Ascolta eventi IPC dal main process
   useEffect(() => {
     const api = window.electronAPI;
     if (!api) return;
-    api.onCampaignProgress((p) => {
-      setCampaign({ active: true, sent: p.sent, total: p.total });
-      if (p.sent >= p.total) {
-        setCampaign((prev) => ({ ...prev, active: false }));
-        loadEmails();
-      }
+
+    api.onCampaignQueued((total) => {
+      setCampaign({ active: true, queued: total });
+      setCampaignError(null);
     });
+
+    api.onCampaignStopped(() => {
+      setCampaign({ active: false, queued: 0 });
+    });
+
     api.onCampaignError((msg) => {
       setCampaignError(msg);
-      setCampaign((prev) => ({ ...prev, active: false }));
+      setCampaign({ active: false, queued: 0 });
     });
-  }, [loadEmails]);
-
-  // Update Firestore and local state when main process marks an email as sent
-  useEffect(() => {
-    const api = window.electronAPI;
-    if (!api) return;
-    api.onMarkEmailSent(async (id) => {
-      try {
-        await updateEmailSent(user.uid, id, true);
-      } catch {
-        // Firestore update failed silently — UI state still updated
-      }
-      setUnsentIds((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-      setPendingEmails((prev) => prev.filter((e) => e.id !== id));
-    });
-  }, [user.uid]);
+  }, []);
 
   async function handleConnect() {
     const api = window.electronAPI;
     if (!api) return;
     setConnectError(null);
     setProviderStatuses((prev) => ({ ...prev, [selectedProvider]: 'connecting' }));
-    const result = await api.connectProvider(selectedProvider);
+    const result = await api.connectProvider(selectedProvider, user.uid);
     if (result === 'connected') {
       setProviderStatuses((prev) => ({ ...prev, [selectedProvider]: 'connected' }));
     } else {
@@ -152,8 +147,7 @@ export default function Dashboard({ user, onSignOut }: Props) {
     const emails = pendingEmails.map((e) =>
       cvOverrides[e.id] ? { ...e, cvUrl: cvOverrides[e.id] } : e
     );
-    setCampaign({ active: true, sent: 0, total: emails.length });
-    await api.startCampaign({ emails, provider: selectedProvider });
+    await api.startCampaign({ emails, provider: selectedProvider, userId: user.uid });
   }
 
   async function handleSendOne(email: EmailItem) {
@@ -161,15 +155,14 @@ export default function Dashboard({ user, onSignOut }: Props) {
     if (!api) return;
     setCampaignError(null);
     const item = cvOverrides[email.id] ? { ...email, cvUrl: cvOverrides[email.id] } : email;
-    setCampaign({ active: true, sent: 0, total: 1 });
-    await api.startCampaign({ emails: [item], provider: selectedProvider });
+    await api.startCampaign({ emails: [item], provider: selectedProvider, userId: user.uid });
   }
 
   async function handleStopCampaign() {
     const api = window.electronAPI;
     if (!api) return;
-    await api.stopCampaign();
-    setCampaign((prev) => ({ ...prev, active: false }));
+    await api.stopCampaign(user.uid);
+    setCampaign({ active: false, queued: 0 });
   }
 
   async function handleSaveEdit(
@@ -177,9 +170,7 @@ export default function Dashboard({ user, onSignOut }: Props) {
     patch: Partial<Pick<EmailItem, 'subject' | 'body' | 'to'>>
   ) {
     await updateEmailContent(user.uid, id, patch);
-    // Optimistic update
-    const applyPatch = (e: EmailItem) =>
-      e.id === id ? { ...e, ...patch } : e;
+    const applyPatch = (e: EmailItem) => (e.id === id ? { ...e, ...patch } : e);
     setPendingEmails((prev) => prev.map(applyPatch));
     setAllEmails((prev) => prev.map(applyPatch));
     setEditingEmail(null);
@@ -288,7 +279,7 @@ export default function Dashboard({ user, onSignOut }: Props) {
           )}
         </div>
 
-        {/* Send All Pending button */}
+        {/* Send All / Stop button */}
         {campaign.active ? (
           <button
             onClick={handleStopCampaign}
@@ -317,20 +308,14 @@ export default function Dashboard({ user, onSignOut }: Props) {
         </button>
       </div>
 
-      {/* Progress bar */}
-      {campaign.active && campaign.total > 0 && (
-        <div className="px-6 py-2 bg-gray-900 border-b border-gray-800 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 bg-gray-700 rounded-full h-2">
-              <div
-                className="bg-green-500 h-2 rounded-full transition-all"
-                style={{ width: `${(campaign.sent / campaign.total) * 100}%` }}
-              />
-            </div>
-            <span className="text-xs text-gray-400 shrink-0">
-              {campaign.sent} / {campaign.total} sent
-            </span>
-          </div>
+      {/* Campaign running banner */}
+      {campaign.active && (
+        <div className="px-6 py-2 bg-blue-900/40 border-b border-blue-700 text-blue-300 text-sm shrink-0 flex items-center gap-2">
+          <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+          <span>
+            Campagna in esecuzione sul server — {campaign.queued} email in coda.
+            Puoi chiudere l&apos;app, l&apos;invio continuerà in background.
+          </span>
         </div>
       )}
 

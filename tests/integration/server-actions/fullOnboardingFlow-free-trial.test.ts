@@ -473,7 +473,7 @@ describe("Full Onboarding Flow - Free Trial", () => {
     });
   });
 
-  describe("startServer (fetch /run_module) behavior", () => {
+  describe("startServer (fetch /start_emails_generation) behavior", () => {
     it("fetch is not called by completeOnboarding in the free trial flow", async () => {
       // completeOnboarding does not directly invoke startServer;
       // the server is triggered externally (e.g., via a webhook or separate mechanism)

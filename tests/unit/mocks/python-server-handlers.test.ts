@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { server } from "../../../vitest.setup";
 import {
-  runModuleSuccess,
-  runModuleUserNotFound,
-  runModuleServerUnavailable,
-  runModuleMissingUserId,
+  startEmailsGenerationSuccess,
+  startEmailsGenerationUserNotFound,
+  startEmailsGenerationServerUnavailable,
+  startEmailsGenerationMissingUserId,
 } from "../../mocks/handlers/python-server";
 
-const SERVER_RUNNER_URL = "http://91.99.227.223:5000/run_module";
+const SERVER_RUNNER_URL = "http://91.99.227.223:5000/start_emails_generation";
 
 async function postRunModule(body: Record<string, unknown> = {}) {
   return fetch(SERVER_RUNNER_URL, {
@@ -18,9 +18,9 @@ async function postRunModule(body: Record<string, unknown> = {}) {
 }
 
 describe("Python Server MSW handlers", () => {
-  describe("POST /run_module - success", () => {
+  describe("POST /start_emails_generation - success", () => {
     beforeEach(() => {
-      server.use(runModuleSuccess);
+      server.use(startEmailsGenerationSuccess);
     });
 
     it("returns status 200", async () => {
@@ -41,9 +41,9 @@ describe("Python Server MSW handlers", () => {
     });
   });
 
-  describe("POST /run_module - user not found", () => {
+  describe("POST /start_emails_generation - user not found", () => {
     beforeEach(() => {
-      server.use(runModuleUserNotFound);
+      server.use(startEmailsGenerationUserNotFound);
     });
 
     it("returns status 404", async () => {
@@ -52,9 +52,9 @@ describe("Python Server MSW handlers", () => {
     });
   });
 
-  describe("POST /run_module - server unavailable", () => {
+  describe("POST /start_emails_generation - server unavailable", () => {
     beforeEach(() => {
-      server.use(runModuleServerUnavailable);
+      server.use(startEmailsGenerationServerUnavailable);
     });
 
     it("returns status 503", async () => {
@@ -63,9 +63,9 @@ describe("Python Server MSW handlers", () => {
     });
   });
 
-  describe("POST /run_module - missing user_id", () => {
+  describe("POST /start_emails_generation - missing user_id", () => {
     beforeEach(() => {
-      server.use(runModuleMissingUserId);
+      server.use(startEmailsGenerationMissingUserId);
     });
 
     it("returns status 400", async () => {

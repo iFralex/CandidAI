@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
 export interface EmailItem {
@@ -86,6 +86,31 @@ export async function updateEmailSent(uid: string, uniqueId: string, sent: boole
     : Timestamp.fromDate(new Date('1970-01-01'));
 
   await setDoc(ref, { [uniqueId]: { email_sent: value } }, { merge: true });
+}
+
+/**
+ * Sottoscrivi ai cambiamenti dei risultati email in Firestore.
+ * Il server aggiorna questo documento dopo ogni invio.
+ * Restituisce l'unsubscribe function.
+ */
+export function subscribeToResults(
+  uid: string,
+  onChange: (sentIds: Set<string>) => void,
+): () => void {
+  const ref = doc(db, `users/${uid}/data/results`);
+  return onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data() as Record<string, { email_sent?: Timestamp }>;
+    const sentIds = new Set(
+      Object.entries(data)
+        .filter(([, v]) => {
+          const ts = v.email_sent;
+          return ts instanceof Timestamp && ts.toMillis() !== EPOCH_MS;
+        })
+        .map(([k]) => k),
+    );
+    onChange(sentIds);
+  });
 }
 
 export async function updateEmailContent(
