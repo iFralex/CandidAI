@@ -1,5 +1,6 @@
 import os
 import re
+import threading
 from bs4 import BeautifulSoup
 from bs4 import Tag
 import undetected_chromedriver as uc
@@ -44,6 +45,7 @@ def loginLinkedin(email: str, password: str, cookies_file: str = 'cookies.json')
     driver.quit()
 
 driver = None  # istanza globale
+_driver_lock = threading.Lock()
 
 def init_driver(force_new=False):
     global driver
@@ -52,36 +54,29 @@ def init_driver(force_new=False):
     if force_new:
         driver_quit_safely()
 
-    # Se non esiste, crealo
-    if driver is None:
-        def ensure_xvfb():
-            # Controlla se Xvfb è già avviato
+    # Se non esiste, crealo (lock per evitare init concorrenti)
+    with _driver_lock:
+        if driver is None:
             running = os.popen("pgrep -f 'Xvfb :99'").read().strip()
-
-            if running:
-                print("Xvfb already running.")
-            else:
-                print("Starting Xvfb...")
+            if not running:
                 os.system("Xvfb :99 -ac -screen 0 1920x1080x24 &")
-        
-        ensure_xvfb()
-        os.environ["DISPLAY"] = ":99"
+            os.environ["DISPLAY"] = ":99"
 
-        logging.info("🟢 Creating new driver")
-        options = uc.ChromeOptions()
-        options.headless = False
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--disable-software-rasterizer")
-        options.add_argument("--use-gl=swiftshader")
-        options.add_argument("--disable-gpu-sandbox")
-        options.add_argument("--disable-blink-features=AutomationControlled")
+            logging.info("🟢 Creating new driver")
+            options = uc.ChromeOptions()
+            options.headless = False
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--disable-gpu")
+            options.add_argument("--disable-software-rasterizer")
+            options.add_argument("--use-gl=swiftshader")
+            options.add_argument("--disable-gpu-sandbox")
+            options.add_argument("--disable-blink-features=AutomationControlled")
 
-        logging.info("🚀 Launching undetected Chrome...")
-        driver = uc.Chrome(version_main=146, options=options)
-        logging.info("✅ Driver created")
-        return driver
+            logging.info("🚀 Launching undetected Chrome...")
+            driver = uc.Chrome(version_main=146, options=options)
+            logging.info("✅ Driver created")
+    return driver
 
     # Controllo se il driver è ancora vivo
     try:

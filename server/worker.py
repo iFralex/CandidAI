@@ -1,27 +1,26 @@
-import queue
-import threading
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
-_job_queue: queue.Queue = queue.Queue()
+# Due code indipendenti, ognuna con max 1 job alla volta.
+# send_emails e emails_generation girano in parallelo tra loro,
+# ma i job dello stesso tipo vengono serializzati.
+_executors: dict[str, ThreadPoolExecutor] = {
+    "send_emails": ThreadPoolExecutor(max_workers=1, thread_name_prefix="worker-send"),
+    "emails_generation": ThreadPoolExecutor(max_workers=1, thread_name_prefix="worker-gen"),
+}
 
 
-def _worker() -> None:
-    while True:
-        func, args = _job_queue.get()
+def enqueue(func, args: tuple = (), queue: str = "send_emails") -> None:
+    executor = _executors[queue]
+
+    def _run():
         try:
-            logger.info(f"Esecuzione job: {func.__name__}({args[0] if args else ''})")
+            logger.info(f"[{queue}] Esecuzione job: {func.__name__}({args[0] if args else ''})")
             func(*args)
-            logger.info(f"Job completato: {func.__name__}")
+            logger.info(f"[{queue}] Job completato: {func.__name__}")
         except Exception as e:
-            logger.error(f"Errore durante il job {func.__name__}: {e}")
-        finally:
-            _job_queue.task_done()
+            logger.error(f"[{queue}] Errore durante il job run: {e}")
 
-
-threading.Thread(target=_worker, daemon=True, name="candidai-worker").start()
-
-
-def enqueue(func, args: tuple = ()) -> None:
-    _job_queue.put((func, args))
+    executor.submit(_run)

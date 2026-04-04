@@ -7,7 +7,7 @@ import {
   startEmailsGenerationMissingUserId,
 } from "../../mocks/handlers/python-server";
 
-const SERVER_RUNNER_URL = "http://91.99.227.223:5000/start_emails_generation";
+const SERVER_RUNNER_URL = "http://91.99.227.223:80/start_emails_generation";
 
 async function postRunModule(body: Record<string, unknown> = {}) {
   return fetch(SERVER_RUNNER_URL, {

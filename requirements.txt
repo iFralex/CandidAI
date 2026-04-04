@@ -10,3 +10,4 @@ selenium==4.38.0
 sentence_transformers==5.1.2
 spacy==3.8.9
 undetected_chromedriver==3.5.5
+patchright

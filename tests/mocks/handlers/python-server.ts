@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 
-const SERVER_RUNNER_URL = "http://91.99.227.223:5000/start_emails_generation";
+const SERVER_RUNNER_URL = "http://91.99.227.223:80/start_emails_generation";
 
 // POST /start_emails_generation - success (status 200)
 export const startEmailsGenerationSuccess = http.post(SERVER_RUNNER_URL, () => {

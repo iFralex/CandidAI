@@ -14,7 +14,7 @@ def _run(user_id: str) -> None:
 
 def start(user_id: str):
     try:
-        enqueue(_run, args=(user_id,))
+        enqueue(_run, args=(user_id,), queue="emails_generation")
     except Exception as e:
         logger.error(f"Errore enqueue start_emails_generation: {e}")
         return jsonify({"error": "Errore interno del server"}), 500

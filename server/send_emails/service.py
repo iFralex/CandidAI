@@ -47,7 +47,7 @@ def send_emails(data: dict):
     campaign_module.cancelled_campaigns.discard(user_id)
 
     try:
-        enqueue(campaign_module.run, args=(user_id, provider, emails))
+        enqueue(campaign_module.run, args=(user_id, provider, emails), queue="send_emails")
     except Exception as e:
         logger.error(f"Errore enqueue send_emails: {e}")
         return jsonify({"error": "Errore interno del server"}), 500
