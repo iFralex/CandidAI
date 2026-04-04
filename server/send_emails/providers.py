@@ -139,10 +139,7 @@ async def send_gmail(page, email: dict, screenshot_dir: str | None = None) -> No
     use_paste = random.random() < 0.70
 
     await human_click(page, '[name="subjectbox"]', timeout=5000)
-    if use_paste:
-        await paste_text(page, email["subject"])
-    else:
-        await human_type(page, email["subject"])
+    await human_type(page, email["subject"])
     await shot("04_subject_filled")
     await page.keyboard.press("Tab")
     if use_paste:
@@ -153,8 +150,8 @@ async def send_gmail(page, email: dict, screenshot_dir: str | None = None) -> No
     if email.get("cvUrl"):
         try:
             tmp = await download_cv(email["cvUrl"])
-            filename = os.path.basename(tmp)
-            mime = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+            filename = "cv.pdf"
+            mime = "application/pdf"
             with open(tmp, "rb") as f:
                 b64 = base64.b64encode(f.read()).decode()
             await page.evaluate(f"""() => {{
