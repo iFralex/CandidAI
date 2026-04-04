@@ -18,7 +18,17 @@ if ! curl -fL --progress-bar -o "$ZIP_PATH" "$BROWSERS_URL"; then
 fi
 
 echo "[hooks] Estraggo browsers.zip..."
-if ! unzip -q "$ZIP_PATH" -d "$REPO_ROOT"; then
+if command -v unzip &>/dev/null; then
+  unzip -q "$ZIP_PATH" -d "$REPO_ROOT"
+elif command -v python3 &>/dev/null; then
+  python3 -c "import zipfile, sys; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" "$ZIP_PATH" "$REPO_ROOT"
+else
+  echo "[hooks] ERRORE: né unzip né python3 trovati." >&2
+  rm -f "$ZIP_PATH"
+  exit 1
+fi
+
+if [ $? -ne 0 ]; then
   echo "[hooks] ERRORE: estrazione fallita." >&2
   rm -f "$ZIP_PATH"
   exit 1
