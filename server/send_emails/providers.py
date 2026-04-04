@@ -117,7 +117,11 @@ async def send_gmail(page, email: dict, screenshot_dir: str | None = None) -> No
         logger.info(f"[screenshot] {path}")
 
     await shot("01_inbox")
-    await human_click(page, '[gh="cm"]', timeout=20000)
+    try:
+        await human_click(page, '[gh="cm"]', timeout=20000)
+    except Exception:
+        logger.info("[gmail] Pulsante compose non trovato, navigo a compose=new")
+        await page.goto("https://mail.google.com/mail/u/0/#inbox?compose=new", wait_until="domcontentloaded", timeout=30000)
     await page.wait_for_selector('[name="to"]', timeout=15000)
     await shot("02_compose_open")
     await human_type(page, email["to"])
@@ -150,7 +154,9 @@ async def send_gmail(page, email: dict, screenshot_dir: str | None = None) -> No
             await shot("06_cv_attached")
         except Exception as e:
             logger.warning(f"[gmail] CV allegato fallito: {e}")
-    await page.keyboard.press("Control+Enter")
+    await page.keyboard.press("Tab")
+    await page.wait_for_timeout(random.randint(100, 250))
+    await page.keyboard.press("Enter")
     await page.wait_for_timeout(random.randint(800, 1500))
     await shot("07_after_send")
 
