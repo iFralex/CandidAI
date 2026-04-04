@@ -63,3 +63,4 @@ desktop/electron/
 .py-packages/
 .cache_ggshield
 __pycache__/
+.claude/
