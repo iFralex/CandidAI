@@ -125,6 +125,7 @@ async def send_gmail(page, email: dict, screenshot_dir: str | None = None) -> No
     await page.wait_for_selector('[name="to"]', timeout=15000)
     await shot("02_compose_open")
     await human_type(page, email["to"])
+    await page.keyboard.press("Enter")
     await shot("03_to_filled")
     await human_click(page, '[name="subjectbox"]', timeout=5000)
     await human_type(page, email["subject"])
