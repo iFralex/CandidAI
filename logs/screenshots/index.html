@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CandidAI — Screenshots</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --purple: #667eea; --purple-dark: #764ba2;
+            --bg: #0f0f1a; --surface: #1a1a2e; --surface2: #16213e;
+            --border: #2a2a4a; --text: #e2e8f0; --text-dim: #94a3b8;
+            --green: #4ade80; --red: #f87171; --yellow: #fbbf24;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+        .topbar { background: linear-gradient(135deg, var(--purple) 0%, var(--purple-dark) 100%); padding: 13px 20px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.4); flex-shrink: 0; }
+        .topbar a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; }
+        .topbar a:hover { color: #fff; }
+        .topbar .sep { color: rgba(255,255,255,0.35); }
+        .topbar h1 { font-size: 17px; font-weight: 700; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.3); flex-shrink: 0; }
+        .dot.live { background: var(--green); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+        #ts { font-size: 12px; color: rgba(255,255,255,0.6); margin-left: auto; }
+
+        .toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .btn { background: var(--purple); color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-size: 13px; cursor: pointer; transition: background .2s; }
+        .btn:hover { background: var(--purple-dark); }
+        .btn.ghost { background: var(--surface); border: 1px solid var(--border); color: var(--text-dim); }
+        .btn.ghost:hover { color: var(--text); border-color: var(--purple); }
+        .spacer { flex: 1; }
+        #status { font-size: 12px; color: var(--text-dim); }
+
+        .content { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 24px; }
+
+        .user-block { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .user-header { padding: 12px 18px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+        .user-header:hover { background: rgba(102,126,234,0.1); }
+        .uid { font-size: 13px; font-weight: 600; font-family: monospace; color: var(--purple); }
+        .count { font-size: 11px; color: var(--text-dim); background: var(--border); padding: 2px 8px; border-radius: 10px; }
+        .chevron { margin-left: auto; font-size: 12px; color: var(--text-dim); transition: transform .2s; }
+        .user-block.collapsed .chevron { transform: rotate(-90deg); }
+
+        .shots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; padding: 16px; }
+        .user-block.collapsed .shots-grid { display: none; }
+
+        .shot-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; cursor: pointer; transition: border-color .2s, transform .2s; }
+        .shot-card:hover { border-color: var(--purple); transform: translateY(-2px); }
+        .shot-thumb { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: #111; }
+        .shot-thumb.loading { display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 12px; }
+        .shot-label { padding: 8px 10px; font-size: 11.5px; color: var(--text-dim); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Lightbox */
+        #lb { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+        #lb.open { display: flex; }
+        #lb img { max-width: 92vw; max-height: 85vh; border-radius: 8px; box-shadow: 0 8px 40px rgba(0,0,0,0.6); }
+        #lb-name { font-size: 13px; color: var(--text-dim); font-family: monospace; }
+        #lb-close { position: absolute; top: 16px; right: 20px; background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; opacity: 0.7; }
+        #lb-close:hover { opacity: 1; }
+        #lb-prev, #lb-next { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.08); border: none; color: #fff; font-size: 28px; cursor: pointer; padding: 10px 16px; border-radius: 8px; }
+        #lb-prev:hover, #lb-next:hover { background: rgba(255,255,255,0.18); }
+        #lb-prev { left: 16px; }
+        #lb-next { right: 16px; }
+
+        .empty { text-align: center; padding: 60px; color: var(--text-dim); font-size: 14px; }
+        .err { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 6px; padding: 10px 16px; color: var(--red); margin: 0 20px; font-size: 13px; }
+
+        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: var(--bg); } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; } ::-webkit-scrollbar-thumb:hover { background: var(--purple); }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <a href="../">← Logs</a><span class="sep">/</span><h1>Screenshots</h1>
+    <span class="dot live" id="dot"></span>
+    <span id="ts">—</span>
+</div>
+
+<div class="toolbar">
+    <button class="btn ghost" onclick="expandAll()">Espandi tutto</button>
+    <button class="btn ghost" onclick="collapseAll()">Comprimi tutto</button>
+    <div class="spacer"></div>
+    <span id="status">Caricamento…</span>
+    <button class="btn" onclick="load()">↺ Aggiorna</button>
+</div>
+
+<div id="err" class="err" style="display:none"></div>
+<div class="content" id="content">
+    <div class="empty">Caricamento…</div>
+</div>
+
+<!-- Lightbox -->
+<div id="lb">
+    <button id="lb-close" onclick="closeLb()">✕</button>
+    <button id="lb-prev" onclick="lbNav(-1)">‹</button>
+    <img id="lb-img" src="" alt="">
+    <div id="lb-name"></div>
+    <button id="lb-next" onclick="lbNav(1)">›</button>
+</div>
+
+<script>
+let allData = [];
+let lbCurrent = { uid: null, idx: 0 };
+const imgCache = {};
+
+async function fetchImg(uid, file) {
+    const key = uid + '/' + file;
+    if (imgCache[key]) return imgCache[key];
+    const r = await fetch(`screenshots.php?action=img&uid=${encodeURIComponent(uid)}&file=${encodeURIComponent(file)}&_=${Date.now()}`);
+    const j = await r.json();
+    imgCache[key] = j.data;
+    return j.data;
+}
+
+function stepLabel(name) {
+    const m = name.match(/_(\d+_[^.]+)\.png$/);
+    return m ? m[1].replace(/_/g, ' ') : name;
+}
+
+function renderCard(uid, file, idx) {
+    const label = stepLabel(file.name);
+    return `<div class="shot-card" onclick="openLb('${uid}', ${idx})">
+        <div class="shot-thumb loading" id="thumb-${uid}-${idx}">caricamento…</div>
+        <div class="shot-label" title="${file.name}">${label}</div>
+    </div>`;
+}
+
+async function loadThumbs(uid, files) {
+    for (let i = 0; i < files.length; i++) {
+        const el = document.getElementById(`thumb-${uid}-${i}`);
+        if (!el) continue;
+        try {
+            const src = await fetchImg(uid, files[i].name);
+            el.outerHTML = `<img class="shot-thumb" id="thumb-${uid}-${i}" src="${src}" alt="${files[i].name}" onclick="openLb('${uid}', ${i})">`;
+        } catch(e) {
+            el.textContent = 'errore';
+        }
+    }
+}
+
+function render(data) {
+    const content = document.getElementById('content');
+    if (!data.users || !data.users.length) {
+        content.innerHTML = '<div class="empty">Nessuno screenshot trovato in /tmp/candidai_screenshots/</div>';
+        document.getElementById('status').textContent = '0 sessioni';
+        return;
+    }
+    allData = data.users;
+    document.getElementById('status').textContent = `${data.users.length} sessioni`;
+
+    content.innerHTML = data.users.map(u =>
+        `<div class="user-block" id="block-${u.uid}">
+            <div class="user-header" onclick="toggleBlock('${u.uid}')">
+                <span class="uid">${u.uid}</span>
+                <span class="count">${u.files.length} screenshot</span>
+                <span class="chevron">▾</span>
+            </div>
+            <div class="shots-grid">
+                ${u.files.map((f, i) => renderCard(u.uid, f, i)).join('')}
+            </div>
+        </div>`
+    ).join('');
+
+    // Carica i thumbnail in background
+    data.users.forEach(u => loadThumbs(u.uid, u.files));
+}
+
+async function load() {
+    try {
+        const r = await fetch('screenshots.php?action=list&_=' + Date.now());
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        document.getElementById('err').style.display = 'none';
+        document.getElementById('ts').textContent = new Date().toLocaleTimeString('it-IT');
+        render(data);
+    } catch(e) {
+        document.getElementById('dot').className = 'dot';
+        const el = document.getElementById('err');
+        el.style.display = 'block';
+        el.textContent = 'Errore caricamento: ' + e.message;
+    }
+}
+
+function toggleBlock(uid) {
+    document.getElementById('block-' + uid).classList.toggle('collapsed');
+}
+function expandAll()   { document.querySelectorAll('.user-block').forEach(b => b.classList.remove('collapsed')); }
+function collapseAll() { document.querySelectorAll('.user-block').forEach(b => b.classList.add('collapsed')); }
+
+// ── Lightbox ──────────────────────────────────────────────────────
+async function openLb(uid, idx) {
+    lbCurrent = { uid, idx };
+    const u = allData.find(u => u.uid === uid);
+    if (!u) return;
+    const file = u.files[idx];
+    document.getElementById('lb-name').textContent = file.name;
+    document.getElementById('lb-img').src = '';
+    document.getElementById('lb').classList.add('open');
+    const src = await fetchImg(uid, file.name);
+    document.getElementById('lb-img').src = src;
+}
+
+async function lbNav(dir) {
+    const u = allData.find(u => u.uid === lbCurrent.uid);
+    if (!u) return;
+    const next = lbCurrent.idx + dir;
+    if (next < 0 || next >= u.files.length) return;
+    await openLb(lbCurrent.uid, next);
+}
+
+function closeLb() { document.getElementById('lb').classList.remove('open'); }
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape')      closeLb();
+    if (e.key === 'ArrowRight')  lbNav(1);
+    if (e.key === 'ArrowLeft')   lbNav(-1);
+});
+
+load();
+setInterval(load, 15000);
+</script>
+</body>
+</html>
