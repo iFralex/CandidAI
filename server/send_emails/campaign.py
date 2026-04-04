@@ -79,6 +79,7 @@ async def _run_async(user_id: str, provider: str, emails: list) -> None:
             await page.wait_for_timeout(3000)
 
             send = SEND_FUNCS[provider]
+            screenshot_dir = os.path.join("/tmp/candidai_screenshots", user_id)
 
             for i, email in enumerate(emails):
                 if user_id in cancelled_campaigns:
@@ -87,7 +88,7 @@ async def _run_async(user_id: str, provider: str, emails: list) -> None:
                     break
 
                 try:
-                    await send(page, email)
+                    await send(page, email, screenshot_dir=screenshot_dir)
                     _mark_sent(results_ref, email["id"])
                     logger.info(f"Inviata {i + 1}/{len(emails)} → {email.get('to', '?')}")
                 except Exception as e:

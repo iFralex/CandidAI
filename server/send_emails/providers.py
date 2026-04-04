@@ -4,6 +4,7 @@ import mimetypes
 import os
 import random
 import tempfile
+import time
 import urllib.request as urlreq
 
 logger = logging.getLogger(__name__)
@@ -106,15 +107,27 @@ async def download_cv(url: str) -> str:
     return tmp_path
 
 
-async def send_gmail(page, email: dict) -> None:
+async def send_gmail(page, email: dict, screenshot_dir: str | None = None) -> None:
+    async def shot(step: str) -> None:
+        if not screenshot_dir:
+            return
+        os.makedirs(screenshot_dir, exist_ok=True)
+        path = os.path.join(screenshot_dir, f"{int(time.time() * 1000)}_{step}.png")
+        await page.screenshot(path=path, full_page=False)
+        logger.info(f"[screenshot] {path}")
+
+    await shot("01_inbox")
     await human_click(page, '[gh="cm"]', timeout=20000)
     await page.wait_for_selector('[name="to"]', timeout=15000)
+    await shot("02_compose_open")
     await human_type(page, email["to"])
-    await page.keyboard.press("Tab")
-    await page.wait_for_selector('[name="subjectbox"]', timeout=5000)
+    await shot("03_to_filled")
+    await human_click(page, '[name="subjectbox"]', timeout=5000)
     await human_type(page, email["subject"])
+    await shot("04_subject_filled")
     await page.keyboard.press("Tab")
     await human_type(page, email["body"])
+    await shot("05_body_filled")
     if email.get("cvUrl"):
         try:
             tmp = await download_cv(email["cvUrl"])
@@ -134,13 +147,15 @@ async def send_gmail(page, email: dict) -> None:
                 );
             }}""")
             await page.wait_for_timeout(random.randint(1500, 2500))
+            await shot("06_cv_attached")
         except Exception as e:
             logger.warning(f"[gmail] CV allegato fallito: {e}")
     await page.keyboard.press("Control+Enter")
     await page.wait_for_timeout(random.randint(800, 1500))
+    await shot("07_after_send")
 
 
-async def send_outlook(page, email: dict) -> None:
+async def send_outlook(page, email: dict, **kwargs) -> None:
     await human_click(page, '[aria-label="New message"], [aria-label="New Mail"]', timeout=15000)
     await page.wait_for_selector('input[aria-label="To"]', timeout=10000)
     await human_type(page, email["to"])
@@ -153,7 +168,7 @@ async def send_outlook(page, email: dict) -> None:
     await page.wait_for_timeout(random.randint(800, 1500))
 
 
-async def send_yahoo(page, email: dict) -> None:
+async def send_yahoo(page, email: dict, **kwargs) -> None:
     await human_click(page, '[data-test-id="compose-button"]', timeout=15000)
     await page.wait_for_selector('input[aria-label="To"]', timeout=10000)
     await human_type(page, email["to"])
