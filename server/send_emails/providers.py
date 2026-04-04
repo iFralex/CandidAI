@@ -3,6 +3,7 @@ import logging
 import mimetypes
 import os
 import random
+import subprocess
 import tempfile
 import time
 import urllib.request as urlreq
@@ -96,6 +97,14 @@ async def human_click(page, selector: str, timeout: int = 10000) -> None:
         await locator.click()
 
 
+async def paste_text(page, text: str) -> None:
+    """Copia il testo negli appunti di sistema e incolla con Ctrl+V."""
+    subprocess.run(["xclip", "-selection", "clipboard"], input=text.encode(), check=True)
+    await page.wait_for_timeout(random.randint(80, 200))
+    await page.keyboard.press("Control+v")
+    await page.wait_for_timeout(random.randint(100, 250))
+
+
 async def download_cv(url: str) -> str:
     """Scarica un CV da URL in un file temporaneo, restituisce il path locale."""
     ext = url.split("?")[0].rsplit(".", 1)[-1]
@@ -127,11 +136,19 @@ async def send_gmail(page, email: dict, screenshot_dir: str | None = None) -> No
     await human_type(page, email["to"])
     await page.keyboard.press("Enter")
     await shot("03_to_filled")
+    use_paste = random.random() < 0.70
+
     await human_click(page, '[name="subjectbox"]', timeout=5000)
-    await human_type(page, email["subject"])
+    if use_paste:
+        await paste_text(page, email["subject"])
+    else:
+        await human_type(page, email["subject"])
     await shot("04_subject_filled")
     await page.keyboard.press("Tab")
-    await human_type(page, email["body"])
+    if use_paste:
+        await paste_text(page, email["body"])
+    else:
+        await human_type(page, email["body"])
     await shot("05_body_filled")
     if email.get("cvUrl"):
         try:
