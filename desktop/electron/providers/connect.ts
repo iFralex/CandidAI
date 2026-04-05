@@ -2,6 +2,7 @@ import { app } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import puppeteer from 'puppeteer-extra';
+import type { Page, Target } from 'puppeteer-core';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { findChromePath } from '../utils/chrome';
 import { SERVER_URL, SESSION_API_KEY } from '../config';
@@ -74,58 +75,81 @@ export async function connectProvider(
 
     await page.goto(loginUrl, { waitUntil: 'domcontentloaded' });
 
-    // Wait until the user is logged in.
-    // We ignore any matches for the first 3s to skip the automatic redirects
-    // that happen before the login page renders. After that, we detect login
-    // via both framenavigated events and a 1s polling interval (fallback for
-    // SPA/pushState navigations that may not emit framenavigated).
+    // Wait until any tab in the browser reaches the inbox URL.
+    // Login may open new tabs (e.g. Microsoft's marketing page → login popup),
+    // so we monitor all existing and future pages, not just the first one.
+    // We ignore matches for the first 3s to skip unauthenticated redirects.
     await new Promise<void>((resolve, reject) => {
       let ready = false;
       let resolved = false;
+      const pageListeners = new Map<Page, () => void>();
 
-      const done = (source: string) => {
+      const done = (source: string, url: string) => {
         if (resolved) return;
         resolved = true;
-        page.off('framenavigated', onNavigated);
+        for (const [p, fn] of pageListeners) p.off('framenavigated', fn);
+        pageListeners.clear();
+        browser.off('targetcreated', onTargetCreated);
         clearTimeout(timeoutId);
         clearTimeout(readyId);
         clearInterval(pollId);
-        console.log(`[connect] Login detected via ${source}, url=${page.url()}`);
+        console.log(`[connect] Login detected via ${source}, url=${url}`);
         resolve();
       };
 
-      const check = (source: string) => {
+      const checkPage = (p: Page, source: string) => {
         if (!ready) return;
         try {
-          const url = page.url();
-          console.log(`[connect] check(${source}) ready=${ready} url=${url}`);
-          if (url.includes(inboxIndicator)) done(source);
-        } catch (err) {
-          console.warn(`[connect] check(${source}) error:`, err);
-        }
+          const url = p.url();
+          if (url.includes(inboxIndicator)) done(source, url);
+        } catch { /* page may be closing */ }
       };
 
-      const onNavigated = () => check('framenavigated');
-      const pollId = setInterval(() => check('poll'), 1000);
+      const watchPage = (p: Page) => {
+        const fn = () => checkPage(p, `framenavigated(${p.url()})`);
+        pageListeners.set(p, fn);
+        p.on('framenavigated', fn);
+      };
+
+      const onTargetCreated = async (target: Target) => {
+        try {
+          const newPage = await target.page();
+          if (newPage) {
+            console.log(`[connect] New tab opened: ${newPage.url()}`);
+            watchPage(newPage);
+          }
+        } catch { /* ignore */ }
+      };
+
+      const pollId = setInterval(() => {
+        if (!ready) return;
+        browser.pages().then((pages: Page[]) => {
+          for (const p of pages) checkPage(p, 'poll');
+        }).catch(() => {});
+      }, 1000);
 
       const timeoutId = setTimeout(() => {
         if (resolved) return;
         resolved = true;
-        page.off('framenavigated', onNavigated);
-        clearTimeout(readyId);
+        for (const [p, fn] of pageListeners) p.off('framenavigated', fn);
+        pageListeners.clear();
+        browser.off('targetcreated', onTargetCreated);
         clearInterval(pollId);
-        console.error(`[connect] Login timeout, last url=${page.url()}`);
+        clearTimeout(readyId);
         reject(new Error('Login timeout'));
       }, 5 * 60 * 1000);
 
       const readyId = setTimeout(() => {
         ready = true;
-        console.log(`[connect] 3s elapsed, ready=true, current url=${page.url()}`);
-        check('readyId');
+        console.log(`[connect] 3s elapsed, starting checks`);
+        browser.pages().then((pages: Page[]) => {
+          for (const p of pages) checkPage(p, 'readyId');
+        }).catch(() => {});
       }, 3000);
 
-      page.on('framenavigated', onNavigated);
-      console.log(`[connect] Waiting for login, indicator="${inboxIndicator}"`);
+      browser.on('targetcreated', onTargetCreated);
+      watchPage(page);
+      console.log(`[connect] Waiting for login on any tab, indicator="${inboxIndicator}"`);
     });
 
     // Collect all cookies via CDP (catches cross-domain auth cookies)
