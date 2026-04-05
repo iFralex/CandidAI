@@ -59,7 +59,6 @@ dist/
 desktop/.vite/desktop/dist/
 desktop/dist-electron/
 desktop/dist-renderer/
-desktop/electron/
 .py-packages/
 .cache_ggshield
 __pycache__/
