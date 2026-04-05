@@ -72,6 +72,7 @@ async def _run_async(user_id: str, provider: str, emails: list) -> None:
                     return _toDataURL.apply(this, a);
                 }};
             """)
+            await context.grant_permissions(["clipboard-read", "clipboard-write"])
             await context.add_cookies(cookies)
 
             page = await context.new_page()

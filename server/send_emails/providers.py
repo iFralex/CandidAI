@@ -1,9 +1,7 @@
 import base64
 import logging
-import mimetypes
 import os
 import random
-import subprocess
 import tempfile
 import time
 import urllib.request as urlreq
@@ -98,8 +96,9 @@ async def human_click(page, selector: str, timeout: int = 10000) -> None:
 
 
 async def paste_text(page, text: str) -> None:
-    """Copia il testo negli appunti di sistema e incolla con Ctrl+V."""
-    subprocess.run(["xclip", "-selection", "clipboard"], input=text.encode(), check=True)
+    """Copia il testo nella clipboard del browser e incolla con Ctrl+V."""
+    escaped = text.replace('\\', '\\\\').replace('`', '\\`')
+    await page.evaluate(f"() => navigator.clipboard.writeText(`{escaped}`)")
     await page.wait_for_timeout(random.randint(80, 200))
     await page.keyboard.press("Control+v")
     await page.wait_for_timeout(random.randint(100, 250))
