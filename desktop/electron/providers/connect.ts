@@ -74,14 +74,20 @@ export async function connectProvider(
 
     await page.goto(loginUrl, { waitUntil: 'domcontentloaded' });
 
-    // Wait until the user is logged in by listening to every navigation event
+    // Wait until the user is logged in by listening to every navigation event.
+    // We delay the first check by 3s to skip the initial automatic redirects
+    // that happen before the login page even renders.
     await new Promise<void>((resolve, reject) => {
+      let ready = false;
+
       const cleanup = () => {
         page.off('framenavigated', onNavigated);
         clearTimeout(timeoutId);
+        clearTimeout(readyId);
       };
 
       const onNavigated = () => {
+        if (!ready) return;
         try {
           if (page.url().includes(inboxIndicator)) {
             cleanup();
@@ -98,13 +104,16 @@ export async function connectProvider(
         reject(new Error('Login timeout'));
       }, 5 * 60 * 1000);
 
-      page.on('framenavigated', onNavigated);
+      // Start listening only after 3s, once the initial redirects have settled
+      const readyId = setTimeout(() => {
+        ready = true;
+        if (page.url().includes(inboxIndicator)) {
+          cleanup();
+          resolve();
+        }
+      }, 3000);
 
-      // Check immediately in case already on the right page
-      if (page.url().includes(inboxIndicator)) {
-        cleanup();
-        resolve();
-      }
+      page.on('framenavigated', onNavigated);
     });
 
     // Collect all cookies via CDP (catches cross-domain auth cookies)
