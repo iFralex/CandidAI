@@ -72,7 +72,6 @@ async def _run_async(user_id: str, provider: str, emails: list) -> None:
                     return _toDataURL.apply(this, a);
                 }};
             """)
-            await context.grant_permissions(["clipboard-read", "clipboard-write"])
             await context.add_cookies(cookies)
 
             page = await context.new_page()
@@ -89,7 +88,7 @@ async def _run_async(user_id: str, provider: str, emails: list) -> None:
                     break
 
                 try:
-                    await send(page, email, screenshot_dir=screenshot_dir)
+                    await send(page, email, screenshot_dir=screenshot_dir, display=display)
                     _mark_sent(results_ref, email["id"])
                     logger.info(f"Inviata {i + 1}/{len(emails)} → {email.get('to', '?')}")
                 except Exception as e:

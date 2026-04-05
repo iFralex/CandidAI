@@ -2,6 +2,7 @@ import base64
 import logging
 import os
 import random
+import subprocess
 import tempfile
 import time
 import urllib.request as urlreq
@@ -95,10 +96,14 @@ async def human_click(page, selector: str, timeout: int = 10000) -> None:
         await locator.click()
 
 
-async def paste_text(page, text: str) -> None:
-    """Copia il testo nella clipboard del browser e incolla con Ctrl+V."""
-    escaped = text.replace('\\', '\\\\').replace('`', '\\`')
-    await page.evaluate(f"() => navigator.clipboard.writeText(`{escaped}`)")
+async def paste_text(page, text: str, display: str = ":0") -> None:
+    """Copia il testo negli appunti X11 del display corretto e incolla con Ctrl+V."""
+    subprocess.run(
+        ["xclip", "-selection", "clipboard"],
+        input=text.encode(),
+        env={**os.environ, "DISPLAY": display},
+        check=True,
+    )
     await page.wait_for_timeout(random.randint(80, 200))
     await page.keyboard.press("Control+v")
     await page.wait_for_timeout(random.randint(100, 250))
@@ -115,7 +120,7 @@ async def download_cv(url: str) -> str:
     return tmp_path
 
 
-async def send_gmail(page, email: dict, screenshot_dir: str | None = None) -> None:
+async def send_gmail(page, email: dict, screenshot_dir: str | None = None, display: str = ":0") -> None:
     async def shot(step: str) -> None:
         if not screenshot_dir:
             return
@@ -142,7 +147,7 @@ async def send_gmail(page, email: dict, screenshot_dir: str | None = None) -> No
     await shot("04_subject_filled")
     await page.keyboard.press("Tab")
     if use_paste:
-        await paste_text(page, email["body"])
+        await paste_text(page, email["body"], display=display)
     else:
         await human_type(page, email["body"])
     await shot("05_body_filled")
