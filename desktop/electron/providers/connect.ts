@@ -74,43 +74,49 @@ export async function connectProvider(
 
     await page.goto(loginUrl, { waitUntil: 'domcontentloaded' });
 
-    // Wait until the user is logged in by listening to every navigation event.
-    // We delay the first check by 3s to skip the initial automatic redirects
-    // that happen before the login page even renders.
+    // Wait until the user is logged in.
+    // We ignore any matches for the first 3s to skip the automatic redirects
+    // that happen before the login page renders. After that, we detect login
+    // via both framenavigated events and a 1s polling interval (fallback for
+    // SPA/pushState navigations that may not emit framenavigated).
     await new Promise<void>((resolve, reject) => {
       let ready = false;
+      let resolved = false;
 
-      const cleanup = () => {
+      const done = () => {
+        if (resolved) return;
+        resolved = true;
         page.off('framenavigated', onNavigated);
         clearTimeout(timeoutId);
         clearTimeout(readyId);
+        clearInterval(pollId);
+        resolve();
       };
 
-      const onNavigated = () => {
+      const check = () => {
         if (!ready) return;
         try {
-          if (page.url().includes(inboxIndicator)) {
-            cleanup();
-            resolve();
-          }
-        } catch (err) {
-          cleanup();
-          reject(err);
+          if (page.url().includes(inboxIndicator)) done();
+        } catch {
+          // page may be closing; ignore
         }
       };
 
+      const onNavigated = () => check();
+      const pollId = setInterval(check, 1000);
+
       const timeoutId = setTimeout(() => {
-        cleanup();
+        if (resolved) return;
+        resolved = true;
+        page.off('framenavigated', onNavigated);
+        clearTimeout(readyId);
+        clearInterval(pollId);
         reject(new Error('Login timeout'));
       }, 5 * 60 * 1000);
 
-      // Start listening only after 3s, once the initial redirects have settled
       const readyId = setTimeout(() => {
         ready = true;
-        if (page.url().includes(inboxIndicator)) {
-          cleanup();
-          resolve();
-        }
+        check();
       }, 3000);
 
       page.on('framenavigated', onNavigated);
