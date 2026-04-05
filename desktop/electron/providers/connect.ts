@@ -83,27 +83,30 @@ export async function connectProvider(
       let ready = false;
       let resolved = false;
 
-      const done = () => {
+      const done = (source: string) => {
         if (resolved) return;
         resolved = true;
         page.off('framenavigated', onNavigated);
         clearTimeout(timeoutId);
         clearTimeout(readyId);
         clearInterval(pollId);
+        console.log(`[connect] Login detected via ${source}, url=${page.url()}`);
         resolve();
       };
 
-      const check = () => {
+      const check = (source: string) => {
         if (!ready) return;
         try {
-          if (page.url().includes(inboxIndicator)) done();
-        } catch {
-          // page may be closing; ignore
+          const url = page.url();
+          console.log(`[connect] check(${source}) ready=${ready} url=${url}`);
+          if (url.includes(inboxIndicator)) done(source);
+        } catch (err) {
+          console.warn(`[connect] check(${source}) error:`, err);
         }
       };
 
-      const onNavigated = () => check();
-      const pollId = setInterval(check, 1000);
+      const onNavigated = () => check('framenavigated');
+      const pollId = setInterval(() => check('poll'), 1000);
 
       const timeoutId = setTimeout(() => {
         if (resolved) return;
@@ -111,15 +114,18 @@ export async function connectProvider(
         page.off('framenavigated', onNavigated);
         clearTimeout(readyId);
         clearInterval(pollId);
+        console.error(`[connect] Login timeout, last url=${page.url()}`);
         reject(new Error('Login timeout'));
       }, 5 * 60 * 1000);
 
       const readyId = setTimeout(() => {
         ready = true;
-        check();
+        console.log(`[connect] 3s elapsed, ready=true, current url=${page.url()}`);
+        check('readyId');
       }, 3000);
 
       page.on('framenavigated', onNavigated);
+      console.log(`[connect] Waiting for login, indicator="${inboxIndicator}"`);
     });
 
     // Collect all cookies via CDP (catches cross-domain auth cookies)
