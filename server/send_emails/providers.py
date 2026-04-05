@@ -180,17 +180,91 @@ async def send_gmail(page, email: dict, screenshot_dir: str | None = None, displ
     await shot("07_after_send")
 
 
-async def send_outlook(page, email: dict, **kwargs) -> None:
-    await human_click(page, '[aria-label="New message"], [aria-label="New Mail"]', timeout=15000)
-    await page.wait_for_selector('input[aria-label="To"]', timeout=10000)
+async def _outlook_dismiss_dialogs(page) -> None:
+    """Aspetta 25-45s, rimuove dal DOM il padre di ogni role=dialog presente, poi ricontrolla una volta."""
+    await page.wait_for_timeout(random.randint(25000, 45000))
+    try:
+        dialog = page.locator('[role="dialog"]').first
+        await dialog.wait_for(state="visible", timeout=2000)
+        await dialog.evaluate("el => el.parentElement.remove()")
+        # Secondo controllo dopo un'altra attesa
+        await page.wait_for_timeout(random.randint(25000, 45000))
+        try:
+            dialog2 = page.locator('[role="dialog"]').first
+            await dialog2.wait_for(state="visible", timeout=2000)
+            await dialog2.evaluate("el => el.parentElement.remove()")
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
+async def send_outlook(page, email: dict, screenshot_dir: str | None = None, display: str = ":0") -> None:
+    async def shot(step: str) -> None:
+        if not screenshot_dir:
+            return
+        os.makedirs(screenshot_dir, exist_ok=True)
+        path = os.path.join(screenshot_dir, f"{int(time.time() * 1000)}_{step}.png")
+        await page.screenshot(path=path, full_page=False)
+        logger.info(f"[screenshot] {path}")
+
+    await _outlook_dismiss_dialogs(page)
+    await shot("01_inbox")
+
+    # Pausa prima di premere N come farebbe un utente che legge la inbox
+    await page.wait_for_timeout(random.randint(600, 1800))
+    await page.keyboard.press("n")
+    await _outlook_dismiss_dialogs(page)
+
+    await page.wait_for_selector('input[aria-label="To"]', timeout=15000)
+    await shot("02_compose_open")
+
     await human_type(page, email["to"])
-    await page.keyboard.press("Tab")
-    await page.wait_for_selector('input[aria-label="Subject"]', timeout=5000)
+    await page.keyboard.press("Enter")
+    await shot("03_to_filled")
+
+    await human_click(page, 'input[aria-label="Subject"]', timeout=5000)
     await human_type(page, email["subject"])
-    await page.keyboard.press("Tab")
-    await human_type(page, email["body"])
-    await human_click(page, '[aria-label="Send"]', timeout=5000)
+    await shot("04_subject_filled")
+
+    await human_click(page, 'div[aria-label*="ody"][role="textbox"], div[role="textbox"]:not([aria-label*="To"]):not([aria-label*="Subject"])', timeout=5000)
+
+    use_paste = random.random() < 0.70
+    if use_paste:
+        await paste_text(page, email["body"], display=display)
+    else:
+        await human_type(page, email["body"])
+    await shot("05_body_filled")
+
+    if email.get("cvUrl"):
+        try:
+            tmp = await download_cv(email["cvUrl"])
+            filename = "cv.pdf"
+            mime = "application/pdf"
+            with open(tmp, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode()
+            await page.evaluate(f"""() => {{
+                const raw = atob('{b64}');
+                const bytes = new Uint8Array(raw.length);
+                for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+                const file = new File([bytes], '{filename}', {{ type: '{mime}' }});
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                document.activeElement.dispatchEvent(
+                    new ClipboardEvent('paste', {{ clipboardData: dt, bubbles: true }})
+                );
+            }}""")
+            await page.wait_for_timeout(random.randint(1500, 2500))
+            await shot("06_cv_attached")
+        except Exception as e:
+            logger.warning(f"[outlook] CV allegato fallito: {e}")
+
+    await page.wait_for_timeout(random.randint(100, 250))
+    await page.keyboard.press("Control+Enter")
     await page.wait_for_timeout(random.randint(800, 1500))
+    await shot("07_after_send")
+
+    await _outlook_dismiss_dialogs(page)
 
 
 async def send_yahoo(page, email: dict, **kwargs) -> None:
