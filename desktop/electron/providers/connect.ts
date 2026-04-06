@@ -196,6 +196,9 @@ export async function connectProvider(
 }
 
 export function getProviderStatus(provider: string): boolean {
+  if (provider === 'resend') {
+    return fs.existsSync(path.join(app.getPath('userData'), 'resend_connected'));
+  }
   const sessionDir = getSessionDir(provider);
   if (!fs.existsSync(sessionDir)) return false;
   const cookiesFile = path.join(sessionDir, 'Default', 'Cookies');
@@ -204,8 +207,39 @@ export function getProviderStatus(provider: string): boolean {
 }
 
 export async function disconnectProvider(provider: string): Promise<void> {
+  if (provider === 'resend') {
+    const marker = path.join(app.getPath('userData'), 'resend_connected');
+    if (fs.existsSync(marker)) fs.rmSync(marker);
+    return;
+  }
   const sessionDir = getSessionDir(provider);
   if (fs.existsSync(sessionDir)) {
     fs.rmSync(sessionDir, { recursive: true });
+  }
+}
+
+export async function connectResend(
+  userId: string,
+  apiKey: string,
+  fromEmail: string,
+  senderName: string,
+): Promise<'connected' | 'error'> {
+  try {
+    const res = await fetch(`${SERVER_URL}/save_resend_config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': SESSION_API_KEY },
+      body: JSON.stringify({ user_id: userId, api_key: apiKey, from_email: fromEmail, sender_name: senderName }),
+    });
+    if (!res.ok) {
+      console.error('[connect] save_resend_config failed:', res.status);
+      return 'error';
+    }
+    // Mark as connected locally
+    fs.writeFileSync(path.join(app.getPath('userData'), 'resend_connected'), '');
+    console.log('[connect] Resend configurato con successo');
+    return 'connected';
+  } catch (err) {
+    console.error('[connect] connectResend failed:', err);
+    return 'error';
   }
 }

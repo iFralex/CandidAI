@@ -43,6 +43,14 @@ def send_emails():
     return send_emails_service.send_emails(data)
 
 
+@app.route("/save_resend_config", methods=["POST"])
+def save_resend_config():
+    if not _api_key_valid():
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json or {}
+    return send_emails_service.save_resend_config(data)
+
+
 @app.route("/stop_campaign", methods=["POST"])
 def stop_campaign():
     if not _api_key_valid():

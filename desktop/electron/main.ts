@@ -2,7 +2,7 @@ import './loadEnv';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { connectProvider, disconnectProvider, getProviderStatus } from './providers/connect';
+import { connectProvider, connectResend, disconnectProvider, getProviderStatus } from './providers/connect';
 import { startRemoteCampaign, stopRemoteCampaign } from './engine/sender';
 import type { EmailItem } from './engine/sender';
 
@@ -115,10 +115,21 @@ ipcMain.handle('open-external-login', async () => {
   await shell.openExternal('https://candidai.tech/desktop-login');
 });
 
+ipcMain.handle('open-external', async (_event, url: string) => {
+  await shell.openExternal(url);
+});
+
 ipcMain.handle(
   'connect-provider',
-  async (_event, payload: { provider: 'gmail' | 'outlook' | 'yahoo'; userId: string }) => {
+  async (_event, payload: { provider: 'gmail' | 'outlook'; userId: string }) => {
     return connectProvider(payload.provider, payload.userId);
+  },
+);
+
+ipcMain.handle(
+  'connect-resend',
+  async (_event, payload: { userId: string; apiKey: string; fromEmail: string; senderName: string }) => {
+    return connectResend(payload.userId, payload.apiKey, payload.fromEmail, payload.senderName);
   },
 );
 

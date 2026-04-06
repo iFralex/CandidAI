@@ -18,8 +18,13 @@ cancelled_campaigns: Set[str] = set()
 
 
 def run(user_id: str, provider: str, emails: list) -> None:
-    """Entry point sincrono per il worker thread."""
+    """Entry point sincrono per il worker thread (provider browser-based)."""
     asyncio.run(_run_async(user_id, provider, emails))
+
+
+def run_resend(user_id: str, emails: list) -> None:
+    """Entry point sincrono per campagne Resend (no browser)."""
+    asyncio.run(_run_resend_async(user_id, emails))
 
 
 async def _run_async(user_id: str, provider: str, emails: list) -> None:
@@ -133,6 +138,48 @@ def _get_results_ref(user_id: str):
     except Exception as e:
         logger.warning(f"Firebase non disponibile: {e}")
         return None
+
+
+async def _run_resend_async(user_id: str, emails: list) -> None:
+    import requests as req
+
+    config = session_module.load_resend(user_id)
+    api_key = config["api_key"]
+    from_field = f"{config['sender_name']} <{config['from_email']}>"
+    results_ref = _get_results_ref(user_id)
+
+    for i, email in enumerate(emails):
+        if user_id in cancelled_campaigns:
+            logger.info(f"[resend] Campagna cancellata per user {user_id}")
+            cancelled_campaigns.discard(user_id)
+            break
+
+        try:
+            response = await asyncio.to_thread(
+                req.post,
+                "https://api.resend.com/emails",
+                json={
+                    "from": from_field,
+                    "to": [email["to"]],
+                    "subject": email["subject"],
+                    "text": email["body"],
+                },
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                timeout=15,
+            )
+            if not response.ok:
+                raise Exception(f"Resend API {response.status_code}: {response.text}")
+            _mark_sent(results_ref, email["id"])
+            logger.info(f"[resend] Inviata {i + 1}/{len(emails)} → {email.get('to', '?')}")
+        except Exception as e:
+            logger.error(f"[resend] Errore invio a {email.get('to', '?')}: {e}")
+            break
+
+        if i < len(emails) - 1:
+            logger.info("[resend] Attesa 30s prima del prossimo invio...")
+            await asyncio.sleep(30)
+
+    logger.info(f"[resend] Campagna completata per user {user_id}")
 
 
 def _mark_sent(results_ref, email_id: str) -> None:

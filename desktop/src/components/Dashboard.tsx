@@ -17,6 +17,13 @@ import {
   Send,
   WifiOff,
   Wifi,
+  X,
+  ChevronRight,
+  ChevronLeft,
+  ExternalLink,
+  Key,
+  Mail,
+  User as UserIcon,
 } from 'lucide-react';
 
 interface Props {
@@ -24,7 +31,7 @@ interface Props {
   onSignOut: () => void;
 }
 
-type Provider = 'gmail' | 'outlook';
+type Provider = 'gmail' | 'outlook' | 'resend';
 type ProviderStatus = 'connected' | 'disconnected' | 'connecting';
 
 export default function Dashboard({ user, onSignOut }: Props) {
@@ -38,7 +45,13 @@ export default function Dashboard({ user, onSignOut }: Props) {
   const [providerStatuses, setProviderStatuses] = useState<Record<Provider, ProviderStatus>>({
     gmail: 'disconnected',
     outlook: 'disconnected',
+    resend: 'disconnected',
   });
+
+  // Resend wizard state
+  const [resendWizardOpen, setResendWizardOpen] = useState(false);
+  const [resendStep, setResendStep] = useState(0);
+  const [resendForm, setResendForm] = useState({ apiKey: '', fromEmail: '', senderName: '' });
 
   const [campaign, setCampaign] = useState<{ active: boolean; queued: number }>({
     active: false,
@@ -69,11 +82,12 @@ export default function Dashboard({ user, onSignOut }: Props) {
   const checkProviderStatuses = useCallback(async () => {
     const api = window.electronAPI;
     if (!api) return;
-    const providers: Provider[] = ['gmail', 'outlook'];
+    const providers: Provider[] = ['gmail', 'outlook', 'resend'];
     const results = await Promise.all(providers.map((p) => api.getProviderStatus(p)));
     setProviderStatuses({
       gmail: results[0] ? 'connected' : 'disconnected',
       outlook: results[1] ? 'connected' : 'disconnected',
+      resend: results[2] ? 'connected' : 'disconnected',
     });
   }, []);
 
@@ -116,6 +130,12 @@ export default function Dashboard({ user, onSignOut }: Props) {
   }, []);
 
   async function handleConnect() {
+    if (selectedProvider === 'resend') {
+      setResendStep(0);
+      setResendForm({ apiKey: '', fromEmail: '', senderName: '' });
+      setResendWizardOpen(true);
+      return;
+    }
     const api = window.electronAPI;
     if (!api) return;
     setConnectError(null);
@@ -128,6 +148,25 @@ export default function Dashboard({ user, onSignOut }: Props) {
       setConnectError(
         `Could not connect ${selectedProvider}. Make sure Google Chrome is installed and try again.`
       );
+    }
+  }
+
+  async function handleConnectResend() {
+    const api = window.electronAPI;
+    if (!api) return;
+    setResendStep(4); // connecting…
+    const result = await api.connectResend(
+      user.uid,
+      resendForm.apiKey,
+      resendForm.fromEmail,
+      resendForm.senderName,
+    );
+    if (result === 'connected') {
+      setProviderStatuses((prev) => ({ ...prev, resend: 'connected' }));
+      setResendWizardOpen(false);
+    } else {
+      setConnectError('Impossibile salvare la configurazione Resend. Verifica i dati e riprova.');
+      setResendWizardOpen(false);
     }
   }
 
@@ -237,6 +276,7 @@ export default function Dashboard({ user, onSignOut }: Props) {
           >
             <option value="gmail">Gmail</option>
             <option value="outlook">Outlook</option>
+            <option value="resend">Custom Domain</option>
           </select>
 
           {/* Status dot */}
@@ -459,6 +499,169 @@ export default function Dashboard({ user, onSignOut }: Props) {
           </table>
         )}
       </div>
+
+      {/* Resend onboarding wizard */}
+      {resendWizardOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg mx-4 shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+              <span className="font-semibold text-white">Set up Custom Domain</span>
+              <button onClick={() => setResendWizardOpen(false)} className="text-gray-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Step indicators */}
+            <div className="flex gap-1.5 px-6 pt-4">
+              {[0, 1, 2, 3].map((s) => (
+                <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${s <= resendStep ? 'bg-blue-500' : 'bg-gray-700'}`} />
+              ))}
+            </div>
+
+            <div className="px-6 py-6 space-y-4">
+              {resendStep === 0 && (
+                <>
+                  <h2 className="text-lg font-semibold">1. Create a Resend account</h2>
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    CandidAI uses <strong>Resend</strong> to send emails from your custom domain.
+                    Resend is a professional email delivery service — the free plan includes 3,000 emails/month.
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    If you don&apos;t have an account yet, sign up at <strong>resend.com</strong>.
+                  </p>
+                  <button
+                    onClick={() => window.electronAPI.openExternal('https://resend.com/signup')}
+                    className="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 text-sm"
+                  >
+                    Open resend.com <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
+
+              {resendStep === 1 && (
+                <>
+                  <h2 className="text-lg font-semibold">2. Add your domain</h2>
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    In the Resend dashboard, go to <strong>Domains</strong> and click <strong>Add Domain</strong>.
+                    Enter your domain (e.g. <code className="bg-gray-800 px-1 rounded">mysite.com</code>) and follow the instructions to add the DNS records provided by Resend to your domain registrar.
+                  </p>
+                  <p className="text-gray-400 text-sm">
+                    DNS verification may take a few minutes. Wait until the status shows <strong>Verified</strong>.
+                  </p>
+                  <div className="bg-gray-800 rounded-lg p-3 text-xs text-gray-400 font-mono space-y-1">
+                    <div>Resend Dashboard → Domains → Add Domain</div>
+                    <div>→ Add TXT/MX records to your DNS provider</div>
+                    <div>→ Wait for status: Verified ✓</div>
+                  </div>
+                </>
+              )}
+
+              {resendStep === 2 && (
+                <>
+                  <h2 className="text-lg font-semibold">3. Get your API Key</h2>
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    In the Resend dashboard, go to <strong>API Keys</strong> and click <strong>Create API Key</strong>.
+                    Give it a name (e.g. <em>CandidAI</em>), select <strong>Sending access</strong> permission and your verified domain.
+                  </p>
+                  <div className="bg-gray-800 rounded-lg p-3 text-xs text-gray-400 font-mono space-y-1">
+                    <div>Resend Dashboard → API Keys → Create API Key</div>
+                    <div>→ Permission: Sending access</div>
+                    <div>→ Domain: your verified domain</div>
+                    <div>→ Copy the key (shown only once)</div>
+                  </div>
+                  <button
+                    onClick={() => window.electronAPI.openExternal('https://resend.com/api-keys')}
+                    className="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 text-sm"
+                  >
+                    Open API Keys <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
+
+              {resendStep === 3 && (
+                <>
+                  <h2 className="text-lg font-semibold">4. Enter your details</h2>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
+                        <Key className="w-3 h-3" /> Resend API Key
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="re_xxxxxxxxxxxxxxxxxxxx"
+                        value={resendForm.apiKey}
+                        onChange={(e) => setResendForm((f) => ({ ...f, apiKey: e.target.value }))}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
+                        <Mail className="w-3 h-3" /> Sender email address
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="jobs@mysite.com"
+                        value={resendForm.fromEmail}
+                        onChange={(e) => setResendForm((f) => ({ ...f, fromEmail: e.target.value }))}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1 flex items-center gap-1">
+                        <UserIcon className="w-3 h-3" /> Display name (shown to recipient)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="John Smith"
+                        value={resendForm.senderName}
+                        onChange={(e) => setResendForm((f) => ({ ...f, senderName: e.target.value }))}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {resendStep === 4 && (
+                <div className="flex flex-col items-center gap-3 py-4">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+                  <p className="text-gray-300 text-sm">Saving configuration…</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer navigation */}
+            {resendStep < 4 && (
+              <div className="flex items-center justify-between px-6 pb-5">
+                <button
+                  onClick={() => resendStep > 0 ? setResendStep((s) => s - 1) : setResendWizardOpen(false)}
+                  className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  {resendStep === 0 ? 'Cancel' : 'Back'}
+                </button>
+                {resendStep < 3 ? (
+                  <button
+                    onClick={() => setResendStep((s) => s + 1)}
+                    className="flex items-center gap-1 text-sm px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                  >
+                    Next <ChevronRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleConnectResend}
+                    disabled={!resendForm.apiKey || !resendForm.fromEmail || !resendForm.senderName}
+                    className="flex items-center gap-1 text-sm px-4 py-2 rounded-md bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
+                  >
+                    <Wifi className="w-3.5 h-3.5" /> Connect
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Edit modal */}
       {editingEmail && (

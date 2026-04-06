@@ -26,6 +26,20 @@ def save_session(data: dict):
     return jsonify({"status": "saved"}), 200
 
 
+def save_resend_config(data: dict):
+    for field in ("user_id", "api_key", "from_email", "sender_name"):
+        if field not in data:
+            return jsonify({"error": f"{field} mancante"}), 400
+
+    session_module.save_resend(
+        user_id=str(data["user_id"]),
+        api_key=str(data["api_key"]),
+        from_email=str(data["from_email"]),
+        sender_name=str(data["sender_name"]),
+    )
+    return jsonify({"status": "saved"}), 200
+
+
 def send_emails(data: dict):
     for field in ("user_id", "provider", "emails"):
         if field not in data:
@@ -41,13 +55,17 @@ def send_emails(data: dict):
     if not isinstance(emails, list) or not emails:
         return jsonify({"error": "Lista email non valida"}), 400
 
-    if not session_module.exists(user_id, provider):
-        return jsonify({"error": "Sessione non trovata, riconnetti il provider"}), 404
-
     campaign_module.cancelled_campaigns.discard(user_id)
 
     try:
-        enqueue(campaign_module.run, args=(user_id, provider, emails), queue="send_emails")
+        if provider == "resend":
+            if not session_module.resend_exists(user_id):
+                return jsonify({"error": "Configurazione Resend non trovata, riconnetti il provider"}), 404
+            enqueue(campaign_module.run_resend, args=(user_id, emails), queue="send_emails")
+        else:
+            if not session_module.exists(user_id, provider):
+                return jsonify({"error": "Sessione non trovata, riconnetti il provider"}), 404
+            enqueue(campaign_module.run, args=(user_id, provider, emails), queue="send_emails")
     except Exception as e:
         logger.error(f"Errore enqueue send_emails: {e}")
         return jsonify({"error": "Errore interno del server"}), 500
