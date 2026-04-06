@@ -216,9 +216,8 @@ async def send_outlook(page, email: dict, screenshot_dir: str | None = None, dis
     await page.keyboard.press("n")
     await _outlook_dismiss_dialogs(page)
 
-    await page.wait_for_selector('input[aria-label="To"]', timeout=15000)
+    # Dopo N il cursore è già sul campo To — si digita direttamente
     await shot("02_compose_open")
-
     await human_type(page, email["to"])
     await page.keyboard.press("Enter")
     await shot("03_to_filled")
