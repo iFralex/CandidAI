@@ -222,11 +222,11 @@ async def send_outlook(page, email: dict, screenshot_dir: str | None = None, dis
     await page.keyboard.press("Enter")
     await shot("03_to_filled")
 
-    await human_click(page, 'input[aria-label="Subject"]', timeout=5000)
+    await page.keyboard.press("Tab")
     await human_type(page, email["subject"])
     await shot("04_subject_filled")
 
-    await human_click(page, 'div[aria-label*="ody"][role="textbox"], div[role="textbox"]:not([aria-label*="To"]):not([aria-label*="Subject"])', timeout=5000)
+    await page.keyboard.press("Tab")
 
     use_paste = random.random() < 0.70
     if use_paste:
