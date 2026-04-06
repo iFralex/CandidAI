@@ -24,7 +24,7 @@ interface Props {
   onSignOut: () => void;
 }
 
-type Provider = 'gmail' | 'outlook' | 'yahoo';
+type Provider = 'gmail' | 'outlook';
 type ProviderStatus = 'connected' | 'disconnected' | 'connecting';
 
 export default function Dashboard({ user, onSignOut }: Props) {
@@ -38,7 +38,6 @@ export default function Dashboard({ user, onSignOut }: Props) {
   const [providerStatuses, setProviderStatuses] = useState<Record<Provider, ProviderStatus>>({
     gmail: 'disconnected',
     outlook: 'disconnected',
-    yahoo: 'disconnected',
   });
 
   const [campaign, setCampaign] = useState<{ active: boolean; queued: number }>({
@@ -70,12 +69,11 @@ export default function Dashboard({ user, onSignOut }: Props) {
   const checkProviderStatuses = useCallback(async () => {
     const api = window.electronAPI;
     if (!api) return;
-    const providers: Provider[] = ['gmail', 'outlook', 'yahoo'];
+    const providers: Provider[] = ['gmail', 'outlook'];
     const results = await Promise.all(providers.map((p) => api.getProviderStatus(p)));
     setProviderStatuses({
       gmail: results[0] ? 'connected' : 'disconnected',
       outlook: results[1] ? 'connected' : 'disconnected',
-      yahoo: results[2] ? 'connected' : 'disconnected',
     });
   }, []);
 
@@ -239,7 +237,6 @@ export default function Dashboard({ user, onSignOut }: Props) {
           >
             <option value="gmail">Gmail</option>
             <option value="outlook">Outlook</option>
-            <option value="yahoo">Yahoo</option>
           </select>
 
           {/* Status dot */}
