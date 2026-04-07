@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react";
+import { track } from "@/lib/analytics";
 import { Button } from "./ui/button";
 import { AlertCircle, ArrowDown, ArrowDown01, ArrowRight, Badge, BarChart3, Building2, Calendar, Check, CheckCircle, ChevronDown, Crown, ExternalLink, Globe, Loader, Loader2, Mail, MapPin, Plus, Puzzle, RefreshCw, RotateCcw, Save, Send, Timer, TrendingUp, Users, X } from "lucide-react";
 import { Card } from "./ui/card";
@@ -332,6 +333,7 @@ export const ConfirmCompanies = ({ allDetails, userId, queries, defaultInstructi
     }
 
     const handleSelectConfirm = (companyId, newName, linkedin_url, domain) => {
+        track({ name: "company_confirm", params: { company_name: newName ?? companyId } });
         setSelections(prev => ({
             ...prev,
             [companyId]: {
@@ -347,6 +349,7 @@ export const ConfirmCompanies = ({ allDetails, userId, queries, defaultInstructi
 
     const handleSelectWrong = (companyId) => {
         const company = allDetails.find(item => item.companyId === companyId);
+        track({ name: "company_reject", params: { company_name: company?.data?.company_info?.display_name ?? company?.data?.company_info?.name ?? companyId } });
         setEditingCompany(companyId);
         setNewCompanyData({
             name: company?.data?.company?.name || '',
@@ -983,13 +986,17 @@ export function AddMoreCompaniesDialog() {
         if (!result.success) {
             setError(result.error ?? "An error occurred");
         } else {
+            track({ name: "add_companies_submit", params: { count: companies.length } });
             setOpen(false);
             setSelectedCompanies([]);
         }
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => {
+            if (v) track({ name: "add_companies_dialog_open", params: {} });
+            setOpen(v);
+        }}>
             <DialogTrigger asChild>
                 <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
                     Add More Companies

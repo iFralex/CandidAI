@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import { AnimatedResults, AddMoreCompaniesDialog, ConfirmCompanies } from "@/components/dashboard";
+import { DashboardTracker } from "@/components/DashboardTracker";
 import { calculateProgress } from "@/components/detailsServer";
 import Link from "next/link";
 
@@ -60,7 +61,7 @@ function Card({ children, className, hover = true, gradient = false, ...props }:
     )
 }
 
-async function ResultsWrapper({ userId }) {
+async function ResultsWrapper({ userId, plan }: { userId: string; plan: string }) {
     const isEpochTs = (ts: any) => ts?._seconds === 0;
     const isSentTs = (ts: any) => ts?._seconds > 0;
 
@@ -150,6 +151,7 @@ async function ResultsWrapper({ userId }) {
         .reduce((sum: number, obj: any) => sum + (obj.blog_articles || 0), 0);
 
     return <>
+        <DashboardTracker campaignCount={campaignValues.length} plan={plan} />
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="p-6" gradient>
@@ -303,7 +305,7 @@ const Page = async () => {
             </div>
 
             <Suspense fallback={<DashboardSkeleton />}>
-                <ResultsWrapper userId={user.uid} />
+                <ResultsWrapper userId={user.uid} plan={user.plan ?? "unknown"} />
             </Suspense>
 
             {/* Quick Actions */}

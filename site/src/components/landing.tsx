@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import React, { useState, useEffect } from 'react';
+import { track } from "@/lib/analytics";
 import { ChevronDown, Sparkles, Target, Zap, Users, Mail, ArrowRight, Check, Star, Play, X, Menu, Clock, TrendingUp, Shield, Award, MessageSquare, BarChart3, Filter, Brain, Eye, Send, Calendar, MapPin, Briefcase, Crown, Infinity, TrendingDown, Bot, AlertTriangle, FileX, XCircle, Gift, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +49,7 @@ export function HeroVideo() { // Assicurati che 'videos' sia passato come prop o
     const initPlayer = (e) => {
         e?.stopPropagation();
         setInitialized(true);
+        track({ name: "landing_video_play", params: { video_id: (video as any).vimeoId ?? "unknown" } });
     };
 
     useEffect(() => {
@@ -55,7 +57,13 @@ export function HeroVideo() { // Assicurati che 'videos' sia passato come prop o
             // Usa 'window.Vimeo.Player' o importala se usi il pacchetto npm '@vimeo/player'
             playerRef.current = new Player(iframeRef.current);
             playerRef.current.on("play", () => setPlaying(true));
-            playerRef.current.on("pause", () => setPlaying(false));
+            playerRef.current.on("pause", () => {
+                setPlaying(false);
+                track({ name: "landing_video_pause", params: { video_id: (video as any).vimeoId ?? "unknown", watch_time_s: 0 } });
+            });
+            playerRef.current.on("ended", () => {
+                track({ name: "landing_video_end", params: { video_id: (video as any).vimeoId ?? "unknown" } });
+            });
             playerRef.current.play().catch((e) => console.log("Errore play:", e));
         }
     }, [initialized]);
@@ -331,6 +339,7 @@ const HeroSection = () => {
                                 icon={<ArrowRight className="w-4 h-4" />}
                                 onClick={() => {
                                     document.cookie = `defaultEmail=${email}; path=/; max-age=${60 * 60}`;
+                                    track({ name: "landing_cta_click", params: { button_label: "Start Free Test", section: "hero" } });
                                 }}
                                 className="whitespace-nowrap h-14 px-7 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold text-base shadow-lg shadow-violet-900/40 transition-all hover:shadow-violet-700/50 hover:scale-[1.02] active:scale-[0.98] flex-1 w-full"
                             >
@@ -1064,14 +1073,32 @@ const EmailExamplesSection = () => {
 const PricingSection = () => {
     const router = useRouter();
     const freePlan = plansInfo[0];
+    const pricingSectionRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        const el = pricingSectionRef.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    track({ name: "landing_pricing_section_view", params: {} });
+                    observer.disconnect();
+                }
+            },
+            { threshold: 0.3 }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
 
     const handlePlanCtaClick = (plan) => {
         document.cookie = `defaultPlan=${plan.id}; path=/; max-age=${60 * 60 * 12}`;
+        track({ name: "landing_plan_click", params: { plan_id: plan.id, plan_name: plan.name, plan_price: plan.price } });
         router.push('/register');
     };
 
     return (
-        <section id="pricing" className="relative py-24 px-6 lg:px-8 bg-black">
+        <section id="pricing" ref={pricingSectionRef} className="relative py-24 px-6 lg:px-8 bg-black">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
                     <motion.h2
@@ -1135,7 +1162,10 @@ const PricingSection = () => {
                                         variant="primary"
                                         size="lg"
                                         className="whitespace-nowrap"
-                                        onClick={() => { document.cookie = `defaultPlan=${freePlan.id}; path=/; max-age=${60 * 60 * 12}`; }}
+                                        onClick={() => {
+                                            document.cookie = `defaultPlan=${freePlan.id}; path=/; max-age=${60 * 60 * 12}`;
+                                            track({ name: "landing_plan_click", params: { plan_id: freePlan.id, plan_name: freePlan.name, plan_price: freePlan.price } });
+                                        }}
                                     >
                                         Start Free Test
                                     </Button>
@@ -1254,7 +1284,12 @@ const FAQSection = () => {
                         <Card key={index} className="overflow-hidden" hover={false}>
                             <button
                                 className="w-full p-6 text-left focus:outline-none"
-                                onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                                onClick={() => {
+                                    if (openFaq !== index) {
+                                        track({ name: "landing_faq_open", params: { question: faq.question } });
+                                    }
+                                    setOpenFaq(openFaq === index ? null : index);
+                                }}
                             >
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-lg font-semibold text-white pr-4">{faq.question}</h3>
@@ -1301,7 +1336,10 @@ const CTASection = () => {
                             onChange={(e) => setEmail(e.target.value)}
                         />
                         <Link href={"/register"}>
-                            <Button size="lg" className='min-w-48' icon={<ArrowRight className="w-5 h-5" />} onClick={() => { document.cookie = `defaultEmail=${email}; path=/; max-age=${60 * 60}` }}>
+                            <Button size="lg" className='min-w-48' icon={<ArrowRight className="w-5 h-5" />} onClick={() => {
+                                document.cookie = `defaultEmail=${email}; path=/; max-age=${60 * 60}`;
+                                track({ name: "landing_cta_click", params: { button_label: "Start Free Test", section: "bottom_cta" } });
+                            }}>
                                 Start Free Test
                             </Button>
                         </Link>

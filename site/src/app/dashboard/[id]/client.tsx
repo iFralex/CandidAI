@@ -2,6 +2,7 @@
 
 "use client";
 
+import { track } from "@/lib/analytics";
 import { CompanyLogo } from "@/components/dashboard";
 import SkillsListBase, { calculateProgress, EducationList, ExperienceList } from "@/components/detailsServer";
 import { AdvancedFiltersClient, CriteriaDisplay } from "@/components/onboarding";
@@ -154,6 +155,9 @@ function CompanyHeader({ data }: { data: any }) {
 
   useEffect(() => {
     setIsDevMode(document.cookie.includes('__dev_mode__=1'));
+    const resultId = window.location.pathname.split("/").filter(Boolean).pop() ?? "unknown";
+    const status = progress >= 100 ? "completed" : progress > 0 ? "in_progress" : "pending";
+    track({ name: "campaign_view", params: { result_id: resultId, status } });
   }, []);
 
   let inProgressStep = '';
@@ -826,6 +830,7 @@ export function EmailDialog({
     try {
       setIsLoading(true);
       await submitEmailSent(window.location.pathname.split("/").filter(Boolean).pop(), true);
+      track({ name: "email_send", params: { company_name: to ?? "unknown" } });
       setSuccess(true);
     } catch (err) {
       console.error("Error submitting email:", err);
@@ -990,6 +995,12 @@ export const CreditsDialog = ({ children, contentType, unlocked, className = "",
       setError(result.error);
       setIsUnlocking(false);
       return;
+    }
+
+    track({ name: "credits_used", params: { action: contentType, cost: requiredCredits, remaining: result.credits ?? 0 } });
+    if (contentType === "find-recruiter") {
+      const companyName = document.querySelector<HTMLElement>("[data-company-name]")?.dataset.companyName ?? companyId ?? "unknown";
+      track({ name: "recruiter_find", params: { company_name: companyName, cost: requiredCredits } });
     }
   };
 
@@ -1356,7 +1367,7 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
                         </ScrollArea>
                         <DialogFooter>
                           <Button variant="outline" icon={<Download />} onClick={() => downloadTextFile("prompt", email.prompt)}>Download</Button>
-                          <Button variant="outline" icon={<Copy />} onClick={() => navigator.clipboard.writeText(email.prompt)}>Copy</Button>
+                          <Button variant="outline" icon={<Copy />} onClick={() => { navigator.clipboard.writeText(email.prompt); track({ name: "email_copy", params: { company_name: "prompt" } }); }}>Copy</Button>
                         </DialogFooter>
                       </DialogContent>
                     )}

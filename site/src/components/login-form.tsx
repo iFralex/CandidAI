@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { track, identifyUser } from "@/lib/analytics";
 
 const internLogin = async (idToken: string) => {
   const internalLogin = await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/login`,
@@ -54,6 +55,8 @@ export function LoginForm({
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
+    track({ name: "login_attempt", params: { method: "email" } });
+
     try {
       const res = await fetch("/api/auth", {
         method: "POST",
@@ -64,12 +67,15 @@ export function LoginForm({
         }),
       });
 
-      const { idToken } = await res.json()
+      const { idToken, uid, plan, credits, onboardingStep } = await res.json()
 
       await internLogin(idToken)
 
+      track({ name: "login_success", params: { method: "email" } });
+      if (uid) identifyUser(uid, { plan, credits, onboarding_step: onboardingStep, signup_method: "email" });
       router.push(next || "/dashboard");
     } catch (err: any) {
+      track({ name: "login_error", params: { method: "email", error_code: err.code ?? err.message ?? "unknown" } });
       setError(err.message);
     } finally {
       setLoading(false);
@@ -116,12 +122,15 @@ export function LoginForm({
             },
           });
 
+          track({ name: "login_success", params: { method: "google" } });
+          identifyUser(user.uid, { signup_method: "google" });
           const redirectTo = sessionStorage.getItem('loginNext') || '/dashboard';
           sessionStorage.removeItem('loginNext');
           router.push(redirectTo);
         }
       } catch (err: any) {
         console.error('Errore Google redirect:', err);
+        track({ name: "login_error", params: { method: "google", error_code: err.code ?? err.message ?? "unknown" } });
         setError(err.message);
       } finally {
         setGoogleLoading(false);
@@ -137,6 +146,7 @@ export function LoginForm({
 
     try {
       if (next) sessionStorage.setItem('loginNext', next);
+      track({ name: "login_attempt", params: { method: "google" } });
       const provider = new GoogleAuthProvider();
       provider.addScope('profile');
       provider.addScope('email');
@@ -157,6 +167,7 @@ export function LoginForm({
           errorMessage = err.message;
       }
 
+      track({ name: "login_error", params: { method: "google", error_code: err.code ?? "unknown" } });
       setError(errorMessage);
       setGoogleLoading(false);
     }
@@ -277,6 +288,8 @@ export function RegisterForm({
       return;
     }
 
+    track({ name: "signup_attempt", params: { method: "email" } });
+
     try {
       const res = await fetch("/api/auth", {
         method: "POST",
@@ -288,12 +301,15 @@ export function RegisterForm({
         }),
       });
 
-      const { idToken } = await res.json()
+      const { idToken, uid } = await res.json()
 
       await internLogin(idToken)
 
+      track({ name: "signup_success", params: { method: "email" } });
+      if (uid) identifyUser(uid, { plan: "free_trial", credits: 0, onboarding_step: 1, signup_method: "email" });
       router.push("/dashboard");
     } catch (err: any) {
+      track({ name: "signup_error", params: { method: "email", error_code: err.code ?? err.message ?? "unknown" } });
       setError(err.message);
     } finally {
       setLoading(false);
@@ -340,10 +356,13 @@ export function RegisterForm({
             },
           });
 
+          track({ name: "signup_success", params: { method: "google" } });
+          identifyUser(user.uid, { plan: "free_trial", credits: 0, onboarding_step: 1, signup_method: "google" });
           router.push('/dashboard');
         }
       } catch (err: any) {
         console.error('Errore Google redirect:', err);
+        track({ name: "signup_error", params: { method: "google", error_code: err.code ?? err.message ?? "unknown" } });
         setError(err.message);
       } finally {
         setGoogleLoading(false);
@@ -358,6 +377,7 @@ export function RegisterForm({
     setError('');
 
     try {
+      track({ name: "signup_attempt", params: { method: "google" } });
       const provider = new GoogleAuthProvider();
       provider.addScope('profile');
       provider.addScope('email');
@@ -378,6 +398,7 @@ export function RegisterForm({
           errorMessage = err.message;
       }
 
+      track({ name: "signup_error", params: { method: "google", error_code: err.code ?? "unknown" } });
       setError(errorMessage);
       setGoogleLoading(false);
     }
@@ -512,8 +533,10 @@ export function ForgotPasswordForm({
         throw new Error(data.error || "Something went wrong");
       }
 
+      track({ name: "forgot_password_request", params: { success: true } });
       setSuccess("Password reset email sent! Check your inbox.");
     } catch (err: any) {
+      track({ name: "forgot_password_request", params: { success: false } });
       setError(err.message);
     } finally {
       setLoading(false);

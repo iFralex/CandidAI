@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PlanSelector } from "@/components/PlanSelector";
 import type { PlanInfo } from "@/components/PlanSelector";
 import { CreditSelector } from "@/components/CreditSelector";
@@ -12,6 +12,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { track } from "@/lib/analytics";
 
 interface PlanAndCreditsClientProps {
     email: string;
@@ -23,7 +24,12 @@ export default function PlanAndCreditsClient({ email }: PlanAndCreditsClientProp
     const [itemId, setItemId] = useState<string>("");
     const [checkoutTitle, setCheckoutTitle] = useState<string>("");
 
+    useEffect(() => {
+        track({ name: "plan_credits_page_view", params: {} });
+    }, []);
+
     const handlePlanSelect = (plan: PlanInfo) => {
+        track({ name: "plan_select", params: { plan_id: plan.id, plan_name: plan.name, plan_price: plan.price } });
         setPurchaseType("plan");
         setItemId(plan.id);
         setCheckoutTitle(`Purchase ${plan.name} Plan`);
@@ -31,6 +37,7 @@ export default function PlanAndCreditsClient({ email }: PlanAndCreditsClientProp
     };
 
     const handleCreditBuy = (pkg: CreditPackage) => {
+        track({ name: "credits_package_select", params: { package_id: pkg.id, credits: pkg.credits, price_cents: pkg.price } });
         setPurchaseType("credits");
         setItemId(pkg.id);
         setCheckoutTitle(`Buy ${pkg.credits.toLocaleString()} Credits`);

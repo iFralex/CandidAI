@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { track } from "@/lib/analytics";
 import {
     Download,
     Mail,
@@ -48,7 +49,7 @@ function DownloadButtons({ size = "lg", hero = false }: { size?: "lg" | "sm"; he
     const os = useDetectedOS();
 
     const macBtn = (
-        <a key="mac" href={MAC_URL}>
+        <a key="mac" href={MAC_URL} onClick={() => track({ name: "app_download_click", params: { platform: "mac" } })}>
             <Button
                 variant="primary"
                 size={size}
@@ -62,7 +63,7 @@ function DownloadButtons({ size = "lg", hero = false }: { size?: "lg" | "sm"; he
     );
 
     const winBtn = (
-        <a key="win" href={WIN_URL}>
+        <a key="win" href={WIN_URL} onClick={() => track({ name: "app_download_click", params: { platform: "win" } })}>
             <Button
                 variant="secondary"
                 size={size}
@@ -159,6 +160,12 @@ const ProviderBadge = ({ label, color }: { label: string; color: string }) => (
 );
 
 export default function DownloadPage() {
+    useEffect(() => {
+        const ua = typeof navigator !== "undefined" ? navigator.userAgent.toLowerCase() : "";
+        const detected = ua.includes("mac") ? "mac" : ua.includes("win") ? "win" : "unknown";
+        track({ name: "download_page_view", params: { detected_platform: detected } });
+    }, []);
+
     return (
         <div className="relative min-h-screen space-y-24 pb-24">
 

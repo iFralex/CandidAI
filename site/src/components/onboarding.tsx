@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
+import { track } from "@/lib/analytics"
 import { motion, AnimatePresence } from "framer-motion"
 import { resendEmailVerification, selectPlan, goBackStep, deleteProfile } from '@/actions/onboarding-actions'
 import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, ArrowLeft, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark, Lock } from 'lucide-react'
@@ -59,19 +60,31 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
     const [isBackPending, startBackTransition] = useTransition()
     const [saved, setSaved] = useState(false)
 
+    // Track step view once on mount
+    useEffect(() => {
+        track({ name: "onboarding_step_view", params: { step: currentStep ?? 5 } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
     const handleBack = () => {
         if (!currentStep || !plan) return
+        track({ name: "onboarding_step_back", params: { from_step: currentStep ?? 5 } })
         startBackTransition(() => goBackStep(currentStep, plan))
     }
 
     const handleStartGeneration = () => {
         startTransition(async () => {
+            const hasInstructions = !!(customizations.position_description?.trim() || customizations.instructions?.trim())
+            track({ name: "onboarding_custom_instructions_set", params: { has_instructions: hasInstructions } })
             if (onSave) {
                 await onSave(customizations)
+                track({ name: "onboarding_step_complete", params: { step: currentStep ?? 5 } })
                 setSaved(true)
                 setTimeout(() => setSaved(false), 3000)
             } else {
                 await completeOnboarding(customizations)
+                track({ name: "onboarding_step_complete", params: { step: currentStep ?? 5 } })
+                track({ name: "onboarding_complete", params: { plan: plan ?? "unknown" } }, { persist: true })
             }
         })
     }
@@ -1253,6 +1266,11 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
     const [saved, setSaved] = useState(false);
 
     useEffect(() => {
+        if (currentStep) track({ name: "onboarding_step_view", params: { step: currentStep } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    useEffect(() => {
         setHasChanges(JSON.stringify(strategy) !== JSON.stringify(defaultStrategy))
     }, [strategy])
 
@@ -1264,16 +1282,19 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
         startTransition(async () => {
             if (onSave) {
                 await onSave(strategy)
+                if (currentStep) track({ name: "onboarding_step_complete", params: { step: currentStep } })
                 setSaved(true)
                 setTimeout(() => setSaved(false), 3000)
             } else {
                 await submitQueries(strategy)
+                if (currentStep) track({ name: "onboarding_step_complete", params: { step: currentStep } })
             }
         })
     };
 
     const handleBack = () => {
         if (!currentStep || !plan) return
+        track({ name: "onboarding_step_back", params: { from_step: currentStep } })
         startBackTransition(() => goBackStep(currentStep, plan))
     };
 
@@ -3599,6 +3620,12 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
     const [isRecalculating, setIsRecalculating] = useState(false)
     const [saved, setSaved] = useState(false)
 
+    // Step view tracking
+    useEffect(() => {
+        track({ name: "onboarding_step_view", params: { step: currentStep ?? 3 } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
     // Reset state when profile is deleted (initialProfile becomes null after router.refresh())
     useEffect(() => {
         if (!initialProfile && !initialCvUrl) {
@@ -3722,6 +3749,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
 
     const handleContinue = () => {
         if (!onSave && !cvFile && !effectiveCvUrl) return alert("Please upload your CV before continuing.")
+        track({ name: "onboarding_step_complete", params: { step: currentStep ?? 3 } })
         startTransition(async () => {
             if (onSave) {
                 await onSave(plan, { linkedinUrl, profileSummary }, cvFile?.blob ?? null)
@@ -3743,12 +3771,20 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
 
     const handleBack = () => {
         if (!currentStep) return
+        track({ name: "onboarding_step_back", params: { from_step: currentStep } })
         startBackTransition(() => goBackStep(currentStep, plan))
     }
 
     const handleCvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
+            track({
+                name: "onboarding_file_upload",
+                params: {
+                    file_type: file.type || "unknown",
+                    file_size_kb: Math.round(file.size / 1024),
+                },
+            })
             setCvFile({ name: file.name, blob: file });
         }
     };
@@ -4272,8 +4308,14 @@ export function CompanyInputClient({
     const [isPending, startTransition] = useTransition();
     const [isBackPending, startBackTransition] = useTransition();
 
+    useEffect(() => {
+        track({ name: "onboarding_step_view", params: { step: currentStep ?? 2 } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
     const handleBack = () => {
         if (!currentStep || !plan) return
+        track({ name: "onboarding_step_back", params: { from_step: currentStep ?? 2 } })
         startBackTransition(() => goBackStep(currentStep, plan))
     };
 
@@ -4286,7 +4328,11 @@ export function CompanyInputClient({
         }
         // Evita duplicati basati sul dominio
         if (!selectedCompanies.some((c) => c.domain === company.domain)) {
-            setSelectedCompanies((prev) => [...prev, company]);
+            setSelectedCompanies((prev) => {
+                const next = [...prev, company]
+                track({ name: "onboarding_company_add", params: { method: "autocomplete", total_count: next.length } })
+                return next
+            });
         }
         setInputValue(""); // Pulisce l'input dopo l'aggiunta
     };
@@ -4351,6 +4397,7 @@ export function CompanyInputClient({
                 console.log("Submitting:", companies);
                 // La tua logica di submit
                 await submitCompanies(companies);
+                track({ name: "onboarding_step_complete", params: { step: currentStep ?? 2 } })
             } catch (err) {
                 console.error("Errore in submitCompanies", err);
             }
@@ -4542,6 +4589,11 @@ export function PlanSelectionClient({ userId = 'user123', plans, selectedPlan: i
     const freePlan = plansInfo[0];
 
     useEffect(() => {
+        track({ name: "onboarding_step_view", params: { step: 1 } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    useEffect(() => {
         if (initialSelectedPlan) return; // already pre-selected from server
         if (typeof document === "undefined") return;
         const cookie = document.cookie.split("; ").find(c => c.startsWith("defaultPlan="));
@@ -4551,8 +4603,15 @@ export function PlanSelectionClient({ userId = 'user123', plans, selectedPlan: i
         }
     }, []);
 
+    const handleSelectPlan = (planId: string) => {
+        setSelectedPlan(planId)
+        const info = plansInfo.find(p => p.id === planId)
+        if (info) track({ name: "onboarding_plan_select", params: { plan_id: planId, plan_price: info.price } })
+    }
+
     const handleSubmit = () => {
         if (!selectedPlan) return;
+        track({ name: "onboarding_step_complete", params: { step: 1 } })
         startTransition(() => selectPlan(selectedPlan));
     };
 
@@ -4601,7 +4660,7 @@ export function PlanSelectionClient({ userId = 'user123', plans, selectedPlan: i
                                 <Button
                                     variant="primary"
                                     size="lg"
-                                    onClick={() => setSelectedPlan(freePlan.id)}
+                                    onClick={() => handleSelectPlan(freePlan.id)}
                                 >
                                     {selectedPlan === freePlan.id ? (
                                         <span className="flex items-center gap-2">
@@ -4619,7 +4678,7 @@ export function PlanSelectionClient({ userId = 'user123', plans, selectedPlan: i
                 <div className="mb-12">
                     <PlanSelector
                         selectedPlanId={selectedPlan}
-                        onSelect={(plan) => setSelectedPlan(plan.id)}
+                        onSelect={(plan) => handleSelectPlan(plan.id)}
                         ctaLabel="Select Plan"
                     />
                 </div>

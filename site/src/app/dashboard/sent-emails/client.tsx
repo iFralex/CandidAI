@@ -1,7 +1,8 @@
 "use client"
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { track } from "@/lib/analytics";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,6 +19,12 @@ interface SentEmailsFilterProps {
 
 export function SentEmailsFilter({ preset, from, to, totalCount }: SentEmailsFilterProps) {
     const router = useRouter();
+
+    useEffect(() => {
+        track({ name: "sent_emails_view", params: { total_count: totalCount, preset } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const [dateRange, setDateRange] = useState<DateRange | undefined>(
         from ? { from: new Date(from), to: to ? new Date(to) : undefined } : undefined
     );

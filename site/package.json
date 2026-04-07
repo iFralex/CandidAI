@@ -54,7 +54,8 @@
     "resend": "^6.5.2",
     "stripe": "^20.0.0",
     "tailwind-merge": "^3.3.1",
-    "vaul": "^1.1.2"
+    "vaul": "^1.1.2",
+    "web-vitals": "^5.2.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

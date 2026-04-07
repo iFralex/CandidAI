@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { updateUserBasicInfo, updateUserEmail, updateAccountData, submitProfile } from "@/actions/onboarding-actions"
+import { track } from "@/lib/analytics"
 import { ProfileAnalysisClient } from "@/components/onboarding"
 import { AdvancedFiltersClientWrapper } from "@/components/onboarding"
 import { SetupCompleteClient } from "@/components/onboarding"
@@ -36,6 +37,10 @@ function BasicInfoSection({ defaultName, defaultPicture }: { defaultName: string
     const handleSave = () => {
         startTransition(async () => {
             await updateUserBasicInfo(name, pictureFile)
+            const fields = []
+            if (name !== defaultName) fields.push("name")
+            if (pictureFile) fields.push("picture")
+            if (fields.length) track({ name: "profile_update", params: { fields } })
             setSaved(true)
             setTimeout(() => setSaved(false), 3000)
         })
@@ -110,6 +115,7 @@ function EmailUpdateSection() {
         startTransition(async () => {
             try {
                 await updateUserEmail(email.trim())
+                track({ name: "profile_update", params: { fields: ["email"] } })
                 setResult({ success: true })
                 setEmail("")
             } catch (err: any) {

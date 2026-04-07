@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { updateSettings } from "@/actions/onboarding-actions"
+import { track } from "@/lib/analytics"
 
 interface SettingsFormProps {
     defaultMarketingEmails: boolean
@@ -23,6 +24,11 @@ export function SettingsForm({ defaultMarketingEmails, defaultReminderFrequency,
     const handleSave = () => {
         startTransition(async () => {
             await updateSettings({ marketingEmails, reminderFrequency, emailNotificationThreshold: Number(emailNotificationThreshold) })
+            const changed: string[] = []
+            if (marketingEmails !== defaultMarketingEmails) changed.push("marketing_emails")
+            if (reminderFrequency !== defaultReminderFrequency) changed.push("reminder_frequency")
+            if (String(emailNotificationThreshold) !== String(defaultEmailNotificationThreshold)) changed.push("notification_threshold")
+            if (changed.length) track({ name: "profile_update", params: { fields: changed } })
             setSaved(true)
             setTimeout(() => setSaved(false), 3000)
         })

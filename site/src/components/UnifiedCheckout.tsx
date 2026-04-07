@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { computePriceInCents, formatPrice, getPlanById, getDiscountCode, applyDiscount } from "@/lib/utils";
 import { CREDIT_PACKAGES } from "@/config";
+import { track, updateUserProperties } from "@/lib/analytics";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -61,7 +62,12 @@ function StripeCardInputs() {
     );
 }
 
-async function confirmPaymentAndNavigate(paymentIntentId: string, onSuccess?: (data: any) => void, data?: any) {
+async function confirmPaymentAndNavigate(
+    paymentIntentId: string,
+    onSuccess?: (data: any) => void,
+    data?: any,
+    analyticsParams?: { type: "plan" | "credits"; item_id: string; amount_cents: number }
+) {
     try {
         await fetch("/api/payment-confirm", {
             method: "POST",
@@ -69,6 +75,13 @@ async function confirmPaymentAndNavigate(paymentIntentId: string, onSuccess?: (d
             body: JSON.stringify({ paymentIntentId }),
         });
     } catch { /* webhook will handle it as fallback */ }
+
+    if (analyticsParams) {
+        track({ name: "checkout_success", params: analyticsParams });
+        if (analyticsParams.type === "plan") {
+            updateUserProperties({ plan: analyticsParams.item_id });
+        }
+    }
 
     if (onSuccess) {
         onSuccess(data);
@@ -125,7 +138,7 @@ function PaymentRequestButton({ email, amountCents, purchaseType, itemId, discou
                     ev.complete("fail");
                 } else {
                     ev.complete("success");
-                    await confirmPaymentAndNavigate(data.paymentIntentId, onSuccess, data);
+                    await confirmPaymentAndNavigate(data.paymentIntentId, onSuccess, data, { type: purchaseType, item_id: itemId, amount_cents: amountCents });
                 }
             } catch {
                 ev.complete("fail");
@@ -170,6 +183,8 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
         setLoading(true);
         setError("");
 
+        track({ name: "checkout_submit", params: { type: purchaseType, item_id: itemId, amount_cents: amountCents } });
+
         try {
             if (isFree) {
                 const res = await fetch("/api/create-payment", {
@@ -181,6 +196,8 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
                 if (data.error) { setError(data.error); setLoading(false); return; }
                 setSuccess(true);
                 setLoading(false);
+                track({ name: "checkout_free_success", params: { item_id: itemId } });
+                if (purchaseType === "plan") updateUserProperties({ plan: itemId });
                 if (onSuccess) onSuccess(data); else window.location.href = "/dashboard";
                 return;
             }
@@ -201,6 +218,7 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
             });
 
             if (pmError) {
+                track({ name: "checkout_error", params: { error_message: pmError.message ?? "pm_error", item_id: itemId } });
                 setError(pmError.message || "Payment method error");
                 setLoading(false);
                 return;
@@ -213,10 +231,16 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
             });
 
             const data = await res.json();
-            if (data.error) { setError(data.error); setLoading(false); return; }
+            if (data.error) {
+                track({ name: "checkout_error", params: { error_message: data.error, item_id: itemId } });
+                setError(data.error);
+                setLoading(false);
+                return;
+            }
 
             const { error: confirmError } = await stripe.confirmCardPayment(data.client_secret);
             if (confirmError) {
+                track({ name: "checkout_error", params: { error_message: confirmError.message ?? "confirm_error", item_id: itemId } });
                 setError(confirmError.message || "Payment confirmation failed");
                 setLoading(false);
                 return;
@@ -224,8 +248,9 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
 
             setSuccess(true);
             setLoading(false);
-            await confirmPaymentAndNavigate(data.paymentIntentId, onSuccess, data);
+            await confirmPaymentAndNavigate(data.paymentIntentId, onSuccess, data, { type: purchaseType, item_id: itemId, amount_cents: amountCents });
         } catch (err: any) {
+            track({ name: "checkout_error", params: { error_message: err.message ?? "unexpected_error", item_id: itemId } });
             setError(err.message || "Unexpected error");
             setLoading(false);
         }
@@ -359,8 +384,15 @@ export function UnifiedCheckout({ purchaseType, itemId, email = "", onSuccess }:
     const [discountCode, setDiscountCode] = useState<string | null>(null);
 
     useEffect(() => {
-        setDiscountCode(getDiscountCode());
-    }, []);
+        const code = getDiscountCode();
+        setDiscountCode(code);
+        const baseAmount = computePriceInCents(purchaseType, itemId);
+        const finalAmount = code ? applyDiscount(baseAmount, code) : baseAmount;
+        track({ name: "checkout_open", params: { type: purchaseType, item_id: itemId, amount_cents: finalAmount } });
+        if (code) {
+            track({ name: "discount_code_apply", params: { code, discount_type: "auto", discount_value: baseAmount - finalAmount } });
+        }
+    }, [purchaseType, itemId]);
 
     return (
         <div className="no-scrollbar overflow-y-auto space-y-4">
