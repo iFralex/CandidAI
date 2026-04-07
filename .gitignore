@@ -62,5 +62,4 @@ desktop/dist-renderer/
 .py-packages/
 .cache_ggshield
 __pycache__/
-.claude/site/public/downloads/
 desktop/dist/
