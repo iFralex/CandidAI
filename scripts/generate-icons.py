@@ -130,6 +130,11 @@ else:
     resize(1024).save(fallback)
     print(f"  ✓ {os.path.relpath(fallback, ROOT)}  (iconutil not available — saved PNG fallback)")
 
+# Next.js App Router: app/favicon.ico takes precedence over public/
+app_favicon = os.path.join(ROOT, "site", "src", "app", "favicon.ico")
+shutil.copy2(os.path.join(PUB, "favicon.ico"), app_favicon)
+print(f"  ✓ {os.path.relpath(app_favicon, ROOT)}  (Next.js app dir copy)")
+
 # electron-builder looks for icons in buildResources (default: desktop/build/)
 build_dir = os.path.join(ROOT, "desktop", "build")
 os.makedirs(build_dir, exist_ok=True)
