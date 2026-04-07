@@ -74,8 +74,8 @@ function DownloadButtons({ size = "lg", hero = false }: { size?: "lg" | "sm"; he
         </a>
     );
 
-    // Show the user's platform button first
-    const buttons = os === "win" ? [winBtn, macBtn] : [macBtn, winBtn];
+    // Show the user's platform button first; default to Windows
+    const buttons = os === "mac" ? [macBtn, winBtn] : [winBtn, macBtn];
     return <>{buttons}</>;
 }
 
