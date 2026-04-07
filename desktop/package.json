@@ -11,7 +11,7 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "NODE_ENV=development concurrently --names \"VITE,TSC,ELECTRON\" --prefix-colors \"cyan,yellow,green\" --kill-others-on-fail \"vite\" \"tsc -p tsconfig.electron.json --watch\" \"wait-on http://localhost:5173 dist-electron/main.js && electron .\"",
-    "build": "vite build && tsc -p tsconfig.electron.json && electron-builder --mac --arm64 && electron-builder --win --x64",
+    "build": "vite build && tsc -p tsconfig.electron.json && electron-builder --mac --arm64 && electron-builder --win --x64 && node scripts/copy-dist.js",
     "build:dir": "vite build && tsc -p tsconfig.electron.json && electron-builder --dir",
     "run:app": "release/mac-arm64/CandidAI.app/Contents/MacOS/CandidAI",
     "logs": "open \"$HOME/Library/Logs/CandidAI\" 2>/dev/null || echo 'Log directory not found. Run the packaged app first.'",

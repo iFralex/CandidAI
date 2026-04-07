@@ -155,7 +155,7 @@ export default function DownloadPage() {
                     transition={{ delay: 0.2 }}
                     className="relative z-10 flex flex-col sm:flex-row gap-4 items-center"
                 >
-                    <a href="/api/download/mac">
+                    <a href="/downloads/CandidAI.dmg">
                         <Button
                             variant="primary"
                             size="lg"
@@ -167,7 +167,7 @@ export default function DownloadPage() {
                         </Button>
                     </a>
 
-                    <a href="/api/download/win">
+                    <a href="/downloads/CandidAI-Setup.exe">
                         <Button
                             variant="secondary"
                             size="lg"
@@ -385,7 +385,7 @@ export default function DownloadPage() {
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-3 items-center">
-                            <a href="/api/download/mac">
+                            <a href="/downloads/CandidAI.dmg">
                                 <Button
                                     variant="primary"
                                     size="lg"
@@ -395,7 +395,7 @@ export default function DownloadPage() {
                                     Download for Mac
                                 </Button>
                             </a>
-                            <a href="/api/download/win">
+                            <a href="/downloads/CandidAI-Setup.exe">
                                 <Button
                                     variant="secondary"
                                     size="lg"
