@@ -1,1 +1,71 @@
 @import "tailwindcss";
+
+@theme inline {
+  --color-violet-950: #0d0618;
+}
+
+:root {
+  --brand-bg: #07050f;
+  --brand-surface: rgba(255, 255, 255, 0.04);
+  --brand-border: rgba(255, 255, 255, 0.08);
+  --brand-violet: #8b5cf6;
+  --brand-purple: #a855f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--brand-bg);
+  color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+}
+
+/* Animated blobs */
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes float-medium {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-25px, 20px) scale(1.08); }
+}
+
+.blob-1 { animation: float-slow 12s ease-in-out infinite; }
+.blob-2 { animation: float-medium 9s ease-in-out infinite; }
+.blob-3 { animation: float-slow 15s ease-in-out infinite reverse; }
+
+/* Glass card */
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
