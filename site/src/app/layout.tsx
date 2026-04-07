@@ -13,9 +13,87 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const BASE_URL = "https://candidai.tech";
+
 export const metadata: Metadata = {
-  title: "CandidAI",
-  description: "Land Your Dream Job with AI-Crafted Emails",
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: "CandidAI — Land Your Dream Job with AI",
+    template: "%s | CandidAI",
+  },
+  description:
+    "CandidAI finds the right recruiters and writes personalised job-application emails for you — automatically. Apply to dozens of companies in minutes.",
+  keywords: [
+    "job search",
+    "AI emails",
+    "job application",
+    "recruiter finder",
+    "career",
+    "artificial intelligence",
+    "email automation",
+  ],
+  authors: [{ name: "CandidAI", url: BASE_URL }],
+  creator: "CandidAI",
+  publisher: "CandidAI",
+  applicationName: "CandidAI",
+  category: "productivity",
+
+  icons: {
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    other: [
+      { rel: "mask-icon", url: "/favicon-32x32.png", color: "#7c3aed" },
+    ],
+  },
+
+  manifest: "/site.webmanifest",
+
+  openGraph: {
+    type: "website",
+    url: BASE_URL,
+    siteName: "CandidAI",
+    title: "CandidAI — Land Your Dream Job with AI",
+    description:
+      "CandidAI finds the right recruiters and writes personalised job-application emails for you — automatically.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 512,
+        height: 512,
+        alt: "CandidAI logo",
+      },
+    ],
+    locale: "en_US",
+  },
+
+  twitter: {
+    card: "summary",
+    site: "@candidai",
+    creator: "@candidai",
+    title: "CandidAI — Land Your Dream Job with AI",
+    description:
+      "CandidAI finds the right recruiters and writes personalised job-application emails for you — automatically.",
+    images: ["/og-image.png"],
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+
+  alternates: {
+    canonical: BASE_URL,
+  },
 };
 
 export default function RootLayout({

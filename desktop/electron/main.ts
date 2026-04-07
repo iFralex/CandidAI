@@ -1,7 +1,9 @@
 import './loadEnv';
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, shell, nativeImage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+
+app.setName('CandidAI');
 import { connectProvider, connectResend, disconnectProvider, getProviderStatus } from './providers/connect';
 import { startRemoteCampaign, stopRemoteCampaign } from './engine/sender';
 import type { EmailItem } from './engine/sender';
@@ -43,15 +45,33 @@ function handleDeepLink(url: string): void {
 function createWindow(): void {
   const preload = path.join(__dirname, 'preload.js');
 
+  // In dev __dirname = desktop/dist-electron → ../assets = desktop/assets
+  // In packaged mode electron-builder embeds the icon from the bundle automatically
+  let icon: ReturnType<typeof nativeImage.createFromPath> | undefined;
+  if (!app.isPackaged) {
+    const ext = process.platform === 'win32' ? 'ico' : 'icns';
+    const iconPath = path.join(__dirname, `../assets/icon.${ext}`);
+    if (fs.existsSync(iconPath)) icon = nativeImage.createFromPath(iconPath);
+  }
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    minWidth: 800,
+    minHeight: 600,
+    title: 'CandidAI',
+    ...(icon ? { icon } : {}),
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: {
       preload,
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
+
+  if (process.platform === 'darwin' && icon && !icon.isEmpty()) {
+    app.dock?.setIcon(icon);
+  }
 
   if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
     mainWindow.loadURL('http://localhost:5173');
