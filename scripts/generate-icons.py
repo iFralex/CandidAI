@@ -131,9 +131,22 @@ else:
     print(f"  ✓ {os.path.relpath(fallback, ROOT)}  (iconutil not available — saved PNG fallback)")
 
 # Next.js App Router: app/favicon.ico takes precedence over public/
+# Use ImageMagick for a proper multi-size ICO (PIL only produces 16x16)
 app_favicon = os.path.join(ROOT, "site", "src", "app", "favicon.ico")
-shutil.copy2(os.path.join(PUB, "favicon.ico"), app_favicon)
-print(f"  ✓ {os.path.relpath(app_favicon, ROOT)}  (Next.js app dir copy)")
+if shutil.which("magick"):
+    clone_args = []
+    for s in (16, 32, 48, 64, 128, 256):
+        clone_args += ["(", "-clone", "0", "-resize", f"{s}x{s}", ")"]
+    subprocess.run(
+        ["magick", SRC,
+         "-gravity", "center", "-background", "none",
+         "-extent", "%[fx:max(w,h)]x%[fx:max(w,h)]",
+         ] + clone_args + ["-delete", "0", app_favicon],
+        check=True,
+    )
+else:
+    shutil.copy2(os.path.join(PUB, "favicon.ico"), app_favicon)
+print(f"  ✓ {os.path.relpath(app_favicon, ROOT)}  (Next.js app dir)")
 
 # electron-builder looks for icons in buildResources (default: desktop/build/)
 build_dir = os.path.join(ROOT, "desktop", "build")
