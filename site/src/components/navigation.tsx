@@ -4,7 +4,7 @@ import { Menu, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export const Navigation = () => {
+export const Navigation = ({ simple = false }: { simple?: boolean }) => {
     return (
         <nav className="fixed top-0 w-full z-50 bg-black/20 backdrop-blur-lg border-b border-white/10">
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -20,10 +20,14 @@ export const Navigation = () => {
                     </Link>
 
                     <div className="hidden md:flex items-center space-x-8">
-                        <Link href="#features" className="text-gray-300 hover:text-white transition-colors">Features</Link>
-                        <Link href="#process" className="text-gray-300 hover:text-white transition-colors">How it Works</Link>
-                        <Link href="#pricing" className="text-gray-300 hover:text-white transition-colors">Pricing</Link>
-                        <Link href="#reviews" className="text-gray-300 hover:text-white transition-colors">Reviews</Link>
+                        {!simple && (
+                            <>
+                                <Link href="#features" className="text-gray-300 hover:text-white transition-colors">Features</Link>
+                                <Link href="#process" className="text-gray-300 hover:text-white transition-colors">How it Works</Link>
+                                <Link href="#pricing" className="text-gray-300 hover:text-white transition-colors">Pricing</Link>
+                                <Link href="#reviews" className="text-gray-300 hover:text-white transition-colors">Reviews</Link>
+                            </>
+                        )}
                         <Link href="/dashboard">
                             <Button variant="primary" size="sm">
                                 Get Started
@@ -31,23 +35,10 @@ export const Navigation = () => {
                         </Link>
                     </div>
 
-                    <button
-                        className="md:hidden text-white"
-                    >
+                    <button className="md:hidden text-white">
                         <Menu className="w-6 h-6" />
                     </button>
                 </div>
-
-                {false && (
-                    <div className="md:hidden bg-black/30 backdrop-blur-lg border-t border-white/10">
-                        <div className="px-2 pt-2 pb-3 space-y-1">
-                            <a href="#features" className="block px-3 py-2 text-gray-300 hover:text-white">Features</a>
-                            <a href="#process" className="block px-3 py-2 text-gray-300 hover:text-white">How it Works</a>
-                            <a href="#pricing" className="block px-3 py-2 text-gray-300 hover:text-white">Pricing</a>
-                            <a href="#reviews" className="block px-3 py-2 text-gray-300 hover:text-white">Reviews</a>
-                        </div>
-                    </div>
-                )}
             </div>
         </nav>
     );
