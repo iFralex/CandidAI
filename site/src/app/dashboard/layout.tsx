@@ -162,27 +162,34 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
                         {children}
                         {!user.emailVerified && (
                             <Dialog open>
-                                <DialogContent showCloseButton={false}>
-                                    <div className="flex flex-col items-center gap-4 text-center">
-                                        {/* Icon */}
-                                        <MailCheck className="w-12 h-12 text-violet-500" />
+                                <DialogContent showCloseButton={false} className="border-violet-500/20 bg-gray-950/95 backdrop-blur-xl max-w-md">
+                                    <div className="flex flex-col items-center gap-6 text-center py-2">
+                                        {/* Icon with glow */}
+                                        <div className="relative">
+                                            <div className="absolute inset-0 bg-violet-500/30 blur-xl rounded-full" />
+                                            <div className="relative bg-gradient-to-br from-violet-500/20 to-purple-600/20 border border-violet-500/30 rounded-2xl p-4">
+                                                <MailCheck className="w-10 h-10 text-violet-400" />
+                                            </div>
+                                        </div>
 
                                         {/* Title */}
-                                        <h2 className="text-xl font-semibold">
-                                            Verify Your Email
-                                        </h2>
-
-                                        {/* Description */}
-                                        <p className="">
-                                            We've sent a verification email at {user.email} to your inbox. Please check your email to continue.
-                                        </p>
+                                        <div className="space-y-2">
+                                            <h2 className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-pink-400 bg-clip-text text-transparent">
+                                                Verify Your Email
+                                            </h2>
+                                            <p className="text-gray-400 text-sm leading-relaxed">
+                                                We've sent a verification link to{" "}
+                                                <span className="text-violet-300 font-medium">{user.email}</span>.
+                                                <br />Check your inbox to continue.
+                                            </p>
+                                        </div>
 
                                         {/* Resend button */}
                                         <ResendEmailVerificationBtn />
 
                                         {/* Note */}
-                                        <p className="text-sm text-gray-500">
-                                            Didn't receive the email? You can resend it using the button above.
+                                        <p className="text-xs text-gray-600">
+                                            Didn't receive it? Check your spam folder or resend above.
                                         </p>
                                     </div>
                                 </DialogContent>
