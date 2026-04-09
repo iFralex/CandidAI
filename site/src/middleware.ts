@@ -53,7 +53,6 @@ export async function middleware(request: NextRequest) {
     cookieSignatureKeys: serverConfig.cookieSignatureKeys,
     cookieSerializeOptions: serverConfig.cookieSerializeOptions,
     serviceAccount: serverConfig.serviceAccount,
-    debug: process.env.NODE_ENV === "production",
     handleValidToken: async ({ token, decodedToken }, headers) => {
       if (PUBLIC_PATHS.includes(request.nextUrl.pathname.split("/")[1])) {
         console.log(PUBLIC_PATHS.includes(request.nextUrl.pathname.split("/")[1]))
