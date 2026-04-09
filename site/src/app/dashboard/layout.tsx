@@ -1,7 +1,7 @@
 // components/DashboardLayout.tsx (rimane un Server Component per la struttura)
 // Non usare 'use client'
 
-import { Activity, BarChart3, Home, Settings, Zap, Bell, MailCheck, Plus } from 'lucide-react';
+import { Activity, BarChart3, Building2, Home, Settings, Zap, Bell, MailCheck, Plus } from 'lucide-react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { SidebarClientWrapper } from '@/components/SidebarClientWrapper';
 import { redirect } from 'next/navigation';
@@ -90,6 +90,8 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
     const totalSteps = stepSequence.length
     const visualStep = stepSequence.indexOf(rawStep) + 1  // 1-based; -1+1=0 if not found
     const credits = user.credits
+    const maxCompanies: number | undefined = user.maxCompanies
+    const companiesUsed: number | undefined = user.companiesUsed
 
     return (
         <div className="min-h-screen bg-black text-white relative">
@@ -124,16 +126,28 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
                                     </span>
                                 </div>
                             )}
-                            {onboarded && typeof credits === 'number' && (
+                            {onboarded && (
                                 <div className="flex items-center gap-2">
-                                    <Badge variant={"secondary"}>
-                                        <div className="flex items-center gap-2">
-                                            <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                                            <span className="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-                                                {credits}
-                                            </span>
-                                        </div>
-                                    </Badge>
+                                    {typeof maxCompanies === 'number' && (
+                                        <Badge variant={"secondary"}>
+                                            <div className="flex items-center gap-2">
+                                                <Building2 className="w-4 h-4 text-violet-400" />
+                                                <span className="text-sm font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                                                    {companiesUsed ?? 0}/{maxCompanies}
+                                                </span>
+                                            </div>
+                                        </Badge>
+                                    )}
+                                    {typeof credits === 'number' && (
+                                        <Badge variant={"secondary"}>
+                                            <div className="flex items-center gap-2">
+                                                <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                                                <span className="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                                                    {credits}
+                                                </span>
+                                            </div>
+                                        </Badge>
+                                    )}
                                     <Link href="/dashboard/plan-and-credits">
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-white" title="Buy credits or upgrade plan">
                                             <Plus className="w-4 h-4" />

@@ -44,7 +44,11 @@ export async function GET(request) {
     const decodedToken = tokens?.decodedToken
     
     // Ottieni i dati utente da Firestore
-    const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
+    const userId = decodedToken.uid;
+    const [userDoc, resultsDoc] = await Promise.all([
+      adminDb.collection('users').doc(userId).get(),
+      adminDb.collection('users').doc(userId).collection('data').doc('results').get(),
+    ]);
 
     if (!userDoc.exists) {
       return NextResponse.json(
@@ -55,10 +59,25 @@ export async function GET(request) {
 
     const userData = userDoc.data();
 
+    // Count companies that have been processed (have a company entry in results)
+    const resultsData = resultsDoc.exists ? (resultsDoc.data() ?? {}) : {};
+    const companiesUsed = Object.entries(resultsData).filter(
+      ([k, v]: any) => k !== 'companies_to_confirm' && typeof v === 'object' && v?.company
+    ).length;
+
+    // maxCompanies stored in Firestore accumulates across plan re-purchases;
+    // fall back to the plan config for users who haven't gone through a paid purchase.
+    const { plansData } = await import('@/config');
+    const plan: string = userData.plan || 'free_trial';
+    const maxCompanies: number =
+      userData.maxCompanies ??
+      (plansData as any)[plan]?.maxCompanies ??
+      1;
+
     return NextResponse.json({
       success: true,
       user: {
-        uid: decodedToken.uid,
+        uid: userId,
         email: decodedToken.email,
         name: userData.name,
         createdAt: userData.createdAt,
@@ -68,6 +87,8 @@ export async function GET(request) {
         plan: userData.plan,
         billingType: userData.billingType,
         credits: userData.credits,
+        maxCompanies,
+        companiesUsed,
         picture: decodedToken.picture,
       }
     });

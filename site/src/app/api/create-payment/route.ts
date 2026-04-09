@@ -79,9 +79,24 @@ export async function POST(req: Request) {
                 batch.update(userRef, { credits: FieldValue.increment(pkg.credits) });
             } else if (purchaseType === "plan") {
                 const planData = plansData[itemId as keyof typeof plansData];
+                const newPlanMaxCompanies = planData?.maxCompanies ?? 0;
+
+                // Carry over unused companies from the previous allocation.
+                const [userSnap, resultsSnap] = await Promise.all([
+                    userRef.get(),
+                    adminDb.collection("users").doc(user.uid).collection("data").doc("results").get(),
+                ]);
+                const currentMax: number = userSnap.data()?.maxCompanies ?? 0;
+                const resultsData = resultsSnap.exists ? (resultsSnap.data() ?? {}) : {};
+                const usedCount = Object.entries(resultsData).filter(
+                    ([k, v]: any) => k !== "companies_to_confirm" && typeof v === "object" && v?.company
+                ).length;
+                const remaining = Math.max(0, currentMax - usedCount);
+                const maxCompanies = newPlanMaxCompanies + remaining;
+
                 batch.update(userRef, {
                     plan: itemId,
-                    maxCompanies: planData?.maxCompanies ?? 0,
+                    maxCompanies,
                     credits: FieldValue.increment(planData?.credits ?? 0),
                     onboardingStep: 50,
                 });

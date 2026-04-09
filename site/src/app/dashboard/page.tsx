@@ -61,7 +61,7 @@ function Card({ children, className, hover = true, gradient = false, ...props }:
     )
 }
 
-async function ResultsWrapper({ userId, plan }: { userId: string; plan: string }) {
+async function ResultsWrapper({ userId, plan, maxCompanies, companiesUsed }: { userId: string; plan: string; maxCompanies?: number; companiesUsed?: number }) {
     const isEpochTs = (ts: any) => ts?._seconds === 0;
     const isSentTs = (ts: any) => ts?._seconds > 0;
 
@@ -218,7 +218,7 @@ async function ResultsWrapper({ userId, plan }: { userId: string; plan: string }
         <Card className="p-8 backdrop-blur-none">
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white">Active Campaigns</h2>
-                <AddMoreCompaniesDialog />
+                <AddMoreCompaniesDialog maxCompanies={maxCompanies} companiesUsed={companiesUsed} />
             </div>
 
             <Results results={parsedResults} />
@@ -305,7 +305,7 @@ const Page = async () => {
             </div>
 
             <Suspense fallback={<DashboardSkeleton />}>
-                <ResultsWrapper userId={user.uid} plan={user.plan ?? "unknown"} />
+                <ResultsWrapper userId={user.uid} plan={user.plan ?? "unknown"} maxCompanies={user.maxCompanies} companiesUsed={user.companiesUsed} />
             </Suspense>
 
             {/* Quick Actions */}

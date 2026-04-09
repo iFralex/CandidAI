@@ -1214,7 +1214,12 @@ export async function addNewCompanies(companies: { name: string; domain?: string
     if (!userSnap.exists) return { success: false, error: "User not found" };
 
     const plan = userSnap.data()!.plan || "free_trial";
-    const companiesLimit: number = (plansData as any)[plan]?.maxCompanies ?? 1;
+    // Use accumulated maxCompanies from Firestore (carries over across plan re-purchases),
+    // falling back to the plan default for users who never went through a paid purchase.
+    const companiesLimit: number =
+        userSnap.data()!.maxCompanies ??
+        (plansData as any)[plan]?.maxCompanies ??
+        1;
 
     // Count existing company entries in the results doc
     const resultsRef = adminDb.collection("users").doc(userId).collection("data").doc("results");

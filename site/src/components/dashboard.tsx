@@ -934,8 +934,10 @@ export const ConfirmCompanies = ({ allDetails, userId, queries, defaultInstructi
 
 type TQuery = { name: string; domain: string; icon: string | null };
 
-export function AddMoreCompaniesDialog() {
+export function AddMoreCompaniesDialog({ maxCompanies, companiesUsed }: { maxCompanies?: number; companiesUsed?: number }) {
+    const limitReached = typeof maxCompanies === 'number' && typeof companiesUsed === 'number' && companiesUsed >= maxCompanies;
     const [open, setOpen] = useState(false);
+    const [limitOpen, setLimitOpen] = useState(false);
     const [selectedCompanies, setSelectedCompanies] = useState<TQuery[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [isPending, setIsPending] = useState(false);
@@ -993,12 +995,61 @@ export function AddMoreCompaniesDialog() {
     };
 
     return (
+        <>
+        {/* Limit-reached dialog */}
+        <Dialog open={limitOpen} onOpenChange={setLimitOpen}>
+            <DialogContent>
+                <div className="flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-md bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 rounded-2xl shadow-2xl border border-purple-500/20 overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+                            <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl animate-pulse delay-700" />
+                        </div>
+                        <div className="relative p-8">
+                            {/* Icon */}
+                            <div className="flex justify-center mb-6">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-full blur-xl opacity-50 animate-pulse" />
+                                    <div className="relative bg-gradient-to-br from-orange-500 to-red-500 rounded-full p-5 transition-all duration-500">
+                                        <Building2 className="w-10 h-10 text-white" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h2 className="text-2xl font-bold text-center text-white mb-3">
+                                Limite di aziende raggiunto
+                            </h2>
+                            <p className="text-center text-slate-300 mb-6">
+                                Hai utilizzato tutte le <span className="font-semibold text-white">{maxCompanies}</span> aziende disponibili nel tuo piano attuale. Acquista un nuovo piano per aggiungerne altre — le aziende rimanenti del piano corrente si sommeranno a quelle nuove.
+                            </p>
+
+                            <div className="bg-slate-800/50 rounded-xl p-5 mb-6 border border-orange-500/20 flex items-center justify-between">
+                                <span className="text-slate-400 text-sm font-medium">Aziende utilizzate</span>
+                                <div className="flex items-center gap-2">
+                                    <Building2 className="w-5 h-5 text-orange-400" />
+                                    <span className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+                                        {companiesUsed}/{maxCompanies}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <Link href="/dashboard/plan-and-credits" onClick={() => setLimitOpen(false)}>
+                                <Button className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3" icon={<Crown className="w-4 h-4" />}>
+                                    Acquista un nuovo piano
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+
         <Dialog open={open} onOpenChange={(v) => {
             if (v) track({ name: "add_companies_dialog_open", params: {} });
             setOpen(v);
         }}>
             <DialogTrigger asChild>
-                <Button variant="primary" icon={<Plus className="w-4 h-4" />}>
+                <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={limitReached ? (e) => { e.preventDefault(); setLimitOpen(true); } : undefined}>
                     Add More Companies
                 </Button>
             </DialogTrigger>
@@ -1072,5 +1123,6 @@ export function AddMoreCompaniesDialog() {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+        </>
     );
 }
