@@ -29,6 +29,7 @@ interface NavigationItem {
     name: string;
     icon: React.ReactNode;
     href: string;
+    comingSoon?: boolean;
 }
 
 interface SidebarClientWrapperProps {
@@ -73,6 +74,21 @@ export function SidebarClientWrapper({ user, navigationItems }: SidebarClientWra
                                     item.href === '/dashboard'
                                         ? pathname === '/dashboard'
                                         : pathname.startsWith(item.href);
+
+                                if (item.comingSoon) {
+                                    return (
+                                        <SidebarMenuItem key={item.name}>
+                                            <SidebarMenuButton size="lg" className="cursor-not-allowed opacity-50">
+                                                {item.icon}
+                                                <span>{item.name}</span>
+                                                <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-violet-500/20 text-violet-400 border border-violet-500/30 rounded px-1.5 py-0.5">
+                                                    Soon
+                                                </span>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    );
+                                }
+
                                 return (
                                     <SidebarMenuItem key={item.name}>
                                         <SidebarMenuButton asChild isActive={isActive} size="lg">

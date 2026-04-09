@@ -17,7 +17,7 @@ import { ResendEmailVerificationBtn } from '@/components/onboarding';
 const navigationItems = [
     { name: 'Dashboard', icon: <Home className="w-5 h-5" />, href: '/dashboard' },
     { name: 'Send All', icon: <Activity className="w-5 h-5" />, href: '/dashboard/send-all' },
-    { name: 'Follow Ups', icon: <Bell className="w-5 h-5" />, href: '/dashboard/follow-ups' },
+    { name: 'Follow Ups', icon: <Bell className="w-5 h-5" />, href: '/dashboard/follow-ups', comingSoon: true },
     { name: 'Plan & Credits', icon: <BarChart3 className="w-5 h-5" />, href: '/dashboard/plan-and-credits' },
     { name: 'Settings', icon: <Settings className="w-5 h-5" />, href: '/dashboard/settings' }
 ];
