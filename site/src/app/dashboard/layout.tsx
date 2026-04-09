@@ -106,6 +106,16 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
                             <div className="flex items-center space-x-4">
                                 {/* 3. Il pulsante Menu (interattivo) è ora nel Client Component */}
                                 {onboarded && <SidebarTrigger />}
+                                {!onboarded && (
+                                    <Link href="/" className="flex items-center space-x-2" aria-label="CandidAI home">
+                                        <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
+                                            <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
+                                        </div>
+                                        <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                                            CandidAI
+                                        </span>
+                                    </Link>
+                                )}
                                 <div>
                                     <h1 className="text-2xl font-bold text-white">{onboarded ? "Dashboard" : "Onboarding"}</h1>
                                     {!onboarded && visualStep > 0 && (

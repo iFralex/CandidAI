@@ -13,6 +13,31 @@ import Link from 'next/link';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { track, identifyUser } from "@/lib/analytics";
 
+const mapFirebaseError = (code: string): string => {
+  switch (code) {
+    case 'INVALID_LOGIN_CREDENTIALS':
+    case 'INVALID_PASSWORD':
+      return 'Incorrect email or password.';
+    case 'EMAIL_NOT_FOUND':
+      return 'No account found with this email.';
+    case 'USER_DISABLED':
+      return 'This account has been disabled. Please contact support.';
+    case 'TOO_MANY_ATTEMPTS_TRY_LATER':
+      return 'Too many failed attempts. Please try again later.';
+    case 'INVALID_EMAIL':
+      return 'Invalid email address.';
+    case 'EMAIL_EXISTS':
+    case 'auth/email-already-exists':
+      return 'An account with this email already exists.';
+    case 'WEAK_PASSWORD':
+      return 'Password must be at least 6 characters.';
+    case 'SIGN_IN_ERROR':
+      return 'Sign-in failed. Please try again.';
+    default:
+      return code ?? 'An unexpected error occurred. Please try again.';
+  }
+}
+
 const internLogin = async (idToken: string) => {
   const internalLogin = await fetch(`/api/login`,
     {
@@ -24,7 +49,7 @@ const internLogin = async (idToken: string) => {
   );
 
   if (!internalLogin.ok) {
-    throw new Error("Errore durante login interno");
+    throw new Error("Session setup failed. Please try again.");
   }
 }
 
@@ -67,7 +92,13 @@ export function LoginForm({
         }),
       });
 
-      const { idToken, uid, plan, credits, onboardingStep } = await res.json()
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(mapFirebaseError(data.error));
+      }
+
+      const { idToken, uid, plan, credits, onboardingStep } = data
 
       await internLogin(idToken)
 
@@ -154,14 +185,14 @@ export function LoginForm({
       await signInWithRedirect(auth, provider);
     } catch (err: any) {
       console.error('Google login error:', err);
-      let errorMessage = 'Errore durante il login con Google';
+      let errorMessage = 'Google sign-in failed. Please try again.';
 
       switch (err.code) {
         case 'auth/popup-closed-by-user':
-          errorMessage = 'Login cancellato dall\'utente';
+          errorMessage = 'Sign-in cancelled.';
           break;
         case 'auth/popup-blocked':
-          errorMessage = 'Popup bloccato dal browser';
+          errorMessage = 'Pop-up blocked by your browser. Please allow pop-ups and try again.';
           break;
         default:
           errorMessage = err.message;
@@ -282,7 +313,7 @@ export function RegisterForm({
 
     // Validazione password
     if (password !== confirmPassword) {
-      setError('Le password non coincidono');
+      setError('Passwords do not match.');
       setLoading(false);
       return;
     }
@@ -300,7 +331,13 @@ export function RegisterForm({
         }),
       });
 
-      const { idToken, uid } = await res.json()
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(mapFirebaseError(data.error));
+      }
+
+      const { idToken, uid } = data
 
       await internLogin(idToken)
 
@@ -384,14 +421,14 @@ export function RegisterForm({
       await signInWithRedirect(auth, provider);
     } catch (err: any) {
       console.error('Google login error:', err);
-      let errorMessage = 'Errore durante il login con Google';
+      let errorMessage = 'Google sign-up failed. Please try again.';
 
       switch (err.code) {
         case 'auth/popup-closed-by-user':
-          errorMessage = 'Login cancellato dall\'utente';
+          errorMessage = 'Sign-up cancelled.';
           break;
         case 'auth/popup-blocked':
-          errorMessage = 'Popup bloccato dal browser';
+          errorMessage = 'Pop-up blocked by your browser. Please allow pop-ups and try again.';
           break;
         default:
           errorMessage = err.message;
