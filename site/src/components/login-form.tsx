@@ -73,7 +73,7 @@ export function LoginForm({
 
       track({ name: "login_success", params: { method: "email" } });
       if (uid) identifyUser(uid, { plan, credits, onboarding_step: onboardingStep, signup_method: "email" });
-      router.push(next || "/dashboard");
+      window.location.href = next || "/dashboard";
     } catch (err: any) {
       track({ name: "login_error", params: { method: "email", error_code: err.code ?? err.message ?? "unknown" } });
       setError(err.message);
@@ -306,7 +306,7 @@ export function RegisterForm({
 
       track({ name: "signup_success", params: { method: "email" } });
       if (uid) identifyUser(uid, { plan: "free_trial", credits: 0, onboarding_step: 1, signup_method: "email" });
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err: any) {
       track({ name: "signup_error", params: { method: "email", error_code: err.code ?? err.message ?? "unknown" } });
       setError(err.message);
