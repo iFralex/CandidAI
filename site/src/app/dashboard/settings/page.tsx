@@ -3,6 +3,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getSettings } from "@/actions/onboarding-actions"
 import { SettingsForm } from "./client"
 
+export const metadata = { title: "Settings" };
+
 const SettingsSkeleton = () => (
     <div className="space-y-8 max-w-2xl">
         {/* Email Preferences */}

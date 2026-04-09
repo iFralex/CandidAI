@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+export const metadata = { title: "Docs" };
+
 export default function DocumentList({ documents }) {
 
   documents = [

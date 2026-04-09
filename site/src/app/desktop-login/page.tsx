@@ -4,6 +4,8 @@ import { getTokens } from 'next-firebase-auth-edge';
 import { clientConfig, serverConfig } from '@/config';
 import { adminAuth } from '@/lib/firebase-admin';
 
+export const metadata = { title: "Desktop Login" };
+
 export default async function DesktopLoginPage() {
   const cookieStore = await cookies();
 

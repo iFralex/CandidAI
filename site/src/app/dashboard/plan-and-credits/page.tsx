@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import PlanAndCreditsClient from "./client";
 
+export const metadata = { title: "Plan & Credits" };
+
 const PlanAndCreditsSkeleton = () => (
     <div className="space-y-12">
         {/* Plans section */}

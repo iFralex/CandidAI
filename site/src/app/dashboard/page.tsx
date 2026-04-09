@@ -1,6 +1,8 @@
 import OnboardingPage from "../../components/onboardingServer";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
+
+export const metadata = { title: "Dashboard" };
 import { Results, ResultsSkeleton, CampaignSkeleton } from "@/components/dashboardServer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";

@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { CheckCheck, CheckCircle } from "lucide-react";
 import { revalidatePath } from "next/cache";
+
+export const metadata = { title: "Verify Email" };
 import { refreshCredentials } from "next-firebase-auth-edge/next/cookies";
 import { cookies } from "next/headers";
 

@@ -1,5 +1,7 @@
 import { MDContent } from "../complete-platform-documentation/page"
 
+export const metadata = { title: "Video Promo Scripts" };
+
 const Page = () => {
    const content = {
       en: `### Version 1: The "System Bypass" Concept

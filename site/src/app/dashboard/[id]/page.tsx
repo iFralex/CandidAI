@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 
+export const metadata = { title: "Campaign" };
+
 // ============== SKELETON COMPONENTS ==============
 // Questi componenti non hanno bisogno di interattività o animazioni,
 // quindi possono rimanere tranquillamente nel file del server.

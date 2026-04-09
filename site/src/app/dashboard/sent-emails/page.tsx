@@ -4,6 +4,8 @@ import { Results, ResultsSkeleton } from "@/components/dashboardServer";
 import { SentEmailsFilter } from "./client";
 import { redirect } from "next/navigation";
 
+export const metadata = { title: "Sent Emails" };
+
 type SearchParams = Promise<{ preset?: string; from?: string; to?: string }>;
 
 const isSentTs = (ts: any) => ts?._seconds > 0;

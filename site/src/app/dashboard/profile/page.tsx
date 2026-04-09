@@ -3,6 +3,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getProfileData } from "@/actions/onboarding-actions"
 import { ProfileClient } from "./client"
 
+export const metadata = { title: "Profile" };
+
 const ProfileSkeleton = () => (
     <div className="space-y-8 max-w-4xl">
         {/* Basic Info */}
