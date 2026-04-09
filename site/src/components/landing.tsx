@@ -1410,7 +1410,7 @@ const Footer = () => {
 
                 <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-white/10">
                     <div className="text-gray-400 mb-4 md:mb-0">
-                        &copy; 2024 CandidAI. All rights reserved.
+                        &copy; {new Date().getFullYear()} CandidAI. All rights reserved.
                     </div>
 
                     <div className="flex items-center space-x-6">
