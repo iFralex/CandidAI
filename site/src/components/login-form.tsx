@@ -14,7 +14,7 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { track, identifyUser } from "@/lib/analytics";
 
 const internLogin = async (idToken: string) => {
-  const internalLogin = await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/login`,
+  const internalLogin = await fetch(`/api/login`,
     {
       method: "POST",
       headers: {
