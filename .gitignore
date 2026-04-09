@@ -63,3 +63,8 @@ desktop/dist-renderer/
 .cache_ggshield
 __pycache__/
 desktop/dist/
+
+# ── Local tooling / generated binaries ──────────────────────────────────────
+.claude/
+browsers/
+site/public/downloads/
