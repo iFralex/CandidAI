@@ -8,7 +8,7 @@ export async function POST(req) {
     try {
         const { userId, type, data = {} } = await req.json();
 
-        const VALID_TYPES = ["welcome", "password-reset", "new_emails_generated", "purchase-confirmation"];
+        const VALID_TYPES = ["welcome", "password-reset", "new_emails_generated", "purchase-confirmation", "contact-confirmation"];
         const TYPES_REQUIRING_USER_ID = ["welcome", "new_emails_generated", "purchase-confirmation"];
 
         if (!type || !VALID_TYPES.includes(type)) {
@@ -380,6 +380,46 @@ export async function POST(req) {
       `, `Your purchase of ${data.item} for ${data.amount} is confirmed`);
 
                     return { subject: confirmSubject, html: confirmHtml };
+
+                case "contact-confirmation":
+                    email = data.email;
+                    const contactSubject = `We received your message — CandidAI Support`;
+                    const safeMessage = (data.message || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    const contactHtml = wrapEmail(`
+        <div style="text-align: center; margin-bottom: 30px;">
+          <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.1); border-radius: 24px; margin-bottom: 20px;">
+            <span style="color: #8b5cf6; font-size: 14px; font-weight: 600;">MESSAGE RECEIVED</span>
+          </div>
+        </div>
+
+        <h2 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0 0 16px; line-height: 1.3;">
+          We got your message, ${data.name}! 👋
+        </h2>
+
+        <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+          Thanks for reaching out. Our team will review your request and get back to you as soon as possible.
+        </p>
+
+        <div style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid #8b5cf6; padding: 20px; margin: 24px 0; border-radius: 8px;">
+          <p style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin: 0;">
+            <strong style="color: #8b5cf6;">📬 What's next?</strong> You'll hear back from us at <strong>support@candidai.tech</strong> — keep an eye on your inbox (and spam folder, just in case).
+          </p>
+        </div>
+
+        <div style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 8px; color: #888888; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Your message</p>
+          <p style="margin: 0 0 4px; color: #a78bfa; font-size: 13px; font-weight: 600;">${data.subject}</p>
+          <p style="margin: 8px 0 0; color: #d1d5db; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${safeMessage}</p>
+        </div>
+
+        <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
+          <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">
+            This is an automated confirmation — please do not reply to this email.
+          </p>
+        </div>
+      `, "We've received your support request and will be in touch soon");
+
+                    return { subject: contactSubject, html: contactHtml };
 
                 default:
                     return {
