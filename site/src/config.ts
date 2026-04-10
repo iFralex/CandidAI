@@ -163,7 +163,7 @@ export const plansInfo = [
   {
     id: "base",
     name: "Base",
-    price: 30,
+    price: 1,
     description: "Perfect for targeted job search",
     features: staticFeatures.base,
     highlight: "Great for focused search",
@@ -173,7 +173,7 @@ export const plansInfo = [
   {
     id: "pro",
     name: "Pro",
-    price: 69,
+    price: 59,
     description: "For serious job seekers",
     features: staticFeatures.pro,
     highlight: "Most Popular",
@@ -184,7 +184,7 @@ export const plansInfo = [
   {
     id: "ultra",
     name: "Ultra",
-    price: 139,
+    price: 109,
     description: "Maximum job search power",
     features: staticFeatures.ultra,
     highlight: "Ultimate power",
