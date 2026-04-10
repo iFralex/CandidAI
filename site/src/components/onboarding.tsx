@@ -4853,7 +4853,13 @@ export function PlanSelectionClient({ userId = 'user123', plans, selectedPlan: i
                             </>
                         ) : (
                             <>
-                                <span>{selectedPlan === freePlan.id ? "Start Free Test" : "Continue Setup"}</span>
+                                <span>
+                                    {!selectedPlan
+                                        ? "Select a plan to continue"
+                                        : selectedPlan === freePlan.id
+                                        ? "Start Free Test"
+                                        : `Continue with ${plansInfo.find(p => p.id === selectedPlan)?.name ?? "Plan"}`}
+                                </span>
                                 <ArrowRight className="w-5 h-5" />
                             </>
                         )}

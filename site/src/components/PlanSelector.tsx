@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from "framer-motion";
-import { Gift, Target, Rocket, Crown, Check, X } from "lucide-react";
+import { Gift, Target, Rocket, Crown, Check, X, CheckCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -165,12 +165,12 @@ export function PlanSelector({
                             </ul>
 
                             <Button
-                                variant={plan.popular ? "primary" : "secondary"}
+                                variant={isSelected ? "primary" : plan.popular ? "primary" : "secondary"}
                                 className="w-full"
                                 onClick={(e) => handleCtaClick(e, plan as PlanInfo)}
-                                icon={<Icon className="w-5 h-5" />}
+                                icon={isSelected ? <CheckCircle className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                             >
-                                {ctaLabel}
+                                {isSelected ? "Selected" : ctaLabel}
                             </Button>
                         </Card>
                     </motion.div>
