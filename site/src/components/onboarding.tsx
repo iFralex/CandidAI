@@ -196,7 +196,6 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                    {!isProOrUltra && <UpgradeBanner onChangePlan={handleChangePlan} isPending={isChangePlanPending} position="top" />}
                     <div className={`bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 ${!isProOrUltra ? 'opacity-50 pointer-events-none select-none' : ''}`}>
                         <h3 className="text-xl font-semibold text-white mb-4">Custom Instructions</h3>
                         <Textarea value={customizations.instructions} onChange={v => setCustomizations(prev => ({ ...prev, instructions: v.target.value }))} placeholder='Anything you want to specify; your instructions will be added in the mail generation prompt.' rows={4} disabled={!isProOrUltra} />
