@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { track } from "@/lib/analytics";
 import { Button } from "./ui/button";
-import { AlertCircle, ArrowDown, ArrowDown01, ArrowRight, Badge, BarChart3, Building2, Calendar, Check, CheckCircle, ChevronDown, Crown, ExternalLink, Globe, Loader, Loader2, Mail, MapPin, Plus, Puzzle, RefreshCw, RotateCcw, Save, Send, Timer, TrendingUp, Users, X } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowDown01, ArrowRight, Badge, BarChart3, Building2, Calendar, Check, CheckCircle, ChevronDown, Crown, Globe, Loader, Loader2, Mail, MapPin, Plus, Puzzle, RefreshCw, RotateCcw, Save, Send, Timer, TrendingUp, Users, X } from "lucide-react";
 import { Card } from "./ui/card";
 import Image from "next/image";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -259,11 +259,13 @@ const Dashboard = ({ results }) => {
                 <Card className="p-6" gradient>
                     <h3 className="text-xl font-semibold text-white mb-4">Need Help?</h3>
                     <p className="text-gray-300 mb-4">
-                        Check out our guides and tips to maximize your job search success.
+                        Have a question or issue? Our support team is here to help you.
                     </p>
-                    <Button variant="secondary" icon={<ExternalLink className="w-4 h-4" />}>
-                        View Resources
-                    </Button>
+                    <Link href="/dashboard/help">
+                        <Button variant="secondary" icon={<Mail className="w-4 h-4" />}>
+                            Contact Support
+                        </Button>
+                    </Link>
                 </Card>
 
                 <Card className="p-6">
