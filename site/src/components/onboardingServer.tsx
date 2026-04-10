@@ -1,5 +1,5 @@
 import { CheckCircle, CreditCard, Wand2 } from 'lucide-react'
-import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, ScrollToTop } from '@/components/onboarding'
+import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, ScrollToTop, OnboardingCompleteClient } from '@/components/onboarding'
 import { ProfileAnalysisClient } from '@/components/onboarding';
 import { UnifiedCheckout } from '@/components/UnifiedCheckout';
 import { startServer, submitQueries, jumpToStep } from '@/actions/onboarding-actions'
@@ -62,7 +62,7 @@ export async function PaymentStripeServer({ userId, plan, email }: { userId: str
         const userRef = adminDb.collection("users").doc(userId);
 
         await userRef.update({
-            onboardingStep: 50,
+            onboardingStep: 7,
         });
 
         await startServer(userId);
@@ -229,6 +229,16 @@ export async function AdvancedFiltersServer({ userId, plan, currentStep }: Advan
     )
 }
 
+export async function OnboardingCompleteServer({ userId }: { userId: string }) {
+    let companies: { name: string; domain?: string; linkedin_url?: string }[] = []
+    try {
+        const accountSnap = await adminDb.collection("users").doc(userId).collection("data").doc("account").get()
+        companies = accountSnap.data()?.companies || []
+    } catch (e) { /* fall through */ }
+
+    return <OnboardingCompleteClient companies={companies} />
+}
+
 interface ProfileAnalysisServerProps {
     userId: string
     plan: string
@@ -359,6 +369,10 @@ export default async function OnboardingPage({ user, currentStep }) {
 
             {currentStep === 6 && (
                 <PaymentStripeServer userId={user.uid} plan={user.plan} email={user.email} />
+            )}
+
+            {currentStep === 7 && (
+                <OnboardingCompleteServer userId={user.uid} />
             )}
         </div>
     )

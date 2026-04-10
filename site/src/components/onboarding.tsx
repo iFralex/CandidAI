@@ -4916,3 +4916,124 @@ export function ScrollToTop({ step }: { step: number }) {
     }, [step])
     return null
 }
+
+export function OnboardingCompleteClient({ companies }: { companies: { name: string; domain?: string; linkedin_url?: string }[] }) {
+    const [isPending, startTransition] = useTransition()
+
+    const handleGoToDashboard = () => {
+        startTransition(() => jumpToStep(50))
+    }
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.3 } }
+    }
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } }
+    }
+
+    return (
+        <div className="max-w-3xl mx-auto text-center">
+            {/* Success icon */}
+            <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
+                className="w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-green-500/40"
+            >
+                <CheckCircle className="w-12 h-12 text-white" />
+            </motion.div>
+
+            <motion.h2
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 }}
+                className="text-4xl font-bold text-white mb-3"
+            >
+                You&apos;re all set! 🎉
+            </motion.h2>
+            <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.45 }}
+                className="text-lg text-gray-400 mb-10"
+            >
+                Your order has been submitted. The companies below are now in the processing queue.
+            </motion.p>
+
+            {/* Company list */}
+            {companies.length > 0 && (
+                <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="mb-10 grid grid-cols-1 sm:grid-cols-2 gap-3"
+                >
+                    {companies.map((company, i) => {
+                        const domain = company.domain || (company.linkedin_url?.includes('linkedin.com/company/')
+                            ? null
+                            : company.linkedin_url)
+                        const faviconUrl = domain
+                            ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+                            : null
+                        const initial = company.name?.[0]?.toUpperCase() ?? '?'
+
+                        return (
+                            <motion.div
+                                key={i}
+                                variants={itemVariants}
+                                className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-left"
+                            >
+                                <div className="shrink-0 w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden">
+                                    {faviconUrl ? (
+                                        <img
+                                            src={faviconUrl}
+                                            alt={company.name}
+                                            className="w-6 h-6 object-contain"
+                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                        />
+                                    ) : (
+                                        <span className="text-white font-bold text-sm">{initial}</span>
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-white font-medium truncate">{company.name}</p>
+                                    <p className="text-xs text-gray-500 truncate">{domain || company.linkedin_url || '—'}</p>
+                                </div>
+                                <span className="shrink-0 text-xs font-semibold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                                    Queued
+                                </span>
+                            </motion.div>
+                        )
+                    })}
+                </motion.div>
+            )}
+
+            {/* Info strip */}
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="flex flex-wrap justify-center gap-6 text-sm text-gray-400 mb-10"
+            >
+                <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-blue-400" /> Processing: 24 hrs – 7 days</span>
+                <span className="flex items-center gap-2"><Mail className="w-4 h-4 text-green-400" /> Email updates included</span>
+                <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-purple-400" /> Premium queue priority</span>
+            </motion.div>
+
+            {/* CTA */}
+            <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                onClick={handleGoToDashboard}
+                disabled={isPending}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-violet-500/30"
+            >
+                {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
+                <span>{isPending ? 'Loading...' : 'Go to Dashboard'}</span>
+            </motion.button>
+        </div>
+    )
+}

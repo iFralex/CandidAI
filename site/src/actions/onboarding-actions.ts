@@ -434,7 +434,7 @@ export async function completeOnboarding(customizations: any) {
                 const userData = JSON.parse(Buffer.from(testCookie, 'base64').toString('utf-8'));
                 const planConfig = plansInfo.find(p => p.id === userData.plan);
                 // Free plan (price=0): skip payment step, go directly to main dashboard
-                userData.onboardingStep = (planConfig?.price === 0) ? 50 : 6;
+                userData.onboardingStep = (planConfig?.price === 0) ? 7 : 6;
                 cookieStore.set('__playwright_user__', Buffer.from(JSON.stringify(userData)).toString('base64'), { path: '/' });
             } catch (e) { /* fall through */ }
             redirect('/dashboard');
@@ -454,7 +454,7 @@ export async function completeOnboarding(customizations: any) {
     const userSnap = await userRef.get();
     const planConfig = plansInfo.find(p => p.id === userSnap.data()?.plan);
     const existingMax: number = userSnap.data()?.maxOnboardingStep || 5;
-    const nextStepBase = (planConfig?.price === 0) ? 50 : 6;
+    const nextStepBase = (planConfig?.price === 0) ? 7 : 6;
 
     const plan: string = userSnap.data()?.plan || "free_trial";
     const isProOrUltra = plan === "pro" || plan === "ultra";
