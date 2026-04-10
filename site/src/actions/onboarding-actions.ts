@@ -53,7 +53,6 @@ export async function goBackStep(currentStep: number, plan: string) {
                 const userData = JSON.parse(Buffer.from(testCookie, 'base64').toString('utf-8'));
                 const maxStep = Math.max(currentStep, userData.maxOnboardingStep || currentStep);
                 let prevStep = currentStep - 1;
-                if (currentStep === 5 && plan !== 'pro' && plan !== 'ultra') prevStep = 3;
                 if (prevStep >= 1) {
                     userData.onboardingStep = prevStep;
                     userData.maxOnboardingStep = maxStep;
@@ -67,7 +66,6 @@ export async function goBackStep(currentStep: number, plan: string) {
 
     const userId = await checkAuth();
     let prevStep = currentStep - 1;
-    if (currentStep === 5 && plan !== 'pro' && plan !== 'ultra') prevStep = 3;
     if (prevStep < 1) return;
 
     const userRef = adminDb.collection("users").doc(userId);
@@ -76,6 +74,29 @@ export async function goBackStep(currentStep: number, plan: string) {
     const maxOnboardingStep = Math.max(currentStep, existingMax);
 
     await userRef.update({ onboardingStep: prevStep, maxOnboardingStep });
+    revalidatePath('/dashboard');
+}
+
+export async function jumpToStep(targetStep: number) {
+    if (process.env.NODE_ENV !== 'production') {
+        const cookieStore = await cookies();
+        const testCookie = cookieStore.get('__playwright_user__')?.value;
+        if (testCookie) {
+            try {
+                const userData = JSON.parse(Buffer.from(testCookie, 'base64').toString('utf-8'));
+                userData.onboardingStep = targetStep;
+                cookieStore.set('__playwright_user__', Buffer.from(JSON.stringify(userData)).toString('base64'), { path: '/' });
+            } catch (e) { /* fall through */ }
+            revalidatePath('/dashboard');
+            return;
+        }
+    }
+
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+    const maxOnboardingStep = userSnap.data()?.maxOnboardingStep || targetStep;
+    await userRef.update({ onboardingStep: targetStep, maxOnboardingStep });
     revalidatePath('/dashboard');
 }
 
@@ -243,9 +264,7 @@ export async function submitProfile(
             if (!skipOnboardingStep) {
                 try {
                     const userData = JSON.parse(Buffer.from(testCookie, 'base64').toString('utf-8'));
-                    // For pro/ultra: advance to step 4 (Advanced Filters UI).
-                    // For base/free_trial: skip step 4 (auto-executes server-side) and advance to step 5.
-                    userData.onboardingStep = (plan === 'pro' || plan === 'ultra') ? 4 : 5;
+                    userData.onboardingStep = 4;
                     cookieStore.set('__playwright_user__', Buffer.from(JSON.stringify(userData)).toString('base64'), { path: '/' });
                 } catch (e) { /* fall through */ }
             }
@@ -332,7 +351,7 @@ export async function submitProfile(
         const existingMax: number = userSnap.data()?.maxOnboardingStep || 4;
         const existingProfile = accountSnap.data()?.profileSummary;
         const profileChanged = !!cv || JSON.stringify(profileData?.profileSummary) !== JSON.stringify(existingProfile);
-        const nextStepBase = (plan === 'pro' || plan === 'ultra') ? 4 : 5;
+        const nextStepBase = 4;
 
         const accountData: Record<string, any> = { ...updatedProfile };
         if (profileChanged) {

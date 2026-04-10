@@ -2,7 +2,7 @@ import { CheckCircle, CreditCard, Wand2 } from 'lucide-react'
 import { PlanSelectionClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient, ScrollToTop } from '@/components/onboarding'
 import { ProfileAnalysisClient } from '@/components/onboarding';
 import { UnifiedCheckout } from '@/components/UnifiedCheckout';
-import { startServer, submitQueries } from '@/actions/onboarding-actions'
+import { startServer, submitQueries, jumpToStep } from '@/actions/onboarding-actions'
 import { cookies, headers } from 'next/headers'
 import { plansData, plansInfo } from '@/config';
 import { setTestMock } from '@/app/api/test/set-mock/route';
@@ -196,27 +196,11 @@ export async function AdvancedFiltersServer({ userId, plan, currentStep }: Advan
         }
     }
 
-    if (plan !== "pro" && plan !== "ultra") {
-        // Test bypass: cookies().set() is not allowed in server components, so we use the
-        // server-side mock store to advance the user state before redirecting.
-        if (process.env.NODE_ENV !== 'production') {
-            const cookieStore = await cookies();
-            const testCookie = cookieStore.get('__playwright_user__')?.value;
-            if (testCookie) {
-                try {
-                    const userData = JSON.parse(Buffer.from(testCookie, 'base64').toString('utf-8'));
-                    userData.onboardingStep = 5;
-                    setTestMock('/api/protected/user', { success: true, user: userData });
-                } catch (e) { /* fall through */ }
-                redirect('/dashboard');
-            }
-        }
-        return await submitQueries(defaultStrategy)
-    }
+    const isProOrUltra = plan === "pro" || plan === "ultra"
 
     // Use saved queries if available, otherwise use generated defaults
     const existingQueries = data.data.queries
-    const strategyToUse = existingQueries && existingQueries.length > 0 ? existingQueries : defaultStrategy
+    const strategyToUse = isProOrUltra && existingQueries && existingQueries.length > 0 ? existingQueries : defaultStrategy
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -225,18 +209,22 @@ export async function AdvancedFiltersServer({ userId, plan, currentStep }: Advan
                     Advanced Recruiter Filters
                 </h2>
                 <p className="text-lg text-gray-400">
-                    Add up to {maxFilters} filter{maxFilters > 1 ? 's' : ''} to find recruiters that perfectly match your preferences.
-                    These filters help narrow down the search for more targeted results.
+                    {isProOrUltra
+                        ? `Add up to ${maxFilters} filter${maxFilters > 1 ? 's' : ''} to find recruiters that perfectly match your preferences. These filters help narrow down the search for more targeted results.`
+                        : "A default recruiter targeting strategy has been generated based on your profile. Upgrade to Pro or Ultra to customize it."
+                    }
                 </p>
             </div>
 
-            <AdvancedFiltersClientWrapper userId={userId} maxStrategies={maxFilters} defaultStrategy={strategyToUse} currentStep={currentStep} plan={plan} />
+            <AdvancedFiltersClientWrapper userId={userId} maxStrategies={maxFilters} defaultStrategy={strategyToUse} currentStep={currentStep} plan={plan} readOnly={!isProOrUltra} />
 
-            <div className="text-center mt-6">
-                <p className="text-sm text-gray-500">
-                    You can always modify these filters later from your settings
-                </p>
-            </div>
+            {isProOrUltra && (
+                <div className="text-center mt-6">
+                    <p className="text-sm text-gray-500">
+                        You can always modify these filters later from your settings
+                    </p>
+                </div>
+            )}
         </div>
     )
 }

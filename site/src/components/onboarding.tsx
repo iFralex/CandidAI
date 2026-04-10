@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { track } from "@/lib/analytics"
 import { motion, AnimatePresence } from "framer-motion"
-import { resendEmailVerification, selectPlan, goBackStep, deleteProfile } from '@/actions/onboarding-actions'
+import { resendEmailVerification, selectPlan, goBackStep, deleteProfile, jumpToStep } from '@/actions/onboarding-actions'
 import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, ArrowLeft, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark, Lock } from 'lucide-react'
 import { submitCompanies } from '@/actions/onboarding-actions'
 import { Building, Plus, X, Wand2 } from 'lucide-react'
@@ -1319,10 +1319,11 @@ export function AddStrategyButton({
     );
 }
 
-export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, userId, onSave, currentStep, plan }: { defaultStrategy: any; maxStrategies: number; userId: string; onSave?: (strategy: any) => Promise<void>; currentStep?: number; plan?: string }) {
+export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, userId, onSave, currentStep, plan, readOnly }: { defaultStrategy: any; maxStrategies: number; userId: string; onSave?: (strategy: any) => Promise<void>; currentStep?: number; plan?: string; readOnly?: boolean }) {
     const [strategy, setStrategy] = useState(defaultStrategy);
     const [isPending, startTransition] = useTransition();
     const [isBackPending, startBackTransition] = useTransition();
+    const [isChangePlanPending, startChangePlanTransition] = useTransition();
     const [hasChanges, setHasChanges] = useState(false);
     const [saved, setSaved] = useState(false);
 
@@ -1359,8 +1360,41 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
         startBackTransition(() => goBackStep(currentStep, plan))
     };
 
+    const handleChangePlan = () => {
+        startChangePlanTransition(() => jumpToStep(1))
+    };
+
     return (
-        <AdvancedFiltersClient strategy={strategy} setStrategy={setStrategy} maxStrategies={maxStrategies}>
+        <AdvancedFiltersClient strategy={strategy} setStrategy={setStrategy} maxStrategies={maxStrategies} readOnly={readOnly}>
+            {/* Read-only plan upgrade banner */}
+            {readOnly && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                >
+                    <div className="flex items-start gap-3">
+                        <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm font-semibold text-amber-300">Strategy not editable on your plan</p>
+                            <p className="text-xs text-amber-400/80 mt-0.5">
+                                Your current plan uses a default recruiter strategy generated from your profile. Upgrade to Pro or Ultra to fully customize targeting criteria and priority order.
+                            </p>
+                        </div>
+                    </div>
+                    <motion.button
+                        onClick={handleChangePlan}
+                        disabled={isChangePlanPending}
+                        className="shrink-0 inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                    >
+                        {isChangePlanPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
+                        <span>Change Plan</span>
+                    </motion.button>
+                </motion.div>
+            )}
+
             {/* Action Buttons */}
             <motion.div
                 className="flex flex-wrap items-center justify-center gap-3 mb-4"
@@ -1380,21 +1414,23 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
                         <span>Back</span>
                     </motion.button>
                 )}
-                <motion.button
-                    onClick={resetStrategy}
-                    disabled={!hasChanges}
-                    className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-lg transition-all flex items-center space-x-2 border border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                    whileHover={{ scale: hasChanges ? 1.05 : 1, boxShadow: hasChanges ? '0 5px 20px rgba(255, 255, 255, 0.1)' : '0 0 0 rgba(255, 255, 255, 0)' }}
-                    whileTap={{ scale: hasChanges ? 0.95 : 1 }}
-                >
-                    <motion.div
-                        animate={hasChanges ? { rotate: [0, -180, -360] } : {}}
-                        transition={{ duration: 0.6 }}
+                {!readOnly && (
+                    <motion.button
+                        onClick={resetStrategy}
+                        disabled={!hasChanges}
+                        className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-lg transition-all flex items-center space-x-2 border border-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        whileHover={{ scale: hasChanges ? 1.05 : 1, boxShadow: hasChanges ? '0 5px 20px rgba(255, 255, 255, 0.1)' : '0 0 0 rgba(255, 255, 255, 0)' }}
+                        whileTap={{ scale: hasChanges ? 0.95 : 1 }}
                     >
-                        <RotateCcw className="w-5 h-5" />
-                    </motion.div>
-                    <span>Reset to Default</span>
-                </motion.button>
+                        <motion.div
+                            animate={hasChanges ? { rotate: [0, -180, -360] } : {}}
+                            transition={{ duration: 0.6 }}
+                        >
+                            <RotateCcw className="w-5 h-5" />
+                        </motion.div>
+                        <span>Reset to Default</span>
+                    </motion.button>
+                )}
 
                 <motion.button
                     onClick={handleContinue}
@@ -1465,7 +1501,7 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
     )
 }
 
-export function AdvancedFiltersClient({ maxStrategies, strategy, setStrategy, children }) {
+export function AdvancedFiltersClient({ maxStrategies, strategy, setStrategy, children, readOnly }: { maxStrategies: number; strategy: any; setStrategy: any; children?: React.ReactNode; readOnly?: boolean }) {
     const [showFormModal, setShowFormModal] = useState(false);
     const [editingQuery, setEditingQuery] = useState(null);
     const [addPosition, setAddPosition] = useState("first");
@@ -1762,8 +1798,8 @@ export function AdvancedFiltersClient({ maxStrategies, strategy, setStrategy, ch
                         </motion.span>
                     </motion.div>
 
-                    <Reorder.Group axis="y" values={strategy} onReorder={handleReorder} className="space-y-3">
-                        <AddStrategyButton maxStrategies={maxStrategies} strategy={strategy} openAddForm={() => openAddForm("first")} />
+                    <Reorder.Group axis="y" values={strategy} onReorder={readOnly ? () => {} : handleReorder} className={`space-y-3 ${readOnly ? 'pointer-events-none select-none' : ''}`}>
+                        {!readOnly && <AddStrategyButton maxStrategies={maxStrategies} strategy={strategy} openAddForm={() => openAddForm("first")} />}
 
                         {strategy.map((query, idx) => (
                             <Reorder.Item key={query.id} value={query} layoutId={`strategy-${query.id}`}>
@@ -1815,7 +1851,7 @@ export function AdvancedFiltersClient({ maxStrategies, strategy, setStrategy, ch
                                                     whileTap={{ scale: 0.9 }}
                                                     transition={{ type: "spring", stiffness: 300 }}
                                                 >
-                                                    <GripVertical className="w-5 h-5 text-gray-500 opacity-50 group-hover:opacity-100 group-hover:text-violet-400 transition-all" />
+                                                    {!readOnly && <GripVertical className="w-5 h-5 text-gray-500 opacity-50 group-hover:opacity-100 group-hover:text-violet-400 transition-all" />}
                                                 </motion.div>
                                                 <motion.div
                                                     className="bg-gradient-to-br from-violet-500 to-purple-600 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shadow-md"
@@ -1846,8 +1882,8 @@ export function AdvancedFiltersClient({ maxStrategies, strategy, setStrategy, ch
                                                     >
                                                         {query.name}
                                                     </motion.h4>
-                                                    <motion.div
-                                                        className="flex items-center gap-2 transition-all duration-200 
+                                                    {!readOnly && <motion.div
+                                                        className="flex items-center gap-2 transition-all duration-200
              opacity-0 translate-x-5 group-hover:opacity-100 group-hover:translate-x-0"
                                                         initial={false} // disattiva animazione iniziale di framer
                                                     >
@@ -1887,7 +1923,7 @@ export function AdvancedFiltersClient({ maxStrategies, strategy, setStrategy, ch
                                                                 <Trash2 className="w-4 h-4" />
                                                             </motion.div>
                                                         </motion.button>
-                                                    </motion.div>
+                                                    </motion.div>}
 
                                                 </div>
                                                 <motion.div
@@ -1941,7 +1977,7 @@ export function AdvancedFiltersClient({ maxStrategies, strategy, setStrategy, ch
                             </Reorder.Item>
                         ))}
 
-                        <AddStrategyButton maxStrategies={maxStrategies} strategy={strategy} openAddForm={() => openAddForm("last")} />
+                        {!readOnly && <AddStrategyButton maxStrategies={maxStrategies} strategy={strategy} openAddForm={() => openAddForm("last")} />}
                     </Reorder.Group>
                 </motion.div>
 
