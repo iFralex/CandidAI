@@ -116,6 +116,15 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
 
     return (
         <>
+            <StepExplanation
+                title="How do these instructions shape the emails?"
+                items={[
+                    { icon: Target, label: "Target position", description: "Describe the role you're looking for. This tells the AI what to pitch and which of your skills to emphasize in each email." },
+                    { icon: Edit3, label: "Custom instructions", description: "Anything you write here is injected directly into the email generation prompt — tone, things to mention, things to avoid." },
+                    { icon: Clock, label: "Processing time", description: "Once submitted, your order enters the generation queue. Processing typically takes between 24 hours and 7 days." },
+                    { icon: Mail, label: "Email updates", description: "You'll receive email notifications as batches of recruiter emails become ready in your dashboard." },
+                ]}
+            />
             <motion.div
                 className="space-y-8 mb-8"
                 variants={containerVariants}
@@ -241,6 +250,58 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
                 </div>
             </motion.div>
         </>
+    )
+}
+
+function StepExplanation({ title, items }: {
+    title: string
+    items: { icon: React.ComponentType<{ className?: string }>; label: string; description: string }[]
+}) {
+    const [open, setOpen] = useState(false)
+    return (
+        <div className="mb-6 rounded-xl border border-white/10 bg-white/5 overflow-hidden">
+            <button
+                type="button"
+                onClick={() => setOpen(v => !v)}
+                className="w-full flex items-center justify-between px-5 py-3 text-left text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+            >
+                <span className="flex items-center gap-2 font-medium">
+                    <CircleHelp className="w-4 h-4 text-violet-400 shrink-0" />
+                    {title}
+                </span>
+                <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                    <ChevronDown className="w-4 h-4" />
+                </motion.div>
+            </button>
+            <AnimatePresence>
+                {open && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                    >
+                        <div className="px-5 pb-4 pt-3 border-t border-white/10 grid sm:grid-cols-2 gap-4">
+                            {items.map((item, i) => {
+                                const Icon = item.icon
+                                return (
+                                    <div key={i} className="flex gap-3">
+                                        <div className="mt-0.5 shrink-0 w-7 h-7 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                                            <Icon className="w-4 h-4 text-violet-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-white">{item.label}</p>
+                                            <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
     )
 }
 
@@ -1652,6 +1713,15 @@ export function AdvancedFiltersClient({ maxStrategies, strategy, setStrategy, ch
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 className="max-w-6xl mx-auto"
             >
+                <StepExplanation
+                    title="How do recruiter strategies affect targeting?"
+                    items={[
+                        { icon: Target, label: "Precise targeting", description: "Each strategy defines a specific recruiter profile (seniority, location, skills) so emails reach the most relevant people." },
+                        { icon: ArrowDown, label: "Priority order", description: "Strategies at the top are executed first. Drag and drop to re-order them by importance." },
+                        { icon: Users, label: "Multiple criteria", description: "Combine seniority, geography, skills, industry, and more to pinpoint exactly who should receive your email." },
+                        { icon: Zap, label: "More strategies = more reach", description: "Each strategy targets a different recruiter segment, maximizing your chances of landing interviews." },
+                    ]}
+                />
                 {/* Strategy List */}
                 <motion.div
                     className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8 backdrop-blur-xl"
@@ -3827,6 +3897,16 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                         </p>
                     </div>
 
+                    <StepExplanation
+                        title="How does your profile improve the emails?"
+                        items={[
+                            { icon: Brain, label: "Skill matching", description: "The AI extracts your skills from your CV and LinkedIn, then highlights the most relevant ones for each target company's domain." },
+                            { icon: Briefcase, label: "Experience context", description: "Your past roles and achievements are referenced in each email to show concrete value to the recruiter." },
+                            { icon: GraduationCap, label: "Education & projects", description: "Degrees, certifications, and notable projects are mentioned when relevant to the target company or role." },
+                            { icon: User, label: "Authentic voice", description: "The richer your profile, the more specific and credible each email sounds — no generic templates." },
+                        ]}
+                    />
+
                     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8">
                         {/* LinkedIn URL */}
                         <div className="mb-6">
@@ -4420,6 +4500,15 @@ export function CompanyInputClient({
 
     return (
         <>
+            <StepExplanation
+                title="How are target companies used in email generation?"
+                items={[
+                    { icon: Search, label: "Recruiter discovery", description: "For each company, CandidAI searches LinkedIn to find relevant recruiters and hiring managers that match your profile." },
+                    { icon: Mail, label: "Personalized emails", description: "Each email is tailored to the specific company, referencing its industry, culture, and how your background fits." },
+                    { icon: Building, label: "Domain & LinkedIn URL", description: "Add companies by website domain (e.g. google.com) or LinkedIn company URL — both methods work equally well." },
+                    { icon: Target, label: "Processing order", description: "Companies will be processed in the order listed. Add the most important ones first." },
+                ]}
+            />
             <motion.div
                 className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 mb-8 relative z-10"
                 initial="hidden"
@@ -4618,6 +4707,16 @@ export function PlanSelectionClient({ userId = 'user123', plans, selectedPlan: i
     return (
         <section id="pricing" className="relative py-24 px-6 lg:px-8 bg-black min-h-screen">
             <div className="max-w-7xl mx-auto">
+
+                <StepExplanation
+                    title="How does the plan choice affect your results?"
+                    items={[
+                        { icon: Target, label: "Company limits", description: "Each plan sets a maximum number of companies you can target. More companies means more recruiter outreach emails generated." },
+                        { icon: Zap, label: "Free Trial", description: "Try the full workflow with 1 company to see exactly how CandidAI works before committing to a paid plan." },
+                        { icon: Crown, label: "Paid plans", description: "Unlock higher company limits and advanced recruiter filters (Pro/Ultra) for a more thorough job search campaign." },
+                        { icon: Mail, label: "One-time payment", description: "You pay once and emails are generated for all your target companies until the company limit is reached." },
+                    ]}
+                />
 
                 {/* Free Plan */}
                 <motion.div
