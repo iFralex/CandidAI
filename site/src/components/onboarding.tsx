@@ -1497,6 +1497,35 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Read-only plan upgrade banner (bottom) */}
+            {readOnly && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                >
+                    <div className="flex items-start gap-3">
+                        <Lock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm font-semibold text-amber-300">Strategy not editable on your plan</p>
+                            <p className="text-xs text-amber-400/80 mt-0.5">
+                                Your current plan uses a default recruiter strategy generated from your profile. Upgrade to Pro or Ultra to fully customize targeting criteria and priority order.
+                            </p>
+                        </div>
+                    </div>
+                    <motion.button
+                        onClick={handleChangePlan}
+                        disabled={isChangePlanPending}
+                        className="shrink-0 inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                    >
+                        {isChangePlanPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
+                        <span>Change Plan</span>
+                    </motion.button>
+                </motion.div>
+            )}
         </AdvancedFiltersClient>
     )
 }
