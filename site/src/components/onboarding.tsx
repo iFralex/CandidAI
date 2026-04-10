@@ -4756,8 +4756,8 @@ export function PlanSelectionClient({ userId = 'user123', plans, selectedPlan: i
     };
 
     return (
-        <section id="pricing" className="relative py-24 px-6 lg:px-8 bg-black min-h-screen">
-            <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto">
+            <div>
 
                 <StepExplanation
                     title="How does the plan choice affect your results?"
@@ -4865,7 +4865,7 @@ export function PlanSelectionClient({ userId = 'user123', plans, selectedPlan: i
                     </p>
                 </motion.div>
             </div>
-        </section>
+        </div>
     );
 }
 
