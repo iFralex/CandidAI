@@ -1,7 +1,7 @@
 // components/DashboardLayout.tsx (rimane un Server Component per la struttura)
 // Non usare 'use client'
 
-import { Activity, BarChart3, Building2, Home, Settings, Zap, Bell, MailCheck, Plus } from 'lucide-react';
+import { Activity, BarChart3, Building2, Home, Settings, Zap, Bell, MailCheck, Plus, HelpCircle } from 'lucide-react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { SidebarClientWrapper } from '@/components/SidebarClientWrapper';
 import { redirect } from 'next/navigation';
@@ -19,6 +19,7 @@ const navigationItems = [
     { name: 'Send All', icon: <Activity className="w-5 h-5" />, href: '/dashboard/send-all' },
     { name: 'Follow Ups', icon: <Bell className="w-5 h-5" />, href: '/dashboard/follow-ups', comingSoon: true },
     { name: 'Plan & Credits', icon: <BarChart3 className="w-5 h-5" />, href: '/dashboard/plan-and-credits' },
+    { name: 'Support', icon: <HelpCircle className="w-5 h-5" />, href: '/dashboard/help' },
     { name: 'Settings', icon: <Settings className="w-5 h-5" />, href: '/dashboard/settings' }
 ];
 

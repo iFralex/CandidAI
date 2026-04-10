@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
     try {
-        const { name, email, subject, message } = await req.json();
+        const { name, email, subject, message, userId } = await req.json();
 
         if (!name || !email || !subject || !message) {
             return NextResponse.json({ error: "All fields are required" }, { status: 400 });
@@ -47,6 +47,7 @@ export async function POST(req: Request) {
                     <p style="margin:0 0 4px;color:#888888;font-size:12px;text-transform:uppercase;letter-spacing:1px;">From</p>
                     <p style="margin:0;color:#ffffff;font-size:16px;font-weight:600;">${name}</p>
                     <p style="margin:4px 0 0;color:#8b5cf6;font-size:14px;">${email}</p>
+                    ${userId ? `<p style="margin:4px 0 0;color:#666666;font-size:12px;">User ID: ${userId}</p>` : ""}
                   </td>
                 </tr>
                 <tr>
