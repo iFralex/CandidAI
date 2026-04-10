@@ -32,6 +32,18 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+      if (email.length > 50) {
+        return NextResponse.json(
+          { error: "Email must be 50 characters or fewer" },
+          { status: 400 }
+        );
+      }
+      if (name && name.length > 30) {
+        return NextResponse.json(
+          { error: "Name must be 30 characters or fewer" },
+          { status: 400 }
+        );
+      }
 
       try {
         const userRecord = await adminAuth.createUser({

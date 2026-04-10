@@ -464,6 +464,7 @@ export function RegisterForm({
             type="text"
             placeholder="John Doe"
             className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus-visible:ring-violet-500/50 focus-visible:border-violet-500/50"
+            maxLength={30}
             required
           />
         </div>
@@ -476,6 +477,7 @@ export function RegisterForm({
             placeholder="you@example.com"
             defaultValue={defaultEmail}
             className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus-visible:ring-violet-500/50 focus-visible:border-violet-500/50"
+            maxLength={50}
             required
           />
         </div>

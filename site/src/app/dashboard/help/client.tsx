@@ -114,6 +114,16 @@ export default function HelpClient({ userId, initialEmail }: HelpClientProps) {
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="bg-white/[0.03] border border-white/10 rounded-lg px-4 py-3 space-y-1 text-xs text-gray-400">
+                            <div className="flex items-center gap-2">
+                                <span className="text-gray-500">Account:</span>
+                                <span className="text-gray-300 truncate">{initialEmail}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-gray-500">User ID:</span>
+                                <span className="text-gray-300 font-mono truncate">{userId}</span>
+                            </div>
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                 <Label htmlFor="name">Name</Label>

@@ -124,7 +124,7 @@ export function SidebarClientWrapper({ user, navigationItems }: SidebarClientWra
                                 )}
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
-                                    <p className="text-xs text-gray-400">{user?.email || ''}</p>
+                                    <p className="text-xs text-gray-400 truncate">{user?.email || ''}</p>
                                 </div>
                             </div>
                         </div>
