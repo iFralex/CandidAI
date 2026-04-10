@@ -1406,7 +1406,7 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
 
     return (
         <AdvancedFiltersClient strategy={strategy} setStrategy={setStrategy} maxStrategies={maxStrategies} readOnly={readOnly} onChangePlan={handleChangePlan} isChangePlanPending={isChangePlanPending}>
-            {readOnly && <UpgradeBanner onChangePlan={handleChangePlan} isPending={isChangePlanPending} position="bottom" />}
+            {readOnly && <div className="mb-4"><UpgradeBanner onChangePlan={handleChangePlan} isPending={isChangePlanPending} position="bottom" /></div>}
             {/* Action Buttons */}
             <motion.div
                 className="flex flex-wrap items-center justify-center gap-3 mb-4"
