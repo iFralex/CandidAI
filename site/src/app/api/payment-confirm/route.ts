@@ -76,7 +76,7 @@ export async function POST(req: Request) {
                 plan: itemId,
                 maxCompanies,
                 credits: FieldValue.increment(includedCredits),
-                onboardingStep: currentOnboardingStep === 6 ? 7 : 50,
+                onboardingStep: currentOnboardingStep < 10 ? 7 : 50,
             });
         }
 
