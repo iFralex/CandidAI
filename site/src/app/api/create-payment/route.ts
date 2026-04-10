@@ -95,11 +95,12 @@ export async function POST(req: Request) {
                 const maxCompanies = newPlanMaxCompanies + remaining;
 
                 const currentOnboardingStep: number = userSnap.data()?.onboardingStep ?? 50;
+                const isOnboarding = currentOnboardingStep < 10;
                 batch.update(userRef, {
                     plan: itemId,
-                    maxCompanies,
+                    maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
                     credits: FieldValue.increment(planData?.credits ?? 0),
-                    onboardingStep: currentOnboardingStep < 10 ? 7 : 50,
+                    onboardingStep: isOnboarding ? 7 : 50,
                 });
             }
 
