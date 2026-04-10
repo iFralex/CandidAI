@@ -4924,121 +4924,299 @@ export function ScrollToTop({ step }: { step: number }) {
 
 export function OnboardingCompleteClient({ companies }: { companies: { name: string; domain?: string; linkedin_url?: string }[] }) {
     const [isPending, startTransition] = useTransition()
+    const canvasRef = useRef<HTMLCanvasElement>(null)
+    const [showContent, setShowContent] = useState(false)
+    const [rocketDone, setRocketDone] = useState(false)
 
     const handleGoToDashboard = () => {
         startTransition(() => jumpToStep(50))
     }
 
+    // Fireworks canvas
+    useRef(() => { })
+    const fireworksRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    // Launch fireworks on mount
+    useRef(null)
+
+    // We use a plain useEffect via the existing useRef hook pattern —
+    // but onboarding.tsx already imports useRef/useState, so we just inline the effect.
+    // Since we can't add a new import, we drive the animation from a ref callback.
+    const startFireworks = (canvas: HTMLCanvasElement) => {
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+
+        const resize = () => {
+            canvas.width = window.innerWidth
+            canvas.height = window.innerHeight
+        }
+        window.addEventListener('resize', resize)
+
+        type Particle = {
+            x: number; y: number; vx: number; vy: number
+            alpha: number; color: string; radius: number; gravity: number
+        }
+
+        const particles: Particle[] = []
+        const COLORS = [
+            '#8b5cf6', '#a78bfa', '#c4b5fd',
+            '#f472b6', '#fb7185', '#fbbf24',
+            '#34d399', '#60a5fa', '#ffffff',
+        ]
+
+        const burst = (x: number, y: number) => {
+            const count = 80 + Math.random() * 60
+            const hue = COLORS[Math.floor(Math.random() * COLORS.length)]
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count + Math.random() * 0.3
+                const speed = 2 + Math.random() * 6
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    alpha: 1,
+                    color: hue,
+                    radius: 2 + Math.random() * 2.5,
+                    gravity: 0.06 + Math.random() * 0.06,
+                })
+            }
+        }
+
+        // Schedule random bursts
+        const schedule = () => {
+            const x = canvas.width * (0.15 + Math.random() * 0.7)
+            const y = canvas.height * (0.1 + Math.random() * 0.5)
+            burst(x, y)
+            // Starburst: a second mini-burst 80ms later at same spot
+            setTimeout(() => burst(x + (Math.random() - 0.5) * 60, y + (Math.random() - 0.5) * 40), 80)
+        }
+
+        // Fire many bursts in the first 4 seconds
+        const times = [0, 150, 300, 500, 700, 950, 1200, 1500, 1800, 2200, 2600, 3000, 3500, 4000]
+        const timeouts = times.map(t => setTimeout(schedule, t))
+
+        let rafId: number
+        let opacity = 1
+
+        const draw = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i]
+                p.x += p.vx
+                p.y += p.vy
+                p.vy += p.gravity
+                p.vx *= 0.98
+                p.alpha -= 0.014
+
+                if (p.alpha <= 0) { particles.splice(i, 1); continue }
+
+                ctx.save()
+                ctx.globalAlpha = p.alpha * opacity
+                ctx.fillStyle = p.color
+                ctx.shadowColor = p.color
+                ctx.shadowBlur = 6
+                ctx.beginPath()
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2)
+                ctx.fill()
+                ctx.restore()
+            }
+
+            // Fade canvas out after 4.5s
+            if (opacity > 0 && particles.length === 0 && Date.now() - startTime > 4500) {
+                opacity -= 0.03
+                if (opacity <= 0) {
+                    cancelAnimationFrame(rafId)
+                    window.removeEventListener('resize', resize)
+                    timeouts.forEach(clearTimeout)
+                    return
+                }
+            }
+
+            rafId = requestAnimationFrame(draw)
+        }
+
+        const startTime = Date.now()
+        rafId = requestAnimationFrame(draw)
+
+        return () => {
+            cancelAnimationFrame(rafId)
+            window.removeEventListener('resize', resize)
+            timeouts.forEach(clearTimeout)
+        }
+    }
+
     const containerVariants = {
         hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.3 } }
+        visible: { opacity: 1, transition: { staggerChildren: 0.09, delayChildren: 0.2 } }
     }
     const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
+        hidden: { opacity: 0, y: 24 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } }
     }
 
     return (
-        <div className="max-w-3xl mx-auto text-center">
-            {/* Success icon */}
-            <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
-                className="w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-green-500/40"
-            >
-                <CheckCircle className="w-12 h-12 text-white" />
-            </motion.div>
+        <div className="max-w-3xl mx-auto text-center relative">
+            {/* Fullscreen fireworks canvas */}
+            <canvas
+                ref={(el) => {
+                    if (el && !canvasRef.current) {
+                        ; (canvasRef as any).current = el
+                        startFireworks(el)
+                        // Show content after rocket phase
+                        setTimeout(() => setRocketDone(true), 1800)
+                        setTimeout(() => setShowContent(true), 2200)
+                    }
+                }}
+                className="fixed inset-0 pointer-events-none z-50"
+                style={{ mixBlendMode: 'screen' }}
+            />
 
-            <motion.h2
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-                className="text-4xl font-bold text-white mb-3"
-            >
-                You&apos;re all set! 🎉
-            </motion.h2>
-            <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.45 }}
-                className="text-lg text-gray-400 mb-10"
-            >
-                Your order has been submitted. The companies below are now in the processing queue.
-            </motion.p>
+            {/* Rocket launch */}
+            <AnimatePresence>
+                {!rocketDone && (
+                    <motion.div
+                        initial={{ y: 60, opacity: 0, scale: 0.5 }}
+                        animate={{ y: -200, opacity: [0, 1, 1, 0], scale: [0.5, 1.4, 1.2, 0.6] }}
+                        transition={{ duration: 1.6, ease: [0.2, 0, 0.4, 1] }}
+                        className="fixed left-1/2 bottom-12 -translate-x-1/2 z-50 text-7xl select-none pointer-events-none"
+                        style={{ filter: 'drop-shadow(0 0 24px #a78bfa)' }}
+                    >
+                        🚀
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            {/* Company list */}
-            {companies.length > 0 && (
-                <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="mb-10 grid grid-cols-1 sm:grid-cols-2 gap-3"
-                >
-                    {companies.map((company, i) => {
-                        const domain = company.domain || (company.linkedin_url?.includes('linkedin.com/company/')
-                            ? null
-                            : company.linkedin_url)
-                        const faviconUrl = domain
-                            ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
-                            : null
-                        const initial = company.name?.[0]?.toUpperCase() ?? '?'
+            {/* Main content — fades in after rocket */}
+            <AnimatePresence>
+                {showContent && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.92 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+                    >
+                        {/* Glowing badge */}
+                        <motion.div
+                            initial={{ opacity: 0, y: -16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="inline-flex items-center gap-2 bg-violet-500/15 border border-violet-500/30 rounded-full px-5 py-2 text-sm text-violet-300 mb-8 shadow-lg shadow-violet-500/20"
+                        >
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500" />
+                            </span>
+                            Mission accomplished
+                        </motion.div>
 
-                        return (
-                            <motion.div
-                                key={i}
-                                variants={itemVariants}
-                                className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-left"
+                        {/* Headline */}
+                        <motion.h2
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="text-5xl font-black text-white mb-4 leading-tight"
+                        >
+                            You&apos;re{' '}
+                            <motion.span
+                                className="bg-gradient-to-r from-violet-400 via-pink-400 to-orange-400 bg-clip-text text-transparent"
+                                animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                                style={{ backgroundSize: '200% 200%' }}
                             >
-                                <div className="shrink-0 w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden">
-                                    {faviconUrl ? (
-                                        <img
-                                            src={faviconUrl}
-                                            alt={company.name}
-                                            className="w-6 h-6 object-contain"
-                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                                        />
-                                    ) : (
-                                        <span className="text-white font-bold text-sm">{initial}</span>
-                                    )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-white font-medium truncate">{company.name}</p>
-                                    <p className="text-xs text-gray-500 truncate">{domain || company.linkedin_url || '—'}</p>
-                                </div>
-                                <span className="shrink-0 text-xs font-semibold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                                    Queued
-                                </span>
+                                launch-ready
+                            </motion.span>
+                            . 🎯
+                        </motion.h2>
+
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                            className="text-lg text-gray-400 mb-10 max-w-lg mx-auto"
+                        >
+                            Your personalized emails are being crafted. The companies below have entered the queue — sit back while AI does the heavy lifting.
+                        </motion.p>
+
+                        {/* Company list */}
+                        {companies.length > 0 && (
+                            <motion.div
+                                variants={containerVariants}
+                                initial="hidden"
+                                animate="visible"
+                                className="mb-10 grid grid-cols-1 sm:grid-cols-2 gap-3"
+                            >
+                                {companies.map((company, i) => {
+                                    const domain = company.domain || (company.linkedin_url?.includes('linkedin.com/company/')
+                                        ? null
+                                        : company.linkedin_url)
+                                    const faviconUrl = domain
+                                        ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+                                        : null
+                                    const initial = company.name?.[0]?.toUpperCase() ?? '?'
+
+                                    return (
+                                        <motion.div
+                                            key={i}
+                                            variants={itemVariants}
+                                            className="flex items-center gap-4 bg-white/5 border border-white/10 hover:border-violet-500/30 hover:bg-violet-500/5 rounded-xl px-4 py-3 text-left transition-colors duration-200"
+                                        >
+                                            <div className="shrink-0 w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden">
+                                                {faviconUrl ? (
+                                                    <img
+                                                        src={faviconUrl}
+                                                        alt={company.name}
+                                                        className="w-6 h-6 object-contain"
+                                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                                    />
+                                                ) : (
+                                                    <span className="text-white font-bold text-sm">{initial}</span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-white font-medium truncate">{company.name}</p>
+                                                <p className="text-xs text-gray-500 truncate">{domain || company.linkedin_url || '—'}</p>
+                                            </div>
+                                            <span className="shrink-0 text-xs font-semibold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                                                Queued
+                                            </span>
+                                        </motion.div>
+                                    )
+                                })}
                             </motion.div>
-                        )
-                    })}
-                </motion.div>
-            )}
+                        )}
 
-            {/* Info strip */}
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="flex flex-wrap justify-center gap-6 text-sm text-gray-400 mb-10"
-            >
-                <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-blue-400" /> Processing: 24 hrs – 7 days</span>
-                <span className="flex items-center gap-2"><Mail className="w-4 h-4 text-green-400" /> Email updates included</span>
-                <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-purple-400" /> Premium queue priority</span>
-            </motion.div>
+                        {/* Info strip */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5 }}
+                            className="flex flex-wrap justify-center gap-6 text-sm text-gray-400 mb-10"
+                        >
+                            <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-blue-400" /> Processing: 24 hrs – 7 days</span>
+                            <span className="flex items-center gap-2"><Mail className="w-4 h-4 text-green-400" /> Email updates included</span>
+                            <span className="flex items-center gap-2"><Shield className="w-4 h-4 text-purple-400" /> Premium queue priority</span>
+                        </motion.div>
 
-            {/* CTA */}
-            <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-                onClick={handleGoToDashboard}
-                disabled={isPending}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-violet-500/30"
-            >
-                {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
-                <span>{isPending ? 'Loading...' : 'Go to Dashboard'}</span>
-            </motion.button>
+                        {/* CTA */}
+                        <motion.button
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.6, type: 'spring', stiffness: 200, damping: 14 }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={handleGoToDashboard}
+                            disabled={isPending}
+                            className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-4 px-10 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-2xl shadow-violet-500/40 text-lg"
+                        >
+                            {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Rocket className="w-5 h-5" />}
+                            <span>{isPending ? 'Loading...' : 'Open Dashboard'}</span>
+                        </motion.button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
