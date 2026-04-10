@@ -456,9 +456,15 @@ export async function completeOnboarding(customizations: any) {
     const existingMax: number = userSnap.data()?.maxOnboardingStep || 5;
     const nextStepBase = (planConfig?.price === 0) ? 50 : 6;
 
+    const plan: string = userSnap.data()?.plan || "free_trial";
+    const isProOrUltra = plan === "pro" || plan === "ultra";
+    const safeCustomizations = isProOrUltra
+        ? customizations
+        : { ...customizations, instructions: "" };
+
     const batch = adminDb.batch();
 
-    batch.update(accountRef, { customizations });
+    batch.update(accountRef, { customizations: safeCustomizations });
     batch.update(userRef, {
         onboardingStep: nextStepBase,
         maxOnboardingStep: Math.max(nextStepBase, existingMax),
