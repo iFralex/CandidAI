@@ -137,24 +137,28 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
                             {onboarded && (
                                 <div className="flex items-center gap-2">
                                     {typeof maxCompanies === 'number' && (
-                                        <Badge variant={"secondary"}>
-                                            <div className="flex items-center gap-2">
-                                                <Building2 className="w-4 h-4 text-violet-400" />
-                                                <span className="text-sm font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
-                                                    {companiesUsed ?? 0}/{maxCompanies}
-                                                </span>
-                                            </div>
-                                        </Badge>
+                                        <Link href="/dashboard/plan-and-credits#plans">
+                                            <Badge variant={"secondary"} className="cursor-pointer hover:bg-white/10 transition-colors">
+                                                <div className="flex items-center gap-2">
+                                                    <Building2 className="w-5 h-5 text-violet-400" />
+                                                    <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                                                        {companiesUsed ?? 0}/{maxCompanies}
+                                                    </span>
+                                                </div>
+                                            </Badge>
+                                        </Link>
                                     )}
                                     {typeof credits === 'number' && (
-                                        <Badge variant={"secondary"}>
-                                            <div className="flex items-center gap-2">
-                                                <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                                                <span className="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-                                                    {credits}
-                                                </span>
-                                            </div>
-                                        </Badge>
+                                        <Link href="/dashboard/plan-and-credits#credits">
+                                            <Badge variant={"secondary"} className="cursor-pointer hover:bg-white/10 transition-colors">
+                                                <div className="flex items-center gap-2">
+                                                    <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                                                    <span className="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                                                        {credits}
+                                                    </span>
+                                                </div>
+                                            </Badge>
+                                        </Link>
                                     )}
                                     <Link href="/dashboard/plan-and-credits">
                                         <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-white" title="Buy credits or upgrade plan">

@@ -47,7 +47,7 @@ export default function PlanAndCreditsClient({ email }: PlanAndCreditsClientProp
     return (
         <div className="space-y-12">
             {/* Plans Section */}
-            <section>
+            <section id="plans">
                 <div className="mb-6">
                     <h2 className="text-2xl font-bold text-white mb-2">Choose a Plan</h2>
                     <p className="text-gray-400">
@@ -64,7 +64,7 @@ export default function PlanAndCreditsClient({ email }: PlanAndCreditsClientProp
             <div className="border-t border-white/10" />
 
             {/* Credits Section */}
-            <section>
+            <section id="credits">
                 <div className="mb-6">
                     <h2 className="text-2xl font-bold text-white mb-2">Top Up Credits</h2>
                     <p className="text-gray-400">
