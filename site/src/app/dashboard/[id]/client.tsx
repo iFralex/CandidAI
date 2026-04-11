@@ -18,9 +18,10 @@ import { UnifiedCheckout } from "@/components/UnifiedCheckout";
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTutorial as useTutorialHook } from "@/components/TutorialContext";
 
 // ============== ANIMATION VARIANTS ==============
 const containerVariants = {
@@ -1842,6 +1843,33 @@ const BlogPostsSection = ({ data, blogSearchUnlocked }: { data: any, blogSearchU
 };
 
 // ============== MAIN CLIENT COMPONENT ==============
+const COMPANY_DETAIL_STEPS = [
+  {
+    title: 'Company Detail Page',
+    description: 'Here you can see everything about this company — the recruiter we found, culture insights from their blog, and your personalized outreach email.',
+  },
+  {
+    targetId: 'company-header',
+    title: 'Campaign Status',
+    description: 'This header shows the company info, processing progress, and which steps (recruiter search, culture analysis, email generation) have been completed.',
+  },
+  {
+    targetId: 'email-section',
+    title: 'Your Personalized Email',
+    description: 'This is the email generated specifically for this company and recruiter. Review it, edit if needed, then copy or send it directly.',
+  },
+  {
+    targetId: 'recruiter-section',
+    title: 'Recruiter Profile',
+    description: 'We identified the recruiter most likely to champion your application — complete with their experience, skills, and contact info.',
+  },
+  {
+    targetId: 'blog-section',
+    title: 'Company Culture Analysis',
+    description: 'We analyzed recent articles and news about the company to tailor your email to their culture, values, and current priorities.',
+  },
+];
+
 // Questo è il componente principale che assembla tutte le parti animate
 // e riceve i dati dal componente Server.
 export default function ResultClient({ data, customizations, emailSent }: { data: any; customizations: any; emailSent: any }) {
@@ -1852,13 +1880,37 @@ export default function ResultClient({ data, customizations, emailSent }: { data
       animate="visible"
       className="space-y-16"
     >
-      <CompanyHeader data={data} />
-      <EmailGenerated data={data} defaultInstructions={customizations.instructions} emailSent={emailSent} />
-      <RecruiterSummary originalData={data} customStrategy={customizations.queries} />
-      <BlogPostsSection data={data} blogSearchUnlocked={customizations.blogSearch !== null} />
+      <CompanyDetailTutorialTrigger />
+      <div data-tutorial="company-header">
+        <CompanyHeader data={data} />
+      </div>
+      <div data-tutorial="email-section">
+        <EmailGenerated data={data} defaultInstructions={customizations.instructions} emailSent={emailSent} />
+      </div>
+      <div data-tutorial="recruiter-section">
+        <RecruiterSummary originalData={data} customStrategy={customizations.queries} />
+      </div>
+      <div data-tutorial="blog-section">
+        <BlogPostsSection data={data} blogSearchUnlocked={customizations.blogSearch !== null} />
+      </div>
       {data.company_info && <CompanyCard company={data.company_info} />}
     </motion.div>
   );
+}
+
+function CompanyDetailTutorialTrigger() {
+  const { isPageCompleted, startTutorial, isActive } = useTutorialHook();
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current || isActive) return;
+    if (isPageCompleted('company_detail')) return;
+    const t = setTimeout(() => {
+      started.current = true;
+      startTutorial('company_detail', COMPANY_DETAIL_STEPS);
+    }, 700);
+    return () => clearTimeout(t);
+  }, [isPageCompleted, startTutorial, isActive]);
+  return null;
 }
 
 import React from "react"

@@ -12,15 +12,17 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ResendEmailVerificationBtn } from '@/components/onboarding';
+import { TutorialProvider } from '@/components/TutorialContext';
+import { TutorialOverlay } from '@/components/TutorialOverlay';
 
 // 1. Dati di navigazione definiti nel Server Component (meno JS client)
 const navigationItems = [
-    { name: 'Dashboard', icon: <Home className="w-5 h-5" />, href: '/dashboard' },
-    { name: 'Send All', icon: <Activity className="w-5 h-5" />, href: '/dashboard/send-all' },
-    { name: 'Follow Ups', icon: <Bell className="w-5 h-5" />, href: '/dashboard/follow-ups', comingSoon: true },
-    { name: 'Plan & Credits', icon: <BarChart3 className="w-5 h-5" />, href: '/dashboard/plan-and-credits' },
-    { name: 'Support', icon: <HelpCircle className="w-5 h-5" />, href: '/dashboard/help' },
-    { name: 'Settings', icon: <Settings className="w-5 h-5" />, href: '/dashboard/settings' }
+    { name: 'Dashboard', icon: <Home className="w-5 h-5" />, href: '/dashboard', tutorialId: 'nav-dashboard' },
+    { name: 'Send All', icon: <Activity className="w-5 h-5" />, href: '/dashboard/send-all', tutorialId: 'nav-send-all' },
+    { name: 'Follow Ups', icon: <Bell className="w-5 h-5" />, href: '/dashboard/follow-ups', comingSoon: true, tutorialId: 'nav-follow-ups' },
+    { name: 'Plan & Credits', icon: <BarChart3 className="w-5 h-5" />, href: '/dashboard/plan-and-credits', tutorialId: 'nav-credits' },
+    { name: 'Support', icon: <HelpCircle className="w-5 h-5" />, href: '/dashboard/help', tutorialId: 'nav-support' },
+    { name: 'Settings', icon: <Settings className="w-5 h-5" />, href: '/dashboard/settings', tutorialId: 'nav-settings' }
 ];
 
 const orbPositions = [
@@ -95,8 +97,10 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
     const companiesUsed: number | undefined = user.companiesUsed
 
     return (
+        <TutorialProvider>
         <div className="min-h-screen bg-black text-white relative">
             <AnimatedBackground />
+            <TutorialOverlay />
 
             <SidebarProvider>
                 {onboarded && <SidebarClientWrapper user={user} navigationItems={navigationItems} />}
@@ -211,6 +215,7 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
                 </div>
             </SidebarProvider>
         </div>
+        </TutorialProvider>
     );
 }
 

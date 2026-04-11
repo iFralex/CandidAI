@@ -30,6 +30,7 @@ interface NavigationItem {
     icon: React.ReactNode;
     href: string;
     comingSoon?: boolean;
+    tutorialId?: string;
 }
 
 interface SidebarClientWrapperProps {
@@ -78,7 +79,7 @@ export function SidebarClientWrapper({ user, navigationItems }: SidebarClientWra
                                 if (item.comingSoon) {
                                     return (
                                         <SidebarMenuItem key={item.name}>
-                                            <SidebarMenuButton size="lg" className="cursor-not-allowed opacity-50">
+                                            <SidebarMenuButton size="lg" className="cursor-not-allowed opacity-50" data-tutorial={item.tutorialId}>
                                                 {item.icon}
                                                 <span>{item.name}</span>
                                                 <span className="ml-auto text-[10px] font-semibold uppercase tracking-wide bg-violet-500/20 text-violet-400 border border-violet-500/30 rounded px-1.5 py-0.5">
@@ -91,7 +92,7 @@ export function SidebarClientWrapper({ user, navigationItems }: SidebarClientWra
 
                                 return (
                                     <SidebarMenuItem key={item.name}>
-                                        <SidebarMenuButton asChild isActive={isActive} size="lg">
+                                        <SidebarMenuButton asChild isActive={isActive} size="lg" data-tutorial={item.tutorialId}>
                                             <Link href={item.href}>
                                                 {item.icon}
                                                 <span>{item.name}</span>

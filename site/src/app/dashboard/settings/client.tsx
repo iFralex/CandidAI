@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button"
 import { updateSettings } from "@/actions/onboarding-actions"
 import { track } from "@/lib/analytics"
+import { useTutorial } from "@/components/TutorialContext"
+import { GraduationCap } from "lucide-react"
 
 interface SettingsFormProps {
     defaultMarketingEmails: boolean
@@ -20,6 +22,8 @@ export function SettingsForm({ defaultMarketingEmails, defaultReminderFrequency,
     const [emailNotificationThreshold, setEmailNotificationThreshold] = useState(String(defaultEmailNotificationThreshold))
     const [saved, setSaved] = useState(false)
     const [isPending, startTransition] = useTransition()
+    const [tutorialReset, setTutorialReset] = useState(false)
+    const { resetTutorials } = useTutorial()
 
     const handleSave = () => {
         startTransition(async () => {
@@ -119,6 +123,30 @@ export function SettingsForm({ defaultMarketingEmails, defaultReminderFrequency,
                 {saved && (
                     <span className="text-green-400 text-sm">Settings saved successfully.</span>
                 )}
+            </div>
+
+            {/* Tutorial */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
+                <div>
+                    <h2 className="text-lg font-semibold text-white">Tutorial</h2>
+                    <p className="text-gray-400 text-sm mt-1">Reset the guided tour so it shows again the next time you visit the dashboard.</p>
+                </div>
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="secondary"
+                        onClick={() => {
+                            resetTutorials()
+                            setTutorialReset(true)
+                            setTimeout(() => setTutorialReset(false), 3000)
+                        }}
+                        icon={<GraduationCap className="w-4 h-4" />}
+                    >
+                        Restart Tutorial
+                    </Button>
+                    {tutorialReset && (
+                        <span className="text-green-400 text-sm">Tutorial reset! Visit the dashboard to start.</span>
+                    )}
+                </div>
             </div>
         </div>
     )

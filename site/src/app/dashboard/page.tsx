@@ -14,6 +14,59 @@ import { AnimatedResults, AddMoreCompaniesDialog, ConfirmCompanies } from "@/com
 import { DashboardTracker } from "@/components/DashboardTracker";
 import { calculateProgress } from "@/components/detailsServer";
 import Link from "next/link";
+import { TutorialTrigger } from "@/components/TutorialTrigger";
+
+const DASHBOARD_STEPS = [
+    {
+        title: 'Welcome to CandidAI! 👋',
+        description: 'This is your control center for all job application campaigns. Let\'s take a quick tour of the main features.',
+    },
+    {
+        targetId: 'nav-dashboard',
+        title: 'Dashboard',
+        description: 'This is the main dashboard. Click here anytime to come back and see all your active campaigns.',
+    },
+    {
+        targetId: 'nav-send-all',
+        title: 'Send All',
+        description: 'Send emails to all companies that are ready with a single click — no need to open each one individually.',
+    },
+    {
+        targetId: 'nav-follow-ups',
+        title: 'Follow Ups (Coming Soon)',
+        description: 'Automated follow-up emails will be sent on your behalf to companies that haven\'t responded yet.',
+    },
+    {
+        targetId: 'nav-credits',
+        title: 'Plan & Credits',
+        description: 'Manage your subscription plan, buy extra credits, and unlock advanced features like custom instructions.',
+    },
+    {
+        targetId: 'nav-support',
+        title: 'Support',
+        description: 'Find guides, FAQs, and tips to get the most out of CandidAI.',
+    },
+    {
+        targetId: 'nav-settings',
+        title: 'Settings',
+        description: 'Configure notification preferences, email frequency, and other account settings.',
+    },
+    {
+        targetId: 'stats-cards',
+        title: 'Campaign Stats',
+        description: 'These cards show you at a glance how many companies are being processed, ready to send, already sent, and how many articles were analyzed.',
+    },
+    {
+        targetId: 'campaign-cards',
+        title: 'Your Campaigns',
+        description: 'Each card is a company you\'re targeting. Click any card to view the recruiter profile, culture analysis, and the personalized email we generated.',
+    },
+    {
+        targetId: 'add-companies',
+        title: 'Add More Companies',
+        description: 'You can add more companies to your campaign at any time, up to the limit of your current plan.',
+    },
+];
 
 const DashboardSkeleton = () => (
     <>
@@ -155,7 +208,7 @@ async function ResultsWrapper({ userId, plan, maxCompanies, companiesUsed }: { u
     return <>
         <DashboardTracker campaignCount={campaignValues.length} plan={plan} />
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-tutorial="stats-cards">
             <Card className="p-6" gradient>
                 <div className="flex items-center justify-between">
                     <div>
@@ -217,10 +270,12 @@ async function ResultsWrapper({ userId, plan, maxCompanies, companiesUsed }: { u
         </Card>}
 
         {/* Active Campaigns */}
-        <Card className="p-8 backdrop-blur-none">
+        <Card className="p-8 backdrop-blur-none" data-tutorial="campaign-cards">
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white">Active Campaigns</h2>
-                <AddMoreCompaniesDialog maxCompanies={maxCompanies} companiesUsed={companiesUsed} />
+                <div data-tutorial="add-companies">
+                    <AddMoreCompaniesDialog maxCompanies={maxCompanies} companiesUsed={companiesUsed} />
+                </div>
             </div>
 
             <Results results={parsedResults} />
@@ -292,6 +347,7 @@ const Page = async () => {
 
     return (
         <div className="space-y-8">
+            <TutorialTrigger pageId="dashboard" steps={DASHBOARD_STEPS} />
             {/* Welcome Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -303,7 +359,7 @@ const Page = async () => {
                     </p>
                 </div>
 
-                
+
             </div>
 
             <Suspense fallback={<DashboardSkeleton />}>
