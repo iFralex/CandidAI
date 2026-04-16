@@ -8,8 +8,8 @@ export async function POST(req) {
     try {
         const { userId, type, data = {} } = await req.json();
 
-        const VALID_TYPES = ["welcome", "password-reset", "new_emails_generated", "purchase-confirmation", "contact-confirmation"];
-        const TYPES_REQUIRING_USER_ID = ["welcome", "new_emails_generated", "purchase-confirmation"];
+        const VALID_TYPES = ["welcome", "password-reset", "new_emails_generated", "purchase-confirmation", "contact-confirmation", "onboarding-complete"];
+        const TYPES_REQUIRING_USER_ID = ["welcome", "new_emails_generated", "purchase-confirmation", "onboarding-complete"];
 
         if (!type || !VALID_TYPES.includes(type)) {
             return NextResponse.json(
@@ -39,7 +39,7 @@ export async function POST(req) {
             }
         }
 
-        const getEmailTemplate = (type, data = {}) => {
+        const getEmailTemplate = (type, data: any = {}) => {
             const { userRecord = {}, newData = [] } = data;
             const userId = userRecord.uid
             const domain = process.env.NEXT_PUBLIC_DOMAIN || 'https://candidai.com';
@@ -420,6 +420,147 @@ export async function POST(req) {
       `, "We've received your support request and will be in touch soon");
 
                     return { subject: contactSubject, html: contactHtml };
+
+                case "onboarding-complete": {
+                    const plan = data.plan || "free_trial";
+                    const name = userRecord.displayName || 'there';
+
+                    type PlanContent = {
+                        badge: string;
+                        subject: string;
+                        preheader: string;
+                        headline: string;
+                        intro: string;
+                        perks: string[];
+                        nextSteps: string;
+                        tip: string;
+                    };
+
+                    const planContent: Record<string, PlanContent> = {
+                        free_trial: {
+                            badge: "🎁 FREE TRIAL ACTIVE",
+                            subject: `🎁 You're in, ${name}! Your first AI-crafted recruiter email is on its way`,
+                            preheader: "Your CandidAI free trial is live — one company, one shot, fully AI-personalized.",
+                            headline: `You're in, ${name}! Let's make your first move count.`,
+                            intro: `Thank you for completing your onboarding! Your free trial is now active. We've set up everything for <strong style="color: #8b5cf6;">1 target company</strong> — our AI will research the right recruiter and craft a fully personalized email just for you. No templates, no generic messages.`,
+                            perks: [
+                                "1 company — AI researches the recruiter for you",
+                                "Fully personalized email (not a template)",
+                                "Ready to review and send from your dashboard",
+                            ],
+                            nextSteps: "Your email will be ready in your dashboard shortly. Review it, make any tweaks you like, and hit send. If you love the results, upgrading to a paid plan takes seconds.",
+                            tip: "💡 <strong style=\"color: #8b5cf6;\">Pro tip:</strong> Personalized cold emails to recruiters get up to <strong>5× more replies</strong> than standard applications. You're already ahead.",
+                        },
+                        base: {
+                            badge: "🎯 BASE PLAN ACTIVE",
+                            subject: `🎯 Onboarding complete! Your 20-company outreach campaign is launching`,
+                            preheader: "CandidAI Base is live — up to 20 personalized recruiter emails, all AI-crafted.",
+                            headline: `Your campaign is launching, ${name}!`,
+                            intro: `Thank you for choosing CandidAI Base! You've unlocked a full outreach campaign — our AI will research recruiters across <strong style="color: #8b5cf6;">up to 20 target companies</strong> and write a unique, personalized email for each one. No copy-paste. Every email tailored to the specific company and recruiter.`,
+                            perks: [
+                                "Up to 20 companies — a real outreach campaign",
+                                "Individual recruiter research for each company",
+                                "Fully personalized emails, not templates",
+                                "Review and send from your dashboard at your pace",
+                            ],
+                            nextSteps: "Your emails will appear in the dashboard as they're generated — you don't have to wait for all of them. Review each one, customize if needed, and start sending. The sooner you send, the sooner you hear back.",
+                            tip: "💡 <strong style=\"color: #8b5cf6;\">Send tip:</strong> Tuesday–Thursday, 10 AM–2 PM in the recruiter's timezone = highest open rates. Your dashboard shows each recruiter's company location to help you time it perfectly.",
+                        },
+                        pro: {
+                            badge: "🚀 PRO PLAN ACTIVE",
+                            subject: `🚀 You're on Pro, ${name} — your AI-powered job search just shifted into high gear`,
+                            preheader: "50 companies, custom recruiter strategy, follow-up automation. Let's get you hired.",
+                            headline: `High gear, ${name}. Let's get you hired.`,
+                            intro: `Welcome to CandidAI Pro — where serious job seekers get serious results. You now have everything you need to run a professional, high-volume outreach campaign. Our AI will craft <strong style="color: #8b5cf6;">up to 50 personalized emails</strong>, using your custom recruiter strategy and writing instructions to make every message feel like it was written personally by you.`,
+                            perks: [
+                                "Up to 50 companies — a high-volume campaign",
+                                "Custom recruiter search strategy with up to 30 criteria",
+                                "Custom writing instructions — your voice, your style",
+                                "Follow-up email automation — never miss a reply",
+                                "1,000 credits for regenerations and refinements",
+                            ],
+                            nextSteps: "Your emails are being generated now. Head to your dashboard to track progress, review drafts as they come in, and fine-tune any message with your custom instructions. Use your credits to regenerate emails that don't feel quite right.",
+                            tip: "⚡ <strong style=\"color: #8b5cf6;\">Power move:</strong> Use your <strong>custom instructions</strong> to inject your unique selling points — specific projects, metrics, or achievements you want every email to highlight. The more specific, the better the results.",
+                        },
+                        ultra: {
+                            badge: "👑 ULTRA PLAN ACTIVE",
+                            subject: `👑 Welcome to Ultra, ${name} — every advantage, fully unlocked`,
+                            preheader: "100 companies, AI recommendations, deep-dive research, priority generation. You're in the fast lane.",
+                            headline: `Every advantage, fully unlocked. Welcome to Ultra, ${name}.`,
+                            intro: `You've chosen the most powerful job search tool available. CandidAI Ultra puts you at the front of every queue — priority email generation, AI-powered company recommendations, deep-dive research reports, and a dedicated outreach pipeline covering <strong style="color: #8b5cf6;">up to 100 companies</strong>. This isn't just job searching. It's a coordinated campaign.`,
+                            perks: [
+                                "Up to 100 companies — maximum coverage",
+                                "Priority generation queue — your emails go first",
+                                "AI company recommendations — we find targets you haven't thought of",
+                                "Deep-dive company research reports per company",
+                                "Company confirmation calls — verify before you commit",
+                                "Custom recruiter strategy with up to 50 criteria",
+                                "Follow-up email automation",
+                                "2,500 credits included",
+                            ],
+                            nextSteps: "Your campaign is being built right now with priority processing. You'll also see AI-recommended companies in your dashboard — these are targets our AI thinks are a strong fit based on your profile. Confirm or skip each one. Your emails will be ready faster than any other plan.",
+                            tip: "👑 <strong style=\"color: #8b5cf6;\">Ultra advantage:</strong> Check your <strong>AI recommendations</strong> first — users who include AI-suggested companies report significantly more interview callbacks than those who rely on manual selection alone.",
+                        },
+                    };
+
+                    const content = planContent[plan] || planContent.free_trial;
+
+                    const perksHtml = content.perks.map((perk, i) => `
+          <tr>
+            <td style="padding: 10px 0; ${i < content.perks.length - 1 ? 'border-bottom: 1px solid rgba(139, 92, 246, 0.1);' : ''}">
+              <span style="color: #8b5cf6; font-weight: 700; margin-right: 10px;">✓</span>
+              <span style="color: #cccccc; font-size: 14px;">${perk}</span>
+            </td>
+          </tr>`).join('');
+
+                    const onboardingHtml = wrapEmail(`
+        <div style="text-align: center; margin-bottom: 30px;">
+          <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 24px; margin-bottom: 20px;">
+            <span style="color: #a78bfa; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">${content.badge}</span>
+          </div>
+        </div>
+
+        <h2 style="color: #ffffff; font-size: 26px; font-weight: 700; margin: 0 0 20px; line-height: 1.35;">
+          ${content.headline}
+        </h2>
+
+        <p style="color: #cccccc; font-size: 16px; line-height: 1.7; margin: 0 0 28px;">
+          ${content.intro}
+        </p>
+
+        <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(124, 58, 237, 0.08) 100%); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 14px; padding: 24px; margin: 0 0 28px;">
+          <p style="color: #8b5cf6; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 16px;">What you have access to</p>
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+            ${perksHtml}
+          </table>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.04); border-radius: 12px; padding: 20px; margin: 0 0 28px;">
+          <p style="color: #aaaaaa; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px;">What happens next</p>
+          <p style="color: #cccccc; font-size: 14px; line-height: 1.7; margin: 0;">
+            ${content.nextSteps}
+          </p>
+        </div>
+
+        <div style="background: rgba(139, 92, 246, 0.08); border-left: 4px solid #8b5cf6; padding: 18px 20px; margin: 0 0 36px; border-radius: 0 8px 8px 0;">
+          <p style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin: 0;">
+            ${content.tip}
+          </p>
+        </div>
+
+        <div style="text-align: center; margin: 0 0 32px;">
+          ${button('Open My Dashboard', `${domain}/dashboard`)}
+        </div>
+
+        <div style="padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.15);">
+          <p style="color: #888888; font-size: 13px; line-height: 1.6; margin: 0;">
+            Questions or feedback? We're at <a href="mailto:support@candidai.com" style="color: #8b5cf6; text-decoration: none;">support@candidai.com</a> — we actually read every message.
+          </p>
+        </div>
+      `, content.preheader);
+
+                    return { subject: content.subject, html: onboardingHtml };
+                }
 
                 default:
                     return {

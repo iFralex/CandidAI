@@ -492,6 +492,21 @@ export async function completeOnboarding(customizations: any) {
         await startServer(userId);
     }
 
+    // Send onboarding thank-you email (fire-and-forget — don't block the redirect)
+    try {
+        await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                userId,
+                type: "onboarding-complete",
+                data: { plan: userSnap.data()?.plan || "free_trial" },
+            }),
+        });
+    } catch (err) {
+        console.error("Failed to send onboarding completion email:", err);
+    }
+
     redirect('/dashboard');
 }
 
