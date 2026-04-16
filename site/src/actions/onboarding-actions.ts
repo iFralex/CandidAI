@@ -472,6 +472,10 @@ export async function completeOnboarding(customizations: any) {
 
     await batch.commit();
 
+    if (planConfig?.price === 0) {
+        await startServer(userId);
+    }
+
     redirect('/dashboard');
 }
 

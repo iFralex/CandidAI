@@ -163,7 +163,7 @@ export const plansInfo = [
   {
     id: "base",
     name: "Base",
-    price: 1,
+    price: 24,
     description: "Perfect for targeted job search",
     features: staticFeatures.base,
     highlight: "Great for focused search",
@@ -173,7 +173,7 @@ export const plansInfo = [
   {
     id: "pro",
     name: "Pro",
-    price: 59,
+    price: 49,
     description: "For serious job seekers",
     features: staticFeatures.pro,
     highlight: "Most Popular",
