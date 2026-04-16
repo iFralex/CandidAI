@@ -473,6 +473,22 @@ export async function completeOnboarding(customizations: any) {
     await batch.commit();
 
     if (planConfig?.price === 0) {
+        // Pre-create result entries so Python processes companies immediately (same as pro flow via addNewCompanies)
+        const accountSnap = await accountRef.get();
+        const companies: any[] = accountSnap.data()?.companies ?? [];
+        if (companies.length > 0) {
+            const resultsRef = adminDb.collection("users").doc(userId).collection("data").doc("results");
+            const resultUpdates: Record<string, any> = {};
+            const idsBatch = adminDb.batch();
+            for (const company of companies) {
+                const companyKey = `${company.name}-${userId}`;
+                const newId = adminDb.collection("_generated_ids").doc().id;
+                resultUpdates[newId] = { company, start_date: Timestamp.now() };
+                idsBatch.set(adminDb.collection("ids").doc(companyKey), { id: newId }, { merge: true });
+            }
+            idsBatch.set(resultsRef, resultUpdates, { merge: true });
+            await idsBatch.commit();
+        }
         await startServer(userId);
     }
 
