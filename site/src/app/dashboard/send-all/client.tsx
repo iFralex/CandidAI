@@ -113,7 +113,7 @@ const steps = [
         icon: <Send className="w-6 h-6" />,
         title: "Send all in one click",
         description:
-            "Hit send and watch your applications go out automatically — with your CV attached to every single one.",
+            "Hit send and watch your applications go out automatically, with your CV attached to every single one.",
         color: "from-rose-500 to-orange-500",
     },
 ];
@@ -132,7 +132,7 @@ const features = [
     {
         icon: <Shield className="w-5 h-5" />,
         title: "Privacy first",
-        description: "Your email credentials are stored locally — never on our servers.",
+        description: "Your email credentials are stored locally, never on our servers.",
     },
     {
         icon: <Sparkles className="w-5 h-5" />,
@@ -186,7 +186,7 @@ export default function DownloadPage() {
                 >
                     <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-violet-500/40 bg-violet-500/10 text-violet-300 text-sm font-medium">
                         <Sparkles className="w-3.5 h-3.5" />
-                        Desktop App — Free for all plans
+                        Desktop App - Free for all plans
                     </span>
 
                     <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-white max-w-3xl">
@@ -198,7 +198,7 @@ export default function DownloadPage() {
 
                     <p className="text-gray-400 text-lg max-w-xl">
                         The CandidAI desktop app connects to your email provider and fires off every
-                        personalised application — with your CV attached — automatically.
+                        personalised application, with your CV attached, automatically.
                     </p>
                 </motion.div>
 
@@ -427,7 +427,7 @@ export default function DownloadPage() {
                             </h2>
                             <p className="text-gray-400 max-w-md mx-auto">
                                 Download the app, connect your email, and send all your job applications
-                                in seconds — not hours.
+                                in seconds, not hours.
                             </p>
                         </div>
 

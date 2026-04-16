@@ -22,7 +22,7 @@ type Payment = {
 };
 
 function formatAmount(amount: number | null, currency: string) {
-    if (amount == null) return "—";
+    if (amount == null) return "-";
     return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: currency.toUpperCase(),
@@ -30,7 +30,7 @@ function formatAmount(amount: number | null, currency: string) {
 }
 
 function formatDate(iso: string | null) {
-    if (!iso) return "—";
+    if (!iso) return "-";
     return new Date(iso).toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
@@ -134,7 +134,7 @@ export default function BillingPage() {
                                         {formatDate(payment.createdAt)}
                                     </TableCell>
                                     <TableCell className="text-gray-300">
-                                        {payment.description ?? "—"}
+                                        {payment.description ?? "-"}
                                     </TableCell>
                                     <TableCell className="text-gray-300">
                                         {formatAmount(payment.amount, payment.currency)}

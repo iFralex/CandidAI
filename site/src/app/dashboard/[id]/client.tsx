@@ -1673,7 +1673,7 @@ const EditArticlesDialog = ({
 
         {editedList.length === 0 && hasChanges && (
           <p className="text-xs text-yellow-500">
-            No articles selected — the email will be generated without any blog content.
+            No articles selected, the email will be generated without any blog content.
           </p>
         )}
 
@@ -1846,7 +1846,7 @@ const BlogPostsSection = ({ data, blogSearchUnlocked }: { data: any, blogSearchU
 const COMPANY_DETAIL_STEPS = [
   {
     title: 'Company Detail Page',
-    description: 'Here you can see everything about this company — the recruiter we found, culture insights from their blog, and your personalized outreach email.',
+    description: 'Here you can see everything about this company: the recruiter we found, culture insights from their blog, and your personalized outreach email.',
   },
   {
     targetId: 'company-header',
@@ -1861,7 +1861,7 @@ const COMPANY_DETAIL_STEPS = [
   {
     targetId: 'recruiter-section',
     title: 'Recruiter Profile',
-    description: 'We identified the recruiter most likely to champion your application — complete with their experience, skills, and contact info.',
+    description: 'We identified the recruiter most likely to champion your application, complete with their experience, skills, and contact info.',
   },
   {
     targetId: 'blog-section',

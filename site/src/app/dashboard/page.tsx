@@ -29,7 +29,7 @@ const DASHBOARD_STEPS = [
     {
         targetId: 'nav-send-all',
         title: 'Send All',
-        description: 'Send emails to all companies that are ready with a single click — no need to open each one individually.',
+        description: 'Send emails to all companies that are ready with a single click, no need to open each one individually.',
     },
     {
         targetId: 'nav-follow-ups',

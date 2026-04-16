@@ -127,7 +127,7 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
                 title="How do these instructions shape the emails?"
                 items={[
                     { icon: Target, label: "Target position", description: "Describe the role you're looking for. This tells the AI what to pitch and which of your skills to emphasize in each email." },
-                    { icon: Edit3, label: "Custom instructions", description: "Anything you write here is injected directly into the email generation prompt — tone, things to mention, things to avoid." },
+                    { icon: Edit3, label: "Custom instructions", description: "Anything you write here is injected directly into the email generation prompt: tone, things to mention, things to avoid." },
                     { icon: Clock, label: "Processing time", description: "Once submitted, your order enters the generation queue. Processing typically takes between 24 hours and 7 days." },
                     { icon: Mail, label: "Email updates", description: "You'll receive email notifications as batches of recruiter emails become ready in your dashboard." },
                 ]}
@@ -3763,7 +3763,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
         try {
             setAnalyzing(true)
 
-            // PDL enrichment — optional, tolerate failures. No logo fetching here:
+            // PDL enrichment - optional, tolerate failures. No logo fetching here:
             // logos are fetched after the Gemini merge, using the websites the server preserves.
             let pdlProfile: ProfileSummary | null = null;
             try {
@@ -3784,7 +3784,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                 console.warn("PDL enrichment failed, proceeding with CV only:", e);
             }
 
-            // AI enrichment — always runs, with or without PDL data.
+            // AI enrichment - always runs, with or without PDL data.
             // The server merges PDL + CV and guarantees all known websites are preserved.
             const cvData = new FormData();
             cvData.append("cv", cvFile.blob);
@@ -3954,7 +3954,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                             { icon: Brain, label: "Skill matching", description: "The AI extracts your skills from your CV and LinkedIn, then highlights the most relevant ones for each target company's domain." },
                             { icon: Briefcase, label: "Experience context", description: "Your past roles and achievements are referenced in each email to show concrete value to the recruiter." },
                             { icon: GraduationCap, label: "Education & projects", description: "Degrees, certifications, and notable projects are mentioned when relevant to the target company or role." },
-                            { icon: User, label: "Authentic voice", description: "The richer your profile, the more specific and credible each email sounds — no generic templates." },
+                            { icon: User, label: "Authentic voice", description: "The richer your profile, the more specific and credible each email sounds, no generic templates." },
                         ]}
                     />
 
@@ -4556,7 +4556,7 @@ export function CompanyInputClient({
                 items={[
                     { icon: Search, label: "Recruiter discovery", description: "For each company, CandidAI searches LinkedIn to find relevant recruiters and hiring managers that match your profile." },
                     { icon: Mail, label: "Personalized emails", description: "Each email is tailored to the specific company, referencing its industry, culture, and how your background fits." },
-                    { icon: Building, label: "Domain & LinkedIn URL", description: "Add companies by website domain (e.g. google.com) or LinkedIn company URL — both methods work equally well." },
+                    { icon: Building, label: "Domain & LinkedIn URL", description: "Add companies by website domain (e.g. google.com) or LinkedIn company URL, both methods work equally well." },
                     { icon: Target, label: "Processing order", description: "Companies will be processed in the order listed. Add the most important ones first." },
                 ]}
             />
@@ -5090,7 +5090,7 @@ export function OnboardingCompleteClient({ companies }: { companies: { name: str
                 )}
             </AnimatePresence>
 
-            {/* Main content — fades in after rocket */}
+            {/* Main content - fades in after rocket */}
             <AnimatePresence>
                 {showContent && (
                     <motion.div
@@ -5137,7 +5137,7 @@ export function OnboardingCompleteClient({ companies }: { companies: { name: str
                             transition={{ delay: 0.3 }}
                             className="text-lg text-gray-400 mb-10 max-w-lg mx-auto"
                         >
-                            Your personalized emails are being crafted. The companies below have entered the queue — sit back while AI does the heavy lifting.
+                            Your personalized emails are being crafted. The companies below have entered the queue, sit back while AI does the heavy lifting.
                         </motion.p>
 
                         {/* Company list */}
@@ -5177,7 +5177,7 @@ export function OnboardingCompleteClient({ companies }: { companies: { name: str
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-white font-medium truncate">{company.name}</p>
-                                                <p className="text-xs text-gray-500 truncate">{domain || company.linkedin_url || '—'}</p>
+                                                <p className="text-xs text-gray-500 truncate">{domain || company.linkedin_url || '-'}</p>
                                             </div>
                                             <span className="shrink-0 text-xs font-semibold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                                                 Queued

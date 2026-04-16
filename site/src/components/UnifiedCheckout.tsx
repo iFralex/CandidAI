@@ -406,7 +406,7 @@ export function UnifiedCheckout({ purchaseType, itemId, email = "", onSuccess }:
                                 <Badge className="bg-slate-700/30">Secure <Lock className="w-3 h-3 ml-1" /></Badge>
                             </div>
                             <div className="mt-3 text-xs text-gray-400">
-                                Card details are processed securely by Stripe — we never see full card numbers.
+                                Card details are processed securely by Stripe, we never see full card numbers.
                             </div>
                         </Card>
                     </div>

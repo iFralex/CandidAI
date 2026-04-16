@@ -21,11 +21,11 @@ const BASE_URL = "https://candidai.tech";
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: "CandidAI — Land Your Dream Job with AI",
+    default: "CandidAI - Land Your Dream Job with AI",
     template: "%s | CandidAI",
   },
   description:
-    "CandidAI finds the right recruiters and writes personalised job-application emails for you — automatically. Apply to dozens of companies in minutes.",
+    "CandidAI finds the right recruiters and writes personalised job-application emails for you, automatically. Apply to dozens of companies in minutes.",
   keywords: [
     "job search",
     "AI emails",
@@ -59,9 +59,9 @@ export const metadata: Metadata = {
     type: "website",
     url: BASE_URL,
     siteName: "CandidAI",
-    title: "CandidAI — Land Your Dream Job with AI",
+    title: "CandidAI - Land Your Dream Job with AI",
     description:
-      "CandidAI finds the right recruiters and writes personalised job-application emails for you — automatically.",
+      "CandidAI finds the right recruiters and writes personalised job-application emails for you, automatically.",
     images: [
       {
         url: "/og-image.png",
@@ -77,9 +77,9 @@ export const metadata: Metadata = {
     card: "summary",
     site: "@candidai",
     creator: "@candidai",
-    title: "CandidAI — Land Your Dream Job with AI",
+    title: "CandidAI - Land Your Dream Job with AI",
     description:
-      "CandidAI finds the right recruiters and writes personalised job-application emails for you — automatically.",
+      "CandidAI finds the right recruiters and writes personalised job-application emails for you, automatically.",
     images: ["/og-image.png"],
   },
 

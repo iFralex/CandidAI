@@ -279,7 +279,7 @@ const HeroSection = () => {
             {/* Main layout: asymmetric split */}
             <div className="relative z-10 flex flex-col lg:flex-row min-h-screen pt-24 pb-8">
 
-                {/* LEFT COLUMN — content, top-aligned with padding */}
+                {/* LEFT COLUMN - content, top-aligned with padding */}
                 <div className="flex-1 flex flex-col justify-center px-8 lg:pl-16 xl:pl-24 lg:pr-8 max-w-none lg:max-w-4xl mx-auto">
 
                     {/* Eyebrow badge */}
@@ -293,7 +293,7 @@ const HeroSection = () => {
                         </Badge>
                     </div>
 
-                    {/* Headline — oversized, editorial */}
+                    {/* Headline - oversized, editorial */}
                     <h1
                         className="font-black leading-[0.9] mb-8 tracking-tight"
                         style={{ fontFamily: "'Syne', sans-serif" }}
@@ -318,7 +318,7 @@ const HeroSection = () => {
                         <span className="text-violet-300 font-medium">actually get responses</span>.
                     </p>
 
-                    {/* Form — inline, pill style */}
+                    {/* Form - inline, pill style */}
                     <form
                         onSubmit={() => router.push("/login?email=" + email)}
                         className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 max-w-lg mb-8"
@@ -348,7 +348,7 @@ const HeroSection = () => {
                         </Link>
                     </form>
 
-                    {/* Trust signals — horizontal pills */}
+                    {/* Trust signals - horizontal pills */}
                     <div className="flex flex-wrap gap-3 ">
                         {[
                             "No credit card required",
@@ -368,7 +368,7 @@ const HeroSection = () => {
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN — video, vertically centered, floating card effect */}
+                {/* RIGHT COLUMN - video, vertically centered, floating card effect */}
                 <div className="flex-1 flex items-center justify-center lg:justify-start px-8 lg:pr-12 xl:pr-20 pb-24 lg:pb-0 pt-12 lg:pt-0 max-w-6xl mx-auto w-full">
                     <div className="relative w-full ">
 
@@ -518,7 +518,7 @@ const JobMarketCrisisSections = () => {
                                 The Job Market Has Changed Forever
                             </h2>
                             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                                Industries that were thriving just years ago are now nearly impossible to break into. AI isn't just changing the game—it's closing the door on entry-level opportunities.
+                                Industries that were thriving just years ago are now nearly impossible to break into. AI isn't just changing the game, it's closing the door on entry-level opportunities.
                             </p>
                         </motion.div>
                     </div>
@@ -562,7 +562,7 @@ const JobMarketCrisisSections = () => {
                                     AI is Replacing Junior Roles
                                 </h3>
                                 <p className="text-gray-300 leading-relaxed mb-4">
-                                    Tasks that were once the domain of entry-level employees—data analysis, report writing, basic coding—are now automated by AI. Major tech companies have slashed junior hiring by 25%, while financial institutions see 54% of banking roles at risk.
+                                    Tasks that were once the domain of entry-level employees (data analysis, report writing, basic coding) are now automated by AI. Major tech companies have slashed junior hiring by 25%, while financial institutions see 54% of banking roles at risk.
                                 </p>
                                 <p className="text-gray-400 text-sm italic">
                                     Tech giants like Microsoft, Meta, and Amazon have frozen or drastically reduced junior developer hiring.
@@ -582,7 +582,7 @@ const JobMarketCrisisSections = () => {
                                     The Entry-Level Crisis
                                 </h3>
                                 <p className="text-gray-300 leading-relaxed mb-4">
-                                    Software engineering job openings hit a five-year low, with a 35% drop since 2020. The traditional career ladder is breaking—entry-level positions that once served as stepping stones are vanishing entirely.
+                                    Software engineering job openings hit a five-year low, with a 35% drop since 2020. The traditional career ladder is breaking: entry-level positions that once served as stepping stones are vanishing entirely.
                                 </p>
                                 <p className="text-gray-400 text-sm italic">
                                     Without intervention, unemployment could spike to levels not seen since the sovereign debt crisis.
@@ -601,7 +601,7 @@ const JobMarketCrisisSections = () => {
                         <Card className="p-8 bg-gradient-to-r from-red-600/20 to-orange-600/20">
                             <AlertTriangle className="w-12 h-12 text-orange-400 mx-auto mb-4" />
                             <p className="text-xl text-gray-200 font-semibold mb-2">
-                                Traditional job search strategies aren't just ineffective anymore—they're obsolete.
+                                Traditional job search strategies aren't just ineffective anymore, they're obsolete.
                             </p>
                             <p className="text-gray-400">
                                 The methods that worked for previous generations no longer give you a fighting chance in today's AI-dominated market.
@@ -625,7 +625,7 @@ const JobMarketCrisisSections = () => {
                                 Why Traditional Methods Don't Work Anymore
                             </h2>
                             <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-                                You're doing everything "right"—sending applications, customizing your resume, following up. So why aren't you getting interviews?
+                                You're doing everything "right", sending applications, customizing your resume, following up. So why aren't you getting interviews?
                             </p>
                         </motion.div>
                     </div>
@@ -717,7 +717,7 @@ const JobMarketCrisisSections = () => {
                                         What Actually Works?
                                     </p>
                                     <p className="text-gray-300">
-                                        Direct contact with recruiters bypasses the competition entirely. But crafting a single personalized outreach email takes 1-2 hours—making it impossible to scale. <span className="text-violet-400 font-semibold">Until now.</span>
+                                        Direct contact with recruiters bypasses the competition entirely. But crafting a single personalized outreach email takes 1-2 hours, making it impossible to scale. <span className="text-violet-400 font-semibold">Until now.</span>
                                     </p>
                                 </div>
                             </div>

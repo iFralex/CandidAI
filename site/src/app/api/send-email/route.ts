@@ -383,7 +383,7 @@ export async function POST(req) {
 
                 case "contact-confirmation":
                     email = data.email;
-                    const contactSubject = `We received your message — CandidAI Support`;
+                    const contactSubject = `We received your message - CandidAI Support`;
                     const safeMessage = (data.message || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     const contactHtml = wrapEmail(`
         <div style="text-align: center; margin-bottom: 30px;">
@@ -402,7 +402,7 @@ export async function POST(req) {
 
         <div style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid #8b5cf6; padding: 20px; margin: 24px 0; border-radius: 8px;">
           <p style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin: 0;">
-            <strong style="color: #8b5cf6;">📬 What's next?</strong> You'll hear back from us at <strong>support@candidai.tech</strong> — keep an eye on your inbox (and spam folder, just in case).
+            <strong style="color: #8b5cf6;">📬 What's next?</strong> You'll hear back from us at <strong>support@candidai.tech</strong>, keep an eye on your inbox (and spam folder, just in case).
           </p>
         </div>
 
@@ -414,7 +414,7 @@ export async function POST(req) {
 
         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
           <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">
-            This is an automated confirmation — please do not reply to this email.
+            This is an automated confirmation, please do not reply to this email.
           </p>
         </div>
       `, "We've received your support request and will be in touch soon");
@@ -440,11 +440,11 @@ export async function POST(req) {
                         free_trial: {
                             badge: "🎁 FREE TRIAL ACTIVE",
                             subject: `🎁 You're in, ${name}! Your first AI-crafted recruiter email is on its way`,
-                            preheader: "Your CandidAI free trial is live — one company, one shot, fully AI-personalized.",
+                            preheader: "Your CandidAI free trial is live: one company, one shot, fully AI-personalized.",
                             headline: `You're in, ${name}! Let's make your first move count.`,
-                            intro: `Thank you for completing your onboarding! Your free trial is now active. We've set up everything for <strong style="color: #8b5cf6;">1 target company</strong> — our AI will research the right recruiter and craft a fully personalized email just for you. No templates, no generic messages.`,
+                            intro: `Thank you for completing your onboarding! Your free trial is now active. We've set up everything for <strong style="color: #8b5cf6;">1 target company</strong>, our AI will research the right recruiter and craft a fully personalized email just for you. No templates, no generic messages.`,
                             perks: [
-                                "1 company — AI researches the recruiter for you",
+                                "1 company: AI researches the recruiter for you",
                                 "Fully personalized email (not a template)",
                                 "Ready to review and send from your dashboard",
                             ],
@@ -454,52 +454,52 @@ export async function POST(req) {
                         base: {
                             badge: "🎯 BASE PLAN ACTIVE",
                             subject: `🎯 Onboarding complete! Your 20-company outreach campaign is launching`,
-                            preheader: "CandidAI Base is live — up to 20 personalized recruiter emails, all AI-crafted.",
+                            preheader: "CandidAI Base is live: up to 20 personalized recruiter emails, all AI-crafted.",
                             headline: `Your campaign is launching, ${name}!`,
-                            intro: `Thank you for choosing CandidAI Base! You've unlocked a full outreach campaign — our AI will research recruiters across <strong style="color: #8b5cf6;">up to 20 target companies</strong> and write a unique, personalized email for each one. No copy-paste. Every email tailored to the specific company and recruiter.`,
+                            intro: `Thank you for choosing CandidAI Base! You've unlocked a full outreach campaign, our AI will research recruiters across <strong style="color: #8b5cf6;">up to 20 target companies</strong> and write a unique, personalized email for each one. No copy-paste. Every email tailored to the specific company and recruiter.`,
                             perks: [
-                                "Up to 20 companies — a real outreach campaign",
+                                "Up to 20 companies: a real outreach campaign",
                                 "Individual recruiter research for each company",
                                 "Fully personalized emails, not templates",
                                 "Review and send from your dashboard at your pace",
                             ],
-                            nextSteps: "Your emails will appear in the dashboard as they're generated — you don't have to wait for all of them. Review each one, customize if needed, and start sending. The sooner you send, the sooner you hear back.",
+                            nextSteps: "Your emails will appear in the dashboard as they're generated, you don't have to wait for all of them. Review each one, customize if needed, and start sending. The sooner you send, the sooner you hear back.",
                             tip: "💡 <strong style=\"color: #8b5cf6;\">Send tip:</strong> Tuesday–Thursday, 10 AM–2 PM in the recruiter's timezone = highest open rates. Your dashboard shows each recruiter's company location to help you time it perfectly.",
                         },
                         pro: {
                             badge: "🚀 PRO PLAN ACTIVE",
-                            subject: `🚀 You're on Pro, ${name} — your AI-powered job search just shifted into high gear`,
+                            subject: `🚀 You're on Pro, ${name} - your AI-powered job search just shifted into high gear`,
                             preheader: "50 companies, custom recruiter strategy, follow-up automation. Let's get you hired.",
                             headline: `High gear, ${name}. Let's get you hired.`,
-                            intro: `Welcome to CandidAI Pro — where serious job seekers get serious results. You now have everything you need to run a professional, high-volume outreach campaign. Our AI will craft <strong style="color: #8b5cf6;">up to 50 personalized emails</strong>, using your custom recruiter strategy and writing instructions to make every message feel like it was written personally by you.`,
+                            intro: `Welcome to CandidAI Pro, where serious job seekers get serious results. You now have everything you need to run a professional, high-volume outreach campaign. Our AI will craft <strong style="color: #8b5cf6;">up to 50 personalized emails</strong>, using your custom recruiter strategy and writing instructions to make every message feel like it was written personally by you.`,
                             perks: [
-                                "Up to 50 companies — a high-volume campaign",
+                                "Up to 50 companies: a high-volume campaign",
                                 "Custom recruiter search strategy with up to 30 criteria",
-                                "Custom writing instructions — your voice, your style",
-                                "Follow-up email automation — never miss a reply",
+                                "Custom writing instructions: your voice, your style",
+                                "Follow-up email automation: never miss a reply",
                                 "1,000 credits for regenerations and refinements",
                             ],
                             nextSteps: "Your emails are being generated now. Head to your dashboard to track progress, review drafts as they come in, and fine-tune any message with your custom instructions. Use your credits to regenerate emails that don't feel quite right.",
-                            tip: "⚡ <strong style=\"color: #8b5cf6;\">Power move:</strong> Use your <strong>custom instructions</strong> to inject your unique selling points — specific projects, metrics, or achievements you want every email to highlight. The more specific, the better the results.",
+                            tip: "⚡ <strong style=\"color: #8b5cf6;\">Power move:</strong> Use your <strong>custom instructions</strong> to inject your unique selling points: specific projects, metrics, or achievements you want every email to highlight. The more specific, the better the results.",
                         },
                         ultra: {
                             badge: "👑 ULTRA PLAN ACTIVE",
-                            subject: `👑 Welcome to Ultra, ${name} — every advantage, fully unlocked`,
+                            subject: `👑 Welcome to Ultra, ${name} - every advantage, fully unlocked`,
                             preheader: "100 companies, AI recommendations, deep-dive research, priority generation. You're in the fast lane.",
                             headline: `Every advantage, fully unlocked. Welcome to Ultra, ${name}.`,
-                            intro: `You've chosen the most powerful job search tool available. CandidAI Ultra puts you at the front of every queue — priority email generation, AI-powered company recommendations, deep-dive research reports, and a dedicated outreach pipeline covering <strong style="color: #8b5cf6;">up to 100 companies</strong>. This isn't just job searching. It's a coordinated campaign.`,
+                            intro: `You've chosen the most powerful job search tool available. CandidAI Ultra puts you at the front of every queue, with priority email generation, AI-powered company recommendations, deep-dive research reports, and a dedicated outreach pipeline covering <strong style="color: #8b5cf6;">up to 100 companies</strong>. This isn't just job searching. It's a coordinated campaign.`,
                             perks: [
-                                "Up to 100 companies — maximum coverage",
-                                "Priority generation queue — your emails go first",
-                                "AI company recommendations — we find targets you haven't thought of",
+                                "Up to 100 companies: maximum coverage",
+                                "Priority generation queue: your emails go first",
+                                "AI company recommendations: we find targets you haven't thought of",
                                 "Deep-dive company research reports per company",
-                                "Company confirmation calls — verify before you commit",
+                                "Company confirmation calls: verify before you commit",
                                 "Custom recruiter strategy with up to 50 criteria",
                                 "Follow-up email automation",
                                 "2,500 credits included",
                             ],
-                            nextSteps: "Your campaign is being built right now with priority processing. You'll also see AI-recommended companies in your dashboard — these are targets our AI thinks are a strong fit based on your profile. Confirm or skip each one. Your emails will be ready faster than any other plan.",
-                            tip: "👑 <strong style=\"color: #8b5cf6;\">Ultra advantage:</strong> Check your <strong>AI recommendations</strong> first — users who include AI-suggested companies report significantly more interview callbacks than those who rely on manual selection alone.",
+                            nextSteps: "Your campaign is being built right now with priority processing. You'll also see AI-recommended companies in your dashboard, these are targets our AI thinks are a strong fit based on your profile. Confirm or skip each one. Your emails will be ready faster than any other plan.",
+                            tip: "👑 <strong style=\"color: #8b5cf6;\">Ultra advantage:</strong> Check your <strong>AI recommendations</strong> first - users who include AI-suggested companies report significantly more interview callbacks than those who rely on manual selection alone.",
                         },
                     };
 
@@ -554,7 +554,7 @@ export async function POST(req) {
 
         <div style="padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.15);">
           <p style="color: #888888; font-size: 13px; line-height: 1.6; margin: 0;">
-            Questions or feedback? We're at <a href="mailto:support@candidai.com" style="color: #8b5cf6; text-decoration: none;">support@candidai.com</a> — we actually read every message.
+            Questions or feedback? We're at <a href="mailto:support@candidai.com" style="color: #8b5cf6; text-decoration: none;">support@candidai.com</a>, we actually read every message.
           </p>
         </div>
       `, content.preheader);

@@ -51,7 +51,7 @@ export default function PlanAndCreditsClient({ email }: PlanAndCreditsClientProp
                 <div className="mb-6">
                     <h2 className="text-2xl font-bold text-white mb-2">Choose a Plan</h2>
                     <p className="text-gray-400">
-                        One-time purchase — pay once, use until your company limit is reached.
+                        One-time purchase: pay once, use until your company limit is reached.
                     </p>
                 </div>
                 <PlanSelector

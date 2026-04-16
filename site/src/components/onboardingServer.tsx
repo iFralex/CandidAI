@@ -81,7 +81,7 @@ export async function PaymentStripeServer({ userId, plan, email }: { userId: str
                     Complete Your Purchase 💳
                 </h2>
                 <p className="text-lg text-gray-400">
-                    One-time payment — pay once, use until your company limit is reached.
+                    One-time payment: pay once, use until your company limit is reached.
                 </p>
             </div>
 

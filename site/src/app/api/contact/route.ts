@@ -24,7 +24,7 @@ export async function POST(req: Request) {
                 from: "CandidAI Contact <noreply@candidai.tech>",
                 to: "support@candidai.tech",
                 replyTo: email,
-                subject: `[Contact] ${subject} — from ${name}`,
+                subject: `[Contact] ${subject} - from ${name}`,
                 html: `
 <!DOCTYPE html>
 <html lang="en">
