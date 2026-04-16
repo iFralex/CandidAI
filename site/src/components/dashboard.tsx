@@ -1019,14 +1019,14 @@ export function AddMoreCompaniesDialog({ maxCompanies, companiesUsed }: { maxCom
                             </div>
 
                             <h2 className="text-2xl font-bold text-center text-white mb-3">
-                                Limite di aziende raggiunto
+                                Company limit reached
                             </h2>
                             <p className="text-center text-slate-300 mb-6">
-                                Hai utilizzato tutte le <span className="font-semibold text-white">{maxCompanies}</span> aziende disponibili nel tuo piano attuale. Acquista un nuovo piano per aggiungerne altre — le aziende rimanenti del piano corrente si sommeranno a quelle nuove.
+                                You have used all <span className="font-semibold text-white">{maxCompanies}</span> companies available in your current plan. Purchase a new plan to add more. The remaining companies from your current plan will be added to the new ones.
                             </p>
 
                             <div className="bg-slate-800/50 rounded-xl p-5 mb-6 border border-orange-500/20 flex items-center justify-between">
-                                <span className="text-slate-400 text-sm font-medium">Aziende utilizzate</span>
+                                <span className="text-slate-400 text-sm font-medium">Companies used</span>
                                 <div className="flex items-center gap-2">
                                     <Building2 className="w-5 h-5 text-orange-400" />
                                     <span className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
@@ -1037,7 +1037,7 @@ export function AddMoreCompaniesDialog({ maxCompanies, companiesUsed }: { maxCom
 
                             <Link href="/dashboard/plan-and-credits" onClick={() => setLimitOpen(false)}>
                                 <Button className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3" icon={<Crown className="w-4 h-4" />}>
-                                    Acquista un nuovo piano
+                                    Purchase a new plan
                                 </Button>
                             </Link>
                         </div>
