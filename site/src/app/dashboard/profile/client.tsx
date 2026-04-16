@@ -183,7 +183,7 @@ export function ProfileClient({ defaultName, defaultPicture, plan, account }: Pr
     }
 
     return (
-        <div className="space-y-8 max-w-4xl">
+        <div className="space-y-8">
             {/* Section 1: Basic Info */}
             <BasicInfoSection defaultName={defaultName} defaultPicture={defaultPicture} />
 

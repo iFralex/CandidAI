@@ -6,7 +6,7 @@ import { SettingsForm } from "./client"
 export const metadata = { title: "Settings" };
 
 const SettingsSkeleton = () => (
-    <div className="space-y-8 max-w-2xl">
+    <div className="space-y-8">
         {/* Email Preferences */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
             <Skeleton className="h-6 w-40" />

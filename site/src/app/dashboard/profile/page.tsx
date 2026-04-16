@@ -6,7 +6,7 @@ import { ProfileClient } from "./client"
 export const metadata = { title: "Profile" };
 
 const ProfileSkeleton = () => (
-    <div className="space-y-8 max-w-4xl">
+    <div className="space-y-8">
         {/* Basic Info */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-6">
             <Skeleton className="h-6 w-24" />

@@ -69,7 +69,7 @@ export default function HelpClient({ userId, initialEmail }: HelpClientProps) {
     };
 
     return (
-        <div className="w-full max-w-lg mx-auto">
+        <div className="w-full">
             {/* Header */}
             <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/20 rounded-full px-4 py-1.5 text-sm text-violet-300 mb-6">

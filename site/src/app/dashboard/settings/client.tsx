@@ -39,7 +39,7 @@ export function SettingsForm({ defaultMarketingEmails, defaultReminderFrequency,
     }
 
     return (
-        <div className="space-y-8 max-w-2xl">
+        <div className="space-y-8">
             {/* Marketing Emails */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
                 <div>
