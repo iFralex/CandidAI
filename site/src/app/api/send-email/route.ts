@@ -8,8 +8,8 @@ export async function POST(req) {
     try {
         const { userId, type, data = {} } = await req.json();
 
-        const VALID_TYPES = ["welcome", "password-reset", "new_emails_generated", "purchase-confirmation", "contact-confirmation", "onboarding-complete"];
-        const TYPES_REQUIRING_USER_ID = ["welcome", "new_emails_generated", "purchase-confirmation", "onboarding-complete"];
+        const VALID_TYPES = ["welcome", "password-reset", "new_emails_generated", "first_email_generated", "purchase-confirmation", "contact-confirmation", "onboarding-complete"];
+        const TYPES_REQUIRING_USER_ID = ["welcome", "new_emails_generated", "first_email_generated", "purchase-confirmation", "onboarding-complete"];
 
         if (!type || !VALID_TYPES.includes(type)) {
             return NextResponse.json(
@@ -319,6 +319,87 @@ export async function POST(req) {
       `, `${companiesCount} personalized emails ready for your review`);
 
                     return { subject: generatedSubject, html: generatedHtml };
+
+                case "first_email_generated": {
+                    const firstItem = newData[0] || {};
+                    const firstSubject = `🎉 Your first AI-crafted email is ready — check it out!`;
+
+                    const firstHtml = wrapEmail(`
+        <div style="text-align: center; margin-bottom: 30px;">
+          <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 24px; margin-bottom: 20px;">
+            <span style="color: #a78bfa; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">YOUR FIRST EMAIL IS READY</span>
+          </div>
+        </div>
+
+        <h2 style="color: #ffffff; font-size: 26px; font-weight: 700; margin: 0 0 16px; line-height: 1.35;">
+          It's done, ${userRecord.displayName || 'there'}. Your first personalized email is ready. 🎉
+        </h2>
+
+        <p style="color: #cccccc; font-size: 16px; line-height: 1.7; margin: 0 0 24px;">
+          Our AI has researched the recruiter at <strong style="color: #ffffff;">${firstItem.company?.name || 'your target company'}</strong> and crafted a personalized email just for you. No templates, no copy-paste — written from scratch based on the company's news and the recruiter's background.
+        </p>
+
+        <div style="background: rgba(139, 92, 246, 0.05); border-radius: 12px; padding: 20px; margin: 0 0 28px;">
+          <div style="display: table; width: 100%;">
+            <div style="display: table-row;">
+              <div style="display: table-cell; vertical-align: top; padding-right: 14px; width: 44px;">
+                <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 10px; overflow: hidden; position: relative; color: #ffffff; font-weight: 700; font-size: 20px; text-align: center; line-height: 44px;">
+                  ${firstItem.company?.name?.charAt(0)?.toUpperCase() || '?'}
+                  ${firstItem.company?.domain ? `<img src="https://logo.clearbit.com/${firstItem.company.domain}" width="44" height="44" alt="" style="position: absolute; top: 0; left: 0; width: 44px; height: 44px; object-fit: contain; background: white; border-radius: 10px;">` : ''}
+                </div>
+              </div>
+              <div style="display: table-cell; vertical-align: top;">
+                <h3 style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0 0 4px;">
+                  ${firstItem.company?.name || ''}
+                </h3>
+                <p style="color: #888888; font-size: 13px; margin: 0 0 10px;">${firstItem.company?.domain || ''}</p>
+                ${firstItem.recruiter?.name ? `
+                <p style="color: #aaaaaa; font-size: 14px; margin: 0 0 4px;">
+                  <strong style="color: #8b5cf6;">👤 Recruiter:</strong> ${firstItem.recruiter.name}
+                </p>
+                <p style="color: #888888; font-size: 13px; margin: 0 0 12px;">${firstItem.recruiter.jobTitle || ''}</p>
+                ` : ''}
+                ${firstItem.articles && firstItem.articles.length > 0 ? `
+                <p style="color: #aaaaaa; font-size: 14px; margin: 0 0 6px;">
+                  <strong style="color: #8b5cf6;">📰 Referenced:</strong>
+                </p>
+                ${firstItem.articles.map((a: any) => `
+                  <a href="${a.link}" style="display: block; color: #7c3aed; text-decoration: none; font-size: 13px; margin: 3px 0;">→ ${a.title}</a>
+                `).join('')}
+                ` : ''}
+              </div>
+            </div>
+          </div>
+
+          ${firstItem.preview ? `
+          <div style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 14px; margin-top: 16px;">
+            <p style="color: #aaaaaa; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px;">Email preview</p>
+            <p style="color: #cccccc; font-size: 13px; line-height: 1.6; margin: 0; font-style: italic;">
+              "${firstItem.preview.substring(0, 180)}${firstItem.preview.length > 180 ? '...' : ''}"
+            </p>
+          </div>
+          ` : ''}
+        </div>
+
+        <div style="text-align: center; margin: 0 0 28px;">
+          ${button('Review & Send My Email', `${domain}/dashboard`)}
+        </div>
+
+        <div style="background: rgba(139, 92, 246, 0.08); border-left: 4px solid #8b5cf6; padding: 18px 20px; margin: 0 0 28px; border-radius: 0 8px 8px 0;">
+          <p style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin: 0;">
+            💡 <strong style="color: #8b5cf6;">Like what you see?</strong> Upgrade your plan and run a full campaign — up to 100 companies, each with a fully personalized email crafted by AI.
+          </p>
+        </div>
+
+        <div style="padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.15);">
+          <p style="color: #888888; font-size: 13px; line-height: 1.6; margin: 0;">
+            Questions? We're at <a href="mailto:support@candidai.com" style="color: #8b5cf6; text-decoration: none;">support@candidai.com</a> — we actually read every message.
+          </p>
+        </div>
+      `, "Your first AI-crafted recruiter email is ready to review and send");
+
+                    return { subject: firstSubject, html: firstHtml };
+                }
 
                 case "purchase-confirmation":
                     const confirmSubject = `✅ Purchase Confirmed – ${data.item}`;

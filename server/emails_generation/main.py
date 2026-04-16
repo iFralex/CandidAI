@@ -9,6 +9,7 @@ from server.emails_generation.database import (
     get_results_row,
     get_custom_queries,
     get_user_settings,
+    get_user_data,
     valid_account,
     update_pending_articles_content,
 )
@@ -209,6 +210,33 @@ def decide_tasks_per_company(mode, manual_tasks, current_status, companies, user
 
 def _send_notification_email(user_id, generated_email_data):
     """Invia una mail riepilogativa tramite l'endpoint Next.js /api/send-email."""
+    domain = os.environ.get("NEXT_PUBLIC_DOMAIN", "").rstrip("/")
+    if not domain:
+        logging.warning("⚠️ NEXT_PUBLIC_DOMAIN non impostato, notifica email saltata")
+        return
+
+    # Caso speciale: free trial con prima email generata
+    user_data = get_user_data(user_id) or {}
+    plan = user_data.get("plan", "free_trial")
+    if plan == "free_trial" and len(generated_email_data) >= 1:
+        try:
+            resp = requests.post(
+                f"{domain}/api/send-email",
+                json={
+                    "userId": user_id,
+                    "type": "first_email_generated",
+                    "data": {"newData": generated_email_data},
+                },
+                timeout=30,
+            )
+            if resp.ok:
+                logging.info("📧 Notifica prima email (free trial) inviata")
+            else:
+                logging.warning(f"⚠️ Notifica prima email fallita: {resp.status_code} {resp.text}")
+        except Exception as e:
+            logging.error(f"❌ Errore invio notifica prima email: {e}")
+        return
+
     settings = get_user_settings(user_id)
     threshold = settings.get("emailNotificationThreshold", 10)
 
@@ -216,11 +244,6 @@ def _send_notification_email(user_id, generated_email_data):
         return  # Notifiche disabilitate
 
     if len(generated_email_data) < threshold:
-        return
-
-    domain = os.environ.get("NEXT_PUBLIC_DOMAIN", "").rstrip("/")
-    if not domain:
-        logging.warning("⚠️ NEXT_PUBLIC_DOMAIN non impostato, notifica email saltata")
         return
 
     try:
