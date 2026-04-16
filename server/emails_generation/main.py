@@ -210,7 +210,7 @@ def decide_tasks_per_company(mode, manual_tasks, current_status, companies, user
 def _send_notification_email(user_id, generated_email_data):
     """Invia una mail riepilogativa tramite l'endpoint Next.js /api/send-email."""
     settings = get_user_settings(user_id)
-    threshold = settings.get("emailNotificationThreshold", 1)
+    threshold = settings.get("emailNotificationThreshold", 10)
 
     if threshold == 0:
         return  # Notifiche disabilitate
