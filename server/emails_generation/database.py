@@ -189,7 +189,7 @@ def save_companies_to_results(user_id, companies, changed_companies):
 
         details_ref.set({
             "company": company_to_save,
-        })
+        }, merge=True)
 
         # 3. Salva l'associazione company_key -> ID solo se era un nuovo ID
         if not existing_id_doc.exists:
@@ -310,13 +310,11 @@ def save_recruiter_and_query(user_id: str, unique_id, recruiter: dict, query: di
 
     summaryProfile = parse(recruiter) if recruiter else {}
 
-    details_ref.set({
-        "company": {
-            "linkedin_url": linkedin_url
-        },
+    details_ref.update({
+        "company.linkedin_url": linkedin_url,
         "recruiter_summary": summaryProfile,
         "query": query
-    }, merge=True)
+    })
 
     row_ref = db.collection("users").document(user_id)\
         .collection("data").document("results")\
