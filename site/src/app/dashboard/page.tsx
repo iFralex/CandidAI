@@ -371,11 +371,13 @@ const Page = async () => {
                 <Card className="p-6" gradient>
                     <h3 className="text-xl font-semibold text-white mb-4">Need Help?</h3>
                     <p className="text-gray-300 mb-4">
-                        Check out our guides and tips to maximize your job search success.
+                        Our support team is here for you. Contact us for any questions or issues with your account.
                     </p>
-                    <Button variant="secondary" icon={<ExternalLink className="w-4 h-4" />}>
-                        View Resources
-                    </Button>
+                    <Link href="/dashboard/help">
+                        <Button variant="secondary" icon={<ExternalLink className="w-4 h-4" />}>
+                            Contact Support
+                        </Button>
+                    </Link>
                 </Card>
 
                 <Card className="p-6">
