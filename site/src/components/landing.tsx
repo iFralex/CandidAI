@@ -1432,11 +1432,11 @@ const LandingPage = () => {
             <HeroSection />
             <StatsSection />
             <JobMarketCrisisSections />
+            <PricingSection />
+            <EmailExamplesSection />
             <SavingsSection />
             <FeaturesSection />
             <ProcessSection />
-            <PricingSection />
-            <EmailExamplesSection />
             <ReviewsSection />
             <FAQSection />
             <CTASection />
