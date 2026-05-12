@@ -77,3 +77,66 @@ def test_save_and_list_stats(db):
     stats = db.list_stats()
     assert len(stats) >= 1
     assert stats[0]['impressions'] == 1200
+
+from server.video_pipeline.subtitles import SubtitleGenerator, SUBTITLE_STYLES
+
+def test_subtitle_styles_defined():
+    expected = {'bold_yellow', 'minimal_white', 'dark_band', 'outlined_color', 'word_pop'}
+    assert set(SUBTITLE_STYLES.keys()) == expected
+
+def test_srt_from_whisper_result():
+    gen = SubtitleGenerator(storage_path="/tmp")
+    whisper_result = {
+        "segments": [
+            {"start": 0.0, "end": 2.5, "text": "Hello world"},
+            {"start": 2.5, "end": 5.0, "text": "This is a test"},
+        ]
+    }
+    srt = gen._result_to_srt(whisper_result)
+    assert "00:00:00,000 --> 00:00:02,500" in srt
+    assert "Hello world" in srt
+    assert "00:00:02,500 --> 00:00:05,000" in srt
+
+def test_ass_header_generated():
+    gen = SubtitleGenerator(storage_path="/tmp")
+    header = gen._make_ass_header("bold_yellow")
+    assert "[Script Info]" in header
+    assert "[V4+ Styles]" in header
+
+from server.video_pipeline.library_manager import LibraryManager
+import os
+
+def test_library_manager_init(tmp_path):
+    db_path = str(tmp_path / "test.db")
+    storage_path = str(tmp_path / "storage")
+    lm = LibraryManager(db_path=db_path, storage_path=storage_path)
+    assert os.path.isdir(storage_path + "/raw")
+    assert os.path.isdir(storage_path + "/clips")
+
+def test_get_least_used_clip(tmp_path):
+    db_path = str(tmp_path / "test.db")
+    storage_path = str(tmp_path / "storage")
+    lm = LibraryManager(db_path=db_path, storage_path=storage_path)
+    lm.db.create_clip("https://yt.com/a", "/clips/a.mp4", 10.0, "cooking")
+    id2 = lm.db.create_clip("https://yt.com/b", "/clips/b.mp4", 12.0, "cooking")
+    lm.db.increment_clip_used(id2)
+    clip = lm.get_least_used_clip("cooking")
+    assert clip is not None
+    assert clip['id'] != id2
+
+from server.video_pipeline.processor import VideoProcessor, LAYOUTS, SUBTITLE_STYLE_NAMES
+
+def test_layouts_defined():
+    assert 'marketing_top' in LAYOUTS
+    assert 'marketing_bottom' in LAYOUTS
+
+def test_subtitle_style_names():
+    expected = {'bold_yellow', 'minimal_white', 'dark_band', 'outlined_color', 'word_pop'}
+    assert set(SUBTITLE_STYLE_NAMES) == expected
+
+def test_processor_init(tmp_path):
+    proc = VideoProcessor(
+        storage_path=str(tmp_path),
+        db_path=str(tmp_path / "test.db")
+    )
+    assert os.path.isdir(str(tmp_path / "processed"))
