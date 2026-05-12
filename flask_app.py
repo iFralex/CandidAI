@@ -57,3 +57,135 @@ def stop_campaign():
         return jsonify({"error": "Unauthorized"}), 401
     data = request.json or {}
     return send_emails_service.stop_campaign(data)
+
+
+# ── Video Pipeline Routes ────────────────────────────────────────────────────
+import os as _os
+import glob as _glob
+import threading as _threading
+from flask import send_file as _send_file, jsonify as _jsonify, request as _request
+
+
+def _vp_storage():
+    return _os.environ.get("VIDEO_STORAGE_PATH",
+                           _os.path.join(_os.path.dirname(__file__), "video_library"))
+
+
+def _vp_db():
+    from server.video_pipeline.db import Database
+    return Database(_os.path.join(_vp_storage(), "pipeline.db"))
+
+
+@app.route('/videos/<video_id>')
+def serve_video(video_id: str):
+    """Serve a processed video file (consumed by Buffer API to pull video URL)."""
+    db = _vp_db()
+    video = db.get_processed_video(video_id)
+    if not video or not _os.path.exists(video['file_path']):
+        return _jsonify({"error": "not found"}), 404
+    return _send_file(video['file_path'], mimetype='video/mp4', conditional=True)
+
+
+@app.route('/api/videos/pending')
+def api_videos_pending():
+    return _jsonify(_vp_db().list_pending_videos())
+
+
+@app.route('/api/videos/approved')
+def api_videos_approved():
+    return _jsonify(_vp_db().list_approved_videos())
+
+
+@app.route('/api/videos/<video_id>/approve', methods=['POST'])
+def api_approve_video(video_id: str):
+    db = _vp_db()
+    if not db.get_processed_video(video_id):
+        return _jsonify({"error": "not found"}), 404
+    db.approve_video(video_id)
+    return _jsonify({"ok": True})
+
+
+@app.route('/api/videos/<video_id>/reject', methods=['POST'])
+def api_reject_video(video_id: str):
+    db = _vp_db()
+    if not db.get_processed_video(video_id):
+        return _jsonify({"error": "not found"}), 404
+    db.reject_video(video_id)
+    return _jsonify({"ok": True})
+
+
+@app.route('/api/videos/library')
+def api_video_library():
+    return _jsonify(_vp_db().list_all_clips())
+
+
+@app.route('/api/videos/ingest', methods=['POST'])
+def api_video_ingest():
+    """Accept YouTube URL + category, trigger download+processing in background thread."""
+    data = _request.get_json() or {}
+    url = data.get("url", "").strip()
+    category = data.get("category", "general").strip()
+    if not url:
+        return _jsonify({"error": "url required"}), 400
+
+    def _process():
+        try:
+            from server.video_pipeline.library_manager import LibraryManager
+            from server.video_pipeline.processor import VideoProcessor
+            from server.video_pipeline.ai_advisor import AIAdvisor
+
+            storage = _vp_storage()
+            db_path = _os.path.join(storage, "pipeline.db")
+            lm = LibraryManager(db_path=db_path, storage_path=storage)
+            clip_ids = lm.download_and_split(url, category)
+
+            proc = VideoProcessor(storage_path=storage, db_path=db_path)
+            advisor = AIAdvisor(db_path=db_path)
+
+            marketing_dir = _os.path.join(
+                _os.path.dirname(__file__), "marketing materials", "videos"
+            )
+            marketing_videos = [
+                v for v in _glob.glob(_os.path.join(marketing_dir, "*.mp4"))
+                if "subtitled" not in _os.path.basename(v).lower()
+            ]
+            if not marketing_videos:
+                return
+
+            available_categories = list({c['category'] for c in lm.db.list_all_clips()})
+            for clip_id in clip_ids:
+                decision = advisor.decide(available_categories)
+                dec_id = advisor.save_decision(decision)
+                for mkt_video in marketing_videos:
+                    proc.generate_variants(
+                        source_video_path=mkt_video,
+                        clip_id=clip_id,
+                        layouts=[decision.layout],
+                        styles=[decision.subtitle_style],
+                        ai_decision_id=dec_id
+                    )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"ingest error: {e}", exc_info=True)
+
+    _threading.Thread(target=_process, daemon=True).start()
+    return _jsonify({"ok": True, "message": f"Processing started for {url}"})
+
+
+@app.route('/api/videos/buffer-status')
+def api_buffer_status():
+    from server.video_pipeline.buffer_client import BufferClient
+    api_key = _os.environ.get("BUFFER_API_KEY", "")
+    if not api_key:
+        return _jsonify({"channels": [], "warning": "BUFFER_API_KEY not set"})
+    try:
+        channels = BufferClient(api_key=api_key).get_channels()
+        return _jsonify({"channels": channels})
+    except Exception as e:
+        return _jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/videos/stats')
+def api_videos_stats():
+    return _jsonify(_vp_db().list_stats(limit=200))
+# ── End Video Pipeline Routes ────────────────────────────────────────────────
