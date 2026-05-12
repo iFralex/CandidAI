@@ -1,28 +1,114 @@
 import os
 import logging
-from server.video_pipeline.db import Database
-from server.video_pipeline.subtitles import SUBTITLE_STYLES
+import subprocess
+from typing import Optional
+from .db import Database
+from .subtitles import SubtitleGenerator, SUBTITLE_STYLES
 
 logger = logging.getLogger(__name__)
 
-LAYOUTS = {
-    "marketing_top": {
-        "description": "Marketing video occupies top half, clip on bottom",
-        "marketing_crop": {"x": 0, "y": 0, "w": 1080, "h": 960},
-        "clip_crop": {"x": 0, "y": 960, "w": 1080, "h": 960},
-    },
-    "marketing_bottom": {
-        "description": "Marketing video occupies bottom half, clip on top",
-        "marketing_crop": {"x": 0, "y": 960, "w": 1080, "h": 960},
-        "clip_crop": {"x": 0, "y": 0, "w": 1080, "h": 960},
-    },
-}
-
+LAYOUTS = ['marketing_top', 'marketing_bottom']
 SUBTITLE_STYLE_NAMES = list(SUBTITLE_STYLES.keys())
+
+TARGET_W = 1080
+TARGET_H = 1920
+HALF_H = TARGET_H // 2  # 960
 
 
 class VideoProcessor:
     def __init__(self, storage_path: str, db_path: str):
         self.storage_path = storage_path
+        self.processed_dir = os.path.join(storage_path, "processed")
+        os.makedirs(self.processed_dir, exist_ok=True)
         self.db = Database(db_path)
-        os.makedirs(os.path.join(storage_path, "processed"), exist_ok=True)
+        self.subtitle_gen = SubtitleGenerator(storage_path)
+
+    def generate_variants(self, source_video_path: str, clip_id: str,
+                           layouts: Optional[list] = None,
+                           styles: Optional[list] = None,
+                           ai_decision_id: Optional[str] = None) -> list[str]:
+        """Generate layout x style combinations. Returns list of processed_video DB IDs."""
+        clip = self.db.get_clip(clip_id)
+        if not clip:
+            raise ValueError(f"Clip {clip_id} not found")
+        clip_path = clip['file_path']
+        layouts = layouts or LAYOUTS
+        styles = styles or SUBTITLE_STYLE_NAMES
+        video_ids = []
+        for layout in layouts:
+            for style in styles:
+                output_id = (
+                    f"{os.path.splitext(os.path.basename(source_video_path))[0]}"
+                    f"_{clip_id[:8]}_{layout}_{style}"
+                )
+                output_path = os.path.join(self.processed_dir, output_id + ".mp4")
+                if not os.path.exists(output_path):
+                    self._compose(source_video_path, clip_path, layout, style,
+                                  output_path, output_id)
+                vid_id = self.db.create_processed_video(
+                    source_video_path=source_video_path,
+                    clip_id=clip_id,
+                    layout=layout,
+                    subtitle_style=style,
+                    file_path=output_path,
+                    ai_decision_id=ai_decision_id
+                )
+                video_ids.append(vid_id)
+        self.db.increment_clip_used(clip_id)
+        logger.info(f"Generated {len(video_ids)} variants for {source_video_path}")
+        return video_ids
+
+    def _compose(self, marketing_path: str, clip_path: str, layout: str,
+                  style: str, output_path: str, output_id: str):
+        """Compose split-screen 1080x1920 video with subtitles burned in."""
+        sub_file = self.subtitle_gen.generate_subtitle_file(
+            marketing_path, style, output_id
+        )
+        marketing_filter = (
+            f"scale={TARGET_W}:{HALF_H}:force_original_aspect_ratio=increase,"
+            f"crop={TARGET_W}:{HALF_H}"
+        )
+        clip_filter = (
+            f"scale={TARGET_W}:{HALF_H}:force_original_aspect_ratio=increase,"
+            f"crop={TARGET_W}:{HALF_H}"
+        )
+        if layout == 'marketing_top':
+            filter_complex = (
+                f"[0:v]{marketing_filter}[top];"
+                f"[1:v]{clip_filter}[bot];"
+                f"[top][bot]vstack=inputs=2[stacked];"
+                f"[stacked]subtitles='{sub_file}':force_style="
+                f"'PlayResX=1080\\,PlayResY=1920'[v]"
+            )
+            inputs = [marketing_path, clip_path]
+        else:
+            filter_complex = (
+                f"[0:v]{clip_filter}[top];"
+                f"[1:v]{marketing_filter}[bot];"
+                f"[top][bot]vstack=inputs=2[stacked];"
+                f"[stacked]subtitles='{sub_file}':force_style="
+                f"'PlayResX=1080\\,PlayResY=1920\\,MarginV=990'[v]"
+            )
+            inputs = [clip_path, marketing_path]
+
+        cmd = [
+            'ffmpeg', '-y',
+            '-i', inputs[0],
+            '-i', inputs[1],
+            '-filter_complex', filter_complex,
+            '-map', '[v]',
+            '-map', '0:a?',
+            '-c:v', 'libx264',
+            '-crf', '23',
+            '-preset', 'medium',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-movflags', '+faststart',
+            output_path
+        ]
+        logger.info(f"FFmpeg compositing: {layout} + {style}")
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            logger.error(f"FFmpeg error: {result.stderr[-500:]}")
+            raise RuntimeError(f"FFmpeg failed for {output_path}: {result.stderr[-300:]}")
+        logger.info(f"Composed: {output_path}")
