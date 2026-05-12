@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CandidAI — Video Pipeline Log</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+    --purple:#667eea; --purple-dark:#764ba2;
+    --bg:#0f0f1a; --surface:#1a1a2e; --border:#2a2a4a;
+    --text:#e2e8f0; --text-dim:#94a3b8;
+    --green:#48bb78; --red:#fc8181; --yellow:#f6e05e; --blue:#63b3ed; --pink:#f687b3;
+}
+body { font-family:'SF Mono','Fira Code',monospace; background:var(--bg); color:var(--text);
+       min-height:100vh; display:flex; flex-direction:column; }
+header { background:linear-gradient(135deg,var(--purple),var(--purple-dark));
+         padding:14px 24px; display:flex; align-items:center; gap:16px; flex-shrink:0; }
+header a { color:rgba(255,255,255,.8); text-decoration:none; font-size:13px; }
+header h1 { font-size:17px; font-weight:700; color:white; }
+.live { display:flex; align-items:center; gap:6px; margin-left:auto;
+        font-size:12px; color:rgba(255,255,255,.8); }
+.dot { width:7px; height:7px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.toolbar { background:var(--surface); border-bottom:1px solid var(--border);
+           padding:10px 16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; flex-shrink:0; }
+.toolbar select, .toolbar input[type=number], .toolbar input[type=datetime-local] {
+    background:var(--bg); border:1px solid var(--border); border-radius:6px;
+    padding:6px 10px; color:var(--text); font-size:13px; outline:none; }
+.toolbar button { padding:6px 14px; border:none; border-radius:6px;
+                  background:linear-gradient(135deg,var(--purple),var(--purple-dark));
+                  color:white; font-size:13px; cursor:pointer; font-weight:600; }
+.toolbar button:hover { opacity:.85; }
+.sep { width:1px; height:20px; background:var(--border); }
+.toolbar label { font-size:13px; color:var(--text-dim); }
+.search-bar { background:var(--surface); border-bottom:1px solid var(--border);
+              padding:8px 16px; flex-shrink:0; }
+.search-bar input { width:100%; background:var(--bg); border:1px solid var(--border);
+                    border-radius:6px; padding:7px 12px; color:var(--text);
+                    font-size:13px; outline:none; font-family:inherit; }
+.search-bar input:focus { border-color:var(--purple); }
+#log-container { flex:1; overflow-y:auto; padding:12px 16px; font-size:12.5px; line-height:1.7; }
+.log-line { white-space:pre-wrap; word-break:break-all; padding:1px 0; }
+.log-line.INFO    { color:var(--green); }
+.log-line.WARNING { color:var(--yellow); }
+.log-line.ERROR   { color:var(--red); }
+.log-line.DEBUG   { color:var(--blue); }
+.log-line.CRITICAL{ color:var(--pink); font-weight:bold; }
+footer { background:var(--surface); border-top:1px solid var(--border);
+         padding:8px 16px; font-size:12px; color:var(--text-dim);
+         display:flex; gap:16px; flex-shrink:0; }
+</style>
+</head>
+<body>
+<header>
+    <a href="../">← Logs</a>
+    <a href="../videos/">4kt Dashboard Video</a>
+    <h1>📋 Video Pipeline Log</h1>
+    <div class="live">
+        <div class="dot" id="live-dot"></div>
+        <span id="live-label">Live</span>
+        <span id="last-ts" style="margin-left:8px"></span>
+    </div>
+</header>
+<div class="toolbar">
+    <label>Modalità</label>
+    <select id="mode" onchange="toggleModeUI()">
+        <option value="lines">Ultime N righe</option>
+        <option value="time">Ultimi N tempo</option>
+        <option value="range">Intervallo date</option>
+    </select>
+    <div id="ui-lines" style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="count" value="300" min="1" max="5000" style="width:80px">
+        <label>righe</label>
+    </div>
+    <div id="ui-time" style="display:none;gap:8px;align-items:center">
+        <input type="number" id="time-count" value="30" min="1" style="width:70px">
+        <select id="time-unit">
+            <option value="minutes">minuti</option>
+            <option value="hours">ore</option>
+            <option value="days">giorni</option>
+        </select>
+    </div>
+    <div id="ui-range" style="display:none;gap:8px;align-items:center">
+        <input type="datetime-local" id="range-from">
+        <label>→</label>
+        <input type="datetime-local" id="range-to">
+    </div>
+    <div class="sep"></div>
+    <button onclick="loadLogs()">Applica</button>
+    <div class="sep"></div>
+    <button onclick="scrollBottom()">↓ Fine</button>
+    <button id="btn-pause" onclick="togglePause()">⏸ Pausa</button>
+</div>
+<div class="search-bar">
+    <input type="text" id="search" placeholder="Filtra righe..." oninput="applySearch()">
+</div>
+<div id="log-container"></div>
+<footer>
+    <span id="line-count">0 righe</span>
+    <span id="filtered-count"></span>
+    <span style="margin-left:auto">Auto-refresh: 5s</span>
+</footer>
+<script>
+let paused = false;
+let allLines = [];
+
+function toggleModeUI() {
+    const mode = document.getElementById('mode').value;
+    document.getElementById('ui-lines').style.display = mode==='lines' ? 'flex' : 'none';
+    document.getElementById('ui-time').style.display  = mode==='time'  ? 'flex' : 'none';
+    document.getElementById('ui-range').style.display = mode==='range' ? 'flex' : 'none';
+}
+
+function buildUrl() {
+    const mode = document.getElementById('mode').value;
+    let p = `mode=${mode}`;
+    if (mode==='lines') p += `&count=${document.getElementById('count').value}`;
+    else if (mode==='time') p += `&count=${document.getElementById('time-count').value}&unit=${document.getElementById('time-unit').value}`;
+    else p += `&from=${document.getElementById('range-from').value}&to=${document.getElementById('range-to').value}`;
+    return `log.php?${p}`;
+}
+
+function levelClass(line) {
+    if (line.includes('[ERROR]'))    return 'ERROR';
+    if (line.includes('[WARNING]'))  return 'WARNING';
+    if (line.includes('[DEBUG]'))    return 'DEBUG';
+    if (line.includes('[CRITICAL]')) return 'CRITICAL';
+    return 'INFO';
+}
+
+function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function loadLogs() {
+    if (paused) return;
+    try {
+        const res = await fetch(buildUrl());
+        const data = await res.json();
+        allLines = data.lines || [];
+        renderLines();
+        document.getElementById('last-ts').textContent = new Date().toLocaleTimeString('it-IT');
+        document.getElementById('live-dot').style.background = 'var(--green)';
+        if (data.error) document.getElementById('live-label').textContent = data.error;
+    } catch(e) {
+        document.getElementById('live-dot').style.background = 'var(--red)';
+    }
+}
+
+function renderLines() {
+    const q = document.getElementById('search').value.toLowerCase();
+    const container = document.getElementById('log-container');
+    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 40;
+    const filtered = q ? allLines.filter(l => l.toLowerCase().includes(q)) : allLines;
+    container.innerHTML = filtered.map(l =>
+        `<div class="log-line ${levelClass(l)}">${escHtml(l)}</div>`
+    ).join('');
+    document.getElementById('line-count').textContent = `${allLines.length} righe`;
+    document.getElementById('filtered-count').textContent = q ? `${filtered.length} filtrate` : '';
+    if (atBottom) container.scrollTop = container.scrollHeight;
+}
+
+function applySearch() { renderLines(); }
+function scrollBottom() { const c = document.getElementById('log-container'); c.scrollTop = c.scrollHeight; }
+function togglePause() {
+    paused = !paused;
+    document.getElementById('btn-pause').textContent = paused ? '▶ Riprendi' : '⏸ Pausa';
+    document.getElementById('live-label').textContent = paused ? 'In pausa' : 'Live';
+}
+
+loadLogs();
+setInterval(loadLogs, 5000);
+</script>
+</body>
+</html>
