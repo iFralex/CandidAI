@@ -20,6 +20,24 @@ _MOCK_MODULES = [
     "anthropic",
     "dateutil",
     "dateutil.parser",
+    # Required by server.emails_generation.blog_posts and its dependencies
+    "bs4",
+    "undetected_chromedriver",
+    "selenium",
+    "selenium.webdriver",
+    "selenium.webdriver.common",
+    "selenium.webdriver.common.by",
+    "selenium.webdriver.common.action_chains",
+    "selenium.webdriver.remote",
+    "selenium.webdriver.remote.webdriver",
+    "selenium.webdriver.remote.webelement",
+    "selenium.common",
+    "selenium.common.exceptions",
+    "urllib3",
+    "pdfplumber",
+    "dotenv",
+    "spacy",
+    "sentence_transformers",
 ]
 
 for _mod in _MOCK_MODULES:
