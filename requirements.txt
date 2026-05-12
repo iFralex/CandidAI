@@ -11,3 +11,8 @@ sentence_transformers==5.1.2
 spacy==3.8.9
 undetected_chromedriver==3.5.5
 patchright
+yt-dlp>=2024.1.0
+scenedetect[opencv]>=0.6.3
+openai-whisper>=20231117
+ffmpeg-python>=0.2.0
+apscheduler>=3.10.4
