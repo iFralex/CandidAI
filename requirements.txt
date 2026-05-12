@@ -14,5 +14,4 @@ patchright
 yt-dlp>=2024.1.0
 scenedetect[opencv]>=0.6.3
 openai-whisper>=20231117
-ffmpeg-python>=0.2.0
 apscheduler>=3.10.4

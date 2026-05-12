@@ -78,6 +78,25 @@ def test_save_and_list_stats(db):
     assert len(stats) >= 1
     assert stats[0]['impressions'] == 1200
 
+def test_save_buffer_stats_upserts_on_duplicate(db):
+    kwargs = dict(buffer_post_id="bp_dup", processed_video_id=None, platform="tiktok",
+                  impressions=100, likes=10, comments=1, shares=2, clicks=5, engagement_rate=3.0)
+    db.save_buffer_stats(**kwargs)
+    kwargs['impressions'] = 999
+    db.save_buffer_stats(**kwargs)
+    stats = [s for s in db.list_stats() if s['buffer_post_id'] == 'bp_dup']
+    assert len(stats) == 1
+    assert stats[0]['impressions'] == 999
+
+def test_get_or_create_processed_video_deduplicates(db):
+    clip_id = db.create_clip("https://yt.com/dedup", "/clips/dedup.mp4", 5.0, "general")
+    args = dict(source_video_path="/mkt/v.mp4", clip_id=clip_id,
+                layout="marketing_top", subtitle_style="bold_yellow", file_path="/proc/out.mp4")
+    id1 = db.get_or_create_processed_video(**args)
+    id2 = db.get_or_create_processed_video(**args)
+    assert id1 == id2
+    assert len([v for v in db.list_pending_videos() if v['file_path'] == '/proc/out.mp4']) == 1
+
 from server.video_pipeline.subtitles import SubtitleGenerator, SUBTITLE_STYLES
 
 def test_subtitle_styles_defined():
@@ -112,6 +131,14 @@ def test_library_manager_init(tmp_path):
     lm = LibraryManager(db_path=db_path, storage_path=storage_path)
     assert os.path.isdir(storage_path + "/raw")
     assert os.path.isdir(storage_path + "/clips")
+
+def test_extract_video_id(tmp_path):
+    lm = LibraryManager(db_path=str(tmp_path / "t.db"), storage_path=str(tmp_path / "s"))
+    assert lm._extract_video_id("https://www.youtube.com/watch?v=dQw4w9WgXcQ") == "dQw4w9WgXcQ"
+    assert lm._extract_video_id("https://youtu.be/dQw4w9WgXcQ") == "dQw4w9WgXcQ"
+    assert lm._extract_video_id("dQw4w9WgXcQ") == "dQw4w9WgXcQ"
+    fallback = lm._extract_video_id("https://other-site.com/video/123")
+    assert len(fallback) == 11
 
 def test_get_least_used_clip(tmp_path):
     db_path = str(tmp_path / "test.db")

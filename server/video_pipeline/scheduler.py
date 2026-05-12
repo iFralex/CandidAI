@@ -65,15 +65,17 @@ def fill_buffer_queue():
         ("tiktok", BUFFER_TIKTOK_CHANNEL_ID),
         ("instagram", BUFFER_INSTAGRAM_CHANNEL_ID),
     ]
-    approved = db.list_approved_videos()
-    if not approved:
-        logger.info("fill_buffer_queue: no approved videos available")
-        return
-
     for platform, channel_id in channels:
         if not channel_id:
             logger.warning(f"fill_buffer_queue: no channel ID set for {platform}, skipping")
             continue
+        # Re-fetch each iteration so videos published for the previous platform
+        # are excluded (their status is now 'published', not 'approved')
+        approved = db.list_approved_videos()
+        if not approved:
+            logger.info(f"fill_buffer_queue: no approved videos remaining, stopping")
+            break
+
         try:
             current_count = buffer.get_scheduled_count(channel_id)
         except Exception as e:
@@ -85,11 +87,7 @@ def fill_buffer_queue():
             logger.info(f"fill_buffer_queue: {platform} queue full ({QUEUE_MAX}), skipping")
             continue
 
-        # Pick approved videos not yet scheduled for this platform
-        videos_to_add = [
-            v for v in approved
-            if v.get("platform") != platform
-        ][:slots_needed]
+        videos_to_add = approved[:slots_needed]
 
         if not videos_to_add:
             logger.info(f"fill_buffer_queue: no videos available for {platform}")

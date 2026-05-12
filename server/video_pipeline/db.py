@@ -119,6 +119,27 @@ class Database:
             )
         return vid_id
 
+    def get_or_create_processed_video(self, source_video_path: str, clip_id: str, layout: str,
+                                       subtitle_style: str, file_path: str,
+                                       ai_decision_id: str = None) -> str:
+        """Return existing row ID for file_path, or insert a new pending row."""
+        with self._conn() as conn:
+            existing = conn.execute(
+                "SELECT id FROM processed_videos WHERE file_path=?", (file_path,)
+            ).fetchone()
+            if existing:
+                return existing["id"]
+            vid_id = str(uuid.uuid4())
+            conn.execute(
+                """INSERT INTO processed_videos
+                   (id, source_video_path, clip_id, layout, subtitle_style, file_path,
+                    status, created_at, ai_decision_id)
+                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                (vid_id, source_video_path, clip_id, layout, subtitle_style,
+                 file_path, 'pending', _now(), ai_decision_id)
+            )
+        return vid_id
+
     def get_processed_video(self, vid_id: str) -> Optional[dict]:
         with self._conn() as conn:
             row = conn.execute("SELECT * FROM processed_videos WHERE id=?", (vid_id,)).fetchone()
@@ -178,16 +199,29 @@ class Database:
     def save_buffer_stats(self, buffer_post_id: str, processed_video_id: Optional[str],
                           platform: str, impressions: int, likes: int, comments: int,
                           shares: int, clicks: int, engagement_rate: float):
-        stat_id = str(uuid.uuid4())
         with self._conn() as conn:
-            conn.execute(
-                """INSERT INTO buffer_stats
-                   (id, buffer_post_id, processed_video_id, platform, collected_at,
-                    impressions, likes, comments, shares, clicks, engagement_rate)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
-                (stat_id, buffer_post_id, processed_video_id, platform, _now(),
-                 impressions, likes, comments, shares, clicks, engagement_rate)
-            )
+            existing = conn.execute(
+                "SELECT id FROM buffer_stats WHERE buffer_post_id=?", (buffer_post_id,)
+            ).fetchone()
+            if existing:
+                conn.execute(
+                    """UPDATE buffer_stats
+                       SET collected_at=?, impressions=?, likes=?, comments=?,
+                           shares=?, clicks=?, engagement_rate=?
+                       WHERE buffer_post_id=?""",
+                    (_now(), impressions, likes, comments, shares, clicks,
+                     engagement_rate, buffer_post_id)
+                )
+            else:
+                stat_id = str(uuid.uuid4())
+                conn.execute(
+                    """INSERT INTO buffer_stats
+                       (id, buffer_post_id, processed_video_id, platform, collected_at,
+                        impressions, likes, comments, shares, clicks, engagement_rate)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                    (stat_id, buffer_post_id, processed_video_id, platform, _now(),
+                     impressions, likes, comments, shares, clicks, engagement_rate)
+                )
 
     def list_stats(self, limit: int = 200) -> list[dict]:
         with self._conn() as conn:

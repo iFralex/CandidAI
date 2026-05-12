@@ -98,6 +98,8 @@ def api_videos_approved():
 
 @app.route('/api/videos/<video_id>/approve', methods=['POST'])
 def api_approve_video(video_id: str):
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
     db = _vp_db()
     if not db.get_processed_video(video_id):
         return _jsonify({"error": "not found"}), 404
@@ -107,6 +109,8 @@ def api_approve_video(video_id: str):
 
 @app.route('/api/videos/<video_id>/reject', methods=['POST'])
 def api_reject_video(video_id: str):
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
     db = _vp_db()
     if not db.get_processed_video(video_id):
         return _jsonify({"error": "not found"}), 404
@@ -122,6 +126,8 @@ def api_video_library():
 @app.route('/api/videos/ingest', methods=['POST'])
 def api_video_ingest():
     """Accept YouTube URL + category, trigger download+processing in background thread."""
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
     data = _request.get_json() or {}
     url = data.get("url", "").strip()
     category = data.get("category", "general").strip()

@@ -45,7 +45,7 @@ class VideoProcessor:
                 if not os.path.exists(output_path):
                     self._compose(source_video_path, clip_path, layout, style,
                                   output_path, output_id)
-                vid_id = self.db.create_processed_video(
+                vid_id = self.db.get_or_create_processed_video(
                     source_video_path=source_video_path,
                     clip_id=clip_id,
                     layout=layout,
@@ -72,24 +72,25 @@ class VideoProcessor:
             f"scale={TARGET_W}:{HALF_H}:force_original_aspect_ratio=increase,"
             f"crop={TARGET_W}:{HALF_H}"
         )
+        safe_sub = sub_file.replace("'", "'\\''")
         if layout == 'marketing_top':
             filter_complex = (
                 f"[0:v]{marketing_filter}[top];"
                 f"[1:v]{clip_filter}[bot];"
                 f"[top][bot]vstack=inputs=2[stacked];"
-                f"[stacked]subtitles='{sub_file}':force_style="
-                f"'PlayResX=1080\\,PlayResY=1920'[v]"
+                f"[stacked]subtitles='{safe_sub}'[v]"
             )
             inputs = [marketing_path, clip_path]
+            audio_input_idx = 0  # marketing is inputs[0]
         else:
             filter_complex = (
                 f"[0:v]{clip_filter}[top];"
                 f"[1:v]{marketing_filter}[bot];"
                 f"[top][bot]vstack=inputs=2[stacked];"
-                f"[stacked]subtitles='{sub_file}':force_style="
-                f"'PlayResX=1080\\,PlayResY=1920\\,MarginV=990'[v]"
+                f"[stacked]subtitles='{safe_sub}':force_style='MarginV=990'[v]"
             )
             inputs = [clip_path, marketing_path]
+            audio_input_idx = 1  # marketing is inputs[1]
 
         cmd = [
             'ffmpeg', '-y',
@@ -97,7 +98,7 @@ class VideoProcessor:
             '-i', inputs[1],
             '-filter_complex', filter_complex,
             '-map', '[v]',
-            '-map', '0:a?',
+            '-map', f'{audio_input_idx}:a?',
             '-c:v', 'libx264',
             '-crf', '23',
             '-preset', 'medium',
