@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CandidAI — Video Pipeline</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+    --purple:#667eea; --purple-dark:#764ba2;
+    --bg:#0f0f1a; --surface:#1a1a2e; --surface2:#16213e;
+    --border:#2a2a4a; --text:#e2e8f0; --text-dim:#94a3b8;
+    --green:#48bb78; --red:#fc8181; --yellow:#f6e05e;
+}
+body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+       background:var(--bg); color:var(--text); min-height:100vh; }
+header { background:linear-gradient(135deg,var(--purple),var(--purple-dark));
+         padding:16px 32px; display:flex; align-items:center; gap:16px; }
+header a { color:rgba(255,255,255,.8); text-decoration:none; font-size:14px; }
+header h1 { font-size:20px; font-weight:700; color:white; }
+.live { display:flex; align-items:center; gap:6px; margin-left:auto;
+        font-size:13px; color:rgba(255,255,255,.8); }
+.dot { width:7px; height:7px; border-radius:50%; background:var(--green);
+       animation:pulse 2s infinite; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.container { max-width:1400px; margin:0 auto; padding:32px 24px; }
+.status-bar { background:var(--surface); border:1px solid var(--border);
+              border-radius:12px; padding:16px 24px; margin-bottom:32px;
+              display:flex; gap:32px; align-items:center; flex-wrap:wrap; }
+.status-chip { display:flex; align-items:center; gap:8px; font-size:14px; }
+.status-chip .label { color:var(--text-dim); }
+.status-chip .value { font-weight:600; }
+.panel { background:var(--surface); border:1px solid var(--border);
+         border-radius:12px; padding:24px; margin-bottom:32px; }
+.panel h2 { font-size:16px; font-weight:600; margin-bottom:16px; }
+.ingest-row { display:flex; gap:12px; flex-wrap:wrap; }
+.ingest-row input, .ingest-row select {
+    background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    padding:10px 14px; color:var(--text); font-size:14px; outline:none; }
+.ingest-row input { flex:1; min-width:280px; }
+.ingest-row input:focus, .ingest-row select:focus { border-color:var(--purple); }
+.ingest-row select { background:var(--bg); }
+.btn { padding:10px 20px; border:none; border-radius:8px; cursor:pointer;
+       font-size:14px; font-weight:600; transition:opacity .2s; }
+.btn:hover { opacity:.85; }
+.btn-primary { background:linear-gradient(135deg,var(--purple),var(--purple-dark)); color:white; }
+.btn-approve { background:var(--green); color:#0f0f1a; }
+.btn-reject  { background:var(--red); color:#0f0f1a; }
+.tabs { display:flex; gap:4px; margin-bottom:24px;
+        border-bottom:1px solid var(--border); }
+.tab { padding:10px 20px; cursor:pointer; font-size:14px; color:var(--text-dim);
+       border-bottom:2px solid transparent; transition:all .2s; }
+.tab.active { color:var(--purple); border-bottom-color:var(--purple); }
+.video-grid { display:grid;
+              grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
+.video-card { background:var(--surface2); border:1px solid var(--border);
+              border-radius:12px; overflow:hidden; }
+.video-card video { width:100%; aspect-ratio:9/16; object-fit:cover;
+                    background:#000; display:block; max-height:300px; }
+.video-meta { padding:14px; }
+.video-meta .tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.tag { font-size:11px; padding:3px 8px; border-radius:20px;
+       background:var(--border); color:var(--text-dim); }
+.tag.layout { background:rgba(102,126,234,.2); color:var(--purple); }
+.tag.style  { background:rgba(72,187,120,.15); color:var(--green); }
+.video-actions { display:flex; gap:8px; }
+.video-actions .btn { flex:1; font-size:13px; padding:8px; }
+.stats-table { width:100%; border-collapse:collapse; font-size:13px; }
+.stats-table th { color:var(--text-dim); font-weight:500; text-align:left;
+                  padding:8px 12px; border-bottom:1px solid var(--border); }
+.stats-table td { padding:10px 12px; border-bottom:1px solid rgba(42,42,74,.5); }
+.stats-table tr:hover td { background:rgba(102,126,234,.05); }
+.empty { text-align:center; color:var(--text-dim); padding:48px; font-size:14px; }
+.toast { position:fixed; bottom:24px; right:24px; background:var(--surface);
+         border:1px solid var(--border); border-radius:10px; padding:14px 20px;
+         font-size:14px; animation:slide-in .3s ease; z-index:999; }
+@keyframes slide-in{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.lib-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
+.lib-card { background:var(--surface2); border:1px solid var(--border);
+            border-radius:10px; padding:14px; font-size:13px; }
+.lib-card .cat { font-weight:600; color:var(--purple); margin-bottom:6px; }
+.lib-card .meta { color:var(--text-dim); font-size:12px; line-height:1.6; }
+</style>
+</head>
+<body>
+<header>
+    <a href="../">← Logs</a>
+    <h1>🎬 Video Pipeline</h1>
+    <div class="live">
+        <div class="dot"></div>
+        <span id="last-update">—</span>
+    </div>
+</header>
+<div class="container">
+    <div class="status-bar">
+        <div class="status-chip">
+            <span class="label">TikTok queue:</span>
+            <span class="value" id="tiktok-count">—</span>
+            <span class="label">/ 10</span>
+        </div>
+        <div class="status-chip">
+            <span class="label">Instagram queue:</span>
+            <span class="value" id="ig-count">—</span>
+            <span class="label">/ 10</span>
+        </div>
+        <div class="status-chip" style="margin-left:auto">
+            <span class="label">In approvazione:</span>
+            <span class="value" id="pending-count">—</span>
+        </div>
+    </div>
+    <div class="panel">
+        <h2>Aggiungi video YouTube alla libreria</h2>
+        <div class="ingest-row">
+            <input type="text" id="yt-url" placeholder="https://www.youtube.com/watch?v=..." />
+            <select id="yt-category">
+                <option value="cooking">🍳 Cucina</option>
+                <option value="gaming">🎮 Gaming</option>
+                <option value="painting">🎨 Pittura / Arte</option>
+                <option value="nature">🌿 Natura / ASMR</option>
+                <option value="satisfying">✨ Soddisfacente</option>
+                <option value="general">📦 Generale</option>
+            </select>
+            <button class="btn btn-primary" onclick="ingestVideo()">⬇ Scarica e processa</button>
+        </div>
+        <p id="ingest-msg" style="margin-top:12px;font-size:13px;color:var(--text-dim)"></p>
+    </div>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('pending')">In attesa</div>
+        <div class="tab" onclick="switchTab('approved')">Approvati</div>
+        <div class="tab" onclick="switchTab('stats')">Statistiche</div>
+        <div class="tab" onclick="switchTab('library')">Libreria clip</div>
+    </div>
+    <div id="tab-pending"><div class="video-grid" id="pending-grid"><div class="empty">Caricamento...</div></div></div>
+    <div id="tab-approved" style="display:none"><div class="video-grid" id="approved-grid"><div class="empty">Caricamento...</div></div></div>
+    <div id="tab-stats" style="display:none">
+        <table class="stats-table">
+            <thead><tr>
+                <th>Buffer Post ID</th><th>Platform</th><th>Data</th>
+                <th>Impression</th><th>Like</th><th>Commenti</th><th>Engagement %</th>
+            </tr></thead>
+            <tbody id="stats-tbody"><tr><td colspan="7" class="empty">Caricamento...</td></tr></tbody>
+        </table>
+    </div>
+    <div id="tab-library" style="display:none"><div class="lib-grid" id="library-grid"><div class="empty">Caricamento...</div></div></div>
+</div>
+<script>
+// Set FLASK_BASE to '' for same-origin (Apache proxy) or 'http://VPS_IP:5000' for direct
+const FLASK_BASE = '';
+
+async function api(path, opts = {}) {
+    const res = await fetch(FLASK_BASE + path, opts);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+}
+
+function toast(msg, color = 'var(--green)') {
+    const el = document.createElement('div');
+    el.className = 'toast'; el.style.borderColor = color; el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+}
+
+function switchTab(name) {
+    const names = ['pending','approved','stats','library'];
+    document.querySelectorAll('.tab').forEach((t,i) =>
+        t.classList.toggle('active', names[i] === name));
+    names.forEach(n =>
+        document.getElementById('tab-'+n).style.display = n === name ? '' : 'none');
+    loadTab(name);
+}
+
+const styleEmoji = {bold_yellow:'🟡',minimal_white:'⬜',dark_band:'⬛',outlined_color:'🔴',word_pop:'✨'};
+
+function makeVideoCard(v, showActions) {
+    const videoUrl = FLASK_BASE + '/videos/' + v.id;
+    const layoutLabel = v.layout === 'marketing_top' ? '↑ Marketing sopra' : '↓ Marketing sotto';
+    return `<div class="video-card" id="card-${v.id}">
+        <video src="${videoUrl}" controls preload="metadata" playsinline></video>
+        <div class="video-meta">
+            <div class="tags">
+                <span class="tag layout">${layoutLabel}</span>
+                <span class="tag style">${styleEmoji[v.subtitle_style]||''} ${v.subtitle_style}</span>
+            </div>
+            ${showActions
+                ? `<div class="video-actions">
+                    <button class="btn btn-approve" onclick="approve('${v.id}')">✓ Approva</button>
+                    <button class="btn btn-reject" onclick="reject('${v.id}')">✕ Rifiuta</button>
+                   </div>`
+                : `<div style="font-size:12px;color:var(--text-dim)">
+                    ${v.scheduled_for ? new Date(v.scheduled_for).toLocaleString('it-IT') : '—'} · ${v.platform||'—'}
+                   </div>`}
+        </div></div>`;
+}
+
+async function loadPending() {
+    const grid = document.getElementById('pending-grid');
+    try {
+        const videos = await api('/api/videos/pending');
+        document.getElementById('pending-count').textContent = videos.length;
+        grid.innerHTML = videos.length
+            ? videos.map(v => makeVideoCard(v, true)).join('')
+            : '<div class="empty">Nessun video in attesa.</div>';
+    } catch(e) { grid.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
+}
+
+async function loadApproved() {
+    const grid = document.getElementById('approved-grid');
+    try {
+        const videos = await api('/api/videos/approved');
+        grid.innerHTML = videos.length
+            ? videos.map(v => makeVideoCard(v, false)).join('')
+            : '<div class="empty">Nessun video approvato.</div>';
+    } catch(e) { grid.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
+}
+
+async function loadStats() {
+    const tbody = document.getElementById('stats-tbody');
+    try {
+        const stats = await api('/api/videos/stats');
+        if (!stats.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="empty">Nessuna statistica ancora (raccolte ogni 30 giorni).</td></tr>';
+            return;
+        }
+        tbody.innerHTML = stats.map(s => `<tr>
+            <td style="font-family:monospace;font-size:11px">${s.buffer_post_id}</td>
+            <td>${s.platform}</td>
+            <td>${new Date(s.collected_at).toLocaleDateString('it-IT')}</td>
+            <td>${(s.impressions||0).toLocaleString()}</td>
+            <td>${s.likes||0}</td>
+            <td>${s.comments||0}</td>
+            <td>${((s.engagement_rate||0)*100).toFixed(2)}%</td>
+        </tr>`).join('');
+    } catch(e) { tbody.innerHTML = `<tr><td colspan="7" class="empty">Errore: ${e.message}</td></tr>`; }
+}
+
+async function loadLibrary() {
+    const grid = document.getElementById('library-grid');
+    try {
+        const clips = await api('/api/videos/library');
+        if (!clips.length) { grid.innerHTML = '<div class="empty">Libreria vuota. Aggiungi URL YouTube sopra.</div>'; return; }
+        const byCategory = {};
+        clips.forEach(c => { if (!byCategory[c.category]) byCategory[c.category]=[]; byCategory[c.category].push(c); });
+        grid.innerHTML = Object.entries(byCategory).map(([cat,cls]) => `
+            <div class="lib-card">
+                <div class="cat">${cat}</div>
+                <div class="meta">${cls.length} clip · Usate ${cls.reduce((a,c)=>a+c.used_count,0)} volte</div>
+            </div>`).join('');
+    } catch(e) { grid.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
+}
+
+async function loadBufferStatus() {
+    try {
+        const data = await api('/api/videos/buffer-status');
+        const ch = data.channels || [];
+        const tiktok = ch.find(c => c.service === 'tiktok');
+        const ig = ch.find(c => c.service === 'instagram');
+        document.getElementById('tiktok-count').textContent = tiktok ? tiktok.scheduledPostsCount : '—';
+        document.getElementById('ig-count').textContent = ig ? ig.scheduledPostsCount : '—';
+        document.getElementById('last-update').textContent = new Date().toLocaleTimeString('it-IT');
+    } catch(e) {
+        document.getElementById('tiktok-count').textContent = 'err';
+        document.getElementById('ig-count').textContent = 'err';
+    }
+}
+
+async function approve(id) {
+    try {
+        await api('/api/videos/'+id+'/approve', {method:'POST'});
+        document.getElementById('card-'+id)?.remove();
+        toast('Video approvato ✓');
+        loadBufferStatus();
+    } catch(e) { toast('Errore: '+e.message, 'var(--red)'); }
+}
+
+async function reject(id) {
+    try {
+        await api('/api/videos/'+id+'/reject', {method:'POST'});
+        document.getElementById('card-'+id)?.remove();
+        toast('Video rifiutato', 'var(--red)');
+    } catch(e) { toast('Errore: '+e.message, 'var(--red)'); }
+}
+
+async function ingestVideo() {
+    const url = document.getElementById('yt-url').value.trim();
+    const category = document.getElementById('yt-category').value;
+    const msg = document.getElementById('ingest-msg');
+    if (!url) { msg.textContent = 'Inserisci un URL YouTube.'; return; }
+    msg.textContent = '⏳ Download e processing avviati...';
+    try {
+        await api('/api/videos/ingest', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({url, category})
+        });
+        msg.textContent = '✓ Processing avviato! I video appariranno tra qualche minuto.';
+        document.getElementById('yt-url').value = '';
+    } catch(e) { msg.textContent = 'Errore: '+e.message; }
+}
+
+function loadTab(name) {
+    if (name==='pending') loadPending();
+    else if (name==='approved') loadApproved();
+    else if (name==='stats') loadStats();
+    else if (name==='library') loadLibrary();
+}
+
+loadBufferStatus();
+loadPending();
+setInterval(loadBufferStatus, 60000);
+</script>
+</body>
+</html>
