@@ -27,7 +27,32 @@ logger = logging.getLogger(__name__)
 BUFFER_API_KEY = os.environ.get("BUFFER_API_KEY", "")
 BUFFER_TIKTOK_CHANNEL_ID = os.environ.get("BUFFER_TIKTOK_CHANNEL_ID", "")
 BUFFER_INSTAGRAM_CHANNEL_ID = os.environ.get("BUFFER_INSTAGRAM_CHANNEL_ID", "")
-VPS_PUBLIC_URL = os.environ.get("VPS_PUBLIC_URL", "http://localhost:5000").rstrip("/")
+_FLASK_PORT = os.environ.get("PORT", "5000")
+
+
+def _get_public_ip() -> str:
+    """Return the machine's public IPv4 address, trying multiple lookup services."""
+    import urllib.request
+    for url in (
+        "https://api4.my-ip.io/ip",
+        "https://ipv4.icanhazip.com",
+        "https://api.ipify.org",
+    ):
+        try:
+            with urllib.request.urlopen(url, timeout=5) as resp:
+                ip = resp.read().decode().strip()
+                if ip:
+                    return ip
+        except Exception:
+            continue
+    raise RuntimeError("Could not determine public IPv4 address")
+
+
+def _build_base_url() -> str:
+    ip = _get_public_ip()
+    url = f"http://{ip}:{_FLASK_PORT}"
+    logger.info(f"Public base URL: {url}")
+    return url
 VIDEO_STORAGE_PATH = os.environ.get(
     "VIDEO_STORAGE_PATH",
     os.path.join(os.path.dirname(__file__), '..', '..', 'video_library')
@@ -93,9 +118,10 @@ def fill_buffer_queue():
             logger.info(f"fill_buffer_queue: no videos available for {platform}")
             continue
 
+        base_url = _build_base_url()
         slots = _get_next_slots(len(videos_to_add))
         for video, slot in zip(videos_to_add, slots):
-            video_url = f"{VPS_PUBLIC_URL}/videos/{video['id']}"
+            video_url = f"{base_url}/videos/{video['id']}"
             caption = _build_caption(platform)
             try:
                 post_id = buffer.create_post(channel_id, video_url, caption, slot)
