@@ -140,3 +140,54 @@ def test_processor_init(tmp_path):
         db_path=str(tmp_path / "test.db")
     )
     assert os.path.isdir(str(tmp_path / "processed"))
+
+from server.video_pipeline.buffer_client import BufferClient
+from unittest.mock import patch, MagicMock
+
+def test_buffer_client_builds_create_post_payload():
+    client = BufferClient(api_key="dummy")
+    payload = client._build_create_post_payload(
+        channel_id="ch_123",
+        video_url="http://vps.example.com/videos/abc.mp4",
+        caption="Test caption #CandidAI",
+        scheduled_at="2026-05-13T13:30:00Z"
+    )
+    assert payload["variables"]["input"]["channelId"] == "ch_123"
+    assert payload["variables"]["input"]["assets"]["videos"][0]["url"] == "http://vps.example.com/videos/abc.mp4"
+    assert payload["variables"]["input"]["dueAt"] == "2026-05-13T13:30:00Z"
+
+def test_buffer_client_raises_on_mutation_error():
+    client = BufferClient(api_key="dummy")
+    mock_response = {
+        "data": {
+            "createPost": {
+                "__typename": "MutationError",
+                "message": "Invalid channel"
+            }
+        }
+    }
+    with patch.object(client, '_request', return_value=mock_response):
+        with pytest.raises(RuntimeError, match="Invalid channel"):
+            client.create_post("ch_1", "http://x.com/v.mp4", "hi", "2026-01-01T13:30:00Z")
+
+from server.video_pipeline.ai_advisor import AIAdvisor, Decision
+
+def test_decision_dataclass():
+    d = Decision(layout="marketing_top", clip_category="cooking",
+                 subtitle_style="bold_yellow", reasoning="test")
+    assert d.layout == "marketing_top"
+
+def test_fallback_decision_when_no_stats():
+    advisor = AIAdvisor(db_path=":memory:")
+    decision = advisor._fallback_decision(available_categories=["cooking", "gaming"])
+    assert decision.layout in ("marketing_top", "marketing_bottom")
+    assert decision.clip_category in ("cooking", "gaming")
+    assert decision.subtitle_style in ("bold_yellow", "minimal_white", "dark_band", "outlined_color", "word_pop")
+
+def test_validate_decision_clamps_bad_values():
+    advisor = AIAdvisor(db_path=":memory:")
+    raw = {"layout": "invalid_layout", "clip_category": "cooking",
+           "subtitle_style": "nonexistent", "reasoning": "test"}
+    decision = advisor._validate_and_build(raw, available_categories=["cooking"])
+    assert decision.layout in ("marketing_top", "marketing_bottom")
+    assert decision.subtitle_style in ("bold_yellow", "minimal_white", "dark_band", "outlined_color", "word_pop")
