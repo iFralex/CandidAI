@@ -60,7 +60,11 @@ class LibraryManager:
             "outtmpl": output_tmpl,
             "quiet": True,
             "no_warnings": True,
+            "extractor_args": {"youtube": {"player_client": ["ios"]}},
         }
+        cookies_file = os.environ.get("YTDLP_COOKIES_FILE", "")
+        if cookies_file and os.path.exists(cookies_file):
+            ydl_opts["cookiefile"] = cookies_file
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
