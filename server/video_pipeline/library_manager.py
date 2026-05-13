@@ -60,7 +60,7 @@ class LibraryManager:
             "outtmpl": output_tmpl,
             "quiet": True,
             "no_warnings": True,
-            "extractor_args": {"youtube": {"player_client": ["ios"]}},
+            "extractor_args": {"youtube": {"player_client": ["tv_embed", "android_vr", "ios"]}},
         }
         cookies_file = os.environ.get("YTDLP_COOKIES_FILE", "")
         if cookies_file and os.path.exists(cookies_file):
