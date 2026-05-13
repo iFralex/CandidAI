@@ -144,11 +144,24 @@ header h1 { font-size:20px; font-weight:700; color:white; }
     <div id="tab-library" style="display:none"><div class="lib-grid" id="library-grid"><div class="empty">Caricamento...</div></div></div>
 </div>
 <script>
-// Set FLASK_BASE to '' for same-origin (Apache proxy) or 'http://VPS_IP:5000' for direct
 const FLASK_BASE = 'http://91.99.227.223:80';
 
+function getApiKey() {
+    let key = localStorage.getItem('candidai_api_key');
+    if (!key) {
+        key = prompt('Inserisci la API key:');
+        if (key) localStorage.setItem('candidai_api_key', key);
+    }
+    return key || '';
+}
+
 async function api(path, opts = {}) {
+    opts.headers = { ...(opts.headers || {}), 'X-API-Key': getApiKey() };
     const res = await fetch(FLASK_BASE + path, opts);
+    if (res.status === 401) {
+        localStorage.removeItem('candidai_api_key');
+        throw new Error('API key non valida');
+    }
     if (!res.ok) throw new Error(await res.text());
     return res.json();
 }
