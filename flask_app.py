@@ -10,6 +10,15 @@ logging.basicConfig(
     filename="./logs/server/candidai.log",
 )
 
+_vp_log_path = "./logs/video-pipeline/pipeline.log"
+os.makedirs(os.path.dirname(_vp_log_path), exist_ok=True)
+_vp_logger = logging.getLogger("server.video_pipeline")
+_vp_handler = logging.FileHandler(_vp_log_path, encoding="utf-8")
+_vp_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+_vp_logger.addHandler(_vp_handler)
+_vp_logger.setLevel(logging.INFO)
+_vp_logger.propagate = False
+
 app = Flask(__name__)
 from flask_cors import CORS
 CORS(app)
@@ -173,8 +182,7 @@ def api_video_ingest():
                         ai_decision_id=dec_id
                     )
         except Exception as e:
-            import logging
-            logging.getLogger(__name__).error(f"ingest error: {e}", exc_info=True)
+            logging.getLogger("server.video_pipeline").error(f"ingest error: {e}", exc_info=True)
 
     _threading.Thread(target=_process, daemon=True).start()
     return _jsonify({"ok": True, "message": f"Processing started for {url}"})
