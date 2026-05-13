@@ -1,8 +1,14 @@
 <?php
-$key_file = __DIR__ . '/.api_key';
-$expected = file_exists($key_file) ? trim(file_get_contents($key_file)) : '';
+$env_file = __DIR__ . '/../.env.local';
+$expected = '';
+if (file_exists($env_file)) {
+    foreach (file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        if (str_starts_with($line, 'SESSION_API_KEY='))
+            $expected = trim(substr($line, strlen('SESSION_API_KEY=')), " \t\"'");
+    }
+}
 
-if ($expected === '') return; // no key file = auth disabled
+if ($expected === '') return; // SESSION_API_KEY not set = auth disabled
 
 $provided = $_GET['key'] ?? $_SERVER['HTTP_X_API_KEY'] ?? '';
 if ($provided !== $expected) {
