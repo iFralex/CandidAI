@@ -102,6 +102,11 @@ footer { background:var(--surface); border-top:1px solid var(--border);
     <span style="margin-left:auto">Auto-refresh: 5s</span>
 </footer>
 <script>
+function getApiKey() {
+    let k = localStorage.getItem('candidai_api_key');
+    if (!k) { k = prompt('Inserisci la API key:'); if (k) localStorage.setItem('candidai_api_key', k); }
+    return k || '';
+}
 let paused = false;
 let allLines = [];
 
@@ -118,7 +123,7 @@ function buildUrl() {
     if (mode==='lines') p += `&count=${document.getElementById('count').value}`;
     else if (mode==='time') p += `&count=${document.getElementById('time-count').value}&unit=${document.getElementById('time-unit').value}`;
     else p += `&from=${document.getElementById('range-from').value}&to=${document.getElementById('range-to').value}`;
-    return `log.php?${p}`;
+    return `log.php?${p}&key=${encodeURIComponent(getApiKey())}`;
 }
 
 function levelClass(line) {
@@ -137,6 +142,7 @@ async function loadLogs() {
     if (paused) return;
     try {
         const res = await fetch(buildUrl());
+        if (res.status === 401) { localStorage.removeItem('candidai_api_key'); throw new Error('API key non valida'); }
         const data = await res.json();
         allLines = data.lines || [];
         renderLines();

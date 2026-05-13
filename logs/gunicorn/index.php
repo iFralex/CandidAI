@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../auth.php';
 // ── API mode ─────────────────────────────────────────────────────────────────
 if (isset($_GET['api'])) {
     header('Content-Type: application/json; charset=utf-8');
