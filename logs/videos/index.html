@@ -145,7 +145,7 @@ header h1 { font-size:20px; font-weight:700; color:white; }
 </div>
 <script>
 // Set FLASK_BASE to '' for same-origin (Apache proxy) or 'http://VPS_IP:5000' for direct
-const FLASK_BASE = '';
+const FLASK_BASE = 'http://91.99.227.223:5000';
 
 async function api(path, opts = {}) {
     const res = await fetch(FLASK_BASE + path, opts);

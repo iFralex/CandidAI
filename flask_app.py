@@ -11,6 +11,8 @@ logging.basicConfig(
 )
 
 app = Flask(__name__)
+from flask_cors import CORS
+CORS(app)
 
 
 def _api_key_valid() -> bool:
