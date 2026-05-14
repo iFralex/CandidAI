@@ -79,8 +79,9 @@ def _load_model():
     global _model
     if _model is None:
         import whisper
-        logger.info("Loading Whisper large-v3 model (first time, may take a minute)...")
-        _model = whisper.load_model("large-v3")
+        model_name = os.environ.get("WHISPER_MODEL", "small")
+        logger.info(f"Loading Whisper {model_name} model (first time, may take a minute)...")
+        _model = whisper.load_model(model_name)
         logger.info("Whisper model loaded.")
     return _model
 
