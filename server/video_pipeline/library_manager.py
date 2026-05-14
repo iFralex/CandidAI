@@ -213,28 +213,54 @@ class LibraryManager:
         from scenedetect import open_video, SceneManager, ContentDetector
         from scenedetect.video_splitter import split_video_ffmpeg
 
+        max_clip_sec = int(os.environ.get("MAX_CLIP_DURATION", "30"))
+
         video = open_video(video_path)
+        fps = video.frame_rate
         scene_manager = SceneManager()
-        scene_manager.add_detector(ContentDetector(threshold=27.0))
+        scene_manager.add_detector(ContentDetector(threshold=15.0))
         scene_manager.detect_scenes(video)
         scene_list = scene_manager.get_scene_list()
+        logger.info(f"scenedetect found {len(scene_list)} scenes in {video_path}")
 
-        if not scene_list:
-            clip_path = os.path.join(clips_dir, f"{video_id}_001.mp4")
-            subprocess.run(
-                ["ffmpeg", "-y", "-i", video_path, "-c", "copy", clip_path],
-                capture_output=True,
-                check=True,
-            )
-            return [clip_path]
+        # Split scenes exceeding max_clip_sec into fixed-length sub-clips
+        final_scenes = []
+        for start, end in scene_list:
+            dur = (end - start).get_seconds()
+            if dur <= max_clip_sec:
+                final_scenes.append((start, end))
+            else:
+                from scenedetect import FrameTimecode
+                cur = start
+                while cur < end:
+                    next_tc = FrameTimecode(int(cur.get_frames() + fps * max_clip_sec), fps)
+                    final_scenes.append((cur, min(next_tc, end)))
+                    cur = min(next_tc, end)
+
+        if not final_scenes:
+            # No scenes detected — split by max_clip_sec
+            total = self._get_duration(video_path)
+            clips = []
+            for i, offset in enumerate(range(0, int(total), max_clip_sec), start=1):
+                clip_path = os.path.join(clips_dir, f"{video_id}_{i:03d}.mp4")
+                subprocess.run(
+                    ["ffmpeg", "-y", "-ss", str(offset), "-i", video_path,
+                     "-t", str(max_clip_sec), "-c", "copy", clip_path],
+                    capture_output=True, check=True,
+                )
+                clips.append(clip_path)
+            logger.info(f"No scenes found, split by time into {len(clips)} clips")
+            return clips
 
         output_tmpl = os.path.join(clips_dir, f"{video_id}_$SCENE_NUMBER.mp4")
         split_video_ffmpeg(
-            video_path, scene_list,
+            video_path, final_scenes,
             output_file_template=output_tmpl,
             show_progress=False,
         )
-        return sorted(glob.glob(os.path.join(clips_dir, f"{video_id}_*.mp4")))
+        clips = sorted(glob.glob(os.path.join(clips_dir, f"{video_id}_*.mp4")))
+        logger.info(f"Split into {len(clips)} clips (max {max_clip_sec}s each)")
+        return clips
 
     def _extract_video_id(self, url: str) -> str:
         patterns = [

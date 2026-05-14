@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 SUBTITLE_STYLES = {
     "bold_yellow": {
-        "Fontname": "Arial",
+        "Fontname": "DejaVu Sans",
         "Fontsize": "18",
         "Bold": "-1",
         "PrimaryColour": "&H0000FFFF",
@@ -19,7 +19,7 @@ SUBTITLE_STYLES = {
         "BorderStyle": "1",
     },
     "minimal_white": {
-        "Fontname": "Helvetica Neue",
+        "Fontname": "DejaVu Sans",
         "Fontsize": "14",
         "Bold": "0",
         "PrimaryColour": "&H00FFFFFF",
@@ -32,7 +32,7 @@ SUBTITLE_STYLES = {
         "BorderStyle": "1",
     },
     "dark_band": {
-        "Fontname": "Arial",
+        "Fontname": "DejaVu Sans",
         "Fontsize": "16",
         "Bold": "0",
         "PrimaryColour": "&H00FFFFFF",
@@ -45,7 +45,7 @@ SUBTITLE_STYLES = {
         "BorderStyle": "3",
     },
     "outlined_color": {
-        "Fontname": "Arial",
+        "Fontname": "DejaVu Sans",
         "Fontsize": "17",
         "Bold": "-1",
         "PrimaryColour": "&H00EA5C6A",
@@ -58,7 +58,7 @@ SUBTITLE_STYLES = {
         "BorderStyle": "1",
     },
     "word_pop": {
-        "Fontname": "Arial",
+        "Fontname": "DejaVu Sans",
         "Fontsize": "18",
         "Bold": "-1",
         "PrimaryColour": "&H0000FFFF",
@@ -103,7 +103,8 @@ class SubtitleGenerator:
             with open(cache_path) as f:
                 return json.load(f)
         model = _load_model()
-        result = model.transcribe(video_path, language="en", word_timestamps=True)
+        lang = os.environ.get("WHISPER_LANGUAGE") or None
+        result = model.transcribe(video_path, language=lang, word_timestamps=True)
         import json
         with open(cache_path, "w") as f:
             json.dump(result, f)

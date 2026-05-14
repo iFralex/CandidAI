@@ -64,14 +64,13 @@ class VideoProcessor:
         sub_file = self.subtitle_gen.generate_subtitle_file(
             marketing_path, style, output_id
         )
-        marketing_filter = (
+        # Scale to fill panel, then center-crop to exact size (no rotation)
+        panel_filter = (
             f"scale={TARGET_W}:{HALF_H}:force_original_aspect_ratio=increase,"
-            f"crop={TARGET_W}:{HALF_H}"
+            f"crop={TARGET_W}:{HALF_H}:(iw-{TARGET_W})/2:(ih-{HALF_H})/2"
         )
-        clip_filter = (
-            f"scale={TARGET_W}:{HALF_H}:force_original_aspect_ratio=increase,"
-            f"crop={TARGET_W}:{HALF_H}"
-        )
+        marketing_filter = panel_filter
+        clip_filter = panel_filter
         safe_sub = sub_file.replace("'", "'\\''")
         if layout == 'marketing_top':
             filter_complex = (
@@ -107,6 +106,7 @@ class VideoProcessor:
             '-threads', '0',
             '-c:a', 'aac',
             '-b:a', '128k',
+            '-shortest',
             '-movflags', '+faststart',
             output_path
         ]
