@@ -156,10 +156,12 @@ class SubtitleGenerator:
 
     def _make_ass_header(self, style_name: str) -> str:
         s = SUBTITLE_STYLES[style_name]
+        w = int(os.environ.get("VIDEO_WIDTH", "1080"))
+        h = int(os.environ.get("VIDEO_HEIGHT", "1920"))
         return f"""[Script Info]
 ScriptType: v4.00+
-PlayResX: 1080
-PlayResY: 1920
+PlayResX: {w}
+PlayResY: {h}
 WrapStyle: 1
 
 [V4+ Styles]

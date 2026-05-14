@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 LAYOUTS = ['marketing_top', 'marketing_bottom']
 SUBTITLE_STYLE_NAMES = list(SUBTITLE_STYLES.keys())
 
-TARGET_W = 1080
-TARGET_H = 1920
-HALF_H = TARGET_H // 2  # 960
+TARGET_W = int(os.environ.get("VIDEO_WIDTH", "1080"))
+TARGET_H = int(os.environ.get("VIDEO_HEIGHT", "1920"))
+HALF_H = TARGET_H // 2
 
 
 class VideoProcessor:
