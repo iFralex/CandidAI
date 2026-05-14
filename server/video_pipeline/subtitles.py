@@ -48,7 +48,7 @@ SUBTITLE_STYLES = {
         "MarginV": "30",
         "BorderStyle": "1",
     },
-    # spoken word: white | unspoken: grey — on opaque black band
+    # spoken word: white | unspoken: grey — thick black outline + heavy shadow for depth
     "dark_band": {
         "Fontname": FONT_NAME,
         "Fontsize": "102",
@@ -56,12 +56,12 @@ SUBTITLE_STYLES = {
         "PrimaryColour": "&H00FFFFFF",
         "SecondaryColour": "&H00888888",
         "OutlineColour": "&H00000000",
-        "BackColour": "&H80000000",       # 50% opaque black band
-        "Outline": "0",
-        "Shadow": "0",
+        "BackColour": "&H00000000",
+        "Outline": "4",
+        "Shadow": "4",
         "Alignment": "2",
         "MarginV": "30",
-        "BorderStyle": "3",
+        "BorderStyle": "1",
     },
     # spoken word: mint/cyan | unspoken: dark
     "outlined_color": {
