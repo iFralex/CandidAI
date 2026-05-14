@@ -3,7 +3,7 @@ import logging
 import subprocess
 from typing import Optional
 from .db import Database
-from .subtitles import SubtitleGenerator, SUBTITLE_STYLES
+from .subtitles import SubtitleGenerator, SUBTITLE_STYLES, FONTS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -74,33 +74,33 @@ class VideoProcessor:
         marketing_filter = panel_filter
         clip_filter = panel_filter
         safe_sub = sub_file.replace("'", "\\'")
-        # Final scale+setsar guarantees the stacked output is exactly TARGET_WxTARGET_H
-        # with square pixels, regardless of any SAR/DAR inherited from inputs.
+        safe_fonts = FONTS_DIR.replace("'", "\\'")
+        # fontsdir tells libass exactly where to find the Montserrat TTF,
+        # bypassing any fontconfig cache issues on headless servers.
+        sub_opts = f"fontsdir='{safe_fonts}'"
         final = f"scale={TARGET_W}:{TARGET_H},setsar=1"
         # ASS MarginV = distance from video bottom to text bottom (Alignment=2, bottom-center).
-        # marketing_top:   panel y=0..HALF_H. Want text bottom at HALF_H-30=930.
-        #                  MarginV = TARGET_H - (HALF_H-30) = HALF_H+30 = 990.
-        # marketing_bottom: panel y=HALF_H..TARGET_H. Text near its bottom (y≈1890).
-        #                  MarginV ≈ 30. The ASS style default is correct.
+        # marketing_top:   panel y=0..HALF_H → MarginV = HALF_H+30 = 990 (30px above boundary).
+        # marketing_bottom: panel y=HALF_H..TARGET_H → default style MarginV≈30 is correct.
         if layout == 'marketing_top':
-            sub_margin = HALF_H + 30  # place subs 30px above the panel boundary
+            sub_margin = HALF_H + 30
             filter_complex = (
                 f"[0:v]{marketing_filter}[top];"
                 f"[1:v]{clip_filter}[bot];"
                 f"[top][bot]vstack=inputs=2[stacked];"
-                f"[stacked]subtitles='{safe_sub}':force_style='MarginV={sub_margin}',{final}[v]"
+                f"[stacked]subtitles='{safe_sub}':{sub_opts}:force_style='MarginV={sub_margin}',{final}[v]"
             )
             inputs = [marketing_path, clip_path]
-            audio_input_idx = 0  # marketing is inputs[0]
+            audio_input_idx = 0
         else:
             filter_complex = (
                 f"[0:v]{clip_filter}[top];"
                 f"[1:v]{marketing_filter}[bot];"
                 f"[top][bot]vstack=inputs=2[stacked];"
-                f"[stacked]subtitles='{safe_sub}',{final}[v]"
+                f"[stacked]subtitles='{safe_sub}':{sub_opts},{final}[v]"
             )
             inputs = [clip_path, marketing_path]
-            audio_input_idx = 1  # marketing is inputs[1]
+            audio_input_idx = 1
 
         preset = os.environ.get("FFMPEG_PRESET", "medium")
         crf = os.environ.get("FFMPEG_CRF", "23")

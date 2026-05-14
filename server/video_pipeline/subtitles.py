@@ -3,13 +3,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Words shown per subtitle event (all styles). Override via env var.
 WORDS_PER_CHUNK = int(os.environ.get("SUBTITLE_WORDS_PER_CHUNK", "3"))
+
+# Font shipped in the repo — Montserrat ExtraBold (OFL licence).
+# Path exposed so processor.py can pass fontsdir to ffmpeg/libass.
+FONTS_DIR = os.path.join(os.path.dirname(__file__), "fonts")
+FONT_NAME = "Montserrat"
 
 # ASS colours: &HAABBGGRR  (AA=00 → opaque, FF → transparent)
 SUBTITLE_STYLES = {
     "bold_yellow": {
-        "Fontname": "DejaVu Sans",
+        "Fontname": FONT_NAME,
         "Fontsize": "80",
         "Bold": "-1",
         "PrimaryColour": "&H0000FFFF",    # yellow
@@ -23,7 +27,7 @@ SUBTITLE_STYLES = {
         "BorderStyle": "1",
     },
     "minimal_white": {
-        "Fontname": "DejaVu Sans",
+        "Fontname": FONT_NAME,
         "Fontsize": "72",
         "Bold": "-1",
         "PrimaryColour": "&H00FFFFFF",
@@ -37,7 +41,7 @@ SUBTITLE_STYLES = {
         "BorderStyle": "1",
     },
     "dark_band": {
-        "Fontname": "DejaVu Sans",
+        "Fontname": FONT_NAME,
         "Fontsize": "70",
         "Bold": "-1",
         "PrimaryColour": "&H00FFFFFF",
@@ -51,7 +55,7 @@ SUBTITLE_STYLES = {
         "BorderStyle": "3",              # opaque box
     },
     "outlined_color": {
-        "Fontname": "DejaVu Sans",
+        "Fontname": FONT_NAME,
         "Fontsize": "78",
         "Bold": "-1",
         "PrimaryColour": "&H002BFFD4",    # mint/cyan
@@ -64,14 +68,13 @@ SUBTITLE_STYLES = {
         "MarginV": "30",
         "BorderStyle": "1",
     },
-    # Karaoke style: current word turns yellow, others stay white.
-    # Uses stable-ts word timestamps for accurate per-word timing.
+    # Karaoke: current word highlights yellow, rest stay white.
     "word_pop": {
-        "Fontname": "DejaVu Sans",
+        "Fontname": FONT_NAME,
         "Fontsize": "80",
         "Bold": "-1",
         "PrimaryColour": "&H0000FFFF",    # yellow: word being spoken
-        "SecondaryColour": "&H00FFFFFF",  # white: words not yet spoken
+        "SecondaryColour": "&H00FFFFFF",  # white: upcoming words
         "OutlineColour": "&H00000000",
         "BackColour": "&H00000000",
         "Outline": "3",
