@@ -53,7 +53,15 @@ class LibraryManager:
                 logger.info(f"Already downloaded: {existing}")
                 return existing
 
-        import yt_dlp  # lazy — heavy dep, only needed at runtime on VPS
+        output_path = os.path.join(raw_dir, f"{video_id}.mp4")
+        try:
+            self._download_via_cobalt(url, output_path)
+            logger.info(f"Downloaded via Cobalt: {output_path}")
+            return output_path
+        except Exception as e:
+            logger.warning(f"Cobalt failed ({e}), falling back to yt-dlp")
+
+        import yt_dlp
         output_tmpl = os.path.join(raw_dir, f"{video_id}.%(ext)s")
         ydl_opts = {
             "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
@@ -72,7 +80,53 @@ class LibraryManager:
             path = os.path.join(raw_dir, f"{video_id}.{ext}")
             if os.path.exists(path):
                 return path
-        raise RuntimeError(f"Download finished but output file not found for video_id={video_id}")
+        raise RuntimeError(f"Download failed for video_id={video_id}")
+
+    def _download_via_cobalt(self, url: str, output_path: str) -> None:
+        import requests as _req
+        resp = _req.post(
+            "https://api.cobalt.tools/",
+            json={"url": url, "videoQuality": "1080", "youtubeVideoCodec": "h264"},
+            headers={"Accept": "application/json", "Content-Type": "application/json"},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        status = data.get("status")
+
+        if status in ("tunnel", "stream", "redirect"):
+            self._stream_to_file(data["url"], output_path)
+
+        elif status == "picker":
+            # Separate video and audio streams — merge with ffmpeg
+            video_url = next((p["url"] for p in data["picker"] if p.get("type") == "video"), None)
+            audio_url = next((p["url"] for p in data["picker"] if p.get("type") == "audio"), None)
+            if not video_url:
+                raise RuntimeError("Cobalt picker: no video stream found")
+            tmp_video = output_path + ".vtmp"
+            tmp_audio = output_path + ".atmp"
+            self._stream_to_file(video_url, tmp_video)
+            if audio_url:
+                self._stream_to_file(audio_url, tmp_audio)
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", tmp_video, "-i", tmp_audio, "-c", "copy", output_path],
+                    capture_output=True, check=True,
+                )
+                os.remove(tmp_video)
+                os.remove(tmp_audio)
+            else:
+                os.rename(tmp_video, output_path)
+        else:
+            raise RuntimeError(f"Cobalt error: {data.get('error', {}).get('code', status)}")
+
+    @staticmethod
+    def _stream_to_file(url: str, path: str) -> None:
+        import requests as _req
+        with _req.get(url, stream=True, timeout=300) as r:
+            r.raise_for_status()
+            with open(path, "wb") as f:
+                for chunk in r.iter_content(chunk_size=1024 * 1024):
+                    f.write(chunk)
 
     def _split_into_clips(self, video_path: str, clips_dir: str, video_id: str) -> list[str]:
         existing = sorted(glob.glob(os.path.join(clips_dir, f"{video_id}_*.mp4")))
