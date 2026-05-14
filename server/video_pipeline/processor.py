@@ -110,9 +110,13 @@ class VideoProcessor:
             '-movflags', '+faststart',
             output_path
         ]
-        logger.info(f"FFmpeg compositing: {layout} + {style}")
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        timeout = int(os.environ.get("FFMPEG_TIMEOUT", "600"))
+        logger.info(f"FFmpeg compositing: {layout} + {style} (timeout={timeout}s)")
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f"FFmpeg timed out after {timeout}s for {output_path}")
         if result.returncode != 0:
-            logger.error(f"FFmpeg error: {result.stderr[-500:]}")
+            logger.error(f"FFmpeg error: {result.stderr[-1000:]}")
             raise RuntimeError(f"FFmpeg failed for {output_path}: {result.stderr[-300:]}")
         logger.info(f"Composed: {output_path}")
