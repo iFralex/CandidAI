@@ -18,13 +18,14 @@ FONT_NAME = "Montserrat"
 
 # ASS colours: &HAABBGGRR  (AA=00 → opaque, FF → transparent)
 SUBTITLE_STYLES = {
+    # spoken word: yellow | unspoken: dark grey
     "bold_yellow": {
         "Fontname": FONT_NAME,
-        "Fontsize": "92",
+        "Fontsize": "108",
         "Bold": "-1",
-        "PrimaryColour": "&H0000FFFF",    # yellow
-        "SecondaryColour": "&H00FFFFFF",  # white
-        "OutlineColour": "&H00000000",    # black
+        "PrimaryColour": "&H0000FFFF",    # yellow  — spoken
+        "SecondaryColour": "&H00444444",  # dark grey — unspoken
+        "OutlineColour": "&H00000000",
         "BackColour": "&H00000000",
         "Outline": "4",
         "Shadow": "1",
@@ -32,12 +33,13 @@ SUBTITLE_STYLES = {
         "MarginV": "30",
         "BorderStyle": "1",
     },
+    # spoken word: bright white | unspoken: mid grey
     "minimal_white": {
         "Fontname": FONT_NAME,
-        "Fontsize": "88",
+        "Fontsize": "105",
         "Bold": "-1",
         "PrimaryColour": "&H00FFFFFF",
-        "SecondaryColour": "&H00AAAAAA",  # grey
+        "SecondaryColour": "&H00555555",  # dark grey
         "OutlineColour": "&H00000000",
         "BackColour": "&H00000000",
         "Outline": "4",
@@ -46,26 +48,28 @@ SUBTITLE_STYLES = {
         "MarginV": "30",
         "BorderStyle": "1",
     },
+    # spoken word: white | unspoken: grey — on opaque black band
     "dark_band": {
         "Fontname": FONT_NAME,
-        "Fontsize": "86",
+        "Fontsize": "102",
         "Bold": "-1",
         "PrimaryColour": "&H00FFFFFF",
-        "SecondaryColour": "&H00CCCCCC",
+        "SecondaryColour": "&H00888888",
         "OutlineColour": "&H00000000",
         "BackColour": "&H80000000",       # 50% opaque black band
         "Outline": "0",
         "Shadow": "0",
         "Alignment": "2",
         "MarginV": "30",
-        "BorderStyle": "3",              # opaque box
+        "BorderStyle": "3",
     },
+    # spoken word: mint/cyan | unspoken: dark
     "outlined_color": {
         "Fontname": FONT_NAME,
-        "Fontsize": "90",
+        "Fontsize": "106",
         "Bold": "-1",
         "PrimaryColour": "&H002BFFD4",    # mint/cyan
-        "SecondaryColour": "&H00FFFFFF",
+        "SecondaryColour": "&H00333333",  # near-black
         "OutlineColour": "&H00000000",
         "BackColour": "&H00000000",
         "Outline": "4",
@@ -74,13 +78,13 @@ SUBTITLE_STYLES = {
         "MarginV": "30",
         "BorderStyle": "1",
     },
-    # Karaoke: current word highlights yellow, rest stay white.
+    # spoken word: yellow (smooth \kf fill) | unspoken: white
     "word_pop": {
         "Fontname": FONT_NAME,
-        "Fontsize": "92",
+        "Fontsize": "108",
         "Bold": "-1",
-        "PrimaryColour": "&H0000FFFF",    # yellow: word being spoken
-        "SecondaryColour": "&H00FFFFFF",  # white: upcoming words
+        "PrimaryColour": "&H0000FFFF",    # yellow
+        "SecondaryColour": "&H00FFFFFF",  # white
         "OutlineColour": "&H00000000",
         "BackColour": "&H00000000",
         "Outline": "4",
@@ -146,38 +150,21 @@ class SubtitleGenerator:
         """Generate an ASS subtitle file; returns its path."""
         result = self.transcribe(video_path)
         output_path = os.path.join(self.subtitle_dir, f"{output_id}_{style_name}.ass")
-        if style_name == "word_pop":
-            content = self._build_word_pop_ass(result, style_name)
-        else:
-            content = self._build_chunked_ass(result, style_name)
+        # word_pop uses \kf (smooth colour fill); all other styles use \k (instant snap)
+        karaoke_tag = "kf" if style_name == "word_pop" else "k"
+        anim_prefix = _POP if style_name == "word_pop" else _FADE
+        content = self._build_karaoke_ass(result, style_name, karaoke_tag, anim_prefix)
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(content)
         return output_path
 
-    def _build_chunked_ass(self, result: dict, style_name: str) -> str:
-        """WORDS_PER_CHUNK words per event — short, punchy TikTok-style captions."""
-        header = self._make_ass_header(style_name)
-        lines = [
-            "[Events]",
-            "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
-        ]
-        for seg in result["segments"]:
-            words = seg.get("words", [])
-            if not words:
-                s = self._seconds_to_ass_time(seg["start"])
-                e = self._seconds_to_ass_time(seg["end"])
-                lines.append(f"Dialogue: 0,{s},{e},Default,,0,0,0,,{seg['text'].strip()}")
-                continue
-            for i in range(0, len(words), WORDS_PER_CHUNK):
-                chunk = words[i:i + WORDS_PER_CHUNK]
-                s = self._seconds_to_ass_time(chunk[0]["start"])
-                e = self._seconds_to_ass_time(chunk[-1]["end"])
-                text = _FADE + " ".join(w["word"].strip() for w in chunk)
-                lines.append(f"Dialogue: 0,{s},{e},Default,,0,0,0,,{text}")
-        return header + "\n".join(lines)
-
-    def _build_word_pop_ass(self, result: dict, style_name: str) -> str:
-        """WORDS_PER_CHUNK words per event with \\kf karaoke: current word goes yellow."""
+    def _build_karaoke_ass(self, result: dict, style_name: str,
+                           karaoke_tag: str, anim_prefix: str) -> str:
+        """
+        Builds ASS with per-word colour change for ALL styles.
+        karaoke_tag: 'k' (instant snap) or 'kf' (smooth fill).
+        SecondaryColour = unspoken words; PrimaryColour = spoken word.
+        """
         header = self._make_ass_header(style_name)
         lines = [
             "[Events]",
@@ -197,9 +184,10 @@ class SubtitleGenerator:
                 tagged = []
                 for word in chunk:
                     dur_cs = int((word["end"] - word["start"]) * 100)
-                    tagged.append(f"{{\\kf{dur_cs}}}{word['word'].strip()}")
-                # _POP: fade-in + scale bounce on the whole chunk; \kf handles per-word colour
-                lines.append(f"Dialogue: 0,{s},{e},Default,,0,0,0,,{_POP}{' '.join(tagged)}")
+                    tagged.append(f"{{\\{karaoke_tag}{dur_cs}}}{word['word'].strip()}")
+                lines.append(
+                    f"Dialogue: 0,{s},{e},Default,,0,0,0,,{anim_prefix}{' '.join(tagged)}"
+                )
         return header + "\n".join(lines)
 
     def _make_ass_header(self, style_name: str) -> str:
