@@ -88,11 +88,11 @@ _model = None
 def _load_model():
     global _model
     if _model is None:
-        import stable_whisper
+        from faster_whisper import WhisperModel
         model_name = os.environ.get("WHISPER_MODEL", "small")
-        logger.info(f"Loading stable-whisper {model_name} model...")
-        _model = stable_whisper.load_model(model_name)
-        logger.info("stable-whisper model loaded.")
+        logger.info(f"Loading faster-whisper {model_name} model...")
+        _model = WhisperModel(model_name, device="cpu", compute_type="int8")
+        logger.info("faster-whisper model loaded.")
     return _model
 
 
@@ -103,7 +103,7 @@ class SubtitleGenerator:
         os.makedirs(self.subtitle_dir, exist_ok=True)
 
     def transcribe(self, video_path: str) -> dict:
-        """Transcribe with stable-whisper; cache result as JSON."""
+        """Transcribe with faster-whisper; cache result as JSON."""
         cache_path = os.path.join(
             self.subtitle_dir,
             os.path.splitext(os.path.basename(video_path))[0] + ".json"
@@ -114,8 +114,19 @@ class SubtitleGenerator:
                 return json.load(f)
         model = _load_model()
         lang = os.environ.get("WHISPER_LANGUAGE") or None
-        result = model.transcribe(video_path, language=lang, word_timestamps=True)
-        result = result.to_dict()
+        # faster-whisper returns a generator; consume it into a plain dict
+        segments_gen, _ = model.transcribe(video_path, language=lang, word_timestamps=True)
+        result = {"segments": []}
+        for seg in segments_gen:
+            result["segments"].append({
+                "start": seg.start,
+                "end": seg.end,
+                "text": seg.text,
+                "words": [
+                    {"word": w.word, "start": w.start, "end": w.end}
+                    for w in (seg.words or [])
+                ],
+            })
         import json
         with open(cache_path, "w") as f:
             json.dump(result, f)
