@@ -92,6 +92,8 @@ class VideoProcessor:
             inputs = [clip_path, marketing_path]
             audio_input_idx = 1  # marketing is inputs[1]
 
+        preset = os.environ.get("FFMPEG_PRESET", "veryfast")
+        crf = os.environ.get("FFMPEG_CRF", "26")
         cmd = [
             'ffmpeg', '-y',
             '-i', inputs[0],
@@ -100,8 +102,9 @@ class VideoProcessor:
             '-map', '[v]',
             '-map', f'{audio_input_idx}:a?',
             '-c:v', 'libx264',
-            '-crf', '23',
-            '-preset', 'medium',
+            '-crf', crf,
+            '-preset', preset,
+            '-threads', '0',
             '-c:a', 'aac',
             '-b:a', '128k',
             '-movflags', '+faststart',
