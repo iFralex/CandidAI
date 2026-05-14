@@ -213,6 +213,16 @@ def api_video_ingest():
             lm = LibraryManager(db_path=db_path, storage_path=storage)
             clip_ids = lm.download_and_split(url, category, start_time, end_time)
 
+            # Recovery: include clips that were split in a previous run but never
+            # had variants generated (e.g. ffmpeg was killed mid-job).
+            unprocessed = lm.db.list_unprocessed_clips_by_url(url)
+            recovered_ids = [c['id'] for c in unprocessed if c['id'] not in clip_ids]
+            if recovered_ids:
+                logging.getLogger("server.video_pipeline").info(
+                    f"Recovering {len(recovered_ids)} previously-split clips without variants for {url}"
+                )
+            clip_ids = clip_ids + recovered_ids
+
             proc = VideoProcessor(storage_path=storage, db_path=db_path)
 
             marketing_dir = _os.path.join(

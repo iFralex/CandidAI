@@ -122,6 +122,14 @@ class LibraryManager:
                 group_clips.append(clips_data[next_idx][1])
                 total += clips_data[next_idx][1]['duration']
 
+            if total < min_duration:
+                logger.warning(
+                    f"Skipping {len(group_ids)} clips: combined {total:.1f}s < marketing {min_duration:.1f}s — "
+                    f"not enough source material, would freeze on last frame"
+                )
+                i += len(group_ids)
+                continue
+
             if len(group_ids) == 1:
                 result_ids.append(group_ids[0])
             else:

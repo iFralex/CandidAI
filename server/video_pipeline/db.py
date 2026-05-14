@@ -102,6 +102,18 @@ class Database:
                 (str(uuid.uuid4()), video_id, start_time, end_time, _now())
             )
 
+    def list_unprocessed_clips_by_url(self, source_url: str) -> list[dict]:
+        """Return clips that were split but never had any variant generated."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT c.* FROM clips c
+                WHERE c.source_url = ?
+                AND NOT EXISTS (
+                    SELECT 1 FROM processed_videos pv WHERE pv.clip_id = c.id
+                )
+            """, (source_url,)).fetchall()
+            return [dict(r) for r in rows]
+
     def create_clip(self, source_url: str, file_path: str, duration: float, category: str) -> str:
         clip_id = str(uuid.uuid4())
         with self._conn() as conn:
