@@ -74,7 +74,24 @@ def stop_campaign():
 import os as _os
 import glob as _glob
 import threading as _threading
+import queue as _queue
 from flask import send_file as _send_file, jsonify as _jsonify, request as _request
+
+# Single-worker queue: ffmpeg and faster-whisper are CPU-bound — running them
+# concurrently on a VPS causes severe resource contention and 10-15x slowdowns.
+_ingest_queue: _queue.Queue = _queue.Queue()
+
+def _ingest_worker():
+    while True:
+        job = _ingest_queue.get()
+        try:
+            job()
+        except Exception as e:
+            logging.getLogger("server.video_pipeline").error(f"ingest worker error: {e}", exc_info=True)
+        finally:
+            _ingest_queue.task_done()
+
+_threading.Thread(target=_ingest_worker, daemon=True, name="ingest-worker").start()
 
 
 def _vp_storage():
@@ -223,8 +240,9 @@ def api_video_ingest():
         except Exception as e:
             logging.getLogger("server.video_pipeline").error(f"ingest error: {e}", exc_info=True)
 
-    _threading.Thread(target=_process, daemon=True).start()
-    return _jsonify({"ok": True, "message": f"Processing started for {url}"})
+    _ingest_queue.put(_process)
+    queue_pos = _ingest_queue.qsize()
+    return _jsonify({"ok": True, "message": f"Aggiunto alla coda (posizione {queue_pos})", "queue_size": queue_pos})
 
 
 @app.route('/api/videos/buffer-status')
