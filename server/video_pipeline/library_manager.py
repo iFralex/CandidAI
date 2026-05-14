@@ -41,6 +41,73 @@ class LibraryManager:
         logger.info(f"download_and_split: {len(clip_ids)} clips from {url} (category={category})")
         return clip_ids
 
+    def merge_clips_for_duration(self, clip_ids: list[str], min_duration: float,
+                                  category: str) -> list[str]:
+        """
+        Group consecutive clips so each group totals >= min_duration.
+        Groups with >1 clip are merged via ffmpeg concat; constituent clips are marked used.
+        Returns a list of clip IDs ready for compositing.
+        """
+        clips_data = [(cid, self.db.get_clip(cid)) for cid in clip_ids]
+        clips_data = [(cid, c) for cid, c in clips_data if c]
+
+        result_ids = []
+        i = 0
+        while i < len(clips_data):
+            group_ids = [clips_data[i][0]]
+            group_clips = [clips_data[i][1]]
+            total = clips_data[i][1]['duration']
+
+            while total < min_duration and i + len(group_ids) < len(clips_data):
+                next_idx = i + len(group_ids)
+                group_ids.append(clips_data[next_idx][0])
+                group_clips.append(clips_data[next_idx][1])
+                total += clips_data[next_idx][1]['duration']
+
+            if len(group_ids) == 1:
+                result_ids.append(group_ids[0])
+            else:
+                merged_path = self._concat_clips([c['file_path'] for c in group_clips])
+                duration = self._get_duration(merged_path)
+                merged_id = self.db.create_clip(
+                    source_url=group_clips[0]['source_url'],
+                    file_path=merged_path,
+                    duration=duration,
+                    category=category,
+                )
+                for cid in group_ids:
+                    self.db.increment_clip_used(cid)
+                logger.info(
+                    f"Merged {len(group_ids)} clips ({total:.1f}s >= {min_duration:.1f}s) → {merged_id}"
+                )
+                result_ids.append(merged_id)
+
+            i += len(group_ids)
+
+        return result_ids
+
+    def _concat_clips(self, paths: list[str]) -> str:
+        """Concatenate video files using ffmpeg concat demuxer. Returns merged file path."""
+        merged_dir = os.path.join(self.storage_path, "clips")
+        name_hash = hashlib.md5("|".join(paths).encode()).hexdigest()[:12]
+        output_path = os.path.join(merged_dir, f"merged_{name_hash}.mp4")
+        if os.path.exists(output_path):
+            return output_path
+        list_path = output_path + ".txt"
+        with open(list_path, "w") as f:
+            for p in paths:
+                f.write(f"file '{p}'\n")
+        result = subprocess.run(
+            ["ffmpeg", "-y", "-f", "concat", "-safe", "0",
+             "-i", list_path, "-c", "copy", output_path],
+            capture_output=True, text=True,
+        )
+        os.remove(list_path)
+        if result.returncode != 0:
+            raise RuntimeError(f"ffmpeg concat failed: {result.stderr[-300:]}")
+        logger.info(f"Concatenated {len(paths)} clips → {output_path}")
+        return output_path
+
     def get_least_used_clip(self, category: str) -> Optional[dict]:
         """Return the clip with the lowest used_count for the given category."""
         clips = self.db.list_clips_by_category(category)

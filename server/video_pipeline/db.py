@@ -153,10 +153,26 @@ class Database:
             return [dict(r) for r in rows]
 
     def list_approved_videos(self) -> list[dict]:
+        """Return approved videos ordered by least-used clip → category → source URL → oldest approval."""
         with self._conn() as conn:
-            rows = conn.execute(
-                "SELECT * FROM processed_videos WHERE status='approved' ORDER BY approved_at ASC"
-            ).fetchall()
+            rows = conn.execute("""
+                SELECT pv.*,
+                    c.used_count        AS clip_used_count,
+                    c.category          AS clip_category,
+                    c.source_url        AS clip_source_url,
+                    (SELECT COALESCE(SUM(c2.used_count), 0)
+                     FROM clips c2 WHERE c2.category = c.category)   AS category_total_uses,
+                    (SELECT COALESCE(SUM(c2.used_count), 0)
+                     FROM clips c2 WHERE c2.source_url = c.source_url) AS source_total_uses
+                FROM processed_videos pv
+                JOIN clips c ON pv.clip_id = c.id
+                WHERE pv.status = 'approved'
+                ORDER BY
+                    c.used_count        ASC,
+                    category_total_uses ASC,
+                    source_total_uses   ASC,
+                    pv.approved_at      ASC
+            """).fetchall()
             return [dict(r) for r in rows]
 
     def list_recent_published(self, limit: int = 20) -> list[dict]:

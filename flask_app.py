@@ -87,6 +87,20 @@ def _vp_db():
     return Database(_os.path.join(_vp_storage(), "pipeline.db"))
 
 
+def _video_duration(path: str) -> float:
+    import subprocess as _sp, json as _json
+    r = _sp.run(
+        ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_streams", path],
+        capture_output=True, text=True,
+    )
+    if r.returncode != 0:
+        return 0.0
+    for stream in _json.loads(r.stdout).get("streams", []):
+        if stream.get("codec_type") == "video":
+            return float(stream.get("duration", 0))
+    return 0.0
+
+
 @app.route('/videos/<video_id>')
 def serve_video(video_id: str):
     """Serve a processed video file (consumed by Buffer API to pull video URL)."""
@@ -170,8 +184,10 @@ def api_video_ingest():
 
             fixed_layout = LAYOUTS[0]
             fixed_style = list(SUBTITLE_STYLES.keys())[0]
-            for clip_id in clip_ids:
-                for mkt_video in marketing_videos:
+            for mkt_video in marketing_videos:
+                mkt_dur = _video_duration(mkt_video)
+                usable_ids = lm.merge_clips_for_duration(clip_ids, mkt_dur, category)
+                for clip_id in usable_ids:
                     proc.generate_variants(
                         source_video_path=mkt_video,
                         clip_id=clip_id,
