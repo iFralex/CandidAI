@@ -148,8 +148,8 @@ def api_video_ingest():
     def _process():
         try:
             from server.video_pipeline.library_manager import LibraryManager
-            from server.video_pipeline.processor import VideoProcessor
-            from server.video_pipeline.ai_advisor import AIAdvisor
+            from server.video_pipeline.processor import VideoProcessor, LAYOUTS
+            from server.video_pipeline.subtitles import SUBTITLE_STYLES
 
             storage = _vp_storage()
             db_path = _os.path.join(storage, "pipeline.db")
@@ -157,7 +157,6 @@ def api_video_ingest():
             clip_ids = lm.download_and_split(url, category)
 
             proc = VideoProcessor(storage_path=storage, db_path=db_path)
-            advisor = AIAdvisor(db_path=db_path)
 
             marketing_dir = _os.path.join(
                 _os.path.dirname(__file__), "marketing materials", "videos"
@@ -169,17 +168,15 @@ def api_video_ingest():
             if not marketing_videos:
                 return
 
-            available_categories = list({c['category'] for c in lm.db.list_all_clips()})
+            fixed_layout = LAYOUTS[0]
+            fixed_style = list(SUBTITLE_STYLES.keys())[0]
             for clip_id in clip_ids:
-                decision = advisor.decide(available_categories)
-                dec_id = advisor.save_decision(decision)
                 for mkt_video in marketing_videos:
                     proc.generate_variants(
                         source_video_path=mkt_video,
                         clip_id=clip_id,
-                        layouts=[decision.layout],
-                        styles=[decision.subtitle_style],
-                        ai_decision_id=dec_id
+                        layouts=[fixed_layout],
+                        styles=[fixed_style],
                     )
         except Exception as e:
             logging.getLogger("server.video_pipeline").error(f"ingest error: {e}", exc_info=True)

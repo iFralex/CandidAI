@@ -3,92 +3,28 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-WORDS_PER_CHUNK = int(os.environ.get("SUBTITLE_WORDS_PER_CHUNK", "2"))
+WORDS_PER_CHUNK = int(os.environ.get("SUBTITLE_WORDS_PER_CHUNK", "3"))
 
 # ASS override tags prepended to each subtitle event.
-# \fad(in_ms, out_ms): fast fade-in/out — eliminates hard cuts between events.
-# \t(t0,t1,transform): scale bounce — chunk pops in then settles (108%→100%).
-_FADE = "{\\fad(60,60)}"
-_POP  = "{\\fad(60,60)\\t(0,150,\\fscx108\\fscy108)\\t(150,300,\\fscx100\\fscy100)}"
+# \fad: fade in/out; \blur3→\blur0: sharp focus-in effect on each chunk.
+_FADE = "{\\fad(80,80)\\blur3\\t(0,150,\\blur0)}"
 
-# Font shipped in the repo — Montserrat ExtraBold (OFL licence).
-# Path exposed so processor.py can pass fontsdir to ffmpeg/libass.
 FONTS_DIR = os.path.join(os.path.dirname(__file__), "fonts")
 FONT_NAME = "Montserrat"
 
 # ASS colours: &HAABBGGRR  (AA=00 → opaque, FF → transparent)
+# spoken word: violet #CC44FF (R=FF,G=44,B=CC) | unspoken: white
 SUBTITLE_STYLES = {
-    # spoken word: yellow | unspoken: dark grey
-    "bold_yellow": {
+    "violet": {
         "Fontname": FONT_NAME,
-        "Fontsize": "108",
+        "Fontsize": "130",
         "Bold": "-1",
-        "PrimaryColour": "&H0000FFFF",    # yellow  — spoken
-        "SecondaryColour": "&H00444444",  # dark grey — unspoken
-        "OutlineColour": "&H00000000",
-        "BackColour": "&H00000000",
-        "Outline": "4",
-        "Shadow": "1",
-        "Alignment": "2",
-        "MarginV": "30",
-        "BorderStyle": "1",
-    },
-    # spoken word: bright white | unspoken: mid grey
-    "minimal_white": {
-        "Fontname": FONT_NAME,
-        "Fontsize": "105",
-        "Bold": "-1",
-        "PrimaryColour": "&H00FFFFFF",
-        "SecondaryColour": "&H00555555",  # dark grey
+        "PrimaryColour": "&H00CC44FF",    # violet — spoken
+        "SecondaryColour": "&H00FFFFFF",  # white  — unspoken
         "OutlineColour": "&H00000000",
         "BackColour": "&H00000000",
         "Outline": "4",
         "Shadow": "2",
-        "Alignment": "2",
-        "MarginV": "30",
-        "BorderStyle": "1",
-    },
-    # spoken word: white | unspoken: grey — thick black outline + heavy shadow for depth
-    "dark_band": {
-        "Fontname": FONT_NAME,
-        "Fontsize": "102",
-        "Bold": "-1",
-        "PrimaryColour": "&H00FFFFFF",
-        "SecondaryColour": "&H00888888",
-        "OutlineColour": "&H00000000",
-        "BackColour": "&H00000000",
-        "Outline": "4",
-        "Shadow": "4",
-        "Alignment": "2",
-        "MarginV": "30",
-        "BorderStyle": "1",
-    },
-    # spoken word: mint/cyan | unspoken: dark
-    "outlined_color": {
-        "Fontname": FONT_NAME,
-        "Fontsize": "106",
-        "Bold": "-1",
-        "PrimaryColour": "&H002BFFD4",    # mint/cyan
-        "SecondaryColour": "&H00333333",  # near-black
-        "OutlineColour": "&H00000000",
-        "BackColour": "&H00000000",
-        "Outline": "4",
-        "Shadow": "1",
-        "Alignment": "2",
-        "MarginV": "30",
-        "BorderStyle": "1",
-    },
-    # spoken word: yellow (smooth \kf fill) | unspoken: white
-    "word_pop": {
-        "Fontname": FONT_NAME,
-        "Fontsize": "108",
-        "Bold": "-1",
-        "PrimaryColour": "&H0000FFFF",    # yellow
-        "SecondaryColour": "&H00FFFFFF",  # white
-        "OutlineColour": "&H00000000",
-        "BackColour": "&H00000000",
-        "Outline": "4",
-        "Shadow": "1",
         "Alignment": "2",
         "MarginV": "30",
         "BorderStyle": "1",
@@ -150,10 +86,7 @@ class SubtitleGenerator:
         """Generate an ASS subtitle file; returns its path."""
         result = self.transcribe(video_path)
         output_path = os.path.join(self.subtitle_dir, f"{output_id}_{style_name}.ass")
-        # word_pop uses \kf (smooth colour fill); all other styles use \k (instant snap)
-        karaoke_tag = "kf" if style_name == "word_pop" else "k"
-        anim_prefix = _POP if style_name == "word_pop" else _FADE
-        content = self._build_karaoke_ass(result, style_name, karaoke_tag, anim_prefix)
+        content = self._build_karaoke_ass(result, style_name, "k", _FADE)
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(content)
         return output_path
