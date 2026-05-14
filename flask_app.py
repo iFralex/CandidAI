@@ -128,7 +128,31 @@ def api_approve_video(video_id: str):
     db = _vp_db()
     if not db.get_processed_video(video_id):
         return _jsonify({"error": "not found"}), 404
-    db.approve_video(video_id)
+    data = _request.get_json() or {}
+    rating = data.get("rating")
+    if rating is not None:
+        rating = int(rating)
+        if not 1 <= rating <= 5:
+            return _jsonify({"error": "rating must be 1-5"}), 400
+    db.approve_video(video_id, rating)
+    return _jsonify({"ok": True})
+
+
+@app.route('/api/videos/<video_id>/rate', methods=['POST'])
+def api_rate_video(video_id: str):
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
+    db = _vp_db()
+    if not db.get_processed_video(video_id):
+        return _jsonify({"error": "not found"}), 404
+    data = _request.get_json() or {}
+    rating = data.get("rating")
+    if rating is None:
+        return _jsonify({"error": "rating required"}), 400
+    rating = int(rating)
+    if not 1 <= rating <= 5:
+        return _jsonify({"error": "rating must be 1-5"}), 400
+    db.rate_video(video_id, rating)
     return _jsonify({"ok": True})
 
 

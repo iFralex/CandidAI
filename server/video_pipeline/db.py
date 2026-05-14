@@ -21,6 +21,11 @@ class Database:
 
     def _init_schema(self):
         with self._conn() as conn:
+            # Retroactive migration: add rating column if not present
+            try:
+                conn.execute("ALTER TABLE processed_videos ADD COLUMN rating INTEGER")
+            except Exception:
+                pass
             conn.executescript("""
                 CREATE TABLE IF NOT EXISTS clips (
                     id TEXT PRIMARY KEY,
@@ -192,10 +197,11 @@ class Database:
                 JOIN clips c ON pv.clip_id = c.id
                 WHERE pv.status = 'approved'
                 ORDER BY
-                    c.used_count        ASC,
-                    category_total_uses ASC,
-                    source_total_uses   ASC,
-                    pv.approved_at      ASC
+                    COALESCE(pv.rating, 0) DESC,
+                    c.used_count           ASC,
+                    category_total_uses    ASC,
+                    source_total_uses      ASC,
+                    pv.approved_at         ASC
             """).fetchall()
             return [dict(r) for r in rows]
 
@@ -207,11 +213,18 @@ class Database:
             ).fetchall()
             return [dict(r) for r in rows]
 
-    def approve_video(self, vid_id: str):
+    def approve_video(self, vid_id: str, rating: int = None):
         with self._conn() as conn:
             conn.execute(
-                "UPDATE processed_videos SET status='approved', approved_at=? WHERE id=?",
-                (_now(), vid_id)
+                "UPDATE processed_videos SET status='approved', approved_at=?, rating=? WHERE id=?",
+                (_now(), rating, vid_id)
+            )
+
+    def rate_video(self, vid_id: str, rating: int):
+        with self._conn() as conn:
+            conn.execute(
+                "UPDATE processed_videos SET rating=? WHERE id=?",
+                (rating, vid_id)
             )
 
     def reject_video(self, vid_id: str):
