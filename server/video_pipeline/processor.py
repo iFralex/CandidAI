@@ -64,20 +64,25 @@ class VideoProcessor:
         sub_file = self.subtitle_gen.generate_subtitle_file(
             marketing_path, style, output_id
         )
-        # Scale to fill panel, then center-crop to exact size (no rotation)
+        # Scale to fill panel, center-crop to exact size, force square pixels.
+        # setsar=1 prevents non-square SAR from input being inherited by the output.
         panel_filter = (
             f"scale={TARGET_W}:{HALF_H}:force_original_aspect_ratio=increase,"
-            f"crop={TARGET_W}:{HALF_H}:(iw-{TARGET_W})/2:(ih-{HALF_H})/2"
+            f"crop={TARGET_W}:{HALF_H},"
+            f"setsar=1"
         )
         marketing_filter = panel_filter
         clip_filter = panel_filter
         safe_sub = sub_file.replace("'", "'\\''")
+        # Final scale+setsar guarantees the stacked output is exactly TARGET_WxTARGET_H
+        # with square pixels, regardless of any SAR/DAR inherited from inputs.
+        final = f"scale={TARGET_W}:{TARGET_H},setsar=1"
         if layout == 'marketing_top':
             filter_complex = (
                 f"[0:v]{marketing_filter}[top];"
                 f"[1:v]{clip_filter}[bot];"
                 f"[top][bot]vstack=inputs=2[stacked];"
-                f"[stacked]subtitles='{safe_sub}'[v]"
+                f"[stacked]subtitles='{safe_sub}',{final}[v]"
             )
             inputs = [marketing_path, clip_path]
             audio_input_idx = 0  # marketing is inputs[0]
@@ -86,7 +91,7 @@ class VideoProcessor:
                 f"[0:v]{clip_filter}[top];"
                 f"[1:v]{marketing_filter}[bot];"
                 f"[top][bot]vstack=inputs=2[stacked];"
-                f"[stacked]subtitles='{safe_sub}':force_style='MarginV=990'[v]"
+                f"[stacked]subtitles='{safe_sub}':force_style='MarginV=990',{final}[v]"
             )
             inputs = [clip_path, marketing_path]
             audio_input_idx = 1  # marketing is inputs[1]
