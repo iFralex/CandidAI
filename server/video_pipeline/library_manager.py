@@ -54,6 +54,16 @@ class LibraryManager:
                 return existing
 
         output_path = os.path.join(raw_dir, f"{video_id}.mp4")
+
+        # 1. pytubefix with OAuth (primary — works from VPS IPs)
+        try:
+            self._download_via_pytubefix(url, output_path)
+            logger.info(f"Downloaded via pytubefix: {output_path}")
+            return output_path
+        except Exception as e:
+            logger.warning(f"pytubefix failed ({e}), trying Invidious")
+
+        # 2. Invidious (no auth needed, depends on public instances)
         try:
             self._download_via_invidious(url, output_path)
             logger.info(f"Downloaded via Invidious: {output_path}")
@@ -61,6 +71,7 @@ class LibraryManager:
         except Exception as e:
             logger.warning(f"Invidious failed ({e}), falling back to yt-dlp")
 
+        # 3. yt-dlp (last resort)
         import yt_dlp
         output_tmpl = os.path.join(raw_dir, f"{video_id}.%(ext)s")
         ydl_opts = {
@@ -68,7 +79,6 @@ class LibraryManager:
             "outtmpl": output_tmpl,
             "quiet": True,
             "no_warnings": True,
-            "extractor_args": {"youtube": {"player_client": ["tv_embed", "android_vr", "ios"]}},
         }
         cookies_file = os.environ.get("YTDLP_COOKIES_FILE", "")
         if cookies_file and os.path.exists(cookies_file):
@@ -81,6 +91,38 @@ class LibraryManager:
             if os.path.exists(path):
                 return path
         raise RuntimeError(f"Download failed for video_id={video_id}")
+
+    def _download_via_pytubefix(self, url: str, output_path: str) -> None:
+        from pytubefix import YouTube
+        from pytubefix.cli import on_progress
+
+        yt = YouTube(url, use_oauth=True, allow_oauth_cache=True, on_progress_callback=on_progress)
+
+        # Download best video-only and audio-only streams, merge with ffmpeg
+        video_stream = (
+            yt.streams.filter(adaptive=True, file_extension="mp4", only_video=True)
+            .order_by("resolution").last()
+        )
+        audio_stream = (
+            yt.streams.filter(adaptive=True, file_extension="mp4", only_audio=True)
+            .order_by("abr").last()
+        )
+        if not video_stream:
+            raise RuntimeError("pytubefix: no video stream found")
+
+        tmp_video = output_path + ".vtmp"
+        tmp_audio = output_path + ".atmp"
+        video_stream.download(filename=tmp_video)
+        if audio_stream:
+            audio_stream.download(filename=tmp_audio)
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", tmp_video, "-i", tmp_audio, "-c", "copy", output_path],
+                capture_output=True, check=True,
+            )
+            os.remove(tmp_video)
+            os.remove(tmp_audio)
+        else:
+            os.rename(tmp_video, output_path)
 
     _INVIDIOUS_FALLBACK = [
         "https://yewtu.be",
