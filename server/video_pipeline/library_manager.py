@@ -341,11 +341,15 @@ class LibraryManager:
 
         max_clip_sec = int(os.environ.get("MAX_CLIP_DURATION", "30"))
 
+        from scenedetect import FrameTimecode
         video = open_video(video_path)
         fps = video.frame_rate
+        if start_time:
+            video.seek(FrameTimecode(float(start_time), fps))
+        end_tc = FrameTimecode(float(end_time), fps) if end_time else None
         scene_manager = SceneManager()
         scene_manager.add_detector(ContentDetector(threshold=15.0))
-        scene_manager.detect_scenes(video, start_time=start_time, end_time=end_time)
+        scene_manager.detect_scenes(video, end_time=end_tc)
         scene_list = scene_manager.get_scene_list()
         logger.info(f"scenedetect found {len(scene_list)} scenes in {video_path}")
 
