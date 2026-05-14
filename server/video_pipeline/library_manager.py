@@ -56,10 +56,10 @@ class LibraryManager:
         output_path = os.path.join(raw_dir, f"{video_id}.mp4")
         try:
             self._download_via_invidious(url, output_path)
-            logger.info(f"Downloaded via Cobalt: {output_path}")
+            logger.info(f"Downloaded via Invidious: {output_path}")
             return output_path
         except Exception as e:
-            logger.warning(f"Cobalt failed ({e}), falling back to yt-dlp")
+            logger.warning(f"Invidious failed ({e}), falling back to yt-dlp")
 
         import yt_dlp
         output_tmpl = os.path.join(raw_dir, f"{video_id}.%(ext)s")
@@ -82,18 +82,36 @@ class LibraryManager:
                 return path
         raise RuntimeError(f"Download failed for video_id={video_id}")
 
-    _INVIDIOUS_INSTANCES = [
-        "https://inv.nadeko.net",
-        "https://invidious.privacydev.net",
-        "https://invidious.nerdvpn.de",
-        "https://invidious.io",
+    _INVIDIOUS_FALLBACK = [
+        "https://yewtu.be",
+        "https://invidious.kavin.rocks",
+        "https://inv.tux.pizza",
+        "https://yt.artemislena.eu",
+        "https://invidious.flokinet.to",
     ]
+
+    @staticmethod
+    def _get_invidious_instances() -> list[str]:
+        import requests as _req
+        try:
+            r = _req.get("https://api.invidious.io/instances.json", timeout=10)
+            r.raise_for_status()
+            instances = [
+                f"https://{item[0]}"
+                for item in r.json()
+                if item[1].get("api") and item[1].get("type") == "https"
+                and item[1].get("monitor", {}).get("uptime", 0) > 80
+            ]
+            return instances[:8] if instances else []
+        except Exception:
+            return []
 
     def _download_via_invidious(self, url: str, output_path: str) -> None:
         import requests as _req
         video_id = self._extract_video_id(url)
+        instances = self._get_invidious_instances() or self._INVIDIOUS_FALLBACK
         last_err = None
-        for instance in self._INVIDIOUS_INSTANCES:
+        for instance in instances:
             try:
                 r = _req.get(f"{instance}/api/v1/videos/{video_id}", timeout=15)
                 r.raise_for_status()
