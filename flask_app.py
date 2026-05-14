@@ -156,6 +156,8 @@ def api_video_ingest():
     data = _request.get_json() or {}
     url = data.get("url", "").strip()
     category = data.get("category", "general").strip()
+    start_time = data.get("start_time")  # seconds, optional
+    end_time = data.get("end_time")      # seconds, optional
     if not url:
         return _jsonify({"error": "url required"}), 400
 
@@ -168,7 +170,7 @@ def api_video_ingest():
             storage = _vp_storage()
             db_path = _os.path.join(storage, "pipeline.db")
             lm = LibraryManager(db_path=db_path, storage_path=storage)
-            clip_ids = lm.download_and_split(url, category)
+            clip_ids = lm.download_and_split(url, category, start_time, end_time)
 
             proc = VideoProcessor(storage_path=storage, db_path=db_path)
 

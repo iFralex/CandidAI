@@ -58,6 +58,15 @@ class Database:
                     created_at TEXT
                 );
 
+                CREATE TABLE IF NOT EXISTS ingested_intervals (
+                    id TEXT PRIMARY KEY,
+                    video_id TEXT NOT NULL,
+                    start_time REAL NOT NULL DEFAULT 0,
+                    end_time REAL,
+                    created_at TEXT
+                );
+                CREATE INDEX IF NOT EXISTS idx_intervals_video ON ingested_intervals(video_id);
+
                 CREATE TABLE IF NOT EXISTS buffer_stats (
                     id TEXT PRIMARY KEY,
                     buffer_post_id TEXT NOT NULL,
@@ -72,6 +81,21 @@ class Database:
                     engagement_rate REAL DEFAULT 0.0
                 );
             """)
+
+    def get_ingested_intervals(self, video_id: str) -> list[tuple]:
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT start_time, end_time FROM ingested_intervals WHERE video_id=? ORDER BY start_time",
+                (video_id,)
+            ).fetchall()
+            return [(r["start_time"], r["end_time"]) for r in rows]
+
+    def add_ingested_interval(self, video_id: str, start_time: float, end_time):
+        with self._conn() as conn:
+            conn.execute(
+                "INSERT INTO ingested_intervals (id, video_id, start_time, end_time, created_at) VALUES (?,?,?,?,?)",
+                (str(uuid.uuid4()), video_id, start_time, end_time, _now())
+            )
 
     def create_clip(self, source_url: str, file_path: str, duration: float, category: str) -> str:
         clip_id = str(uuid.uuid4())

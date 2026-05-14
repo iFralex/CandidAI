@@ -122,6 +122,11 @@ header h1 { font-size:20px; font-weight:700; color:white; }
             </select>
             <button class="btn btn-primary" onclick="ingestVideo()">⬇ Scarica e processa</button>
         </div>
+        <div class="ingest-row" style="margin-top:8px">
+            <input type="text" id="yt-start" placeholder="Inizio (es. 10:30)" style="max-width:140px" />
+            <input type="text" id="yt-end"   placeholder="Fine (es. 30:00)"  style="max-width:140px" />
+            <span style="font-size:12px;color:var(--text-dim);align-self:center">Intervallo opzionale (MM:SS o HH:MM:SS)</span>
+        </div>
         <p id="ingest-msg" style="margin-top:12px;font-size:13px;color:var(--text-dim)"></p>
     </div>
     <div class="tabs">
@@ -293,20 +298,39 @@ async function reject(id) {
     } catch(e) { toast('Errore: '+e.message, 'var(--red)'); }
 }
 
+function parseTime(val) {
+    if (!val || !val.trim()) return null;
+    const parts = val.trim().split(':').map(Number);
+    if (parts.some(isNaN)) return null;
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    return null;
+}
+
 async function ingestVideo() {
     const url = document.getElementById('yt-url').value.trim();
     const category = document.getElementById('yt-category').value;
+    const start_time = parseTime(document.getElementById('yt-start').value);
+    const end_time   = parseTime(document.getElementById('yt-end').value);
     const msg = document.getElementById('ingest-msg');
     if (!url) { msg.textContent = 'Inserisci un URL YouTube.'; return; }
+    if (start_time !== null && end_time !== null && end_time <= start_time) {
+        msg.textContent = 'La fine deve essere dopo l\'inizio.'; return;
+    }
     msg.textContent = '⏳ Download e processing avviati...';
+    const body = {url, category};
+    if (start_time !== null) body.start_time = start_time;
+    if (end_time   !== null) body.end_time   = end_time;
     try {
         await api('/api/videos/ingest', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({url, category})
+            body: JSON.stringify(body)
         });
         msg.textContent = '✓ Processing avviato! I video appariranno tra qualche minuto.';
         document.getElementById('yt-url').value = '';
+        document.getElementById('yt-start').value = '';
+        document.getElementById('yt-end').value = '';
     } catch(e) { msg.textContent = 'Errore: '+e.message; }
 }
 

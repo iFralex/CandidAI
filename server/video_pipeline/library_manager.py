@@ -18,28 +18,86 @@ class LibraryManager:
         os.makedirs(os.path.join(storage_path, "raw"), exist_ok=True)
         os.makedirs(os.path.join(storage_path, "clips"), exist_ok=True)
 
-    def download_and_split(self, url: str, category: str) -> list[str]:
+    @staticmethod
+    def _compute_gaps(existing: list[tuple], req_start: float, req_end) -> list[tuple]:
+        """
+        Return sub-intervals of [req_start, req_end] not covered by existing.
+        req_end=None means "to end of video". Returns list of (start, end) tuples.
+        """
+        INF = float('inf')
+        req_end_n = INF if req_end is None else req_end
+
+        if not existing:
+            return [(req_start, req_end)]
+
+        normalized = sorted((s, INF if e is None else e) for s, e in existing)
+
+        # Merge overlapping intervals
+        merged = [list(normalized[0])]
+        for s, e in normalized[1:]:
+            if s <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], e)
+            else:
+                merged.append([s, e])
+
+        # Find gaps within [req_start, req_end_n]
+        gaps = []
+        cursor = req_start
+        for s, e in merged:
+            if e <= cursor:
+                continue
+            if s >= req_end_n:
+                break
+            if s > cursor:
+                gap_end = min(s, req_end_n)
+                gaps.append((cursor, None if gap_end == INF else gap_end))
+            cursor = max(cursor, min(e, req_end_n))
+        if cursor < req_end_n:
+            gaps.append((cursor, req_end))
+
+        return gaps
+
+    def download_and_split(self, url: str, category: str,
+                           start_time: float = None, end_time: float = None) -> list[str]:
         """Download a YouTube video, split by scenes, register clips in DB. Returns clip IDs."""
         video_id = self._extract_video_id(url)
         raw_dir = os.path.join(self.storage_path, "raw")
         clips_dir = os.path.join(self.storage_path, "clips")
 
+        req_start = float(start_time) if start_time is not None else 0.0
+        req_end   = float(end_time)   if end_time   is not None else None
+
+        existing = self.db.get_ingested_intervals(video_id)
+        gaps = self._compute_gaps(existing, req_start, req_end)
+
+        if not gaps:
+            logger.info(f"All requested intervals already ingested for {video_id}")
+            return []
+
         video_path = self._download(url, raw_dir, video_id)
-        clip_paths = self._split_into_clips(video_path, clips_dir, video_id)
 
-        clip_ids = []
-        for clip_path in clip_paths:
-            duration = self._get_duration(clip_path)
-            clip_id = self.db.create_clip(
-                source_url=url,
-                file_path=clip_path,
-                duration=duration,
-                category=category,
-            )
-            clip_ids.append(clip_id)
+        all_clip_ids = []
+        for gap_start, gap_end in gaps:
+            e_tag = "end" if gap_end is None else int(gap_end)
+            segment_id = f"{video_id}_s{int(gap_start)}e{e_tag}"
 
-        logger.info(f"download_and_split: {len(clip_ids)} clips from {url} (category={category})")
-        return clip_ids
+            clip_paths = self._split_into_clips(video_path, clips_dir, segment_id,
+                                                gap_start, gap_end)
+            for clip_path in clip_paths:
+                duration = self._get_duration(clip_path)
+                clip_id = self.db.create_clip(
+                    source_url=url,
+                    file_path=clip_path,
+                    duration=duration,
+                    category=category,
+                )
+                all_clip_ids.append(clip_id)
+
+            self.db.add_ingested_interval(video_id, gap_start, gap_end)
+            logger.info(f"Ingested [{gap_start}s, {gap_end}s] for {video_id}")
+
+        logger.info(f"download_and_split: {len(all_clip_ids)} new clips from {url} (category={category})")
+        return all_clip_ids
 
     def merge_clips_for_duration(self, clip_ids: list[str], min_duration: float,
                                   category: str) -> list[str]:
@@ -270,7 +328,8 @@ class LibraryManager:
                 for chunk in r.iter_content(chunk_size=1024 * 1024):
                     f.write(chunk)
 
-    def _split_into_clips(self, video_path: str, clips_dir: str, video_id: str) -> list[str]:
+    def _split_into_clips(self, video_path: str, clips_dir: str, video_id: str,
+                           start_time: float = None, end_time: float = None) -> list[str]:
         existing = sorted(glob.glob(os.path.join(clips_dir, f"{video_id}_*.mp4")))
         if existing:
             logger.info(f"Clips already exist for {video_id}: {len(existing)} files")
@@ -286,7 +345,7 @@ class LibraryManager:
         fps = video.frame_rate
         scene_manager = SceneManager()
         scene_manager.add_detector(ContentDetector(threshold=15.0))
-        scene_manager.detect_scenes(video)
+        scene_manager.detect_scenes(video, start_time=start_time, end_time=end_time)
         scene_list = scene_manager.get_scene_list()
         logger.info(f"scenedetect found {len(scene_list)} scenes in {video_path}")
 
@@ -305,10 +364,12 @@ class LibraryManager:
                     cur = min(next_tc, end)
 
         if not final_scenes:
-            # No scenes detected — split by max_clip_sec
+            # No scenes detected — split by max_clip_sec within the requested range
             total = self._get_duration(video_path)
+            range_start = int(start_time or 0)
+            range_end = int(end_time or total)
             clips = []
-            for i, offset in enumerate(range(0, int(total), max_clip_sec), start=1):
+            for i, offset in enumerate(range(range_start, range_end, max_clip_sec), start=1):
                 clip_path = os.path.join(clips_dir, f"{video_id}_{i:03d}.mp4")
                 subprocess.run(
                     ["ffmpeg", "-y", "-ss", str(offset), "-i", video_path,
