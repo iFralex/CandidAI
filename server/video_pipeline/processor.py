@@ -3,7 +3,7 @@ import logging
 import subprocess
 from typing import Optional
 from .db import Database
-from .subtitles import SubtitleGenerator, SUBTITLE_STYLES, FONTS_DIR
+from .subtitles import SubtitleGenerator, SUBTITLE_STYLES
 
 logger = logging.getLogger(__name__)
 
@@ -74,33 +74,26 @@ class VideoProcessor:
         marketing_filter = panel_filter
         clip_filter = panel_filter
         safe_sub = sub_file.replace("'", "\\'")
-        safe_fonts = FONTS_DIR.replace("'", "\\'")
-        # fontsdir tells libass exactly where to find the Montserrat TTF,
-        # bypassing any fontconfig cache issues on headless servers.
-        sub_opts = f"fontsdir='{safe_fonts}'"
         final = f"scale={TARGET_W}:{TARGET_H},setsar=1"
-        # Subtitles are always on the CLIP panel (bottom half, y=HALF_H..TARGET_H).
-        # Alignment=2 (bottom-center): MarginV = distance from video bottom to text bottom.
-        # To center text in the clip panel: MarginV = HALF_H // 2 = 480
-        # → text bottom at y = TARGET_H - 480 = 1440 = vertical center of clip panel.
+        # Subtitles always on the CLIP panel (bottom half, y=HALF_H..TARGET_H).
+        # MarginV = HALF_H//2 = 480 → text bottom at y=1440 = center of clip panel.
         sub_margin = HALF_H // 2
         if layout == 'marketing_top':
             filter_complex = (
                 f"[0:v]{marketing_filter}[top];"
                 f"[1:v]{clip_filter}[bot];"
                 f"[top][bot]vstack=inputs=2[stacked];"
-                f"[stacked]subtitles='{safe_sub}':{sub_opts}:force_style='MarginV={sub_margin}',{final}[v]"
+                f"[stacked]subtitles='{safe_sub}':force_style='MarginV={sub_margin}',{final}[v]"
             )
             inputs = [marketing_path, clip_path]
             audio_input_idx = 0
         else:
-            # clip on top → clip panel is y=0..HALF_H, center at y=HALF_H//2=480
             clip_sub_margin = TARGET_H - HALF_H // 2
             filter_complex = (
                 f"[0:v]{clip_filter}[top];"
                 f"[1:v]{marketing_filter}[bot];"
                 f"[top][bot]vstack=inputs=2[stacked];"
-                f"[stacked]subtitles='{safe_sub}':{sub_opts}:force_style='MarginV={clip_sub_margin}',{final}[v]"
+                f"[stacked]subtitles='{safe_sub}':force_style='MarginV={clip_sub_margin}',{final}[v]"
             )
             inputs = [clip_path, marketing_path]
             audio_input_idx = 1

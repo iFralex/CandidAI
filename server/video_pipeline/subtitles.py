@@ -20,13 +20,13 @@ FONT_NAME = "Montserrat"
 SUBTITLE_STYLES = {
     "bold_yellow": {
         "Fontname": FONT_NAME,
-        "Fontsize": "80",
+        "Fontsize": "92",
         "Bold": "-1",
         "PrimaryColour": "&H0000FFFF",    # yellow
         "SecondaryColour": "&H00FFFFFF",  # white
         "OutlineColour": "&H00000000",    # black
         "BackColour": "&H00000000",
-        "Outline": "3",
+        "Outline": "4",
         "Shadow": "1",
         "Alignment": "2",
         "MarginV": "30",
@@ -34,13 +34,13 @@ SUBTITLE_STYLES = {
     },
     "minimal_white": {
         "Fontname": FONT_NAME,
-        "Fontsize": "72",
+        "Fontsize": "88",
         "Bold": "-1",
         "PrimaryColour": "&H00FFFFFF",
         "SecondaryColour": "&H00AAAAAA",  # grey
         "OutlineColour": "&H00000000",
         "BackColour": "&H00000000",
-        "Outline": "3",
+        "Outline": "4",
         "Shadow": "2",
         "Alignment": "2",
         "MarginV": "30",
@@ -48,7 +48,7 @@ SUBTITLE_STYLES = {
     },
     "dark_band": {
         "Fontname": FONT_NAME,
-        "Fontsize": "70",
+        "Fontsize": "86",
         "Bold": "-1",
         "PrimaryColour": "&H00FFFFFF",
         "SecondaryColour": "&H00CCCCCC",
@@ -62,13 +62,13 @@ SUBTITLE_STYLES = {
     },
     "outlined_color": {
         "Fontname": FONT_NAME,
-        "Fontsize": "78",
+        "Fontsize": "90",
         "Bold": "-1",
         "PrimaryColour": "&H002BFFD4",    # mint/cyan
         "SecondaryColour": "&H00FFFFFF",
         "OutlineColour": "&H00000000",
         "BackColour": "&H00000000",
-        "Outline": "3",
+        "Outline": "4",
         "Shadow": "1",
         "Alignment": "2",
         "MarginV": "30",
@@ -77,13 +77,13 @@ SUBTITLE_STYLES = {
     # Karaoke: current word highlights yellow, rest stay white.
     "word_pop": {
         "Fontname": FONT_NAME,
-        "Fontsize": "80",
+        "Fontsize": "92",
         "Bold": "-1",
         "PrimaryColour": "&H0000FFFF",    # yellow: word being spoken
         "SecondaryColour": "&H00FFFFFF",  # white: upcoming words
         "OutlineColour": "&H00000000",
         "BackColour": "&H00000000",
-        "Outline": "3",
+        "Outline": "4",
         "Shadow": "1",
         "Alignment": "2",
         "MarginV": "30",
