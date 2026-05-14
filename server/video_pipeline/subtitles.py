@@ -3,7 +3,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-WORDS_PER_CHUNK = int(os.environ.get("SUBTITLE_WORDS_PER_CHUNK", "3"))
+WORDS_PER_CHUNK = int(os.environ.get("SUBTITLE_WORDS_PER_CHUNK", "2"))
+
+# ASS override tags prepended to each subtitle event.
+# \fad(in_ms, out_ms): fast fade-in/out — eliminates hard cuts between events.
+# \t(t0,t1,transform): scale bounce — chunk pops in then settles (108%→100%).
+_FADE = "{\\fad(60,60)}"
+_POP  = "{\\fad(60,60)\\t(0,150,\\fscx108\\fscy108)\\t(150,300,\\fscx100\\fscy100)}"
 
 # Font shipped in the repo — Montserrat ExtraBold (OFL licence).
 # Path exposed so processor.py can pass fontsdir to ffmpeg/libass.
@@ -166,7 +172,7 @@ class SubtitleGenerator:
                 chunk = words[i:i + WORDS_PER_CHUNK]
                 s = self._seconds_to_ass_time(chunk[0]["start"])
                 e = self._seconds_to_ass_time(chunk[-1]["end"])
-                text = " ".join(w["word"].strip() for w in chunk)
+                text = _FADE + " ".join(w["word"].strip() for w in chunk)
                 lines.append(f"Dialogue: 0,{s},{e},Default,,0,0,0,,{text}")
         return header + "\n".join(lines)
 
@@ -192,7 +198,8 @@ class SubtitleGenerator:
                 for word in chunk:
                     dur_cs = int((word["end"] - word["start"]) * 100)
                     tagged.append(f"{{\\kf{dur_cs}}}{word['word'].strip()}")
-                lines.append(f"Dialogue: 0,{s},{e},Default,,0,0,0,,{' '.join(tagged)}")
+                # _POP: fade-in + scale bounce on the whole chunk; \kf handles per-word colour
+                lines.append(f"Dialogue: 0,{s},{e},Default,,0,0,0,,{_POP}{' '.join(tagged)}")
         return header + "\n".join(lines)
 
     def _make_ass_header(self, style_name: str) -> str:

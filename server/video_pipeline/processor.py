@@ -7,7 +7,7 @@ from .subtitles import SubtitleGenerator, SUBTITLE_STYLES, FONTS_DIR
 
 logger = logging.getLogger(__name__)
 
-LAYOUTS = ['marketing_top', 'marketing_bottom']
+LAYOUTS = ['marketing_top']
 SUBTITLE_STYLE_NAMES = list(SUBTITLE_STYLES.keys())
 
 TARGET_W = int(os.environ.get("VIDEO_WIDTH", "1080"))
@@ -79,11 +79,12 @@ class VideoProcessor:
         # bypassing any fontconfig cache issues on headless servers.
         sub_opts = f"fontsdir='{safe_fonts}'"
         final = f"scale={TARGET_W}:{TARGET_H},setsar=1"
-        # ASS MarginV = distance from video bottom to text bottom (Alignment=2, bottom-center).
-        # marketing_top:   panel y=0..HALF_H → MarginV = HALF_H+30 = 990 (30px above boundary).
-        # marketing_bottom: panel y=HALF_H..TARGET_H → default style MarginV≈30 is correct.
+        # Subtitles are always on the CLIP panel (bottom half, y=HALF_H..TARGET_H).
+        # Alignment=2 (bottom-center): MarginV = distance from video bottom to text bottom.
+        # To center text in the clip panel: MarginV = HALF_H // 2 = 480
+        # → text bottom at y = TARGET_H - 480 = 1440 = vertical center of clip panel.
+        sub_margin = HALF_H // 2
         if layout == 'marketing_top':
-            sub_margin = HALF_H + 30
             filter_complex = (
                 f"[0:v]{marketing_filter}[top];"
                 f"[1:v]{clip_filter}[bot];"
@@ -93,11 +94,13 @@ class VideoProcessor:
             inputs = [marketing_path, clip_path]
             audio_input_idx = 0
         else:
+            # clip on top → clip panel is y=0..HALF_H, center at y=HALF_H//2=480
+            clip_sub_margin = TARGET_H - HALF_H // 2
             filter_complex = (
                 f"[0:v]{clip_filter}[top];"
                 f"[1:v]{marketing_filter}[bot];"
                 f"[top][bot]vstack=inputs=2[stacked];"
-                f"[stacked]subtitles='{safe_sub}':{sub_opts},{final}[v]"
+                f"[stacked]subtitles='{safe_sub}':{sub_opts}:force_style='MarginV={clip_sub_margin}',{final}[v]"
             )
             inputs = [clip_path, marketing_path]
             audio_input_idx = 1
