@@ -55,7 +55,7 @@ class LibraryManager:
 
         output_path = os.path.join(raw_dir, f"{video_id}.mp4")
         try:
-            self._download_via_cobalt(url, output_path)
+            self._download_via_invidious(url, output_path)
             logger.info(f"Downloaded via Cobalt: {output_path}")
             return output_path
         except Exception as e:
@@ -82,42 +82,53 @@ class LibraryManager:
                 return path
         raise RuntimeError(f"Download failed for video_id={video_id}")
 
-    def _download_via_cobalt(self, url: str, output_path: str) -> None:
+    _INVIDIOUS_INSTANCES = [
+        "https://inv.nadeko.net",
+        "https://invidious.privacydev.net",
+        "https://invidious.nerdvpn.de",
+        "https://invidious.io",
+    ]
+
+    def _download_via_invidious(self, url: str, output_path: str) -> None:
         import requests as _req
-        resp = _req.post(
-            "https://api.cobalt.tools/",
-            json={"url": url, "videoQuality": "1080", "youtubeVideoCodec": "h264"},
-            headers={"Accept": "application/json", "Content-Type": "application/json"},
-            timeout=30,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        status = data.get("status")
+        video_id = self._extract_video_id(url)
+        last_err = None
+        for instance in self._INVIDIOUS_INSTANCES:
+            try:
+                r = _req.get(f"{instance}/api/v1/videos/{video_id}", timeout=15)
+                r.raise_for_status()
+                data = r.json()
 
-        if status in ("tunnel", "stream", "redirect"):
-            self._stream_to_file(data["url"], output_path)
-
-        elif status == "picker":
-            # Separate video and audio streams — merge with ffmpeg
-            video_url = next((p["url"] for p in data["picker"] if p.get("type") == "video"), None)
-            audio_url = next((p["url"] for p in data["picker"] if p.get("type") == "audio"), None)
-            if not video_url:
-                raise RuntimeError("Cobalt picker: no video stream found")
-            tmp_video = output_path + ".vtmp"
-            tmp_audio = output_path + ".atmp"
-            self._stream_to_file(video_url, tmp_video)
-            if audio_url:
-                self._stream_to_file(audio_url, tmp_audio)
-                subprocess.run(
-                    ["ffmpeg", "-y", "-i", tmp_video, "-i", tmp_audio, "-c", "copy", output_path],
-                    capture_output=True, check=True,
+                adaptive = data.get("adaptiveFormats", [])
+                videos = sorted(
+                    [f for f in adaptive if "video/mp4" in f.get("type", "")],
+                    key=lambda x: x.get("bitrate", 0), reverse=True,
                 )
-                os.remove(tmp_video)
-                os.remove(tmp_audio)
-            else:
-                os.rename(tmp_video, output_path)
-        else:
-            raise RuntimeError(f"Cobalt error: {data.get('error', {}).get('code', status)}")
+                audios = sorted(
+                    [f for f in adaptive if "audio/mp4" in f.get("type", "")],
+                    key=lambda x: x.get("bitrate", 0), reverse=True,
+                )
+                if not videos:
+                    raise RuntimeError("no mp4 video streams found")
+
+                tmp_video = output_path + ".vtmp"
+                tmp_audio = output_path + ".atmp"
+                self._stream_to_file(videos[0]["url"], tmp_video)
+                if audios:
+                    self._stream_to_file(audios[0]["url"], tmp_audio)
+                    subprocess.run(
+                        ["ffmpeg", "-y", "-i", tmp_video, "-i", tmp_audio, "-c", "copy", output_path],
+                        capture_output=True, check=True,
+                    )
+                    os.remove(tmp_video)
+                    os.remove(tmp_audio)
+                else:
+                    os.rename(tmp_video, output_path)
+                return
+            except Exception as e:
+                last_err = e
+                logger.warning(f"Invidious instance {instance} failed: {e}")
+        raise RuntimeError(f"All Invidious instances failed: {last_err}")
 
     @staticmethod
     def _stream_to_file(url: str, path: str) -> None:
