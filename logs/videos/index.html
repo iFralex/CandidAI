@@ -46,6 +46,11 @@ header h1 { font-size:20px; font-weight:700; color:white; }
 .btn-primary { background:linear-gradient(135deg,var(--purple),var(--purple-dark)); color:white; }
 .btn-approve { background:var(--green); color:#0f0f1a; }
 .btn-reject  { background:var(--red); color:#0f0f1a; }
+.stars { display:flex; gap:4px; margin-bottom:8px; }
+.stars span { font-size:22px; cursor:pointer; color:var(--border); transition:color .15s; line-height:1; }
+.stars span.on { color:var(--yellow); }
+.stars:hover span { color:var(--yellow); }
+.stars span:hover ~ span { color:var(--border); }
 .tabs { display:flex; gap:4px; margin-bottom:24px;
         border-bottom:1px solid var(--border); }
 .tab { padding:10px 20px; cursor:pointer; font-size:14px; color:var(--text-dim);
@@ -189,9 +194,35 @@ function switchTab(name) {
 
 const styleEmoji = {bold_yellow:'🟡',minimal_white:'⬜',dark_band:'⬛',outlined_color:'🔴',word_pop:'✨'};
 
-function makeVideoCard(v, showActions) {
+function starsWidget(id, current, onRate) {
+    const stars = [1,2,3,4,5].map(n =>
+        `<span id="star-${id}-${n}" class="${n <= (current||0) ? 'on' : ''}"
+            onmouseover="highlightStars('${id}',${n})"
+            onmouseout="highlightStars('${id}',${onRate === 'approve' ? 0 : (current||0)})"
+            onclick="${onRate === 'approve' ? `rateAndApprove` : `reRate`}('${id}',${n})">★</span>`
+    ).join('');
+    return `<div class="stars" id="stars-${id}">${stars}</div>`;
+}
+
+function highlightStars(id, n) {
+    for (let i = 1; i <= 5; i++)
+        document.getElementById(`star-${id}-${i}`)?.classList.toggle('on', i <= n);
+}
+
+function makeVideoCard(v, mode) {
+    // mode: 'pending' | 'approved'
     const videoUrl = FLASK_BASE + '/videos/' + v.id;
     const layoutLabel = v.layout === 'marketing_top' ? '↑ Marketing sopra' : '↓ Marketing sotto';
+    const actions = mode === 'pending'
+        ? `${starsWidget(v.id, 0, 'approve')}
+           <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">Seleziona stelle per approvare</div>
+           <div class="video-actions">
+               <button class="btn btn-reject" onclick="reject('${v.id}')">✕ Rifiuta</button>
+           </div>`
+        : `${starsWidget(v.id, v.rating || 0, 'rate')}
+           <div style="font-size:12px;color:var(--text-dim)">
+               ${v.scheduled_for ? new Date(v.scheduled_for).toLocaleString('it-IT') : '—'} · ${v.platform||'—'}
+           </div>`;
     return `<div class="video-card" id="card-${v.id}">
         <video src="${videoUrl}" controls preload="metadata" playsinline></video>
         <div class="video-meta">
@@ -199,14 +230,7 @@ function makeVideoCard(v, showActions) {
                 <span class="tag layout">${layoutLabel}</span>
                 <span class="tag style">${styleEmoji[v.subtitle_style]||''} ${v.subtitle_style}</span>
             </div>
-            ${showActions
-                ? `<div class="video-actions">
-                    <button class="btn btn-approve" onclick="approve('${v.id}')">✓ Approva</button>
-                    <button class="btn btn-reject" onclick="reject('${v.id}')">✕ Rifiuta</button>
-                   </div>`
-                : `<div style="font-size:12px;color:var(--text-dim)">
-                    ${v.scheduled_for ? new Date(v.scheduled_for).toLocaleString('it-IT') : '—'} · ${v.platform||'—'}
-                   </div>`}
+            ${actions}
         </div></div>`;
 }
 
@@ -216,7 +240,7 @@ async function loadPending() {
         const videos = await api('/api/videos/pending');
         document.getElementById('pending-count').textContent = videos.length;
         grid.innerHTML = videos.length
-            ? videos.map(v => makeVideoCard(v, true)).join('')
+            ? videos.map(v => makeVideoCard(v, 'pending')).join('')
             : '<div class="empty">Nessun video in attesa.</div>';
     } catch(e) { grid.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
 }
@@ -226,7 +250,7 @@ async function loadApproved() {
     try {
         const videos = await api('/api/videos/approved');
         grid.innerHTML = videos.length
-            ? videos.map(v => makeVideoCard(v, false)).join('')
+            ? videos.map(v => makeVideoCard(v, 'approved')).join('')
             : '<div class="empty">Nessun video approvato.</div>';
     } catch(e) { grid.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
 }
@@ -281,12 +305,28 @@ async function loadBufferStatus() {
     }
 }
 
-async function approve(id) {
+async function rateAndApprove(id, rating) {
     try {
-        await api('/api/videos/'+id+'/approve', {method:'POST'});
+        await api('/api/videos/'+id+'/approve', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({rating})
+        });
         document.getElementById('card-'+id)?.remove();
-        toast('Video approvato ✓');
+        toast(`Video approvato ${'★'.repeat(rating)}`);
         loadBufferStatus();
+    } catch(e) { toast('Errore: '+e.message, 'var(--red)'); }
+}
+
+async function reRate(id, rating) {
+    try {
+        await api('/api/videos/'+id+'/rate', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({rating})
+        });
+        highlightStars(id, rating);
+        toast(`Valutazione aggiornata ${'★'.repeat(rating)}`);
     } catch(e) { toast('Errore: '+e.message, 'var(--red)'); }
 }
 
