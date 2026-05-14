@@ -115,10 +115,14 @@ class LibraryManager:
         video_stream.download(filename=tmp_video)
         if audio_stream:
             audio_stream.download(filename=tmp_audio)
-            subprocess.run(
-                ["ffmpeg", "-y", "-i", tmp_video, "-i", tmp_audio, "-c", "copy", output_path],
-                capture_output=True, check=True,
+            result = subprocess.run(
+                ["ffmpeg", "-y", "-i", tmp_video, "-i", tmp_audio,
+                 "-c:v", "copy", "-c:a", "aac", "-strict", "experimental", output_path],
+                capture_output=True,
             )
+            if result.returncode != 0:
+                logger.error(f"ffmpeg merge failed: {result.stderr.decode(errors='replace')}")
+                raise RuntimeError(f"ffmpeg exited with code {result.returncode}")
             os.remove(tmp_video)
             os.remove(tmp_audio)
         else:
