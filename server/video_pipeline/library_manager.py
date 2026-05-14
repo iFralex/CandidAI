@@ -110,21 +110,21 @@ class LibraryManager:
         if not video_stream:
             raise RuntimeError("pytubefix: no video stream found")
 
-        tmp_video = output_path + ".vtmp"
-        tmp_audio = output_path + ".atmp"
-        video_stream.download(filename=tmp_video)
+        out_dir = os.path.dirname(output_path)
+        video_id = os.path.basename(output_path).replace(".mp4", "")
+        tmp_video = video_stream.download(output_path=out_dir, filename=f"{video_id}_v.tmp")
         if audio_stream:
-            audio_stream.download(filename=tmp_audio)
+            tmp_audio = audio_stream.download(output_path=out_dir, filename=f"{video_id}_a.tmp")
             result = subprocess.run(
                 ["ffmpeg", "-y", "-i", tmp_video, "-i", tmp_audio,
                  "-c:v", "copy", "-c:a", "aac", "-strict", "experimental", output_path],
                 capture_output=True,
             )
+            os.remove(tmp_video)
+            os.remove(tmp_audio)
             if result.returncode != 0:
                 logger.error(f"ffmpeg merge failed: {result.stderr.decode(errors='replace')}")
                 raise RuntimeError(f"ffmpeg exited with code {result.returncode}")
-            os.remove(tmp_video)
-            os.remove(tmp_audio)
         else:
             os.rename(tmp_video, output_path)
 
