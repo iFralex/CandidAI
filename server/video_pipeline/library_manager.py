@@ -134,15 +134,20 @@ class LibraryManager:
                 result_ids.append(group_ids[0])
             else:
                 merged_path = self._concat_clips([c['file_path'] for c in group_clips])
-                duration = self._get_duration(merged_path)
-                merged_id = self.db.create_clip(
-                    source_url=group_clips[0]['source_url'],
-                    file_path=merged_path,
-                    duration=duration,
-                    category=category,
-                )
-                for cid in group_ids:
-                    self.db.increment_clip_used(cid)
+                # Idempotent: reuse existing DB entry for this merged file if present
+                existing = self.db.get_clip_by_file_path(merged_path)
+                if existing:
+                    merged_id = existing['id']
+                else:
+                    duration = self._get_duration(merged_path)
+                    merged_id = self.db.create_clip(
+                        source_url=group_clips[0]['source_url'],
+                        file_path=merged_path,
+                        duration=duration,
+                        category=category,
+                    )
+                    for cid in group_ids:
+                        self.db.increment_clip_used(cid)
                 logger.info(
                     f"Merged {len(group_ids)} clips ({total:.1f}s >= {min_duration:.1f}s) → {merged_id}"
                 )

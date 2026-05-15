@@ -103,16 +103,23 @@ class Database:
             )
 
     def list_unprocessed_clips_by_url(self, source_url: str) -> list[dict]:
-        """Return clips that were split but never had any variant generated."""
+        """Return clips split from this URL that have never been composited.
+        Excludes clips already consumed by a merge (used_count > 0)."""
         with self._conn() as conn:
             rows = conn.execute("""
                 SELECT c.* FROM clips c
                 WHERE c.source_url = ?
+                AND c.used_count = 0
                 AND NOT EXISTS (
                     SELECT 1 FROM processed_videos pv WHERE pv.clip_id = c.id
                 )
             """, (source_url,)).fetchall()
             return [dict(r) for r in rows]
+
+    def get_clip_by_file_path(self, file_path: str):
+        with self._conn() as conn:
+            row = conn.execute("SELECT * FROM clips WHERE file_path=?", (file_path,)).fetchone()
+            return dict(row) if row else None
 
     def create_clip(self, source_url: str, file_path: str, duration: float, category: str) -> str:
         clip_id = str(uuid.uuid4())
