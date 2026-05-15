@@ -101,7 +101,9 @@ def _vp_storage():
 
 def _vp_db():
     from server.video_pipeline.db import Database
-    return Database(_os.path.join(_vp_storage(), "pipeline.db"))
+    storage = _vp_storage()
+    _os.makedirs(storage, exist_ok=True)
+    return Database(_os.path.join(storage, "pipeline.db"))
 
 
 def _video_duration(path: str) -> float:
