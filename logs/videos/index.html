@@ -240,8 +240,7 @@ header h1 { font-size:20px; font-weight:700; color:white; }
                     style="width:70px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none">
                 <span style="font-size:13px;color:var(--text-dim)">descrizioni</span>
                 <button class="btn btn-primary" onclick="copyDescriptionsPrompt()">📋 Copia</button>
-                <a href="https://candidai.tech/docs/complete-platform-documentation" target="_blank"
-                   style="font-size:13px;color:var(--purple);text-decoration:none;margin-left:8px">📄 Documentazione piattaforma ↗</a>
+                <button class="btn" id="btn-copy-docs" onclick="copyPlatformDocs()" style="margin-left:8px">📄 Copia documentazione</button>
             </div>
         </div>
         <div class="caption-list" id="captions-list"><div class="empty">Caricamento...</div></div>
@@ -688,6 +687,25 @@ async function copyDescriptionsPrompt() {
         await navigator.clipboard.writeText(lines.join('\n'));
         toast(`✓ ${selected.length} descrizioni copiate`);
     } catch(e) { toast('Errore copia: '+e.message, 'var(--red)'); }
+}
+
+async function copyPlatformDocs() {
+    const btn = document.getElementById('btn-copy-docs');
+    const original = btn.textContent;
+    btn.textContent = '⏳ Caricamento...';
+    btn.disabled = true;
+    try {
+        const res = await fetch('https://candidai.tech/api/docs/complete-platform-documentation?lang=en');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const md = await res.text();
+        await navigator.clipboard.writeText(md);
+        btn.textContent = '✓ Copiata!';
+        setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
+    } catch(e) {
+        btn.textContent = original;
+        btn.disabled = false;
+        toast('Errore: ' + e.message, 'var(--red)');
+    }
 }
 
 async function deleteCaption(id) {
