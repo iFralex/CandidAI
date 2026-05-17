@@ -88,66 +88,71 @@ def _get_next_slots(count: int) -> list[str]:
 
 
 def fill_buffer_queue():
-    """Daily job: top up Buffer queue to QUEUE_MAX with approved videos."""
+    """Daily job: publish each approved video to ALL configured platforms at the same slot."""
     from .buffer_client import BufferClient
     from .db import Database
 
     logger.info("fill_buffer_queue: starting")
     db = Database(DB_PATH)
     buffer = BufferClient(BUFFER_API_KEY)
-    channels = [
-        ("tiktok", BUFFER_TIKTOK_CHANNEL_ID),
-        ("instagram", BUFFER_INSTAGRAM_CHANNEL_ID),
-    ]
-    for platform, channel_id in channels:
+
+    # Probe each platform: skip unconfigured or unreachable ones
+    active = []
+    for platform, channel_id in [("tiktok", BUFFER_TIKTOK_CHANNEL_ID),
+                                  ("instagram", BUFFER_INSTAGRAM_CHANNEL_ID)]:
         if not channel_id:
-            logger.warning(f"fill_buffer_queue: no channel ID set for {platform}, skipping")
+            logger.warning(f"fill_buffer_queue: no channel ID for {platform}, skipping")
             continue
-        # Re-fetch each iteration so videos published for the previous platform
-        # are excluded (their status is now 'published', not 'approved')
-        approved = db.list_approved_videos()
-        if not approved:
-            logger.info(f"fill_buffer_queue: no approved videos remaining, stopping")
-            break
-
         try:
-            current_count = buffer.get_scheduled_count(channel_id)
+            count = buffer.get_scheduled_count(channel_id)
+            free = max(0, QUEUE_MAX - count)
+            logger.info(f"fill_buffer_queue: {platform} {count}/{QUEUE_MAX} scheduled, {free} free")
+            if free > 0:
+                active.append((platform, channel_id, free))
         except Exception as e:
-            logger.error(f"fill_buffer_queue: could not fetch Buffer queue for {platform}: {e}")
-            continue
+            logger.error(f"fill_buffer_queue: could not fetch {platform} queue: {e}")
 
-        slots_needed = max(0, QUEUE_MAX - current_count)
-        if slots_needed == 0:
-            logger.info(f"fill_buffer_queue: {platform} queue full ({QUEUE_MAX}), skipping")
-            continue
+    if not active:
+        logger.info("fill_buffer_queue: all queues full or unavailable")
+        return
 
-        videos_to_add = approved[:slots_needed]
+    # Publish as many videos as the most-constrained platform allows
+    slots_available = min(free for _, _, free in active)
+    approved = db.list_approved_videos()
+    if not approved:
+        logger.info("fill_buffer_queue: no approved videos")
+        return
 
-        if not videos_to_add:
-            logger.info(f"fill_buffer_queue: no videos available for {platform}")
-            continue
+    videos_to_add = approved[:slots_available]
+    base_url = _build_base_url()
+    slots = _get_next_slots(len(videos_to_add))
 
-        base_url = _build_base_url()
-        slots = _get_next_slots(len(videos_to_add))
-        for video, slot in zip(videos_to_add, slots):
-            video_url = f"{base_url}/videos/{video['id']}"
-            cap = db.get_next_caption()
-            if cap:
-                caption = cap['text']
-                db.mark_caption_used(cap['id'])
-            else:
-                caption = _FALLBACK_CAPTION
+    for video, slot in zip(videos_to_add, slots):
+        video_url = f"{base_url}/videos/{video['id']}"
+        cap = db.get_next_caption()
+        caption = cap['text'] if cap else _FALLBACK_CAPTION
+        if cap:
+            db.mark_caption_used(cap['id'])
+
+        published = []
+        primary_post_id = None
+        for platform, channel_id, _ in active:
             try:
                 post_id = buffer.create_post(channel_id, video_url, caption, slot)
-                db.mark_published(
-                    video['id'],
-                    buffer_post_id=post_id,
-                    scheduled_for=slot,
-                    platform=platform
-                )
+                published.append(platform)
+                if primary_post_id is None:
+                    primary_post_id = post_id
                 logger.info(f"fill_buffer_queue: scheduled {video['id']} on {platform} at {slot}")
             except Exception as e:
-                logger.error(f"fill_buffer_queue: failed to schedule {video['id']} on {platform}: {e}")
+                logger.error(f"fill_buffer_queue: failed {video['id']} on {platform}: {e}")
+
+        if published:
+            db.mark_published(
+                video['id'],
+                buffer_post_id=primary_post_id,
+                scheduled_for=slot,
+                platform="+".join(published),
+            )
 
     logger.info("fill_buffer_queue: complete")
 
