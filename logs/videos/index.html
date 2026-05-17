@@ -191,12 +191,10 @@ header h1 { font-size:20px; font-weight:700; color:white; }
         <div class="tab" onclick="switchTab('approved')">Approvati</div>
         <div class="tab" onclick="switchTab('stats')">Statistiche</div>
         <div class="tab" onclick="switchTab('library')">Libreria clip</div>
-        <div class="tab" onclick="switchTab('sources')">Sorgenti YouTube</div>
         <button class="btn-review" style="margin-left:auto;margin-bottom:4px" onclick="openReview()">▶ Revisiona</button>
     </div>
     <div id="tab-pending"><div class="video-grid" id="pending-grid"><div class="empty">Caricamento...</div></div></div>
     <div id="tab-approved" style="display:none"><div class="video-grid" id="approved-grid"><div class="empty">Caricamento...</div></div></div>
-    <div id="tab-sources" style="display:none"><div class="sources-grid" id="sources-grid"><div class="empty">Caricamento...</div></div></div>
     <div id="tab-stats" style="display:none">
         <table class="stats-table">
             <thead><tr>
@@ -206,7 +204,7 @@ header h1 { font-size:20px; font-weight:700; color:white; }
             <tbody id="stats-tbody"><tr><td colspan="7" class="empty">Caricamento...</td></tr></tbody>
         </table>
     </div>
-    <div id="tab-library" style="display:none"><div class="lib-grid" id="library-grid"><div class="empty">Caricamento...</div></div></div>
+    <div id="tab-library" style="display:none"><div class="sources-grid" id="library-grid"><div class="empty">Caricamento...</div></div></div>
 
 </div>
 
@@ -268,7 +266,7 @@ function toast(msg, color = 'var(--green)') {
 }
 
 function switchTab(name) {
-    const names = ['pending','approved','stats','library','sources'];
+    const names = ['pending','approved','stats','library'];
     document.querySelectorAll('.tab').forEach((t,i) =>
         t.classList.toggle('active', names[i] === name));
     names.forEach(n =>
@@ -368,15 +366,43 @@ async function loadStats() {
 async function loadLibrary() {
     const grid = document.getElementById('library-grid');
     try {
-        const clips = await api('/api/videos/library');
-        if (!clips.length) { grid.innerHTML = '<div class="empty">Libreria vuota. Aggiungi URL YouTube sopra.</div>'; return; }
-        const byCategory = {};
-        clips.forEach(c => { if (!byCategory[c.category]) byCategory[c.category]=[]; byCategory[c.category].push(c); });
-        grid.innerHTML = Object.entries(byCategory).map(([cat,cls]) => `
-            <div class="lib-card">
-                <div class="cat">${cat}</div>
-                <div class="meta">${cls.length} clip · Usate ${cls.reduce((a,c)=>a+c.used_count,0)} volte</div>
-            </div>`).join('');
+        const sources = await api('/api/videos/sources');
+        if (!sources.length) {
+            grid.innerHTML = '<div class="empty">Libreria vuota. Aggiungi un URL YouTube sopra.</div>';
+            return;
+        }
+        grid.innerHTML = sources.map(s => {
+            const thumbUrl = s.video_id
+                ? `https://img.youtube.com/vi/${s.video_id}/mqdefault.jpg` : '';
+            const ytLink = s.video_id
+                ? `https://www.youtube.com/watch?v=${s.video_id}` : s.source_url;
+            const opts = CATEGORIES.map(c =>
+                `<option value="${c.value}"${c.value===s.category?' selected':''}>${c.label}</option>`
+            ).join('');
+            const intervalStr = (s.intervals||[]).length
+                ? (s.intervals||[]).map(i =>
+                    `${fmtSeconds(i.start_time)} – ${fmtSeconds(i.end_time)}`
+                  ).join(', ')
+                : 'Intero video';
+            const durMin = Math.round((s.total_duration||0) / 60);
+            return `<div class="source-card">
+                ${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : ''}
+                <div class="source-meta">
+                    <h3><a href="${ytLink}" target="_blank">${s.video_id || s.source_url}</a></h3>
+                    <div class="source-stats">
+                        <span>${s.clips_count} clip · ${durMin} min</span>
+                        ${s.pending_count   ? `<span style="color:var(--text-dim)">${s.pending_count} in att.</span>` : ''}
+                        ${s.approved_count  ? `<span style="color:var(--green)">${s.approved_count} appr.</span>` : ''}
+                        ${s.published_count ? `<span style="color:var(--purple)">${s.published_count} pubb.</span>` : ''}
+                        ${s.rejected_count  ? `<span style="color:var(--red)">${s.rejected_count} rif.</span>` : ''}
+                    </div>
+                    <div class="source-intervals">📍 ${intervalStr}</div>
+                    <select onchange="updateSourceCategory('${encodeURIComponent(s.source_url)}', this.value)">
+                        ${opts}
+                    </select>
+                </div>
+            </div>`;
+        }).join('');
     } catch(e) { grid.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
 }
 
@@ -469,7 +495,6 @@ function loadTab(name) {
     else if (name==='approved') loadApproved();
     else if (name==='stats') loadStats();
     else if (name==='library') loadLibrary();
-    else if (name==='sources') loadSources();
 }
 
 // ── Sources tab ──────────────────────────────────────────────────────────────
@@ -489,49 +514,6 @@ function fmtSeconds(s) {
     const sec = Math.floor(s % 60);
     if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
     return `${m}:${String(sec).padStart(2,'0')}`;
-}
-
-async function loadSources() {
-    const grid = document.getElementById('sources-grid');
-    try {
-        const sources = await api('/api/videos/sources');
-        if (!sources.length) {
-            grid.innerHTML = '<div class="empty">Nessun video YouTube ancora aggiunto.</div>';
-            return;
-        }
-        grid.innerHTML = sources.map(s => {
-            const thumbUrl = s.video_id
-                ? `https://img.youtube.com/vi/${s.video_id}/mqdefault.jpg` : '';
-            const ytLink = s.video_id
-                ? `https://www.youtube.com/watch?v=${s.video_id}` : s.source_url;
-            const opts = CATEGORIES.map(c =>
-                `<option value="${c.value}"${c.value===s.category?' selected':''}>${c.label}</option>`
-            ).join('');
-            const intervalStr = (s.intervals||[]).length
-                ? (s.intervals||[]).map(i =>
-                    `${fmtSeconds(i.start_time)} – ${fmtSeconds(i.end_time)}`
-                  ).join(', ')
-                : 'Intero video';
-            const durMin = Math.round((s.total_duration||0) / 60);
-            return `<div class="source-card">
-                ${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : ''}
-                <div class="source-meta">
-                    <h3><a href="${ytLink}" target="_blank">${s.video_id || s.source_url}</a></h3>
-                    <div class="source-stats">
-                        <span>${s.clips_count} clip · ${durMin} min</span>
-                        ${s.pending_count   ? `<span style="color:var(--text-dim)">${s.pending_count} in att.</span>` : ''}
-                        ${s.approved_count  ? `<span style="color:var(--green)">${s.approved_count} appr.</span>` : ''}
-                        ${s.published_count ? `<span style="color:var(--purple)">${s.published_count} pubb.</span>` : ''}
-                        ${s.rejected_count  ? `<span style="color:var(--red)">${s.rejected_count} rif.</span>` : ''}
-                    </div>
-                    <div class="source-intervals">📍 ${intervalStr}</div>
-                    <select onchange="updateSourceCategory('${encodeURIComponent(s.source_url)}', this.value)">
-                        ${opts}
-                    </select>
-                </div>
-            </div>`;
-        }).join('');
-    } catch(e) { grid.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
 }
 
 async function updateSourceCategory(encodedUrl, category) {
