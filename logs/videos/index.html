@@ -127,6 +127,18 @@ header h1 { font-size:20px; font-weight:700; color:white; }
 .source-card select { background:var(--bg); border:1px solid var(--border); border-radius:6px;
                       padding:7px 10px; color:var(--text); font-size:13px; width:100%; outline:none; }
 .source-card select:focus { border-color:var(--purple); }
+/* Captions tab */
+.caption-input { width:100%; min-height:140px; background:var(--bg); border:1px solid var(--border);
+                 border-radius:8px; padding:12px 14px; color:var(--text); font-size:13px;
+                 font-family:inherit; resize:vertical; outline:none; line-height:1.6; }
+.caption-input:focus { border-color:var(--purple); }
+.caption-list { display:flex; flex-direction:column; gap:10px; margin-top:20px; }
+.caption-card { background:var(--surface2); border:1px solid var(--border); border-radius:10px;
+                padding:14px 16px; display:flex; gap:12px; align-items:flex-start; }
+.caption-card .cap-text { flex:1; font-size:13px; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
+.caption-card .cap-meta { font-size:11px; color:var(--text-dim); margin-top:6px; }
+.cap-badge { font-size:11px; padding:3px 8px; border-radius:20px;
+             background:rgba(102,126,234,.15); color:var(--purple); white-space:nowrap; }
 /* Publication order */
 .pos-badge { font-size:18px; font-weight:700; color:var(--purple); white-space:nowrap; }
 .pub-info { display:flex; align-items:center; gap:10px; margin-top:6px; }
@@ -197,12 +209,25 @@ header h1 { font-size:20px; font-weight:700; color:white; }
     <div class="tabs" style="align-items:center">
         <div class="tab active" onclick="switchTab('pending')">In attesa</div>
         <div class="tab" onclick="switchTab('approved')">Approvati</div>
+        <div class="tab" onclick="switchTab('captions')">Descrizioni</div>
         <div class="tab" onclick="switchTab('stats')">Statistiche</div>
         <div class="tab" onclick="switchTab('library')">Libreria clip</div>
         <button class="btn-review" style="margin-left:auto;margin-bottom:4px" onclick="openReview()">▶ Revisiona</button>
     </div>
     <div id="tab-pending"><div class="video-grid" id="pending-grid"><div class="empty">Caricamento...</div></div></div>
     <div id="tab-approved" style="display:none"><div class="video-grid" id="approved-grid"><div class="empty">Caricamento...</div></div></div>
+    <div id="tab-captions" style="display:none">
+        <div class="panel">
+            <h2>Aggiungi descrizioni</h2>
+            <textarea class="caption-input" id="captions-input"
+                placeholder="Descrizione 1&#10;--&#10;Descrizione 2&#10;--&#10;Descrizione 3"></textarea>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:12px">
+                <button class="btn btn-primary" onclick="addCaptions()">+ Aggiungi</button>
+                <span id="captions-add-msg" style="font-size:13px;color:var(--text-dim)"></span>
+            </div>
+        </div>
+        <div class="caption-list" id="captions-list"><div class="empty">Caricamento...</div></div>
+    </div>
     <div id="tab-stats" style="display:none">
         <table class="stats-table">
             <thead><tr>
@@ -296,7 +321,7 @@ function toast(msg, color = 'var(--green)') {
 }
 
 function switchTab(name) {
-    const names = ['pending','approved','stats','library'];
+    const names = ['pending','approved','captions','stats','library'];
     document.querySelectorAll('.tab').forEach((t,i) =>
         t.classList.toggle('active', names[i] === name));
     names.forEach(n =>
@@ -550,8 +575,65 @@ async function ingestVideo() {
 function loadTab(name) {
     if (name==='pending') loadPending();
     else if (name==='approved') loadApproved();
+    else if (name==='captions') loadCaptions();
     else if (name==='stats') loadStats();
     else if (name==='library') loadLibrary();
+}
+
+// ── Captions tab ─────────────────────────────────────────────────────────────
+async function loadCaptions() {
+    const list = document.getElementById('captions-list');
+    try {
+        const caps = await api('/api/videos/captions');
+        if (!caps.length) {
+            list.innerHTML = '<div class="empty">Nessuna descrizione ancora. Aggiungine una sopra.</div>';
+            return;
+        }
+        list.innerHTML = caps.map((c, i) => {
+            const meta = c.use_count === 0
+                ? 'Mai usata'
+                : `Usata ${c.use_count} volt${c.use_count === 1 ? 'a' : 'e'}` +
+                  (c.last_used_at ? ` · Ultima: ${new Date(c.last_used_at).toLocaleString('it-IT')}` : '');
+            const nextLabel = i === 0 ? '<span class="cap-badge">▶ Prossima</span>' : '';
+            return `<div class="caption-card" id="cap-${c.id}">
+                <div style="flex:1">
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                        ${nextLabel}
+                        <span class="cap-meta">${meta}</span>
+                    </div>
+                    <div class="cap-text">${c.text.replace(/</g,'&lt;')}</div>
+                </div>
+                <button class="btn btn-reject" style="padding:6px 10px;font-size:12px;flex-shrink:0"
+                    onclick="deleteCaption('${c.id}')">✕</button>
+            </div>`;
+        }).join('');
+    } catch(e) { list.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
+}
+
+async function addCaptions() {
+    const raw = document.getElementById('captions-input').value;
+    const msg = document.getElementById('captions-add-msg');
+    if (!raw.trim()) { msg.textContent = 'Inserisci almeno una descrizione.'; return; }
+    try {
+        const res = await api('/api/videos/captions', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({text: raw})
+        });
+        document.getElementById('captions-input').value = '';
+        msg.textContent = `✓ ${res.added} descrizione${res.added !== 1 ? 'i' : ''} aggiunta${res.added !== 1 ? 'e' : ''}.`;
+        loadCaptions();
+        setTimeout(() => { msg.textContent = ''; }, 3000);
+    } catch(e) { msg.textContent = 'Errore: '+e.message; }
+}
+
+async function deleteCaption(id) {
+    try {
+        await api('/api/videos/captions/'+id, {method: 'DELETE'});
+        document.getElementById('cap-'+id)?.remove();
+        // Re-render to update 'Prossima' badge
+        loadCaptions();
+    } catch(e) { toast('Errore: '+e.message, 'var(--red)'); }
 }
 
 // ── Sources tab ──────────────────────────────────────────────────────────────

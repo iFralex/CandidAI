@@ -290,6 +290,33 @@ def api_video_sources():
     return _jsonify(result)
 
 
+@app.route('/api/videos/captions', methods=['GET'])
+def api_list_captions():
+    return _jsonify(_vp_db().list_captions())
+
+
+@app.route('/api/videos/captions', methods=['POST'])
+def api_add_captions():
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
+    data = _request.get_json() or {}
+    raw = data.get('text', '')
+    texts = [t.strip() for t in raw.split('--') if t.strip()]
+    if not texts:
+        return _jsonify({"error": "text required"}), 400
+    db = _vp_db()
+    ids = [db.add_caption(t) for t in texts]
+    return _jsonify({"ok": True, "added": len(ids), "ids": ids})
+
+
+@app.route('/api/videos/captions/<caption_id>', methods=['DELETE'])
+def api_delete_caption(caption_id: str):
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
+    _vp_db().delete_caption(caption_id)
+    return _jsonify({"ok": True})
+
+
 @app.route('/api/videos/fill-queue', methods=['POST'])
 def api_fill_buffer_queue():
     if not _api_key_valid():

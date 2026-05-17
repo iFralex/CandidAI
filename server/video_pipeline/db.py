@@ -72,6 +72,14 @@ class Database:
                 );
                 CREATE INDEX IF NOT EXISTS idx_intervals_video ON ingested_intervals(video_id);
 
+                CREATE TABLE IF NOT EXISTS captions (
+                    id TEXT PRIMARY KEY,
+                    text TEXT NOT NULL,
+                    use_count INTEGER DEFAULT 0,
+                    last_used_at TEXT,
+                    created_at TEXT
+                );
+
                 CREATE TABLE IF NOT EXISTS buffer_stats (
                     id TEXT PRIMARY KEY,
                     buffer_post_id TEXT NOT NULL,
@@ -342,6 +350,41 @@ class Database:
     def update_clips_category(self, source_url: str, category: str):
         with self._conn() as conn:
             conn.execute("UPDATE clips SET category=? WHERE source_url=?", (category, source_url))
+
+    def add_caption(self, text: str) -> str:
+        cap_id = str(uuid.uuid4())
+        with self._conn() as conn:
+            conn.execute(
+                "INSERT INTO captions (id, text, use_count, created_at) VALUES (?,?,0,?)",
+                (cap_id, text.strip(), _now())
+            )
+        return cap_id
+
+    def list_captions(self) -> list[dict]:
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT * FROM captions ORDER BY use_count ASC, last_used_at ASC, created_at ASC"
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_next_caption(self) -> Optional[dict]:
+        """Return the caption with lowest use_count, then oldest last_used_at (NULLs first)."""
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM captions ORDER BY use_count ASC, last_used_at ASC, created_at ASC LIMIT 1"
+            ).fetchone()
+            return dict(row) if row else None
+
+    def mark_caption_used(self, caption_id: str):
+        with self._conn() as conn:
+            conn.execute(
+                "UPDATE captions SET use_count = use_count + 1, last_used_at = ? WHERE id = ?",
+                (_now(), caption_id)
+            )
+
+    def delete_caption(self, caption_id: str):
+        with self._conn() as conn:
+            conn.execute("DELETE FROM captions WHERE id = ?", (caption_id,))
 
     def list_stats(self, limit: int = 200) -> list[dict]:
         with self._conn() as conn:

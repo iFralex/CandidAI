@@ -3,7 +3,6 @@ Video pipeline scheduler — run as standalone process on VPS:
     python -m server.video_pipeline.scheduler
 """
 import os
-import hashlib
 import logging
 from datetime import datetime, timezone, timedelta
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -70,19 +69,7 @@ QUEUE_MAX = 10
 # 9 AM, 12 PM, 7 PM Eastern Time (handles DST automatically via zoneinfo)
 POST_TIMES_ET = ["09:00", "12:00", "19:00"]
 
-# Fallback captions used if AI generation fails
-_FALLBACK_CAPTIONS = {
-    "tiktok": [
-        "Stop writing cover letters from scratch. CandidAI does it for you in seconds.\n\nLink in bio 👆\n\n#JobSearch #AI #CareerTips #JobHunting",
-        "Your application is why you're not getting callbacks. CandidAI fixes that.\n\nLink in bio 👆\n\n#JobHunting #AI #CareerAdvice #GetHired",
-        "What if applying to 10 jobs took less time than writing one cover letter?\n\nLink in bio 👆\n\n#JobSearch #AI #Productivity #CareerTips",
-    ],
-    "instagram": [
-        "Job hunting shouldn't feel like a second job. CandidAI writes personalized applications for every role you apply to — instantly.\n\nLink in bio 👆\n\n#JobSearch #AI #CareerTips #CoverLetter #GetHired",
-        "The average cover letter takes 3 hours to write. With CandidAI, it takes seconds. Tailored to every job, every time.\n\nLink in bio 👆\n\n#JobHunting #AITools #CareerAdvice #Productivity",
-        "Generic applications get ignored. CandidAI makes sure yours stands out — personalized, AI-written, every time.\n\nLink in bio 👆\n\n#JobSearch #AI #CoverLetter #CareerGrowth",
-    ],
-}
+_FALLBACK_CAPTION = "Link in bio 👆\n\n#JobSearch #AI #CareerTips #CandidAI #GetHired"
 
 
 def _get_next_slots(count: int) -> list[str]:
@@ -144,7 +131,12 @@ def fill_buffer_queue():
         slots = _get_next_slots(len(videos_to_add))
         for video, slot in zip(videos_to_add, slots):
             video_url = f"{base_url}/videos/{video['id']}"
-            caption = _build_caption(platform, video['id'])
+            cap = db.get_next_caption()
+            if cap:
+                caption = cap['text']
+                db.mark_caption_used(cap['id'])
+            else:
+                caption = _FALLBACK_CAPTION
             try:
                 post_id = buffer.create_post(channel_id, video_url, caption, slot)
                 db.mark_published(
@@ -203,40 +195,6 @@ def collect_buffer_stats():
             total_saved += 1
 
     logger.info(f"collect_buffer_stats: saved {total_saved} stat records")
-
-
-def _build_caption(platform: str, video_id: str = "") -> str:
-    """Generate a unique AI-written caption for the post. Falls back to a hardcoded pool."""
-    char_guide = (
-        "max 150 characters of main text" if platform == "tiktok"
-        else "2-3 short punchy sentences"
-    )
-    prompt = (
-        f"Write a {platform} caption for a short-form video promoting CandidAI.\n\n"
-        f"CandidAI is an AI tool that writes personalized job applications "
-        f"(cover letters and emails) for job seekers in seconds. "
-        f"The link is in the bio (candidai.tech) — do NOT put the URL in the caption.\n\n"
-        f"Requirements:\n"
-        f"- Main text: {char_guide}\n"
-        f"- End with 5-7 relevant hashtags on a new line\n"
-        f"- Include a 'link in bio 👆' call to action\n"
-        f"- Focus on: time-saving, AI, standing out to recruiters, job search pain\n"
-        f"- Tone: authentic and human, not corporate\n"
-        f"- Use a completely different angle and opening line every time\n\n"
-        f"Return ONLY the caption text, no explanation."
-    )
-    try:
-        from server.emails_generation.blog_posts import ai_chat
-        result = ai_chat(prompt, format="str")
-        if result and isinstance(result, str) and len(result) > 20:
-            logger.info(f"AI caption generated for {platform} ({video_id[:8]})")
-            return result
-    except Exception as e:
-        logger.warning(f"AI caption generation failed ({e}), using fallback")
-    # Deterministic fallback: different caption per video_id
-    pool = _FALLBACK_CAPTIONS.get(platform, _FALLBACK_CAPTIONS["instagram"])
-    idx = int(hashlib.md5(video_id.encode()).hexdigest(), 16) % len(pool)
-    return pool[idx]
 
 
 def main():
