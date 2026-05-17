@@ -127,6 +127,10 @@ header h1 { font-size:20px; font-weight:700; color:white; }
 .source-card select { background:var(--bg); border:1px solid var(--border); border-radius:6px;
                       padding:7px 10px; color:var(--text); font-size:13px; width:100%; outline:none; }
 .source-card select:focus { border-color:var(--purple); }
+/* Publication order */
+.pos-badge { font-size:18px; font-weight:700; color:var(--purple); white-space:nowrap; }
+.pub-info { display:flex; align-items:center; gap:10px; margin-top:6px; }
+.pub-dates { display:flex; flex-direction:column; gap:3px; font-size:11px; color:var(--text-dim); }
 </style>
 </head>
 <body>
@@ -230,7 +234,28 @@ header h1 { font-size:20px; font-weight:700; color:white; }
 </div>
 <script>
 const FLASK_BASE = 'http://91.99.227.223:80';
+const QUEUE_MAX = 10;
+const POST_TIMES_UTC = [{h:13,m:30},{h:18,m:0}];
 let globalSpeed = parseFloat(localStorage.getItem('videoSpeed') || '1');
+let bufferCounts = {tiktok: null, instagram: null};
+
+function estimatedSlots(count) {
+    const slots = [];
+    const now = new Date();
+    let dayMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+    while (slots.length < count) {
+        for (const {h, m} of POST_TIMES_UTC) {
+            slots.push(new Date(dayMs + (h * 60 + m) * 60000));
+            if (slots.length >= count) break;
+        }
+        dayMs += 86400000;
+    }
+    return slots;
+}
+
+function fmtSlot(dt) {
+    return dt.toLocaleString('it-IT', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'UTC'}) + ' UTC';
+}
 
 function setGlobalSpeed(s) {
     globalSpeed = s;
@@ -299,8 +324,7 @@ function highlightStars(id, n) {
         document.getElementById(`star-${id}-${i}`)?.classList.toggle('on', i <= n);
 }
 
-function makeVideoCard(v, mode) {
-    // mode: 'pending' | 'approved'
+function makeVideoCard(v, mode, pubInfo = null) {
     const videoUrl = FLASK_BASE + '/videos/' + v.id;
     const layoutLabel = v.layout === 'marketing_top' ? '↑ Marketing sopra' : '↓ Marketing sotto';
     const actions = mode === 'pending'
@@ -310,9 +334,13 @@ function makeVideoCard(v, mode) {
                <button class="btn btn-reject" onclick="reject('${v.id}')">✕ Rifiuta</button>
            </div>`
         : `${starsWidget(v.id, v.rating || 0, 'rate')}
-           <div style="font-size:12px;color:var(--text-dim)">
-               ${v.scheduled_for ? new Date(v.scheduled_for).toLocaleString('it-IT') : '—'} · ${v.platform||'—'}
-           </div>`;
+           ${pubInfo ? `<div class="pub-info">
+               <span class="pos-badge">#${pubInfo.position}</span>
+               <div class="pub-dates">
+                   <span>TikTok: ${pubInfo.tiktok}</span>
+                   <span>Instagram: ${pubInfo.instagram}</span>
+               </div>
+           </div>` : ''}`;
     return `<div class="video-card" id="card-${v.id}">
         <video src="${videoUrl}" controls preload="metadata" playsinline onloadedmetadata="this.playbackRate=${globalSpeed}"></video>
         <div class="video-meta">
@@ -340,8 +368,16 @@ async function loadApproved() {
     const grid = document.getElementById('approved-grid');
     try {
         const videos = await api('/api/videos/approved');
+        const tFree = bufferCounts.tiktok !== null ? Math.max(0, QUEUE_MAX - bufferCounts.tiktok) : null;
+        const iFree = bufferCounts.instagram !== null ? Math.max(0, QUEUE_MAX - bufferCounts.instagram) : null;
+        const tSlots = tFree > 0 ? estimatedSlots(tFree) : [];
+        const iSlots = iFree > 0 ? estimatedSlots(iFree) : [];
         grid.innerHTML = videos.length
-            ? videos.map(v => makeVideoCard(v, 'approved')).join('')
+            ? videos.map((v, i) => makeVideoCard(v, 'approved', {
+                position: i + 1,
+                tiktok:    tFree !== null ? (i < tFree ? `~${fmtSlot(tSlots[i])}` : 'In coda') : '—',
+                instagram: iFree !== null ? (i < iFree ? `~${fmtSlot(iSlots[i])}` : 'In coda') : '—',
+              })).join('')
             : '<div class="empty">Nessun video approvato.</div>';
         applySpeedToNew();
     } catch(e) { grid.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
@@ -430,6 +466,8 @@ async function loadBufferStatus() {
         const ch = data.channels || [];
         const tiktok = ch.find(c => c.service === 'tiktok');
         const ig = ch.find(c => c.service === 'instagram');
+        bufferCounts.tiktok = tiktok ? tiktok.scheduledPostsCount : null;
+        bufferCounts.instagram = ig ? ig.scheduledPostsCount : null;
         document.getElementById('tiktok-count').textContent = tiktok ? tiktok.scheduledPostsCount : '—';
         document.getElementById('ig-count').textContent = ig ? ig.scheduledPostsCount : '—';
         document.getElementById('last-update').textContent = new Date().toLocaleTimeString('it-IT');
