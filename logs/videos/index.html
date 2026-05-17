@@ -239,7 +239,7 @@ header h1 { font-size:20px; font-weight:700; color:white; }
                 <input type="number" id="cap-copy-n" value="5" min="1" max="50"
                     style="width:70px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none">
                 <span style="font-size:13px;color:var(--text-dim)">descrizioni</span>
-                <button class="btn btn-primary" onclick="copyDescriptionsPrompt()">📋 Copia</button>
+                <button class="btn btn-primary" id="btn-copy-prompt" onclick="copyDescriptionsPrompt()">📋 Copia</button>
                 <button class="btn" id="btn-copy-docs" onclick="copyPlatformDocs()" style="margin-left:8px">📄 Copia documentazione</button>
             </div>
         </div>
@@ -681,21 +681,55 @@ async function addCaptions() {
 async function copyDescriptionsPrompt() {
     const order = document.getElementById('cap-copy-order').value;
     const n = Math.max(1, parseInt(document.getElementById('cap-copy-n').value) || 5);
-    const intro = document.getElementById('cap-prompt-intro').value.trim();
+    const intro = document.getElementById('cap-prompt-intro').value;
+    const btn = document.getElementById('btn-copy-prompt');
+
     let caps;
     try { caps = await api('/api/videos/captions'); }
     catch(e) { toast('Errore: '+e.message, 'var(--red)'); return; }
     if (!caps.length) { toast('Nessuna descrizione disponibile', 'var(--yellow)'); return; }
     const selected = order === 'last' ? caps.slice(-n) : caps.slice(0, n);
-    const lines = [];
-    if (intro) { lines.push(intro); lines.push(''); }
-    selected.forEach((c, i) => {
-        lines.push(`- Description #${i + 1}`);
-        lines.push(c.text);
-        lines.push('');
-    });
-    lines.push('--');
-    const text = lines.join('\n');
+
+    const hasDocTag  = /<documentation>[\s\S]*?<\/documentation>/.test(intro);
+    const hasCapsTag = /<existing_captions>[\s\S]*?<\/existing_captions>/.test(intro);
+
+    let text;
+    if (hasDocTag || hasCapsTag) {
+        // Smart mode: popola i tag automaticamente
+        text = intro;
+
+        if (hasDocTag) {
+            const orig = btn.textContent;
+            btn.textContent = '⏳ Caricamento...';
+            btn.disabled = true;
+            try {
+                const res = await fetch('https://candidai.tech/api/docs/complete-platform-documentation?lang=en');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const md = await res.text();
+                text = text.replace(/<documentation>[\s\S]*?<\/documentation>/, `<documentation>\n${md}\n</documentation>`);
+            } catch(e) {
+                btn.textContent = orig;
+                btn.disabled = false;
+                toast('Errore fetch doc: ' + e.message, 'var(--red)');
+                return;
+            }
+            btn.textContent = orig;
+            btn.disabled = false;
+        }
+
+        if (hasCapsTag) {
+            const capsText = selected.map(c => c.text).join('\n--\n');
+            text = text.replace(/<existing_captions>[\s\S]*?<\/existing_captions>/, `<existing_captions>\n${capsText}\n</existing_captions>`);
+        }
+    } else {
+        // Formato classico senza tag
+        const lines = [];
+        if (intro.trim()) { lines.push(intro.trim()); lines.push(''); }
+        selected.forEach(c => { lines.push(c.text); lines.push('--'); });
+        lines.pop(); // rimuove l'ultimo --
+        text = lines.join('\n');
+    }
+
     try {
         if (navigator.clipboard && window.isSecureContext) {
             await navigator.clipboard.writeText(text);
