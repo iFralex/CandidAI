@@ -229,7 +229,8 @@ header h1 { font-size:20px; font-weight:700; color:white; }
         <div class="panel" style="margin-bottom:24px">
             <h2>Copia per prompt AI</h2>
             <textarea class="caption-input" id="cap-prompt-intro" style="min-height:64px;margin-bottom:12px"
-                placeholder="Testo introduttivo del prompt (es: Scrivi nuove descrizioni nello stesso stile...)"></textarea>
+                placeholder="Testo introduttivo del prompt (es: Scrivi nuove descrizioni nello stesso stile...)"
+                oninput="localStorage.setItem('capPromptIntro', this.value)"></textarea>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
                 <select id="cap-copy-order" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none">
                     <option value="first">Prime</option>
@@ -785,6 +786,8 @@ document.addEventListener('keydown', e => {
 
 // Init
 document.getElementById('speed-select').value = globalSpeed;
+const _savedIntro = localStorage.getItem('capPromptIntro');
+if (_savedIntro !== null) document.getElementById('cap-prompt-intro').value = _savedIntro;
 loadBufferStatus();
 loadPending();
 setInterval(loadBufferStatus, 60000);
