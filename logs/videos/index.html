@@ -354,6 +354,7 @@ function switchTab(name) {
         t.classList.toggle('active', names[i] === name));
     names.forEach(n =>
         document.getElementById('tab-'+n).style.display = n === name ? '' : 'none');
+    localStorage.setItem('activeTab', name);
     loadTab(name);
 }
 
@@ -879,7 +880,7 @@ document.getElementById('speed-select').value = globalSpeed;
 const _savedIntro = localStorage.getItem('capPromptIntro');
 if (_savedIntro) document.getElementById('cap-prompt-intro').value = _savedIntro; // instant restore before DB
 loadBufferStatus();
-loadPending();
+switchTab(localStorage.getItem('activeTab') || 'pending');
 setInterval(loadBufferStatus, 60000);
 </script>
 </body>
