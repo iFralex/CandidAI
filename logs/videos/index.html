@@ -235,7 +235,8 @@ header h1 { font-size:20px; font-weight:700; color:white; }
 <script>
 const FLASK_BASE = 'http://91.99.227.223:80';
 const QUEUE_MAX = 10;
-const POST_TIMES_UTC = [{h:13,m:30},{h:18,m:0}];
+// 9 AM, 12 PM, 7 PM Eastern — stored as EDT (UTC-4) approximation for display
+const POST_TIMES_UTC = [{h:13,m:0},{h:16,m:0},{h:23,m:0}];
 let globalSpeed = parseFloat(localStorage.getItem('videoSpeed') || '1');
 let bufferCounts = {tiktok: null, instagram: null};
 
