@@ -13,6 +13,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   const markdown = content[lang] ?? content[Object.keys(content)[0]]
   if (!markdown) return new Response('Not found', { status: 404 })
   return new Response(markdown, {
-    headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+    headers: {
+      'Content-Type': 'text/markdown; charset=utf-8',
+      'Access-Control-Allow-Origin': '*',
+    },
   })
 }
