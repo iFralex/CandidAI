@@ -290,6 +290,22 @@ def api_video_sources():
     return _jsonify(result)
 
 
+@app.route('/api/videos/fill-queue', methods=['POST'])
+def api_fill_buffer_queue():
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
+    import threading as _thr
+    def _run():
+        try:
+            from server.video_pipeline.scheduler import fill_buffer_queue
+            fill_buffer_queue()
+        except Exception as e:
+            logging.getLogger("server.video_pipeline").error(
+                f"fill-queue error: {e}", exc_info=True)
+    _thr.Thread(target=_run, daemon=True, name="fill-queue-trigger").start()
+    return _jsonify({"ok": True, "message": "Controllo Buffer avviato"})
+
+
 @app.route('/api/videos/sources/category', methods=['POST'])
 def api_update_source_category():
     if not _api_key_valid():

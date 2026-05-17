@@ -155,6 +155,10 @@ header h1 { font-size:20px; font-weight:700; color:white; }
             <span class="value" id="pending-count">—</span>
         </div>
         <div class="status-chip">
+            <button class="btn btn-primary" id="fill-btn" style="padding:6px 16px;font-size:13px"
+                    onclick="fillBufferQueue()">↑ Pubblica su Buffer</button>
+        </div>
+        <div class="status-chip">
             <span class="label">Velocità:</span>
             <select class="speed-select" id="speed-select" onchange="setGlobalSpeed(+this.value)">
                 <option value="1">1×</option>
@@ -404,6 +408,20 @@ async function loadLibrary() {
             </div>`;
         }).join('');
     } catch(e) { grid.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
+}
+
+async function fillBufferQueue() {
+    const btn = document.getElementById('fill-btn');
+    btn.disabled = true; btn.textContent = '⏳ In corso...';
+    try {
+        await api('/api/videos/fill-queue', {method: 'POST'});
+        toast('Sincronizzazione Buffer avviata ✓');
+        setTimeout(loadBufferStatus, 5000);
+    } catch(e) {
+        toast('Errore: '+e.message, 'var(--red)');
+    } finally {
+        btn.disabled = false; btn.textContent = '↑ Pubblica su Buffer';
+    }
 }
 
 async function loadBufferStatus() {
