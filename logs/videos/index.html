@@ -85,6 +85,35 @@ header h1 { font-size:20px; font-weight:700; color:white; }
             border-radius:10px; padding:14px; font-size:13px; }
 .lib-card .cat { font-weight:600; color:var(--purple); margin-bottom:6px; }
 .lib-card .meta { color:var(--text-dim); font-size:12px; line-height:1.6; }
+/* Speed selector */
+.speed-select { background:var(--bg); border:1px solid var(--border); border-radius:8px;
+                padding:6px 10px; color:var(--text); font-size:13px; font-weight:600;
+                cursor:pointer; outline:none; }
+.speed-select:focus { border-color:var(--purple); }
+/* Review overlay */
+#review-overlay { position:fixed; inset:0; background:rgba(0,0,0,.96); z-index:1000;
+                  display:flex; flex-direction:column; align-items:center;
+                  justify-content:center; gap:20px; }
+#review-top { position:absolute; top:0; left:0; right:0; display:flex;
+              align-items:center; justify-content:space-between; padding:16px 24px; }
+#review-counter { font-size:14px; color:var(--text-dim); }
+#review-close { background:none; border:none; color:var(--text); font-size:28px;
+                cursor:pointer; line-height:1; opacity:.7; transition:opacity .2s; }
+#review-close:hover { opacity:1; }
+#review-video { max-height:calc(100vh - 200px); aspect-ratio:9/16; width:auto;
+                max-width:90vw; background:#000; border-radius:12px; display:block; }
+#review-controls { display:flex; flex-direction:column; align-items:center; gap:12px; }
+#review-stars .stars { justify-content:center; margin-bottom:0; }
+#review-stars .stars span { font-size:32px; }
+#review-hint { font-size:12px; color:var(--text-dim); }
+#review-btns { display:flex; gap:12px; }
+#review-btns .btn { min-width:110px; }
+.btn-nav { background:var(--surface2); border:1px solid var(--border); color:var(--text); }
+/* Review button */
+.btn-review { background:rgba(102,126,234,.2); border:1px solid var(--purple);
+              color:var(--purple); font-size:13px; padding:8px 16px; border-radius:8px;
+              cursor:pointer; font-weight:600; transition:background .2s; }
+.btn-review:hover { background:rgba(102,126,234,.35); }
 </style>
 </head>
 <body>
@@ -112,6 +141,16 @@ header h1 { font-size:20px; font-weight:700; color:white; }
             <span class="label">In approvazione:</span>
             <span class="value" id="pending-count">—</span>
         </div>
+        <div class="status-chip">
+            <span class="label">Velocità:</span>
+            <select class="speed-select" id="speed-select" onchange="setGlobalSpeed(+this.value)">
+                <option value="1">1×</option>
+                <option value="2">2×</option>
+                <option value="3">3×</option>
+                <option value="4">4×</option>
+                <option value="5">5×</option>
+            </select>
+        </div>
     </div>
     <div class="panel">
         <h2>Aggiungi video YouTube alla libreria</h2>
@@ -134,11 +173,12 @@ header h1 { font-size:20px; font-weight:700; color:white; }
         </div>
         <p id="ingest-msg" style="margin-top:12px;font-size:13px;color:var(--text-dim)"></p>
     </div>
-    <div class="tabs">
+    <div class="tabs" style="align-items:center">
         <div class="tab active" onclick="switchTab('pending')">In attesa</div>
         <div class="tab" onclick="switchTab('approved')">Approvati</div>
         <div class="tab" onclick="switchTab('stats')">Statistiche</div>
         <div class="tab" onclick="switchTab('library')">Libreria clip</div>
+        <button class="btn-review" style="margin-left:auto;margin-bottom:4px" onclick="openReview()">▶ Revisiona</button>
     </div>
     <div id="tab-pending"><div class="video-grid" id="pending-grid"><div class="empty">Caricamento...</div></div></div>
     <div id="tab-approved" style="display:none"><div class="video-grid" id="approved-grid"><div class="empty">Caricamento...</div></div></div>
@@ -153,8 +193,36 @@ header h1 { font-size:20px; font-weight:700; color:white; }
     </div>
     <div id="tab-library" style="display:none"><div class="lib-grid" id="library-grid"><div class="empty">Caricamento...</div></div></div>
 </div>
+
+<div id="review-overlay" style="display:none">
+    <div id="review-top">
+        <span id="review-counter"></span>
+        <button id="review-close" onclick="closeReview()">×</button>
+    </div>
+    <video id="review-video" playsinline></video>
+    <div id="review-controls">
+        <div id="review-stars"></div>
+        <div id="review-hint">Seleziona stelle per approvare</div>
+        <div id="review-btns">
+            <button class="btn btn-nav" onclick="reviewPrev()">← Prec</button>
+            <button class="btn btn-reject" onclick="rejectReview()">✕ Rifiuta</button>
+            <button class="btn btn-nav" onclick="reviewNext()">Succ →</button>
+        </div>
+    </div>
+</div>
 <script>
 const FLASK_BASE = 'http://91.99.227.223:80';
+let globalSpeed = parseFloat(localStorage.getItem('videoSpeed') || '1');
+
+function setGlobalSpeed(s) {
+    globalSpeed = s;
+    localStorage.setItem('videoSpeed', s);
+    document.querySelectorAll('video').forEach(v => v.playbackRate = s);
+}
+
+function applySpeedToNew() {
+    document.querySelectorAll('video').forEach(v => { if (v.playbackRate !== globalSpeed) v.playbackRate = globalSpeed; });
+}
 
 function getApiKey() {
     let key = localStorage.getItem('candidai_api_key');
@@ -195,11 +263,15 @@ function switchTab(name) {
 const styleEmoji = {bold_yellow:'🟡',minimal_white:'⬜',dark_band:'⬛',outlined_color:'🔴',word_pop:'✨'};
 
 function starsWidget(id, current, onRate) {
+    const handler = onRate === 'approve' ? 'rateAndApprove'
+                  : onRate === 'review'  ? 'rateAndApproveReview'
+                  : 'reRate';
+    const mouseout = (onRate === 'approve' || onRate === 'review') ? 0 : (current||0);
     const stars = [1,2,3,4,5].map(n =>
         `<span id="star-${id}-${n}" class="${n <= (current||0) ? 'on' : ''}"
             onmouseover="highlightStars('${id}',${n})"
-            onmouseout="highlightStars('${id}',${onRate === 'approve' ? 0 : (current||0)})"
-            onclick="${onRate === 'approve' ? `rateAndApprove` : `reRate`}('${id}',${n})">★</span>`
+            onmouseout="highlightStars('${id}',${mouseout})"
+            onclick="${handler}('${id}',${n})">★</span>`
     ).join('');
     return `<div class="stars" id="stars-${id}">${stars}</div>`;
 }
@@ -224,7 +296,7 @@ function makeVideoCard(v, mode) {
                ${v.scheduled_for ? new Date(v.scheduled_for).toLocaleString('it-IT') : '—'} · ${v.platform||'—'}
            </div>`;
     return `<div class="video-card" id="card-${v.id}">
-        <video src="${videoUrl}" controls preload="metadata" playsinline></video>
+        <video src="${videoUrl}" controls preload="metadata" playsinline onloadedmetadata="this.playbackRate=${globalSpeed}"></video>
         <div class="video-meta">
             <div class="tags">
                 <span class="tag layout">${layoutLabel}</span>
@@ -242,6 +314,7 @@ async function loadPending() {
         grid.innerHTML = videos.length
             ? videos.map(v => makeVideoCard(v, 'pending')).join('')
             : '<div class="empty">Nessun video in attesa.</div>';
+        applySpeedToNew();
     } catch(e) { grid.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
 }
 
@@ -252,6 +325,7 @@ async function loadApproved() {
         grid.innerHTML = videos.length
             ? videos.map(v => makeVideoCard(v, 'approved')).join('')
             : '<div class="empty">Nessun video approvato.</div>';
+        applySpeedToNew();
     } catch(e) { grid.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
 }
 
@@ -381,6 +455,84 @@ function loadTab(name) {
     else if (name==='library') loadLibrary();
 }
 
+// ── Review mode ──────────────────────────────────────────────────────────────
+let reviewList = [], reviewIdx = 0;
+
+async function openReview() {
+    try {
+        reviewList = await api('/api/videos/pending');
+    } catch(e) { toast('Errore caricamento: '+e.message, 'var(--red)'); return; }
+    if (!reviewList.length) { toast('Nessun video in attesa', 'var(--yellow)'); return; }
+    reviewIdx = 0;
+    document.getElementById('review-overlay').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    reviewGoto(0);
+}
+
+function closeReview() {
+    const vid = document.getElementById('review-video');
+    vid.pause(); vid.src = '';
+    document.getElementById('review-overlay').style.display = 'none';
+    document.body.style.overflow = '';
+    loadPending();
+}
+
+function reviewGoto(idx) {
+    if (idx < 0 || idx >= reviewList.length) return;
+    reviewIdx = idx;
+    const v = reviewList[idx];
+    const vid = document.getElementById('review-video');
+    vid.src = FLASK_BASE + '/videos/' + v.id;
+    vid.playbackRate = globalSpeed;
+    vid.play().catch(() => {});
+    document.getElementById('review-counter').textContent = `${idx + 1} / ${reviewList.length}`;
+    // Stars widget (approve mode)
+    document.getElementById('review-stars').innerHTML = starsWidget(v.id, 0, 'review');
+}
+
+function reviewPrev() { if (reviewIdx > 0) reviewGoto(reviewIdx - 1); }
+
+function reviewNext() {
+    reviewList.splice(reviewIdx, 1);
+    if (!reviewList.length) { closeReview(); toast('Tutti i video revisionati ✓'); return; }
+    reviewGoto(Math.min(reviewIdx, reviewList.length - 1));
+}
+
+async function rateAndApproveReview(id, rating) {
+    try {
+        await api('/api/videos/'+id+'/approve', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({rating})
+        });
+        toast(`Approvato ${'★'.repeat(rating)}`);
+        reviewNext();
+    } catch(e) { toast('Errore: '+e.message, 'var(--red)'); }
+}
+
+async function rejectReview() {
+    const v = reviewList[reviewIdx];
+    try {
+        await api('/api/videos/'+v.id+'/reject', {method:'POST'});
+        toast('Video rifiutato', 'var(--red)');
+        reviewNext();
+    } catch(e) { toast('Errore: '+e.message, 'var(--red)'); }
+}
+
+// Keyboard shortcuts in review mode
+document.addEventListener('keydown', e => {
+    if (document.getElementById('review-overlay').style.display === 'none') return;
+    if (e.key === 'Escape') closeReview();
+    else if (e.key === 'ArrowRight') reviewNext();
+    else if (e.key === 'ArrowLeft') reviewPrev();
+    else if (e.key === 'Delete' || e.key === 'Backspace') rejectReview();
+    else if (/^[1-5]$/.test(e.key)) {
+        const v = reviewList[reviewIdx];
+        if (v) rateAndApproveReview(v.id, +e.key);
+    }
+});
+
+// Init
+document.getElementById('speed-select').value = globalSpeed;
 loadBufferStatus();
 loadPending();
 setInterval(loadBufferStatus, 60000);
