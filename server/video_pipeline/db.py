@@ -295,6 +295,38 @@ class Database:
                      impressions, likes, comments, shares, clicks, engagement_rate)
                 )
 
+    def list_sources(self) -> list[dict]:
+        """Return one row per source YouTube URL with clip and processed-video stats."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT
+                    c.source_url,
+                    c.category,
+                    COUNT(DISTINCT c.id)                                                AS clips_count,
+                    ROUND(COALESCE(SUM(c.duration), 0), 1)                             AS total_duration,
+                    COUNT(DISTINCT CASE WHEN pv.status='pending'   THEN pv.id END)     AS pending_count,
+                    COUNT(DISTINCT CASE WHEN pv.status='approved'  THEN pv.id END)     AS approved_count,
+                    COUNT(DISTINCT CASE WHEN pv.status='published' THEN pv.id END)     AS published_count,
+                    COUNT(DISTINCT CASE WHEN pv.status='rejected'  THEN pv.id END)     AS rejected_count
+                FROM clips c
+                LEFT JOIN processed_videos pv ON pv.clip_id = c.id
+                GROUP BY c.source_url
+                ORDER BY MAX(c.created_at) DESC
+            """).fetchall()
+            return [dict(r) for r in rows]
+
+    def list_intervals_by_video_id(self, video_id: str) -> list[dict]:
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT start_time, end_time FROM ingested_intervals WHERE video_id=? ORDER BY start_time",
+                (video_id,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def update_clips_category(self, source_url: str, category: str):
+        with self._conn() as conn:
+            conn.execute("UPDATE clips SET category=? WHERE source_url=?", (category, source_url))
+
     def list_stats(self, limit: int = 200) -> list[dict]:
         with self._conn() as conn:
             rows = conn.execute(

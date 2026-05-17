@@ -114,6 +114,19 @@ header h1 { font-size:20px; font-weight:700; color:white; }
               color:var(--purple); font-size:13px; padding:8px 16px; border-radius:8px;
               cursor:pointer; font-weight:600; transition:background .2s; }
 .btn-review:hover { background:rgba(102,126,234,.35); }
+/* Sources tab */
+.sources-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
+.source-card { background:var(--surface2); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.source-card img { width:100%; aspect-ratio:16/9; object-fit:cover; background:#000; display:block; }
+.source-card .source-meta { padding:14px; }
+.source-card h3 { font-size:14px; font-weight:600; margin-bottom:8px; }
+.source-card h3 a { color:var(--purple); text-decoration:none; }
+.source-card h3 a:hover { text-decoration:underline; }
+.source-stats { display:flex; gap:10px; flex-wrap:wrap; font-size:12px; color:var(--text-dim); margin-bottom:8px; }
+.source-intervals { font-size:12px; color:var(--text-dim); margin-bottom:10px; line-height:1.5; }
+.source-card select { background:var(--bg); border:1px solid var(--border); border-radius:6px;
+                      padding:7px 10px; color:var(--text); font-size:13px; width:100%; outline:none; }
+.source-card select:focus { border-color:var(--purple); }
 </style>
 </head>
 <body>
@@ -178,10 +191,12 @@ header h1 { font-size:20px; font-weight:700; color:white; }
         <div class="tab" onclick="switchTab('approved')">Approvati</div>
         <div class="tab" onclick="switchTab('stats')">Statistiche</div>
         <div class="tab" onclick="switchTab('library')">Libreria clip</div>
+        <div class="tab" onclick="switchTab('sources')">Sorgenti YouTube</div>
         <button class="btn-review" style="margin-left:auto;margin-bottom:4px" onclick="openReview()">▶ Revisiona</button>
     </div>
     <div id="tab-pending"><div class="video-grid" id="pending-grid"><div class="empty">Caricamento...</div></div></div>
     <div id="tab-approved" style="display:none"><div class="video-grid" id="approved-grid"><div class="empty">Caricamento...</div></div></div>
+    <div id="tab-sources" style="display:none"><div class="sources-grid" id="sources-grid"><div class="empty">Caricamento...</div></div></div>
     <div id="tab-stats" style="display:none">
         <table class="stats-table">
             <thead><tr>
@@ -192,6 +207,7 @@ header h1 { font-size:20px; font-weight:700; color:white; }
         </table>
     </div>
     <div id="tab-library" style="display:none"><div class="lib-grid" id="library-grid"><div class="empty">Caricamento...</div></div></div>
+
 </div>
 
 <div id="review-overlay" style="display:none">
@@ -252,7 +268,7 @@ function toast(msg, color = 'var(--green)') {
 }
 
 function switchTab(name) {
-    const names = ['pending','approved','stats','library'];
+    const names = ['pending','approved','stats','library','sources'];
     document.querySelectorAll('.tab').forEach((t,i) =>
         t.classList.toggle('active', names[i] === name));
     names.forEach(n =>
@@ -453,6 +469,81 @@ function loadTab(name) {
     else if (name==='approved') loadApproved();
     else if (name==='stats') loadStats();
     else if (name==='library') loadLibrary();
+    else if (name==='sources') loadSources();
+}
+
+// ── Sources tab ──────────────────────────────────────────────────────────────
+const CATEGORIES = [
+    {value:'cooking',    label:'🍳 Cucina'},
+    {value:'gaming',     label:'🎮 Gaming'},
+    {value:'painting',   label:'🎨 Pittura / Arte'},
+    {value:'nature',     label:'🌿 Natura / ASMR'},
+    {value:'satisfying', label:'✨ Soddisfacente'},
+    {value:'general',    label:'📦 Generale'},
+];
+
+function fmtSeconds(s) {
+    if (s == null) return '∞';
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = Math.floor(s % 60);
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+async function loadSources() {
+    const grid = document.getElementById('sources-grid');
+    try {
+        const sources = await api('/api/videos/sources');
+        if (!sources.length) {
+            grid.innerHTML = '<div class="empty">Nessun video YouTube ancora aggiunto.</div>';
+            return;
+        }
+        grid.innerHTML = sources.map(s => {
+            const thumbUrl = s.video_id
+                ? `https://img.youtube.com/vi/${s.video_id}/mqdefault.jpg` : '';
+            const ytLink = s.video_id
+                ? `https://www.youtube.com/watch?v=${s.video_id}` : s.source_url;
+            const opts = CATEGORIES.map(c =>
+                `<option value="${c.value}"${c.value===s.category?' selected':''}>${c.label}</option>`
+            ).join('');
+            const intervalStr = (s.intervals||[]).length
+                ? (s.intervals||[]).map(i =>
+                    `${fmtSeconds(i.start_time)} – ${fmtSeconds(i.end_time)}`
+                  ).join(', ')
+                : 'Intero video';
+            const durMin = Math.round((s.total_duration||0) / 60);
+            return `<div class="source-card">
+                ${thumbUrl ? `<img src="${thumbUrl}" alt="" loading="lazy">` : ''}
+                <div class="source-meta">
+                    <h3><a href="${ytLink}" target="_blank">${s.video_id || s.source_url}</a></h3>
+                    <div class="source-stats">
+                        <span>${s.clips_count} clip · ${durMin} min</span>
+                        ${s.pending_count   ? `<span style="color:var(--text-dim)">${s.pending_count} in att.</span>` : ''}
+                        ${s.approved_count  ? `<span style="color:var(--green)">${s.approved_count} appr.</span>` : ''}
+                        ${s.published_count ? `<span style="color:var(--purple)">${s.published_count} pubb.</span>` : ''}
+                        ${s.rejected_count  ? `<span style="color:var(--red)">${s.rejected_count} rif.</span>` : ''}
+                    </div>
+                    <div class="source-intervals">📍 ${intervalStr}</div>
+                    <select onchange="updateSourceCategory('${encodeURIComponent(s.source_url)}', this.value)">
+                        ${opts}
+                    </select>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) { grid.innerHTML = `<div class="empty">Errore: ${e.message}</div>`; }
+}
+
+async function updateSourceCategory(encodedUrl, category) {
+    const source_url = decodeURIComponent(encodedUrl);
+    try {
+        await api('/api/videos/sources/category', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({source_url, category})
+        });
+        toast('Categoria aggiornata');
+    } catch(e) { toast('Errore: '+e.message, 'var(--red)'); }
 }
 
 // ── Review mode ──────────────────────────────────────────────────────────────

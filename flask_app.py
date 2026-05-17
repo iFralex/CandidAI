@@ -273,4 +273,32 @@ def api_buffer_status():
 @app.route('/api/videos/stats')
 def api_videos_stats():
     return _jsonify(_vp_db().list_stats(limit=200))
+
+
+@app.route('/api/videos/sources')
+def api_video_sources():
+    import re as _re
+    db = _vp_db()
+    sources = db.list_sources()
+    result = []
+    for s in sources:
+        url = s['source_url']
+        m = _re.search(r'(?:v=|/v/|youtu\.be/|/embed/)([A-Za-z0-9_-]{11})', url)
+        video_id = m.group(1) if m else None
+        intervals = db.list_intervals_by_video_id(video_id) if video_id else []
+        result.append({**s, 'video_id': video_id, 'intervals': intervals})
+    return _jsonify(result)
+
+
+@app.route('/api/videos/sources/category', methods=['POST'])
+def api_update_source_category():
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
+    data = _request.get_json() or {}
+    source_url = data.get('source_url', '').strip()
+    category = data.get('category', '').strip()
+    if not source_url or not category:
+        return _jsonify({"error": "source_url and category required"}), 400
+    _vp_db().update_clips_category(source_url, category)
+    return _jsonify({"ok": True})
 # ── End Video Pipeline Routes ────────────────────────────────────────────────
