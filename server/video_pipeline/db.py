@@ -201,26 +201,42 @@ class Database:
             return [dict(r) for r in rows]
 
     def list_approved_videos(self) -> list[dict]:
-        """Return approved videos ordered by least-used clip → category → source URL → oldest approval."""
+        """Return approved videos in publication order.
+
+        Round-robins across source URLs so no single source monopolises the
+        Buffer queue before any videos have been published.  Within each
+        round the highest-rated video from each source leads; ties broken by
+        category round-robin, then oldest approval.
+        """
         with self._conn() as conn:
             rows = conn.execute("""
-                SELECT pv.*,
-                    c.used_count        AS clip_used_count,
-                    c.category          AS clip_category,
-                    c.source_url        AS clip_source_url,
-                    (SELECT COALESCE(SUM(c2.used_count), 0)
-                     FROM clips c2 WHERE c2.category = c.category)   AS category_total_uses,
-                    (SELECT COALESCE(SUM(c2.used_count), 0)
-                     FROM clips c2 WHERE c2.source_url = c.source_url) AS source_total_uses
-                FROM processed_videos pv
-                JOIN clips c ON pv.clip_id = c.id
-                WHERE pv.status = 'approved'
+                WITH ranked AS (
+                    SELECT pv.*,
+                        c.used_count  AS clip_used_count,
+                        c.category    AS clip_category,
+                        c.source_url  AS clip_source_url,
+                        (SELECT COALESCE(SUM(c2.used_count), 0)
+                         FROM clips c2 WHERE c2.category = c.category)    AS category_total_uses,
+                        (SELECT COALESCE(SUM(c2.used_count), 0)
+                         FROM clips c2 WHERE c2.source_url = c.source_url) AS source_total_uses,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY c.source_url
+                            ORDER BY COALESCE(pv.rating, 0) DESC, pv.approved_at ASC
+                        ) AS src_rank,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY c.category
+                            ORDER BY COALESCE(pv.rating, 0) DESC, pv.approved_at ASC
+                        ) AS cat_rank
+                    FROM processed_videos pv
+                    JOIN clips c ON pv.clip_id = c.id
+                    WHERE pv.status = 'approved'
+                )
+                SELECT * FROM ranked
                 ORDER BY
-                    COALESCE(pv.rating, 0) DESC,
-                    c.used_count           ASC,
-                    category_total_uses    ASC,
-                    source_total_uses      ASC,
-                    pv.approved_at         ASC
+                    COALESCE(rating, 0) DESC,
+                    src_rank           ASC,
+                    cat_rank           ASC,
+                    approved_at        ASC
             """).fetchall()
             return [dict(r) for r in rows]
 
