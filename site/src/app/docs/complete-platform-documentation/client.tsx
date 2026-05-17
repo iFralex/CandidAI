@@ -1049,7 +1049,8 @@ CandidAI represents a complete solution for job seekers, transforming a traditio
 }
 
 export const MDContent = ({ content }) => {
-   const [lang, setLang] = useState(Object.keys(content)[0])
+   const keys = Object.keys(content)
+   const [lang, setLang] = useState(keys.includes('en') ? 'en' : keys[0])
    const [copied, setCopied] = useState(false)
 
    const copyMd = async () => {
@@ -1071,7 +1072,7 @@ export const MDContent = ({ content }) => {
             onClick={copyMd}
             className="bg-gray-800 text-white text-sm border border-gray-700 rounded px-3 py-1 hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
          >
-            {copied ? '✓ Copiato' : '📋 Copia MD'}
+            {copied ? '✓ Copied' : '📋 Copy MD'}
          </button>
       </div>
 
