@@ -698,13 +698,25 @@ async function copyPlatformDocs() {
         const res = await fetch('https://candidai.tech/api/docs/complete-platform-documentation?lang=en');
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const md = await res.text();
-        await navigator.clipboard.writeText(md);
+        if (!md) throw new Error('Risposta vuota');
+        // Fallback per contesti non-HTTPS dove navigator.clipboard non è disponibile
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(md);
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = md;
+            ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+            document.body.appendChild(ta);
+            ta.focus(); ta.select();
+            if (!document.execCommand('copy')) throw new Error('execCommand fallito');
+            ta.remove();
+        }
         btn.textContent = '✓ Copiata!';
         setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
     } catch(e) {
         btn.textContent = original;
         btn.disabled = false;
-        toast('Errore: ' + e.message, 'var(--red)');
+        toast('Errore copia doc: ' + (e.message || e), 'var(--red)');
     }
 }
 
