@@ -290,6 +290,20 @@ def api_video_sources():
     return _jsonify(result)
 
 
+@app.route('/api/settings/<key>', methods=['GET'])
+def api_get_setting(key: str):
+    return _jsonify({"value": _vp_db().get_setting(key)})
+
+
+@app.route('/api/settings/<key>', methods=['POST'])
+def api_set_setting(key: str):
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
+    data = _request.get_json() or {}
+    _vp_db().set_setting(key, data.get("value", ""))
+    return _jsonify({"ok": True})
+
+
 @app.route('/api/videos/captions', methods=['GET'])
 def api_list_captions():
     return _jsonify(_vp_db().list_captions())

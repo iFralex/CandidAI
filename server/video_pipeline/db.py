@@ -72,6 +72,12 @@ class Database:
                 );
                 CREATE INDEX IF NOT EXISTS idx_intervals_video ON ingested_intervals(video_id);
 
+                CREATE TABLE IF NOT EXISTS settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT,
+                    updated_at TEXT
+                );
+
                 CREATE TABLE IF NOT EXISTS captions (
                     id TEXT PRIMARY KEY,
                     text TEXT NOT NULL,
@@ -350,6 +356,19 @@ class Database:
     def update_clips_category(self, source_url: str, category: str):
         with self._conn() as conn:
             conn.execute("UPDATE clips SET category=? WHERE source_url=?", (category, source_url))
+
+    def get_setting(self, key: str) -> Optional[str]:
+        with self._conn() as conn:
+            row = conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+            return row["value"] if row else None
+
+    def set_setting(self, key: str, value: str):
+        with self._conn() as conn:
+            conn.execute(
+                "INSERT INTO settings (key, value, updated_at) VALUES (?,?,?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",
+                (key, value, _now())
+            )
 
     def add_caption(self, text: str) -> str:
         cap_id = str(uuid.uuid4())

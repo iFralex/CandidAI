@@ -230,7 +230,7 @@ header h1 { font-size:20px; font-weight:700; color:white; }
             <h2>Copia per prompt AI</h2>
             <textarea class="caption-input" id="cap-prompt-intro" style="min-height:64px;margin-bottom:12px"
                 placeholder="Testo introduttivo del prompt (es: Scrivi nuove descrizioni nello stesso stile...)"
-                oninput="localStorage.setItem('capPromptIntro', this.value)"></textarea>
+                oninput="savePromptIntro(this.value)"></textarea>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
                 <select id="cap-copy-order" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none">
                     <option value="first">Prime</option>
@@ -599,7 +599,29 @@ function loadTab(name) {
 }
 
 // ── Captions tab ─────────────────────────────────────────────────────────────
+let _introDebounce = null;
+function savePromptIntro(value) {
+    localStorage.setItem('capPromptIntro', value);
+    clearTimeout(_introDebounce);
+    _introDebounce = setTimeout(() => {
+        api('/api/settings/cap-prompt-intro', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({value})
+        }).catch(() => {});
+    }, 800);
+}
+
 async function loadCaptions() {
+    // Load intro from DB (fallback to localStorage)
+    try {
+        const s = await api('/api/settings/cap-prompt-intro');
+        if (s.value !== null && s.value !== undefined) {
+            document.getElementById('cap-prompt-intro').value = s.value;
+            localStorage.setItem('capPromptIntro', s.value);
+        }
+    } catch(e) {}
+
     const list = document.getElementById('captions-list');
     try {
         const caps = await api('/api/videos/captions');
@@ -787,7 +809,7 @@ document.addEventListener('keydown', e => {
 // Init
 document.getElementById('speed-select').value = globalSpeed;
 const _savedIntro = localStorage.getItem('capPromptIntro');
-if (_savedIntro !== null) document.getElementById('cap-prompt-intro').value = _savedIntro;
+if (_savedIntro) document.getElementById('cap-prompt-intro').value = _savedIntro; // instant restore before DB
 loadBufferStatus();
 loadPending();
 setInterval(loadBufferStatus, 60000);
