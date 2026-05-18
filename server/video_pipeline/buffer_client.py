@@ -3,15 +3,22 @@ import requests as http_requests
 
 logger = logging.getLogger(__name__)
 
-BUFFER_GRAPHQL_URL = "https://graph.buffer.com/"
+BUFFER_GRAPHQL_URL = "https://api.buffer.com/"
 
 _GET_CHANNELS = """
-query GetChannels {
-  channels {
+query GetChannels($input: ChannelsInput!) {
+  channels(input: $input) {
     id
     name
     service
-    scheduledPostsCount
+  }
+}
+"""
+
+_GET_SCHEDULED_COUNT = """
+query GetScheduledCount($input: PostsInput!, $channelId: ChannelId!) {
+  posts(input: $input, first: 1) {
+    totalCount
   }
 }
 """
@@ -22,7 +29,7 @@ mutation CreatePost($input: CreatePostInput!) {
     ... on PostActionSuccess {
       post {
         id
-        scheduledAt
+        dueAt
         status
       }
     }
@@ -34,24 +41,15 @@ mutation CreatePost($input: CreatePostInput!) {
 """
 
 _GET_POSTS = """
-query GetPosts($channelId: String!, $status: String) {
-  channel(id: $channelId) {
-    posts(status: $status) {
-      edges {
-        node {
-          id
-          text
-          scheduledAt
-          status
-          statistics {
-            impressions
-            reactions
-            comments
-            shares
-            clicks
-            engagementRate
-          }
-        }
+query GetPosts($input: PostsInput!) {
+  posts(input: $input) {
+    edges {
+      node {
+        id
+        text
+        dueAt
+        sentAt
+        status
       }
     }
   }
@@ -60,81 +58,88 @@ query GetPosts($channelId: String!, $status: String) {
 
 
 class BufferClient:
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, org_id: str = "6a04f34e355697e2b77b9100"):
         self.api_key = api_key
+        self.org_id = org_id
 
     def get_channels(self) -> list[dict]:
-        data = self._request(_GET_CHANNELS)
+        data = self._request(_GET_CHANNELS, {"input": {"organizationId": self.org_id}})
         return data.get("data", {}).get("channels", [])
 
     def get_scheduled_count(self, channel_id: str) -> int:
         """Return number of posts currently scheduled for a channel."""
-        channels = self.get_channels()
-        for ch in channels:
-            if ch["id"] == channel_id:
-                return ch.get("scheduledPostsCount", 0)
-        return 0
+        data = self._request(
+            _GET_SCHEDULED_COUNT,
+            {
+                "input": {
+                    "organizationId": self.org_id,
+                    "filter": {
+                        "channelIds": [channel_id],
+                        "status": ["scheduled"],
+                    },
+                },
+                "channelId": channel_id,
+            },
+        )
+        return data.get("data", {}).get("posts", {}).get("totalCount", 0)
 
     def create_post(self, channel_id: str, video_url: str, caption: str,
                     scheduled_at: str) -> str:
         """Schedule a video post. Returns the Buffer post ID."""
-        payload = self._build_create_post_payload(channel_id, video_url, caption, scheduled_at)
-        data = self._request(payload["query"], payload["variables"])
+        variables = {
+            "input": {
+                "channelId": channel_id,
+                "text": caption,
+                "schedulingType": "customScheduled",
+                "mode": "customScheduled",
+                "dueAt": scheduled_at,
+                "assets": [{"video": {"url": video_url}}],
+            }
+        }
+        data = self._request(_CREATE_POST, variables)
         result = data.get("data", {}).get("createPost", {})
-        if result.get("__typename") == "MutationError" or "message" in result:
+        if "message" in result:
             raise RuntimeError(f"Buffer createPost error: {result.get('message', result)}")
         post = result.get("post", {})
         post_id = post.get("id", "")
-        logger.info(f"Buffer post created: {post_id} scheduled at {post.get('scheduledAt')}")
+        logger.info(f"Buffer post created: {post_id} scheduled at {post.get('dueAt')}")
         return post_id
 
     def get_published_posts(self, channel_id: str) -> list[dict]:
-        """Fetch published posts with statistics."""
-        data = self._request(_GET_POSTS, {"channelId": channel_id, "status": "sent"})
-        edges = (
-            data.get("data", {})
-                .get("channel", {})
-                .get("posts", {})
-                .get("edges", [])
+        """Fetch published posts. Statistics unavailable in new API — counts return 0."""
+        data = self._request(
+            _GET_POSTS,
+            {
+                "input": {
+                    "organizationId": self.org_id,
+                    "filter": {
+                        "channelIds": [channel_id],
+                        "status": ["sent"],
+                    },
+                }
+            },
         )
+        edges = data.get("data", {}).get("posts", {}).get("edges", [])
         posts = []
         for edge in edges:
             node = edge.get("node", {})
-            stats = node.get("statistics") or {}
             posts.append({
                 "id": node.get("id"),
                 "text": node.get("text"),
-                "scheduled_at": node.get("scheduledAt"),
-                "impressions": stats.get("impressions", 0),
-                "likes": stats.get("reactions", 0),
-                "comments": stats.get("comments", 0),
-                "shares": stats.get("shares", 0),
-                "clicks": stats.get("clicks", 0),
-                "engagement_rate": stats.get("engagementRate", 0.0),
+                "scheduled_at": node.get("dueAt") or node.get("sentAt"),
+                "impressions": 0,
+                "likes": 0,
+                "comments": 0,
+                "shares": 0,
+                "clicks": 0,
+                "engagement_rate": 0.0,
             })
         return posts
-
-    def _build_create_post_payload(self, channel_id: str, video_url: str,
-                                    caption: str, scheduled_at: str) -> dict:
-        return {
-            "query": _CREATE_POST,
-            "variables": {
-                "input": {
-                    "channelId": channel_id,
-                    "text": caption,
-                    "schedulingType": "customScheduled",
-                    "dueAt": scheduled_at,
-                    "assets": {
-                        "videos": [{"url": video_url}]
-                    }
-                }
-            }
-        }
 
     def _request(self, query: str, variables: dict = None) -> dict:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
         payload = {"query": query, "variables": variables or {}}
         response = http_requests.post(
