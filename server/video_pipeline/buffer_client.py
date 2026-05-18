@@ -16,7 +16,7 @@ query GetChannels($input: ChannelsInput!) {
 """
 
 _GET_SCHEDULED_COUNT = """
-query GetScheduledCount($input: PostsInput!, $channelId: ChannelId!) {
+query GetScheduledCount($input: PostsInput!) {
   posts(input: $input, first: 1) {
     totalCount
   }
@@ -78,7 +78,6 @@ class BufferClient:
                         "status": ["scheduled"],
                     },
                 },
-                "channelId": channel_id,
             },
         )
         return data.get("data", {}).get("posts", {}).get("totalCount", 0)
