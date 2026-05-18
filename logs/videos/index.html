@@ -151,21 +151,10 @@ header h1 { font-size:20px; font-weight:700; color:white; }
     <h1>🎬 Video Pipeline</h1>
     <div class="live">
         <div class="dot"></div>
-        <span id="last-update">—</span>
     </div>
 </header>
 <div class="container">
     <div class="status-bar">
-        <div class="status-chip">
-            <span class="label">TikTok queue:</span>
-            <span class="value" id="tiktok-count">—</span>
-            <span class="label">/ 10</span>
-        </div>
-        <div class="status-chip">
-            <span class="label">Instagram queue:</span>
-            <span class="value" id="ig-count">—</span>
-            <span class="label">/ 10</span>
-        </div>
         <div class="status-chip" style="margin-left:auto">
             <span class="label">In approvazione:</span>
             <span class="value" id="pending-count">—</span>
@@ -292,6 +281,8 @@ const QUEUE_MAX = 10;
 const POST_TIMES_UTC = [{h:13,m:0},{h:16,m:0},{h:23,m:0}];
 let globalSpeed = parseFloat(localStorage.getItem('videoSpeed') || '1');
 let bufferCounts = {tiktok: null, instagram: null};
+let _bufferStatusTs = 0;
+const BUFFER_CACHE_MS = 10 * 60 * 1000;
 
 function estimatedSlots(count) {
     const slots = [];
@@ -422,6 +413,7 @@ async function loadPending() {
 async function loadApproved() {
     const grid = document.getElementById('approved-grid');
     try {
+        await loadBufferStatus();
         const videos = await api('/api/videos/approved');
         const tFree = bufferCounts.tiktok !== null ? Math.max(0, QUEUE_MAX - bufferCounts.tiktok) : null;
         const iFree = bufferCounts.instagram !== null ? Math.max(0, QUEUE_MAX - bufferCounts.instagram) : null;
@@ -507,7 +499,7 @@ async function fillBufferQueue() {
     try {
         await api('/api/videos/fill-queue', {method: 'POST'});
         toast('Sincronizzazione Buffer avviata ✓');
-        setTimeout(loadBufferStatus, 5000);
+        setTimeout(() => loadBufferStatus(true), 5000);
     } catch(e) {
         toast('Errore: '+e.message, 'var(--red)');
     } finally {
@@ -515,7 +507,8 @@ async function fillBufferQueue() {
     }
 }
 
-async function loadBufferStatus() {
+async function loadBufferStatus(force = false) {
+    if (!force && Date.now() - _bufferStatusTs < BUFFER_CACHE_MS) return;
     try {
         const data = await api('/api/videos/buffer-status');
         const ch = data.channels || [];
@@ -523,13 +516,8 @@ async function loadBufferStatus() {
         const ig = ch.find(c => c.service === 'instagram');
         bufferCounts.tiktok = tiktok ? tiktok.scheduledPostsCount : null;
         bufferCounts.instagram = ig ? ig.scheduledPostsCount : null;
-        document.getElementById('tiktok-count').textContent = tiktok ? tiktok.scheduledPostsCount : '—';
-        document.getElementById('ig-count').textContent = ig ? ig.scheduledPostsCount : '—';
-        document.getElementById('last-update').textContent = new Date().toLocaleTimeString('it-IT');
-    } catch(e) {
-        document.getElementById('tiktok-count').textContent = 'err';
-        document.getElementById('ig-count').textContent = 'err';
-    }
+        _bufferStatusTs = Date.now();
+    } catch(_) {}
 }
 
 async function rateAndApprove(id, rating) {
@@ -541,7 +529,6 @@ async function rateAndApprove(id, rating) {
         });
         document.getElementById('card-'+id)?.remove();
         toast(`Video approvato ${'★'.repeat(rating)}`);
-        loadBufferStatus();
     } catch(e) { toast('Errore: '+e.message, 'var(--red)'); }
 }
 
@@ -913,9 +900,7 @@ document.addEventListener('keydown', e => {
 document.getElementById('speed-select').value = globalSpeed;
 const _savedIntro = localStorage.getItem('capPromptIntro');
 if (_savedIntro) document.getElementById('cap-prompt-intro').value = _savedIntro; // instant restore before DB
-loadBufferStatus();
 switchTab(localStorage.getItem('activeTab') || 'pending');
-setInterval(loadBufferStatus, 60000);
 </script>
 </body>
 </html>
