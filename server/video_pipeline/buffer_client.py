@@ -146,7 +146,10 @@ class BufferClient:
         response = http_requests.post(
             BUFFER_GRAPHQL_URL, json=payload, headers=headers, timeout=30
         )
-        response.raise_for_status()
+        if not response.ok:
+            raise RuntimeError(
+                f"Buffer HTTP {response.status_code}: {response.text[:500]}"
+            )
         data = response.json()
         if "errors" in data:
             raise RuntimeError(f"Buffer GraphQL errors: {data['errors']}")
