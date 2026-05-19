@@ -127,7 +127,10 @@ def fill_buffer_queue():
     base_url = _build_base_url()
     slots = _get_next_slots(len(videos_to_add))
 
-    for video, slot in zip(videos_to_add, slots):
+    import time as _time
+    for i, (video, slot) in enumerate(zip(videos_to_add, slots)):
+        if i > 0:
+            _time.sleep(15)  # wait for Buffer to finish downloading the previous video
         video_url = f"{base_url}/videos/{video['id']}"
         cap = db.get_next_caption()
         caption = cap['text'] if cap else _FALLBACK_CAPTION
