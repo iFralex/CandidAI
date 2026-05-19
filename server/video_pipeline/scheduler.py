@@ -34,6 +34,7 @@ BUFFER_API_KEY = os.environ.get("BUFFER_API_KEY", "")
 BUFFER_TIKTOK_CHANNEL_ID = os.environ.get("BUFFER_TIKTOK_CHANNEL_ID", "")
 BUFFER_INSTAGRAM_CHANNEL_ID = os.environ.get("BUFFER_INSTAGRAM_CHANNEL_ID", "")
 _FLASK_PORT = os.environ.get("PORT", "5000")
+_VIDEO_SERVER_PORT = os.environ.get("VIDEO_SERVER_PORT", "8000")
 
 
 def _get_public_ip() -> str:
@@ -56,8 +57,8 @@ def _get_public_ip() -> str:
 
 def _build_base_url() -> str:
     ip = _get_public_ip()
-    url = f"http://{ip}:{_FLASK_PORT}"
-    logger.info(f"Public base URL: {url}")
+    url = f"http://{ip}:{_VIDEO_SERVER_PORT}"
+    logger.info(f"Video base URL: {url}")
     return url
 VIDEO_STORAGE_PATH = os.environ.get(
     "VIDEO_STORAGE_PATH",
@@ -72,15 +73,27 @@ POST_TIMES_ET = ["09:00", "12:00", "19:00"]
 _FALLBACK_CAPTION = "Link in bio 👆\n\n#JobSearch #AI #CareerTips #CandidAI #GetHired"
 
 
-def _get_next_slots(count: int) -> list[str]:
-    """Return the next `count` publish slots at 09:00, 12:00, 19:00 ET, starting tomorrow."""
+def _get_next_slots(count: int, taken: set[str] = None) -> list[str]:
+    """Return the next `count` free publish slots at 09:00, 12:00, 19:00 ET.
+
+    Starts from the next future slot (today included if still in the future)
+    and skips any slot whose YYYY-MM-DDTHH:MM prefix appears in `taken`.
+    """
+    taken = taken or set()
     slots = []
-    day = datetime.now(_ET).date() + timedelta(days=1)
+    now = datetime.now(_ET)
+    day = now.date()
     while len(slots) < count:
         for time_str in POST_TIMES_ET:
             h, m = map(int, time_str.split(":"))
             dt = datetime(day.year, day.month, day.day, h, m, 0, tzinfo=_ET)
+            if dt <= now:
+                continue
+            key = dt.isoformat()[:16]
+            if key in taken:
+                continue
             slots.append(dt.isoformat())
+            taken.add(key)  # mark as claimed so duplicates within the same run are avoided
             if len(slots) >= count:
                 break
         day += timedelta(days=1)
@@ -98,6 +111,7 @@ def fill_buffer_queue():
 
     # Probe each platform: skip unconfigured or unreachable ones
     active = []
+    taken_slots: set[str] = set()
     for platform, channel_id in [("tiktok", BUFFER_TIKTOK_CHANNEL_ID),
                                   ("instagram", BUFFER_INSTAGRAM_CHANNEL_ID)]:
         if not channel_id:
@@ -109,6 +123,7 @@ def fill_buffer_queue():
             logger.info(f"fill_buffer_queue: {platform} {count}/{QUEUE_MAX} scheduled, {free} free")
             if free > 0:
                 active.append((platform, channel_id, free))
+                taken_slots |= buffer.get_scheduled_slots(channel_id)
         except Exception as e:
             logger.error(f"fill_buffer_queue: could not fetch {platform} queue: {e}")
 
@@ -125,12 +140,9 @@ def fill_buffer_queue():
 
     videos_to_add = approved[:slots_available]
     base_url = _build_base_url()
-    slots = _get_next_slots(len(videos_to_add))
+    slots = _get_next_slots(len(videos_to_add), taken=taken_slots)
 
-    import time as _time
-    for i, (video, slot) in enumerate(zip(videos_to_add, slots)):
-        if i > 0:
-            _time.sleep(15)  # wait for Buffer to finish downloading the previous video
+    for video, slot in zip(videos_to_add, slots):
         video_url = f"{base_url}/videos/{video['id']}"
         cap = db.get_next_caption()
         caption = cap['text'] if cap else _FALLBACK_CAPTION

@@ -106,6 +106,28 @@ class BufferClient:
         logger.info(f"Buffer post created: {post_id} scheduled at {post.get('dueAt')}")
         return post_id
 
+    def get_scheduled_slots(self, channel_id: str) -> set[str]:
+        """Return ISO date strings (YYYY-MM-DDTHH:MM) of already-scheduled posts."""
+        data = self._request(
+            _GET_POSTS,
+            {
+                "input": {
+                    "organizationId": self.org_id,
+                    "filter": {
+                        "channelIds": [channel_id],
+                        "status": ["scheduled"],
+                    },
+                }
+            },
+        )
+        edges = data.get("data", {}).get("posts", {}).get("edges", [])
+        slots = set()
+        for edge in edges:
+            due = edge.get("node", {}).get("dueAt", "")
+            if due:
+                slots.add(due[:16])  # "2026-05-20T09:00"
+        return slots
+
     def get_published_posts(self, channel_id: str) -> list[dict]:
         """Fetch published posts. Statistics unavailable in new API — counts return 0."""
         data = self._request(

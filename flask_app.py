@@ -94,6 +94,48 @@ def _ingest_worker():
 _threading.Thread(target=_ingest_worker, daemon=True, name="ingest-worker").start()
 
 
+def _start_video_file_server(port: int = 8000):
+    """Concurrent HTTP server on a dedicated port for Buffer video downloads.
+
+    Runs independently of gunicorn so video downloads never block the API queue.
+    """
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    class _VideoHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            parts = self.path.strip('/').split('/')
+            if len(parts) != 2 or parts[0] != 'videos':
+                self.send_response(404); self.end_headers(); return
+            video_id = parts[1]
+            try:
+                video = _vp_db().get_processed_video(video_id)
+            except Exception:
+                video = None
+            if not video or not _os.path.exists(video['file_path']):
+                self.send_response(404); self.end_headers(); return
+            file_size = _os.path.getsize(video['file_path'])
+            self.send_response(200)
+            self.send_header('Content-Type', 'video/mp4')
+            self.send_header('Content-Length', str(file_size))
+            self.end_headers()
+            try:
+                with open(video['file_path'], 'rb') as f:
+                    while chunk := f.read(65536):
+                        self.wfile.write(chunk)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+
+        def log_message(self, *args):
+            pass  # suppress per-request access logs
+
+    server = ThreadingHTTPServer(('0.0.0.0', port), _VideoHandler)
+    _threading.Thread(target=server.serve_forever, daemon=True, name="video-file-server").start()
+    logging.getLogger(__name__).info(f"Video file server started on port {port}")
+
+
+_start_video_file_server(port=int(_os.environ.get("VIDEO_SERVER_PORT", "8000")))
+
+
 def _vp_storage():
     return _os.environ.get("VIDEO_STORAGE_PATH",
                            _os.path.join(_os.path.dirname(__file__), "video_library"))
