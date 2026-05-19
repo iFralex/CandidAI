@@ -75,7 +75,7 @@ import os as _os
 import glob as _glob
 import threading as _threading
 import queue as _queue
-from flask import send_file as _send_file, jsonify as _jsonify, request as _request
+from flask import send_file as _send_file, jsonify as _jsonify, request as _request, Response as _Response
 
 # Single-worker queue: ffmpeg and faster-whisper are CPU-bound — running them
 # concurrently on a VPS causes severe resource contention and 10-15x slowdowns.
@@ -127,7 +127,18 @@ def serve_video(video_id: str):
     video = db.get_processed_video(video_id)
     if not video or not _os.path.exists(video['file_path']):
         return _jsonify({"error": "not found"}), 404
-    return _send_file(video['file_path'], mimetype='video/mp4', conditional=True)
+
+    def _stream():
+        with open(video['file_path'], 'rb') as f:
+            while chunk := f.read(65536):
+                yield chunk
+
+    file_size = _os.path.getsize(video['file_path'])
+    return _Response(
+        _stream(),
+        mimetype='video/mp4',
+        headers={'Content-Length': str(file_size)},
+    )
 
 
 @app.route('/api/videos/pending')
