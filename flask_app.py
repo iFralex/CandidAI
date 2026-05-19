@@ -102,16 +102,31 @@ def _start_video_file_server(port: int = 8000):
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
     class _VideoHandler(BaseHTTPRequestHandler):
-        def do_GET(self):
+        def _resolve(self):
             parts = self.path.strip('/').split('/')
             if len(parts) != 2 or parts[0] != 'videos':
-                self.send_response(404); self.end_headers(); return
+                return None
             video_id = parts[1]
             try:
                 video = _vp_db().get_processed_video(video_id)
             except Exception:
-                video = None
+                return None
             if not video or not _os.path.exists(video['file_path']):
+                return None
+            return video
+
+        def do_HEAD(self):
+            video = self._resolve()
+            if not video:
+                self.send_response(404); self.end_headers(); return
+            self.send_response(200)
+            self.send_header('Content-Type', 'video/mp4')
+            self.send_header('Content-Length', str(_os.path.getsize(video['file_path'])))
+            self.end_headers()
+
+        def do_GET(self):
+            video = self._resolve()
+            if not video:
                 self.send_response(404); self.end_headers(); return
             file_size = _os.path.getsize(video['file_path'])
             self.send_response(200)
