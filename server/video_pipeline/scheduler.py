@@ -138,7 +138,7 @@ def fill_buffer_queue():
         primary_post_id = None
         for platform, channel_id, _ in active:
             try:
-                post_id = buffer.create_post(channel_id, video_url, caption, slot)
+                post_id = buffer.create_post(channel_id, video_url, caption, slot, service=platform)
                 published.append(platform)
                 if primary_post_id is None:
                     primary_post_id = post_id

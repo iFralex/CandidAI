@@ -83,19 +83,21 @@ class BufferClient:
         return data.get("data", {}).get("posts", {}).get("totalCount", 0)
 
     def create_post(self, channel_id: str, video_url: str, caption: str,
-                    scheduled_at: str) -> str:
+                    scheduled_at: str, service: str = "") -> str:
         """Schedule a video post. Returns the Buffer post ID."""
-        variables = {
-            "input": {
-                "channelId": channel_id,
-                "text": caption,
-                "schedulingType": "customScheduled",
-                "mode": "customScheduled",
-                "dueAt": scheduled_at,
-                "assets": [{"video": {"url": video_url}}],
-            }
+        post_input: dict = {
+            "channelId": channel_id,
+            "text": caption,
+            "schedulingType": "automatic",
+            "mode": "customScheduled",
+            "dueAt": scheduled_at,
+            "assets": [{"video": {"url": video_url}}],
         }
-        data = self._request(_CREATE_POST, variables)
+        if service == "instagram":
+            post_input["metadata"] = {
+                "instagram": {"type": "reel", "shouldShareToFeed": True}
+            }
+        data = self._request(_CREATE_POST, {"input": post_input})
         result = data.get("data", {}).get("createPost", {})
         if "message" in result:
             raise RuntimeError(f"Buffer createPost error: {result.get('message', result)}")
