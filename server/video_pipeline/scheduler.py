@@ -6,6 +6,7 @@ import os
 import logging
 from datetime import datetime, timezone, timedelta
 from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 
 try:
@@ -215,6 +216,18 @@ def collect_buffer_stats():
             total_saved += 1
 
     logger.info(f"collect_buffer_stats: saved {total_saved} stat records")
+
+
+def start_background_scheduler() -> BackgroundScheduler:
+    """Start the scheduler as a non-blocking background thread (for embedding in Flask/gunicorn)."""
+    scheduler = BackgroundScheduler(timezone="UTC")
+    scheduler.add_job(fill_buffer_queue, 'cron', hour=8, minute=0,
+                      id='fill_queue', replace_existing=True)
+    scheduler.add_job(collect_buffer_stats, 'interval', days=30,
+                      id='collect_stats', replace_existing=True)
+    scheduler.start()
+    logger.info("Video pipeline scheduler started (background). Daily fill at 08:00 UTC, stats every 30 days.")
+    return scheduler
 
 
 def main():

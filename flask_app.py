@@ -150,6 +150,16 @@ def _start_video_file_server(port: int = 8000):
 
 _start_video_file_server(port=int(_os.environ.get("VIDEO_SERVER_PORT", "8000")))
 
+def _start_pipeline_scheduler():
+    try:
+        from server.video_pipeline.scheduler import start_background_scheduler
+        start_background_scheduler()
+    except Exception as e:
+        logging.getLogger("server.video_pipeline").error(
+            f"Could not start pipeline scheduler: {e}", exc_info=True)
+
+_start_pipeline_scheduler()
+
 
 def _vp_storage():
     return _os.environ.get("VIDEO_STORAGE_PATH",
