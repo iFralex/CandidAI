@@ -3,10 +3,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { authMiddleware, redirectToHome, redirectToLogin } from "next-firebase-auth-edge";
 import { clientConfig, serverConfig } from "./config";
 import { Path } from "next-firebase-auth-edge/next/middleware";
+import { checkBasicAuth, ANALYTICS_REALM } from "./lib/analytics-auth";
 
 const PUBLIC_PATHS: Path = [/^(?!\/dashboard).*/];
 
 export async function middleware(request: NextRequest) {
+  // HTTP Basic Auth gate for /analytics and its API (uses SESSION_API_KEY)
+  const pathname = request.nextUrl.pathname;
+  if (pathname === "/analytics" || pathname.startsWith("/analytics/") || pathname.startsWith("/api/analytics/")) {
+    if (!checkBasicAuth(request.headers.get("authorization"))) {
+      return new NextResponse("Authentication required", {
+        status: 401,
+        headers: { "WWW-Authenticate": `Basic realm="${ANALYTICS_REALM}"` },
+      });
+    }
+    return NextResponse.next();
+  }
+
   // Test mode bypass (non-production only)
   if (process.env.NODE_ENV !== 'production' && request.cookies.get('__playwright_user__')?.value) {
     return NextResponse.next();
@@ -92,5 +105,6 @@ export const config = {
     "/((?!_next|api|__\\/auth|.*\\.).*)",
     "/api/login",
     "/api/logout",
+    "/api/analytics/:path*",
   ],
 };
