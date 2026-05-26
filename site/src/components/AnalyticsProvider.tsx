@@ -22,7 +22,6 @@ import { track } from "@/lib/analytics";
 const NOISE_PATTERNS = [
     "AbortError",
     "cancelled",
-    "TrackerStorageType",                 // iubenda widget internal loader
     "Connection to Indexed Database",     // Firebase: user opened a second tab
     "Database deleted by request",        // Firebase: cleared site data
     "ResizeObserver loop",                // benign browser warning

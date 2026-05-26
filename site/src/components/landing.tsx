@@ -14,7 +14,6 @@ import { get } from 'http';
 import { PlanSelector } from '@/components/PlanSelector';
 import { Badge } from './ui/badge';
 import Link from 'next/link';
-import Script from 'next/script';
 import Player from "@vimeo/player";
 import { useRef } from "react";
 import { Pause, Maximize } from "lucide-react";
@@ -1400,9 +1399,8 @@ const Footer = () => {
                         <ul className="space-y-2 text-gray-400">
                             <li><a href="/help" className="hover:text-white transition-colors">Help Center</a></li>
                             <li><a href="/contact" className="hover:text-white transition-colors">Contact Us</a></li>
-                            <li><a href="https://www.iubenda.com/privacy-policy/18216120" className="hover:text-white transition-colors" title="Privacy Policy ">Privacy Policy</a>
-                                <Script type="text/javascript">{`(function (w,d) {var loader = function () {var s = d.createElement("script"), tag = d.getElementsByTagName("script")[0]; s.src="https://cdn.iubenda.com/iubenda.js"; tag.parentNode.insertBefore(s,tag);}; if(w.addEventListener){w.addEventListener("load", loader, false);}else if(w.attachEvent){w.attachEvent("onload", loader);}else{w.onload = loader;}})(window, document);`}</Script></li>
-                            <li><a href="https://www.iubenda.com/privacy-policy/18216120/cookie-policy" className="hover:text-white transition-colors" title="Cookie Policy ">Cookie Policy</a><script type="text/javascript">{`(function (w,d) {var loader = function () {var s = d.createElement("script"), tag = d.getElementsByTagName("script")[0]; s.src="https://cdn.iubenda.com/iubenda.js"; tag.parentNode.insertBefore(s,tag);}; if(w.addEventListener){w.addEventListener("load", loader, false);}else if(w.attachEvent){w.attachEvent("onload", loader);}else{w.onload = loader;}})(window, document);`}</script></li>
+                            <li><Link href="/docs/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                            <li><Link href="/docs/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li>
                             <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
                         </ul>
                     </div>

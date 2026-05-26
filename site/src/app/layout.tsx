@@ -4,6 +4,7 @@ import "./globals.css";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { CookieBanner } from "@/components/CookieBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -162,13 +163,6 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
-        {process.env.NODE_ENV === "production" && (
-          // Raw <script> (not next/script): iubenda's widget loads inner chunks in a
-          // timing-sensitive way and breaks when the loader defers/optimizes it
-          // (causes "TrackerStorageType is not defined" unhandled rejections).
-          // eslint-disable-next-line @next/next/no-sync-scripts
-          <script type="text/javascript" src="https://embeds.iubenda.com/widgets/71eada8f-b797-45de-97dd-e9467691d6b4.js" async />
-        )}
       </head>
       <body
         className={`dark ${geistSans.variable} ${geistMono.variable} antialiased`}
@@ -178,6 +172,7 @@ export default function RootLayout({
             {children}
           </ErrorBoundary>
         </AnalyticsProvider>
+        <CookieBanner />
         <SpeedInsights />
       </body>
     </html>
