@@ -7,7 +7,7 @@ import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 import time
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from typing import Optional, List, Tuple, Union, Dict
 import time
 import undetected_chromedriver as uc
@@ -847,6 +847,73 @@ def search_on_google(query, exclude_url="", num_results=3):
 
 import json
 
+
+# Searlo enforces a 500-char limit on the `q` parameter. We stay under it.
+_SEARLO_MAX_QUERY_LEN = 480
+
+
+def _build_search_query_with_exclusions(
+    base_query: str,
+    exclude_urls,
+    exclude_link: str = "",
+    max_len: int = _SEARLO_MAX_QUERY_LEN,
+) -> str:
+    """
+    Build a Searlo `q` string that fits within `max_len` characters.
+
+    Strategy:
+      1. Each excluded URL becomes `-site:domain.com` (much shorter than `-https://full/path...`)
+         and collapses multiple URLs from the same host into a single token.
+      2. If still over budget, drop the OLDEST exclusions one by one until it fits.
+    """
+    def to_token(url: str) -> str:
+        if not url:
+            return ""
+        try:
+            host = urlparse(url).netloc or ""
+            if host.startswith("www."):
+                host = host[4:]
+            if host:
+                return f"-site:{host}"
+        except Exception:
+            pass
+        return f"-{url}"  # fallback: raw URL
+
+    exclude_link_token = to_token(exclude_link) if exclude_link else ""
+
+    # Preserve insertion order, dedupe (multiple URLs from same host → single -site:host)
+    tokens: List[str] = []
+    seen = set()
+    for url in (exclude_urls or []):
+        tok = to_token(url)
+        if tok and tok not in seen and tok != exclude_link_token:
+            seen.add(tok)
+            tokens.append(tok)
+
+    def assemble(toks: List[str]) -> str:
+        parts = [base_query, *toks]
+        if exclude_link_token:
+            parts.append(exclude_link_token)
+        return " ".join(p for p in parts if p).strip()
+
+    full = assemble(tokens)
+    if len(full) <= max_len:
+        return full
+
+    dropped = 0
+    while tokens and len(full) > max_len:
+        tokens.pop(0)  # drop oldest first
+        dropped += 1
+        full = assemble(tokens)
+
+    if dropped > 0:
+        logging.warning(
+            f"Searlo query trimmed: dropped {dropped} exclusion(s) to fit {max_len} chars "
+            f"(final length {len(full)})"
+        )
+    return full
+
+
 def get_blog_links_ranked(company, target_position_description, exclude_link = ""):
     """
     Usa i risultati della ricerca Google e AI per individuare e classificare le homepage 
@@ -894,8 +961,7 @@ def get_blog_links_ranked(company, target_position_description, exclude_link = "
 
     # --- 🔍 Funzione di ricerca con esclusioni dinamiche ---
     def search_with_exclusions(query, exclude_link, exclude_urls):
-        exclude_str = " ".join([f'-{url}' for url in exclude_urls]) if exclude_urls else ""
-        full_query = f"{query} {exclude_str} -{exclude_link}".strip()
+        full_query = _build_search_query_with_exclusions(query, exclude_urls, exclude_link)
         return search_on_google(full_query, exclude_link)
 
     # --- 2️⃣ Ricerca principale combinando tutte le keywords ---
