@@ -143,7 +143,7 @@ export function HeroVideo() { // Assicurati che 'videos' sia passato come prop o
     const handleTouchStart = () => {
         if (isMobile) {
             wakeControls();
-            playerRef.current.setVolume(1); // Volume massimo
+            playerRef.current?.setVolume(1); // null se il player non è ancora inizializzato
         }
     };
 

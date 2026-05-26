@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Script from "next/script";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -99,6 +98,50 @@ export const metadata: Metadata = {
   },
 };
 
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "CandidAI",
+  url: BASE_URL,
+  logo: `${BASE_URL}/android-chrome-512x512.png`,
+  description:
+    "CandidAI finds the right recruiters and writes personalised job-application emails for you, automatically.",
+  sameAs: ["https://twitter.com/candidai"],
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer support",
+    url: `${BASE_URL}/contact`,
+  },
+};
+
+const softwareApplicationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "CandidAI",
+  url: BASE_URL,
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web, Windows, macOS",
+  description:
+    "AI-powered platform that finds the right recruiters and writes personalised job-application emails automatically. Apply to dozens of companies in minutes.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "CandidAI",
+    url: BASE_URL,
+  },
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "CandidAI",
+  url: BASE_URL,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -107,8 +150,24 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         {process.env.NODE_ENV === "production" && (
-          <Script type="text/javascript" src="https://embeds.iubenda.com/widgets/71eada8f-b797-45de-97dd-e9467691d6b4.js" />
+          // Raw <script> (not next/script): iubenda's widget loads inner chunks in a
+          // timing-sensitive way and breaks when the loader defers/optimizes it
+          // (causes "TrackerStorageType is not defined" unhandled rejections).
+          // eslint-disable-next-line @next/next/no-sync-scripts
+          <script type="text/javascript" src="https://embeds.iubenda.com/widgets/71eada8f-b797-45de-97dd-e9467691d6b4.js" async />
         )}
       </head>
       <body

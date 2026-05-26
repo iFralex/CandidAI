@@ -102,7 +102,7 @@ export function LoginForm({
 
       await internLogin(idToken)
 
-      track({ name: "login_success", params: { method: "email" } });
+      track({ name: "login_success", params: { method: "email" } }, { userId: uid });
       if (uid) identifyUser(uid, { plan, credits, onboarding_step: onboardingStep, signup_method: "email" });
       window.location.href = next || "/dashboard";
     } catch (err: any) {
@@ -153,7 +153,7 @@ export function LoginForm({
             },
           });
 
-          track({ name: "login_success", params: { method: "google" } });
+          track({ name: "login_success", params: { method: "google" } }, { userId: user.uid });
           identifyUser(user.uid, { signup_method: "google" });
           const redirectTo = sessionStorage.getItem('loginNext') || '/dashboard';
           sessionStorage.removeItem('loginNext');
@@ -341,7 +341,7 @@ export function RegisterForm({
 
       await internLogin(idToken)
 
-      track({ name: "signup_success", params: { method: "email" } });
+      track({ name: "signup_success", params: { method: "email" } }, { userId: uid });
       if (uid) identifyUser(uid, { plan: "free_trial", credits: 0, onboarding_step: 1, signup_method: "email" });
       window.location.href = "/dashboard";
     } catch (err: any) {
@@ -392,7 +392,7 @@ export function RegisterForm({
             },
           });
 
-          track({ name: "signup_success", params: { method: "google" } });
+          track({ name: "signup_success", params: { method: "google" } }, { userId: user.uid });
           identifyUser(user.uid, { plan: "free_trial", credits: 0, onboarding_step: 1, signup_method: "google" });
           router.push('/dashboard');
         }

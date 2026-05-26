@@ -17,6 +17,22 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { track } from "@/lib/analytics";
 
+// Errors that come from third-party scripts or browser quirks — not our code.
+// Filtering them keeps `app_error` actionable instead of being 90% noise.
+const NOISE_PATTERNS = [
+    "AbortError",
+    "cancelled",
+    "TrackerStorageType",                 // iubenda widget internal loader
+    "Connection to Indexed Database",     // Firebase: user opened a second tab
+    "Database deleted by request",        // Firebase: cleared site data
+    "ResizeObserver loop",                // benign browser warning
+    "Non-Error promise rejection captured",
+];
+function isNoiseError(msg: string | undefined | null): boolean {
+    if (!msg) return false;
+    return NOISE_PATTERNS.some((p) => msg.includes(p));
+}
+
 // ---------------------------------------------------------------------------
 // UTM helpers
 // ---------------------------------------------------------------------------
@@ -204,6 +220,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
         const handleError = (event: ErrorEvent) => {
             // Filter out browser extension errors and cross-origin script errors
             if (!event.filename || event.message === "Script error.") return;
+            if (isNoiseError(event.message)) return;
             track({
                 name: "app_error",
                 params: {
@@ -216,8 +233,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
 
         const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
             const msg = String(event.reason)?.slice(0, 200) ?? "unknown";
-            // Filter noise from cancelled fetch requests
-            if (msg.includes("AbortError") || msg.includes("cancelled")) return;
+            if (isNoiseError(msg)) return;
             track({
                 name: "app_error",
                 params: {

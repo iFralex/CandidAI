@@ -89,9 +89,13 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
                 setSaved(true)
                 setTimeout(() => setSaved(false), 3000)
             } else {
-                await completeOnboarding(customizations)
+                // Fire analytics BEFORE the server action — completeOnboarding ends with
+                // redirect('/dashboard'), which throws NEXT_REDIRECT and aborts everything after.
+                // GA uses sendBeacon (non-cancellable); Firestore persistence happens server-side
+                // inside completeOnboarding(), so we pass persist:false here to avoid duplicates.
                 track({ name: "onboarding_step_complete", params: { step: currentStep ?? 5 } })
-                track({ name: "onboarding_complete", params: { plan: plan ?? "unknown" } }, { persist: true })
+                track({ name: "onboarding_complete", params: { plan: plan ?? "unknown" } }, { persist: false })
+                await completeOnboarding(customizations)
             }
         })
     }
@@ -2311,13 +2315,13 @@ interface ProfileAnalysisClientProps {
 function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
     const [tempName, setTempName] = useState(profileSummary?.name || "");
     const [tempTitle, setTempTitle] = useState(profileSummary?.title || "");
-    const [tempLocation, setTempLocation] = useState(profileSummary?.location.country || "");
+    const [tempLocation, setTempLocation] = useState(profileSummary?.location?.country || "");
 
     const handleSave = () => {
         if (!tempName.trim() || !tempLocation.trim() || !tempTitle.trim()) {
             setTempName(profileSummary?.name || "");
             setTempTitle(profileSummary?.title || "");
-            setTempLocation(profileSummary?.location.country || "");
+            setTempLocation(profileSummary?.location?.country || "");
         }
         console.log(profileSummary)
         setProfileSummary((prev: any) =>
@@ -2326,7 +2330,7 @@ function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
                     ...prev,
                     name: tempName.trim() || prev.name,
                     title: tempTitle.trim() || prev.title,
-                    location: { ...prev.location, country: tempLocation.trim() || prev.location.contry },
+                    location: { ...(prev.location ?? {}), country: tempLocation.trim() || prev.location?.country },
                 }
                 : null
         );
@@ -2354,17 +2358,17 @@ function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
                 <div className="flex flex-wrap gap-1 items-center">
                     <p className="text-gray-300">{profileSummary?.title}</p>
                     •
-                    {profileSummary?.location.country && (
+                    {profileSummary?.location?.country && (
                         <div className="flex items-center text-gray-300 space-x-1">
                             <Flag size={16} />
-                            <span>{profileSummary.location.country}</span>
+                            <span>{profileSummary.location?.country}</span>
                         </div>
                     )}
                 </div>
                 <DialogContent className="space-y-4" onCloseAutoFocus={() => {
                     setTempName(profileSummary?.name || "");
                     setTempTitle(profileSummary?.title || "");
-                    setTempLocation(profileSummary?.location.country || "");
+                    setTempLocation(profileSummary?.location?.country || "");
                 }}>
                     <DialogHeader>
                         <DialogTitle>
@@ -2857,7 +2861,7 @@ function EducationEditor({ profileSummary, setProfileSummary }: any) {
     };
 
     const handleSave = () => {
-        if (!tempEdu.school?.name.trim() || !tempEdu.majors.length || tempEdu.majors.some((m: string) => !m.trim())) return;
+        if (!tempEdu.school?.name?.trim() || !tempEdu.majors?.length || tempEdu.majors.some((m: string) => !m.trim())) return;
 
         setProfileSummary((prev: any) => {
             const newEdu = [...(prev.education || [])];
@@ -3041,8 +3045,7 @@ function EducationSection({ profileSummary, setProfileSummary }: any) {
     };
 
     const handleSave = () => {
-        console.log(tempEdu.majors)
-        if (!tempEdu.school?.name.trim() || !tempEdu.majors.length || tempEdu.majors.filter(m => !m.trim()).length) return;
+        if (!tempEdu.school?.name?.trim() || !tempEdu.majors?.length || tempEdu.majors.filter(m => !m.trim()).length) return;
 
         setProfileSummary((prev: any) => {
             if (!prev) return prev;

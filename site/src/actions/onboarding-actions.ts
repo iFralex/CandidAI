@@ -492,6 +492,22 @@ export async function completeOnboarding(customizations: any) {
         await startServer(userId);
     }
 
+    // Persist the analytics event server-side (the client-side `track` won't survive
+    // the redirect below — server-side write is the reliable path for Firestore).
+    try {
+        await adminDb.collection("analytics_events").add({
+            event: "onboarding_complete",
+            params: { plan: userSnap.data()?.plan || "free_trial" },
+            user_id: userId,
+            session_id: null,
+            page_path: "/dashboard",
+            timestamp: FieldValue.serverTimestamp(),
+            source: "server",
+        });
+    } catch (err) {
+        console.error("Failed to persist onboarding_complete analytics event:", err);
+    }
+
     // Send onboarding thank-you email (fire-and-forget — don't block the redirect)
     try {
         await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {

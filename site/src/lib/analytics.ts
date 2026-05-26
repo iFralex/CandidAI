@@ -136,6 +136,12 @@ const PERSIST_EVENTS = new Set<TrackingEvent["name"]>([
 export interface TrackOptions {
     /** Write this event to Firestore `analytics_events` for real-time queries. */
     persist?: boolean;
+    /**
+     * Explicit user id to attach to the persisted event. Use when the caller
+     * already knows the uid but `auth.currentUser` may not yet be populated
+     * client-side (e.g. just after signup/login via cookie auth).
+     */
+    userId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -152,7 +158,11 @@ export interface TrackOptions {
 export function track(event: TrackingEvent, options?: TrackOptions): void {
     if (typeof window === "undefined") return;
 
-    const shouldPersist = options?.persist || PERSIST_EVENTS.has(event.name);
+    // Explicit `persist: false` lets a caller opt OUT even for events that
+    // are persisted by default (e.g. when the server already wrote the event).
+    const shouldPersist = options?.persist !== undefined
+        ? options.persist
+        : PERSIST_EVENTS.has(event.name);
 
     // Send to GA4
     import("@/lib/firebase").then(({ analytics }) => {
@@ -164,7 +174,7 @@ export function track(event: TrackingEvent, options?: TrackOptions): void {
 
     // Write to Firestore for critical events
     if (shouldPersist) {
-        persistToFirestore(event).catch(() => { /* ignore — analytics must never break UX */ });
+        persistToFirestore(event, options?.userId).catch(() => { /* ignore — analytics must never break UX */ });
     }
 }
 
@@ -172,7 +182,7 @@ export function track(event: TrackingEvent, options?: TrackOptions): void {
 // Firestore persistence for real-time operational dashboards
 // ---------------------------------------------------------------------------
 
-async function persistToFirestore(event: TrackingEvent): Promise<void> {
+async function persistToFirestore(event: TrackingEvent, explicitUserId?: string): Promise<void> {
     try {
         const [{ db, auth }, { collection, addDoc, serverTimestamp }] = await Promise.all([
             import("@/lib/firebase"),
@@ -181,16 +191,37 @@ async function persistToFirestore(event: TrackingEvent): Promise<void> {
 
         if (!db) return;
 
+        const userId = explicitUserId
+            ?? auth?.currentUser?.uid
+            ?? getCachedUserId()
+            ?? null;
+
         await addDoc(collection(db, "analytics_events"), {
             event: event.name,
             params: event.params,
-            user_id: auth?.currentUser?.uid ?? null,
+            user_id: userId,
             session_id: getSessionId(),
             page_path: window.location.pathname,
             timestamp: serverTimestamp(),
             user_agent: navigator.userAgent.slice(0, 200),
         });
     } catch { /* ignore */ }
+}
+
+/**
+ * Cached uid set by `identifyUser`. Survives across navigations within the tab.
+ * Needed because email/password auth here uses cookie-only sessions and never
+ * populates `firebase.auth().currentUser` client-side.
+ */
+const USER_ID_KEY = "_ca_uid";
+function getCachedUserId(): string | null {
+    try { return sessionStorage.getItem(USER_ID_KEY); } catch { return null; }
+}
+function setCachedUserId(uid: string): void {
+    try { sessionStorage.setItem(USER_ID_KEY, uid); } catch { /* ignore */ }
+}
+function clearCachedUserId(): void {
+    try { sessionStorage.removeItem(USER_ID_KEY); } catch { /* ignore */ }
 }
 
 /** Stable per-session ID (survives page navigations, reset on new tab). */
@@ -227,6 +258,9 @@ export function identifyUser(
 ): void {
     if (typeof window === "undefined") return;
 
+    // Cache uid for persistToFirestore — survives navigation within the tab.
+    setCachedUserId(userId);
+
     import("@/lib/firebase").then(({ analytics }) => {
         if (!analytics) return;
         try {
@@ -241,6 +275,12 @@ export function identifyUser(
             }
         } catch { /* ignore */ }
     }).catch(() => { /* ignore */ });
+}
+
+/** Clear identified user — call on logout so subsequent events are anonymous. */
+export function clearIdentifiedUser(): void {
+    if (typeof window === "undefined") return;
+    clearCachedUserId();
 }
 
 /**

@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { clearIdentifiedUser } from '@/lib/analytics';
 import Image from 'next/image';
 import Link from 'next/link';
 import { User, Mail, CreditCard, LogOut } from 'lucide-react';
@@ -46,6 +47,7 @@ export function SidebarClientWrapper({ user, navigationItems }: SidebarClientWra
         try {
             await signOut(auth);
             await fetch('/api/logout');
+            clearIdentifiedUser();
             router.push('/login');
         } catch (err) {
             console.error('Logout failed', err);
