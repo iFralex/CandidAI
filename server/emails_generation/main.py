@@ -82,25 +82,32 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
 
         logging.info(f"\n🏢 {name}: eseguo {company_tasks}")
 
-        try:
-            # Esegui task in ordine logico
-            result_blog = None
-            result_recruiters = None
-            custom_user_inscructions = {}
+        # Esegui task in ordine logico — try separati per step
+        # così se uno fallisce, gli altri possono comunque procedere.
+        result_blog = None
+        result_recruiters = None
+        custom_user_inscructions = {}
 
-            if "blog" in company_tasks:
+        if "blog" in company_tasks:
+            try:
                 start = time.time()
                 result_blog = get_blog_posts(user_id, single_id, single_company_list, profile_summary, position_description)
                 logging.info(f"✅ Blog completato per {name} ({time.time() - start:.2f}s)")
+            except Exception as e:
+                logging.error(f"❌ Errore nello step 'blog' per {name}: {e}", exc_info=True)
 
-            if "recruiters" in company_tasks:
+        if "recruiters" in company_tasks:
+            try:
                 start = time.time()
                 result_recruiters, custom_user_inscructions = find_recruiters_for_user(
                     user_id, single_id, single_company_list, account.get("queries", [])
                 )
                 logging.info(f"✅ Recruiter completato per {name} ({time.time() - start:.2f}s)")
-            
-            if "email" in company_tasks:
+            except Exception as e:
+                logging.error(f"❌ Errore nello step 'recruiters' per {name}: {e}", exc_info=True)
+
+        if "email" in company_tasks:
+            try:
                 start = time.time()
                 row = get_results_row(user_id, ids[company_key])
 
@@ -156,9 +163,8 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
                         ],
                         "preview": (email_result[name].get("body") or ""),
                     })
-
-        except Exception as e:
-            logging.error(f"❌ Errore nell'elaborazione di {name}: {e}", exc_info=True)
+            except Exception as e:
+                logging.error(f"❌ Errore nello step 'email' per {name}: {e}", exc_info=True)
 
     logging.info("\n🎉 Tutti i processi terminati.")
 

@@ -1769,7 +1769,11 @@ def extract_articles_with_deepseek(base_url, articles_num, html=None, batch_size
     """
 
     # Analizza l'HTML
-    soup = BeautifulSoup(get_html(base_url) if not html else html, "html.parser")
+    markup = html if html else get_html(base_url)
+    if not markup:
+        logging.warning(f"⚠️ extract_articles_with_deepseek: HTML vuoto/None per {base_url}, salto la pagina")
+        return []
+    soup = BeautifulSoup(markup, "html.parser")
 
     # Isola solo il contenuto del <body>
     body = soup.body
