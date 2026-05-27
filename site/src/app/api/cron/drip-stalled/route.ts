@@ -23,6 +23,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { recordServerEvent } from "@/lib/server-track";
 import { wrapEmail, button, tipBox, heading, paragraph, escapeHtml } from "@/lib/email-template";
+import { buildUnsubscribeUrl } from "@/lib/unsubscribe";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -72,17 +73,25 @@ export async function GET(req: NextRequest) {
         const alreadySent = u.drip_stalled_sent === true;
 
         if (alreadySent) { skipped.push({ uid, reason: "already_sent" }); continue; }
+        if (u.unsubscribed === true) { skipped.push({ uid, reason: "unsubscribed" }); continue; }
         if (step >= STALLED_MAX_STEP) { skipped.push({ uid, reason: `step=${step}` }); continue; }
         if (!email) { skipped.push({ uid, reason: "no_email" }); continue; }
 
         const name = (u.name as string | undefined)?.split(" ")[0] ?? "";
+        const unsubscribeUrl = buildUnsubscribeUrl(uid);
         try {
             const { error } = await resend.emails.send({
                 from: DRIP_FROM,
                 to: email,
                 replyTo: DRIP_REPLY_TO,
                 subject: name ? `${name}, you got stuck halfway` : "You got stuck halfway on CandidAI",
-                html: renderDripHtml(name),
+                html: renderDripHtml(name, unsubscribeUrl),
+                headers: {
+                    // RFC 8058 one-click unsubscribe — Gmail/Apple Mail show a
+                    // native "Unsubscribe" button next to the sender.
+                    "List-Unsubscribe": `<${unsubscribeUrl}>`,
+                    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+                },
             });
             if (error) throw new Error(JSON.stringify(error));
 
@@ -113,7 +122,7 @@ export async function GET(req: NextRequest) {
     });
 }
 
-function renderDripHtml(firstName: string): string {
+function renderDripHtml(firstName: string, unsubscribeUrl: string): string {
     const greeting = firstName ? `Hey ${escapeHtml(firstName)},` : "Hey there,";
     return wrapEmail(`
         ${heading(greeting)}
@@ -130,5 +139,5 @@ function renderDripHtml(firstName: string): string {
         </div>
         ${tipBox(`<strong style="color: #8b5cf6;">📝 Why I'm asking:</strong> Every reply makes the product better for the next person who signs up. No marketing tricks, just trying to figure out where we're losing people.`)}
         <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Thanks,<br>Alessio</p>
-    `, { preheader: "I'd love to know what made you stop — even one line helps.", badge: "QUICK CHECK-IN" });
+    `, { preheader: "I'd love to know what made you stop — even one line helps.", badge: "QUICK CHECK-IN", unsubscribeUrl });
 }

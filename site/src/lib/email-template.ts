@@ -18,10 +18,15 @@ export interface EmailShellOptions {
     preheader?: string;
     /** Optional small uppercase badge above the title (e.g. "ONBOARDING"). */
     badge?: string;
+    /** Per-user unsubscribe URL (with HMAC token). Marketing emails should pass
+     *  this so the footer "Unsubscribe" link actually works. Omit for
+     *  transactional emails — those aren't opt-in and aren't unsubscribable. */
+    unsubscribeUrl?: string;
 }
 
 export function wrapEmail(content: string, options: EmailShellOptions = {}): string {
-    const { preheader = "", badge } = options;
+    const { preheader = "", badge, unsubscribeUrl } = options;
+    const unsubHref = unsubscribeUrl || `${DOMAIN}/unsubscribed`;
     const badgeHtml = badge ? `
         <div style="text-align: center; margin-bottom: 30px;">
           <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.1); border-radius: 24px;">
@@ -78,7 +83,7 @@ export function wrapEmail(content: string, options: EmailShellOptions = {}): str
                 </tr>
                 <tr>
                   <td style="text-align: center; padding-top: 20px;">
-                    <a href="${DOMAIN}/unsubscribe" style="color: #666666; text-decoration: underline; font-size: 11px;">Unsubscribe</a>
+                    <a href="${unsubHref}" style="color: #666666; text-decoration: underline; font-size: 11px;">Unsubscribe</a>
                   </td>
                 </tr>
               </table>

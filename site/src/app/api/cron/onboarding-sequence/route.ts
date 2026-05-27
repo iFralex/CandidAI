@@ -22,6 +22,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { recordServerEvent } from "@/lib/server-track";
 import { wrapEmail, button, tipBox, heading, paragraph, escapeHtml } from "@/lib/email-template";
+import { buildUnsubscribeUrl } from "@/lib/unsubscribe";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,7 +52,7 @@ interface StageConfig {
     extraFilter?: (u: Record<string, unknown>) => boolean;
     /** If true, fetch users/{uid}/data/account before rendering. */
     needsAccountData?: boolean;
-    render: (firstName: string, ctx?: AccountContext) => { subject: string; html: string };
+    render: (firstName: string, unsubscribeUrl: string, ctx?: AccountContext) => { subject: string; html: string };
 }
 
 const STAGES: StageConfig[] = [
@@ -109,10 +110,12 @@ export async function GET(req: NextRequest) {
             const email = u.email as string | undefined;
 
             if (u[flagField] === true) { skipped++; continue; }
+            if (u.unsubscribed === true) { skipped++; continue; }
             if (!email) { skipped++; continue; }
             if (stage.extraFilter && !stage.extraFilter(u)) { skipped++; continue; }
 
             const firstName = (u.name as string | undefined)?.split(" ")[0] ?? "";
+            const unsubscribeUrl = buildUnsubscribeUrl(uid);
 
             let ctx: AccountContext | undefined;
             if (stage.needsAccountData) {
@@ -130,11 +133,15 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-            const { subject, html } = stage.render(firstName, ctx);
+            const { subject, html } = stage.render(firstName, unsubscribeUrl, ctx);
 
             try {
                 const { error } = await resend.emails.send({
                     from: FROM, to: email, replyTo: REPLY_TO, subject, html,
+                    headers: {
+                        "List-Unsubscribe": `<${unsubscribeUrl}>`,
+                        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+                    },
                 });
                 if (error) throw new Error(JSON.stringify(error));
 
@@ -170,7 +177,7 @@ function greet(firstName: string): string {
 // Diagnoses what the user has actually done vs. what's still missing, then
 // points at exactly the next step. Not a "welcome" — the /api/auth signup
 // flow already sends one. Skipped if onboardingStep >= 5 (= already done).
-function renderFirstActionCheck(firstName: string, ctx?: AccountContext) {
+function renderFirstActionCheck(firstName: string, unsubscribeUrl: string, ctx?: AccountContext) {
     const c = ctx ?? { hasCv: false, hasCompanies: false, hasCustomizations: false };
     const allDone = c.hasCv && c.hasCompanies && c.hasCustomizations;
 
@@ -217,12 +224,13 @@ function renderFirstActionCheck(firstName: string, ctx?: AccountContext) {
                 ? "Your email is generated and waiting for review."
                 : `Next: ${nextStep.label}. Two minutes max.`,
             badge: allDone ? "READY TO SEND" : "QUICK CHECK-IN",
+            unsubscribeUrl,
         }),
     };
 }
 
 // ── Stage 2: feature_tip (day 3) ──────────────────────────────────────────
-function renderFeatureTip(firstName: string) {
+function renderFeatureTip(firstName: string, unsubscribeUrl: string) {
     return {
         subject: firstName ? `${firstName}, a feature you might have missed` : "A feature you might have missed",
         html: wrapEmail(`
@@ -235,12 +243,12 @@ function renderFeatureTip(firstName: string) {
             ${tipBox(`<strong style="color: #8b5cf6;">🎯 Pro tip:</strong> The first generated email is usually 80% there. Five minutes of editing on your end is what makes the difference between "another AI email" and one that gets a reply.`)}
             ${paragraph(`If you haven't tried these yet, now's a good moment.`)}
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Cheers,<br>Alessio</p>
-        `, { preheader: "Change the recruiter, edit the tone, regenerate the draft — small things that change the outcome.", badge: "PRO TIP" }),
+        `, { preheader: "Change the recruiter, edit the tone, regenerate the draft — small things that change the outcome.", badge: "PRO TIP", unsubscribeUrl }),
     };
 }
 
 // ── Stage 3: case_study (day 7) ────────────────────────────────────────────
-function renderCaseStudy(firstName: string) {
+function renderCaseStudy(firstName: string, unsubscribeUrl: string) {
     return {
         subject: firstName
             ? `${firstName}, how Linnea got 2 backend interviews at Stockholm startups in 12 days`
@@ -269,12 +277,13 @@ function renderCaseStudy(firstName: string) {
         `, {
             preheader: "8 emails, 4 replies, 2 onsite interviews — what a Stockholm CS grad did differently.",
             badge: "CASE STUDY",
+            unsubscribeUrl,
         }),
     };
 }
 
 // ── Stage 4: upgrade_offer (day 14) ────────────────────────────────────────
-function renderUpgradeOffer(firstName: string) {
+function renderUpgradeOffer(firstName: string, unsubscribeUrl: string) {
     // The ?discount=WELCOME15 param is captured by middleware.ts into a cookie,
     // so by the time the user reaches checkout the discount is already applied
     // automatically — no manual entry required.
@@ -296,6 +305,6 @@ function renderUpgradeOffer(firstName: string) {
             </div>
             ${paragraph(`If you have questions about which plan fits your case, just reply to this email.`)}
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Cheers,<br>Alessio</p>
-        `, { preheader: "Discount code WELCOME15 — valid 7 days on any plan. Pre-applied via the link.", badge: "MEMBER OFFER" }),
+        `, { preheader: "Discount code WELCOME15 — valid 7 days on any plan. Pre-applied via the link.", badge: "MEMBER OFFER", unsubscribeUrl }),
     };
 }

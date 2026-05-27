@@ -3,7 +3,7 @@ export const content: Record<string, string> = {
 
 Welcome to the privacy policy of CandidAI. This policy will help you understand what data we collect, why we collect it, and what your rights are in relation to it.
 
-**Latest update: March 09, 2026**
+**Latest update: May 27, 2026**
 
 ---
 
@@ -36,18 +36,22 @@ We automatically collect data from you for example when you visit CandidAI.
 - Number of sessions
 - Session duration
 - Operating systems
+- Session recordings (mouse, scroll, clicks; with sensitive fields masked)
+- Marketing attribution data (UTM parameters, referrer, landing page)
 
 **Trusted third parties help us to process it:**
-- Google LLC
+- Google LLC (Firebase)
+- Microsoft Corporation (Clarity)
 - Stripe, Inc.
 - Vercel Inc.
 - Vimeo, LLC
 
 **How we use them:**
 - Hosting and backend infrastructure
-- Analytics
+- Analytics and behavior analysis
 - Handling payments
 - Displaying content from external platforms
+- Marketing attribution
 
 ### Data you give to us
 
@@ -59,15 +63,19 @@ We collect the data you give to us for example when you create an account on Can
 - Social media accounts
 - First name
 - Last name
+- CV / résumé content
+- Customer feedback (in-app micro-survey: 1-5 score and optional comment)
 
 **Trusted third parties help us to process it:**
 - Google LLC
 - Stripe, Inc.
 - Vercel Inc.
+- Resend, Inc.
 
 **How we use them:**
 - Registration and authentication
 - Handling payments
+- Sending transactional and marketing emails
 
 ---
 
@@ -97,6 +105,10 @@ Among the types of Personal Data that this Application collects, by itself or th
 - Operating systems
 - First name
 - Last name
+- CV / résumé content (parsed text, work experience, education, skills)
+- Session recordings (mouse movement, scroll, clicks; sensitive form fields are masked)
+- Customer feedback (in-app survey responses: 1-5 score and optional free-text comment)
+- Marketing attribution data (UTM parameters, HTTP referrer, landing page captured on first visit and most recent attributable visit)
 
 Complete details on each type of Personal Data collected are provided in the dedicated sections of this privacy policy or by specific explanation texts displayed prior to the Data collection.
 
@@ -138,9 +150,13 @@ The Data concerning the User is collected to allow the Owner to provide its Serv
 
 - Registration and authentication
 - Hosting and backend infrastructure
-- Analytics
+- Analytics and behavior analysis (including session recording)
 - Handling payments
 - Displaying content from external platforms
+- Sending transactional emails (account, payment, and service notifications)
+- Sending marketing emails (onboarding sequence, re-engagement messages)
+- Marketing attribution (linking conversions back to the originating campaign)
+- Collecting Customer feedback to improve the Service
 
 ---
 
@@ -149,6 +165,18 @@ The Data concerning the User is collected to allow the Owner to provide its Serv
 ### Analytics
 
 The services contained in this section enable the Owner to monitor and analyze web traffic and can be used to keep track of User behavior.
+
+#### Microsoft Clarity
+
+**Company:** Microsoft Corporation
+
+**Place of processing:** United States
+
+**Personal Data processed:** Session recordings (mouse movement, scroll behavior, click events, page transitions), aggregated heatmaps, device information, Trackers, Usage Data.
+
+Microsoft Clarity is a behavior-analytics service used by the Owner to understand how Users interact with the Application and to identify usability issues. Clarity records Users' sessions and aggregates that data into heatmaps. By default, Clarity masks sensitive form fields (passwords, payment details and any input element marked as sensitive); the Owner does not unmask any field in this Application. Clarity does not capture text entered into input fields unless explicitly unmasked.
+
+**Service provided by:** Microsoft Corporation (United States) – [Privacy Policy](https://privacy.microsoft.com/privacystatement)
 
 #### Google Analytics for Firebase (for apps)
 
@@ -263,6 +291,41 @@ Some of the services listed below may also collect Personal Data for targeting a
 Firebase Authentication is a registration and authentication service provided by Google LLC. To simplify the registration and authentication process, Firebase Authentication can make use of third-party identity providers and save the information on its platform.
 
 **Service provided by:** Google LLC (United States) – [Privacy Policy](https://business.safety.google/privacy/)
+
+### Sending transactional and marketing emails
+
+This type of service makes it possible to send emails to Users.
+
+#### Resend
+
+**Company:** Resend, Inc.
+
+**Place of processing:** United States
+
+**Personal Data processed:** Email address, first name, content of the messages.
+
+Resend is the transactional and marketing email delivery service used by the Owner to deliver: (a) **transactional emails** essential to the Service (account welcome and verification, password reset, payment confirmation, notification that AI-generated emails are ready, onboarding completion); and (b) **marketing emails** sent at a low cadence in the first weeks after sign-up to help Users complete onboarding and discover relevant features (see "Marketing communications" below).
+
+**Service provided by:** Resend, Inc. (United States) – [Privacy Policy](https://resend.com/legal/privacy-policy)
+
+---
+
+## Marketing communications
+
+In the first two weeks following sign-up, this Application may send a small number of automated emails to help the User complete onboarding, understand product features, and learn about plan options. The full sequence consists of at most:
+
+- A "quick check-in" 1–3 days after sign-up if the User stopped before reaching the third onboarding step (drip re-engagement)
+- A "did you know" message about a specific feature 3–5 days after sign-up
+- A short case study 7–9 days after sign-up
+- A one-time discount offer 14–16 days after sign-up
+
+These messages are sent on the **legal basis of the Owner's legitimate interest** in re-engaging recently registered Users and helping them realize value from a Service they actively signed up for. Users may opt out of all marketing communications at any time without affecting the delivery of transactional emails:
+
+- by clicking the **Unsubscribe** link in the footer of any marketing email,
+- by using their email provider's built-in **one-click unsubscribe** button (where supported — these messages include the standards-compliant List-Unsubscribe header),
+- or by replying with the word "stop" to any marketing message.
+
+Once a User has unsubscribed, the Owner stores an "unsubscribed" flag on the User's account and no further marketing emails are sent. Essential transactional emails will continue to be delivered as long as the account exists.
 
 ---
 

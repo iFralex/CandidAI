@@ -1,7 +1,7 @@
 export const content: Record<string, string> = {
   en: `# Cookie Policy of CandidAI
 
-**Latest update:** March 09, 2026
+**Latest update:** May 27, 2026
 
 ---
 
@@ -45,6 +45,15 @@ Via delle Orchidee 2, Cisterna di Latina, LT, 04012, Italy
 ### Necessary
 
 This Application uses so-called "technical" Cookies and other similar Trackers to carry out activities that are strictly necessary for the operation or delivery of the Service.
+
+#### Trackers managed directly by this Application (first-party)
+
+The following first-party cookies and similar technologies are set directly by this Application and are essential to its operation:
+
+- **\`_ca_sid\`** (sessionStorage, expires when tab closes): an opaque session identifier used to group analytics events from the same browsing session.
+- **\`_ca_uid\`** (sessionStorage, expires when tab closes): the authenticated user's ID, cached so analytics events written after sign-in are correctly attributed even when client-side auth state lags behind cookie-based authentication.
+- **\`_ca_feedback_shown\`** (localStorage, persistent): a flag preventing the same user from being shown the in-app feedback prompt multiple times after they have responded or dismissed it.
+- **\`analytics_session\`** (HttpOnly cookie, 30 days): administrator-only session for the internal analytics dashboard at /analytics. Not set for regular Users.
 
 #### Trackers managed by third parties
 
@@ -95,11 +104,46 @@ Vimeo is a video content visualization service provided by Vimeo, LLC that allow
 - sync_active: duration of the session
 - vuid: 2 years
 
+### Marketing and attribution
+
+This Application uses Trackers to attribute new sign-ups and conversions to the marketing campaigns or referral sources that brought the User to the site.
+
+#### Trackers managed directly by this Application (first-party)
+
+- **\`_ca_first_touch\`** (cookie, 90 days): a JSON payload capturing the UTM parameters (\`utm_source\`, \`utm_medium\`, \`utm_campaign\`, \`utm_content\`, \`utm_term\`), HTTP referrer and landing page recorded the first time the User visited the site from an attributable source. Read at sign-up time and stored on the User's profile to attribute their account to its originating marketing channel.
+- **\`_ca_last_touch\`** (cookie, 90 days): the same payload as above but overwritten on every visit that carries new UTM parameters or arrives from an external referrer. Read at checkout to attribute the conversion to the most recent campaign.
+- **\`_ca_utm\`** (sessionStorage, expires when tab closes): a transient copy of the current visit's UTM parameters, used to enrich analytics events from the same session.
+- **\`referral\`** (cookie, 30 days): captures the value of the \`?ref=…\` URL parameter when the User arrives via a referral link, so the referring User can be credited if a purchase occurs.
+- **\`discount\`** (cookie, 30 days): captures the value of the \`?discount=…\` URL parameter so a promotion code linked from an email or campaign is automatically applied at checkout.
+
 ### Measurement
 
 This Application uses Trackers to measure traffic and analyze User behavior to improve the Service.
 
 #### Trackers managed by third parties
+
+##### Microsoft Clarity
+
+**Company:** Microsoft Corporation
+
+**Place of processing:** United States
+
+**Personal Data processed:**
+- Trackers
+- Usage Data
+- Session recordings (mouse movement, scroll behavior, click events, page transitions)
+- Aggregated heatmaps
+
+Microsoft Clarity is a behavior-analytics service that records anonymous Users' interactions with the site (mouse position, scrolls, clicks, page transitions) and produces aggregated heatmaps. Sensitive form fields are masked by default. Clarity does not collect text typed into input fields unless explicitly unmasked by the Owner (this Application does not unmask any field).
+
+**Service provided by:** Microsoft Corporation (United States) – [Privacy Policy](https://privacy.microsoft.com/privacystatement)
+
+**Trackers duration:**
+- _clck: 1 year
+- _clsk: 1 day
+- MUID: 1 year
+- ANONCHK: 10 minutes
+- SM: duration of the session
 
 ##### Google Analytics for Firebase (for apps)
 
