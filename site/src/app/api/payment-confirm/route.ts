@@ -5,6 +5,7 @@ import { plansData, CREDIT_PACKAGES } from "@/config";
 import { startServer } from "@/actions/onboarding-actions";
 import { FieldValue } from "firebase-admin/firestore";
 import { recordPaymentSuccess } from "@/lib/server-track";
+import { incrementDiscountUsage } from "@/lib/discount-codes";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-11-17.clover" });
 
@@ -22,7 +23,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Payment not succeeded" }, { status: 400 });
         }
 
-        const { userId, purchaseType, itemId } = pi.metadata;
+        const { userId, purchaseType, itemId, discountCode: rawDiscountCode } = pi.metadata;
+        const discountCode = rawDiscountCode || null;
 
         if (!userId) {
             return NextResponse.json({ error: "Missing userId in metadata" }, { status: 400 });
@@ -85,6 +87,13 @@ export async function POST(req: Request) {
         }
 
         await batch.commit();
+
+        // Idempotent: this code path is only reached when paymentRef didn't
+        // exist before this request (checked above), so the increment runs
+        // at most once per Stripe payment.
+        if (discountCode) {
+            await incrementDiscountUsage(discountCode);
+        }
 
         await recordPaymentSuccess({
             userId,

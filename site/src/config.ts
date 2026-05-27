@@ -203,11 +203,11 @@ export const referralCodes = {
   "afk": 20,
 }
 
-export const discountCodes: Record<string, { type: 'percentage' | 'fixed'; value: number }> = {
-  "test": { type: 'fixed', value: 1 },
-  "free": { type: 'percentage', value: 100 },
-  // Issued by the day-14 onboarding-sequence upgrade_offer email
-  "WELCOME15": { type: 'percentage', value: 15 },
-  // Issued in the manual outreach campaign drafts
-  "MERCI15": { type: 'percentage', value: 15 },
-}
+// NOTE: discount codes have been moved to Firestore (collection `discount_codes`)
+// for privacy + live management. See lib/discount-codes.ts (server-only) and the
+// /api/discount/validate endpoint. The in-bundle map was visible to anyone who
+// opened DevTools — Firestore registry fixes that.
+//
+// To add/edit codes:
+//   - seed/update via Firebase console, OR
+//   - run site/scripts/seed-discount-codes.mjs (one-shot)

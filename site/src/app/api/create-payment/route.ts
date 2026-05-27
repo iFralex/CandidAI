@@ -7,6 +7,7 @@ import { applyDiscount } from "@/lib/utils";
 import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { startServer } from "@/actions/onboarding-actions";
+import { validateDiscountCode, incrementDiscountUsage } from "@/lib/discount-codes";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-16" });
 
@@ -53,8 +54,21 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "purchaseType non valido" }, { status: 400 });
         }
 
+        // Re-validate the discount server-side — never trust client-supplied
+        // discountCode for the actual price applied. If the code is gone,
+        // disabled, expired, or rate-limited between checkout-open and
+        // payment, refuse to silently overcharge or undercharge.
+        let appliedDiscountCode: string | null = null;
         if (discountCode) {
-            amountInCents = applyDiscount(amountInCents, discountCode);
+            const validation = await validateDiscountCode(discountCode);
+            if (!validation.valid) {
+                return NextResponse.json(
+                    { error: `Discount code is no longer valid (${validation.reason}). Please remove it and try again.` },
+                    { status: 400 }
+                );
+            }
+            amountInCents = applyDiscount(amountInCents, { type: validation.discount.type, value: validation.discount.value });
+            appliedDiscountCode = validation.discount.code;
         }
 
         // Bypass Stripe for amounts under €1 (Stripe minimum is €0.50)
@@ -70,7 +84,7 @@ export async function POST(req: Request) {
                 amount: 0,
                 currency: "eur",
                 status: "succeeded",
-                discountCode: discountCode ?? null,
+                discountCode: appliedDiscountCode,
                 createdAt: new Date(),
             });
 
@@ -106,6 +120,13 @@ export async function POST(req: Request) {
 
             await batch.commit();
 
+            // Increment usage only after the free payment doc is committed —
+            // doc creation is idempotent (paymentRef is a fresh doc ID per
+            // request, but the discount usage MUST track real conversions).
+            if (appliedDiscountCode) {
+                await incrementDiscountUsage(appliedDiscountCode);
+            }
+
             if (purchaseType === "plan") {
                 try { await startServer(user.uid); } catch { /* non bloccante */ }
             }
@@ -126,6 +147,9 @@ export async function POST(req: Request) {
                 userId: user.uid,
                 purchaseType,
                 itemId,
+                // Persisted on the PaymentIntent so webhook/payment-confirm can
+                // re-apply the same code without re-trusting the client.
+                discountCode: appliedDiscountCode ?? "",
             },
         });
 

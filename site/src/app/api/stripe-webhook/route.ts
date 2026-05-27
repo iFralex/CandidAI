@@ -6,6 +6,7 @@ import { plansInfo, CREDIT_PACKAGES, plansData } from "@/config";
 import { startServer } from "@/actions/onboarding-actions";
 import { FieldValue } from "firebase-admin/firestore";
 import { recordPaymentSuccess } from "@/lib/server-track";
+import { incrementDiscountUsage } from "@/lib/discount-codes";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-16" });
 
@@ -24,7 +25,8 @@ export async function POST(req: Request) {
   try {
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      const { userId, purchaseType, itemId } = paymentIntent.metadata;
+      const { userId, purchaseType, itemId, discountCode: rawDiscountCode } = paymentIntent.metadata;
+      const discountCode = rawDiscountCode || null;
 
       if (!userId) {
         return new Response("Webhook Error: missing userId in metadata", { status: 400 });
@@ -98,6 +100,13 @@ export async function POST(req: Request) {
 
       // Revenue tracking — fire BEFORE startServer so it's recorded even if
       // the pipeline kickoff later throws.
+      // Increment discount usage once, inside the idempotent first-write
+      // branch — paymentRef.exists check above guarantees we only land
+      // here the first time this Stripe event is processed.
+      if (discountCode) {
+        await incrementDiscountUsage(discountCode);
+      }
+
       await recordPaymentSuccess({
         userId,
         purchaseType,

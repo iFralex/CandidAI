@@ -17,9 +17,15 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { computePriceInCents, formatPrice, getPlanById, getDiscountCode, applyDiscount } from "@/lib/utils";
-import { CREDIT_PACKAGES, discountCodes } from "@/config";
+import { computePriceInCents, formatPrice, getPlanById, getDiscountCode, applyDiscount, type ResolvedDiscount } from "@/lib/utils";
+import { CREDIT_PACKAGES } from "@/config";
 import { track, refreshUserPropertiesFromFirestore, saveLastTouchToUserDoc } from "@/lib/analytics";
+
+/** Discount as held by the checkout state — includes the canonical code
+ *  string so we can pass it to payment endpoints for server-side re-validation. */
+interface AppliedDiscount extends ResolvedDiscount {
+    code: string;
+}
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -97,11 +103,12 @@ interface PaymentRequestButtonProps {
     amountCents: number;
     purchaseType: "plan" | "credits";
     itemId: string;
-    discountCode?: string | null;
+    discount?: AppliedDiscount | null;
     onSuccess?: (data: any) => void;
 }
 
-function PaymentRequestButton({ email, amountCents, purchaseType, itemId, discountCode, onSuccess }: PaymentRequestButtonProps) {
+function PaymentRequestButton({ email, amountCents, purchaseType, itemId, discount, onSuccess }: PaymentRequestButtonProps) {
+    const discountCode = discount?.code ?? null;
     const stripe = useStripe();
     const [paymentRequest, setPaymentRequest] = useState<any>(null);
     const [supported, setSupported] = useState(false);
@@ -164,19 +171,20 @@ interface CheckoutFormProps {
     email: string;
     purchaseType: "plan" | "credits";
     itemId: string;
-    discountCode?: string | null;
+    discount?: AppliedDiscount | null;
     onSuccess?: (data: any) => void;
 }
 
-function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: CheckoutFormProps) {
+function CheckoutForm({ email, purchaseType, itemId, discount, onSuccess }: CheckoutFormProps) {
     const stripe = useStripe();
     const elements = useElements();
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
+    const discountCode = discount?.code ?? null;
     const baseAmountCents = computePriceInCents(purchaseType, itemId);
-    const amountCents = discountCode ? applyDiscount(baseAmountCents, discountCode) : baseAmountCents;
+    const amountCents = applyDiscount(baseAmountCents, discount);
 
     const isFree = amountCents < 100;
 
@@ -284,7 +292,7 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
                         amountCents={amountCents}
                         purchaseType={purchaseType}
                         itemId={itemId}
-                        discountCode={discountCode}
+                        discount={discount}
                         onSuccess={onSuccess}
                     />
                     <StripeCardInputs />
@@ -322,13 +330,13 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
 interface PurchaseSummaryProps {
     purchaseType: "plan" | "credits";
     itemId: string;
-    discountCode?: string | null;
+    discount?: AppliedDiscount | null;
 }
 
-function PurchaseSummary({ purchaseType, itemId, discountCode }: PurchaseSummaryProps) {
+function PurchaseSummary({ purchaseType, itemId, discount }: PurchaseSummaryProps) {
     const baseAmountCents = computePriceInCents(purchaseType, itemId);
-    const amountCents = discountCode ? applyDiscount(baseAmountCents, discountCode) : baseAmountCents;
-    const hasDiscount = discountCode && amountCents !== baseAmountCents;
+    const amountCents = applyDiscount(baseAmountCents, discount);
+    const hasDiscount = !!discount && amountCents !== baseAmountCents;
 
     if (purchaseType === "credits") {
         const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId);
@@ -378,18 +386,41 @@ function PurchaseSummary({ purchaseType, itemId, discountCode }: PurchaseSummary
 
 // ─── Discount code input ───────────────────────────────────────────────────
 
+/** Server-validated discount applied to the checkout (or null = none). */
 interface DiscountCodeInputProps {
     purchaseType: "plan" | "credits";
     itemId: string;
-    value: string | null;
-    onApply: (code: string) => void;
+    value: AppliedDiscount | null;
+    onApply: (discount: AppliedDiscount) => void;
     onRemove: () => void;
+}
+
+type ValidationErrorReason = "unknown" | "disabled" | "expired" | "max_uses_reached";
+const VALIDATION_ERROR_COPY: Record<ValidationErrorReason, string> = {
+    unknown: "This code isn't valid.",
+    disabled: "This code has been disabled.",
+    expired: "This code has expired.",
+    max_uses_reached: "This code has reached its usage limit.",
+};
+
+async function validateRemote(code: string): Promise<{ valid: true; code: string; type: "percentage" | "fixed"; value: number } | { valid: false; reason: ValidationErrorReason }> {
+    try {
+        const r = await fetch("/api/discount/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code }),
+        });
+        return await r.json();
+    } catch {
+        return { valid: false, reason: "unknown" };
+    }
 }
 
 function DiscountCodeInput({ purchaseType, itemId, value, onApply, onRemove }: DiscountCodeInputProps) {
     const [expanded, setExpanded] = useState(false);
     const [input, setInput] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const [submitting, setSubmitting] = useState(false);
 
     // Already-applied state: compact badge with Remove
     if (value) {
@@ -403,7 +434,7 @@ function DiscountCodeInput({ purchaseType, itemId, value, onApply, onRemove }: D
                         <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
                         <div className="min-w-0">
                             <div className="text-sm text-white font-medium truncate">
-                                Code <code className="text-violet-300 font-mono">{value}</code> applied
+                                Code <code className="text-violet-300 font-mono">{value.code}</code> applied
                             </div>
                             {saved > 0 && (
                                 <div className="text-xs text-gray-400">You save {formatPrice(saved)}</div>
@@ -436,23 +467,20 @@ function DiscountCodeInput({ purchaseType, itemId, value, onApply, onRemove }: D
     }
 
     // Expanded input state
-    const handleApply = () => {
+    const handleApply = async () => {
         const code = input.trim();
-        if (!code) return;
-        // Validate: lookup is case-sensitive in config (lowercase + UPPERCASE both supported)
-        const known = discountCodes[code] || discountCodes[code.toUpperCase()] || discountCodes[code.toLowerCase()];
-        if (!known) {
-            setError("This code isn't valid or has expired.");
+        if (!code || submitting) return;
+        setSubmitting(true);
+        setError(null);
+        const res = await validateRemote(code);
+        setSubmitting(false);
+        if (!res.valid) {
+            setError(VALIDATION_ERROR_COPY[res.reason] ?? VALIDATION_ERROR_COPY.unknown);
             return;
         }
-        // Use the canonical key (the one that actually exists in the map)
-        const canonical = discountCodes[code]
-            ? code
-            : discountCodes[code.toUpperCase()] ? code.toUpperCase() : code.toLowerCase();
-        setError(null);
         setInput("");
         setExpanded(false);
-        onApply(canonical);
+        onApply({ code: res.code, type: res.type, value: res.value });
     };
 
     return (
@@ -475,10 +503,11 @@ function DiscountCodeInput({ purchaseType, itemId, value, onApply, onRemove }: D
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleApply(); } }}
                     placeholder="e.g. WELCOME15"
                     autoFocus
-                    className="flex-1 rounded-md border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-400/60 font-mono"
+                    disabled={submitting}
+                    className="flex-1 rounded-md border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-400/60 font-mono disabled:opacity-50"
                 />
-                <Button type="button" onClick={handleApply} disabled={!input.trim()}>
-                    Apply
+                <Button type="button" onClick={handleApply} disabled={!input.trim() || submitting}>
+                    {submitting ? "..." : "Apply"}
                 </Button>
             </div>
             {error && <div className="text-xs text-red-400">{error}</div>}
@@ -494,29 +523,46 @@ export interface UnifiedCheckoutProps {
 }
 
 export function UnifiedCheckout({ purchaseType, itemId, email = "", onSuccess }: UnifiedCheckoutProps) {
-    const [discountCode, setDiscountCode] = useState<string | null>(null);
+    const [discount, setDiscount] = useState<AppliedDiscount | null>(null);
 
     useEffect(() => {
-        const code = getDiscountCode();
-        setDiscountCode(code);
+        // Cookie may hold a code that the user landed with (?discount=CODE
+        // captured by middleware). We don't trust it blindly — validate
+        // server-side first; if invalid/expired/disabled, clear the cookie.
+        const cookieCode = getDiscountCode();
         const baseAmount = computePriceInCents(purchaseType, itemId);
-        const finalAmount = code ? applyDiscount(baseAmount, code) : baseAmount;
-        track({ name: "checkout_open", params: { type: purchaseType, item_id: itemId, amount_cents: finalAmount } });
-        if (code) {
-            track({ name: "discount_code_apply", params: { code, discount_type: "auto", discount_value: baseAmount - finalAmount } });
+        if (!cookieCode) {
+            track({ name: "checkout_open", params: { type: purchaseType, item_id: itemId, amount_cents: baseAmount } });
+            return;
         }
+        let cancelled = false;
+        validateRemote(cookieCode).then((res) => {
+            if (cancelled) return;
+            if (res.valid) {
+                const applied: AppliedDiscount = { code: res.code, type: res.type, value: res.value };
+                setDiscount(applied);
+                const finalAmount = applyDiscount(baseAmount, applied);
+                track({ name: "checkout_open", params: { type: purchaseType, item_id: itemId, amount_cents: finalAmount } });
+                track({ name: "discount_code_apply", params: { code: applied.code, discount_type: "auto", discount_value: baseAmount - finalAmount } });
+            } else {
+                // Stale/invalid cookie — clear it so we don't keep retrying
+                document.cookie = "discount=; path=/; max-age=0";
+                track({ name: "checkout_open", params: { type: purchaseType, item_id: itemId, amount_cents: baseAmount } });
+            }
+        });
+        return () => { cancelled = true; };
     }, [purchaseType, itemId]);
 
-    const handleApply = (code: string) => {
-        setDiscountCode(code);
-        document.cookie = `discount=${encodeURIComponent(code)}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
+    const handleApply = (applied: AppliedDiscount) => {
+        setDiscount(applied);
+        document.cookie = `discount=${encodeURIComponent(applied.code)}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
         const baseAmount = computePriceInCents(purchaseType, itemId);
-        const finalAmount = applyDiscount(baseAmount, code);
-        track({ name: "discount_code_apply", params: { code, discount_type: "manual", discount_value: baseAmount - finalAmount } });
+        const finalAmount = applyDiscount(baseAmount, applied);
+        track({ name: "discount_code_apply", params: { code: applied.code, discount_type: "manual", discount_value: baseAmount - finalAmount } });
     };
 
     const handleRemove = () => {
-        setDiscountCode(null);
+        setDiscount(null);
         document.cookie = "discount=; path=/; max-age=0";
     };
 
@@ -525,11 +571,11 @@ export function UnifiedCheckout({ purchaseType, itemId, email = "", onSuccess }:
             <Elements stripe={stripePromise}>
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                        <PurchaseSummary purchaseType={purchaseType} itemId={itemId} discountCode={discountCode} />
+                        <PurchaseSummary purchaseType={purchaseType} itemId={itemId} discount={discount} />
                         <DiscountCodeInput
                             purchaseType={purchaseType}
                             itemId={itemId}
-                            value={discountCode}
+                            value={discount}
                             onApply={handleApply}
                             onRemove={handleRemove}
                         />
@@ -550,7 +596,7 @@ export function UnifiedCheckout({ purchaseType, itemId, email = "", onSuccess }:
                             email={email}
                             purchaseType={purchaseType}
                             itemId={itemId}
-                            discountCode={discountCode}
+                            discount={discount}
                             onSuccess={onSuccess}
                         />
                     </Card>
