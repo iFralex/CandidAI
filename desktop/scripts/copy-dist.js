@@ -8,29 +8,54 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT      = path.resolve(__dirname, '../..');
-const DIST      = path.resolve(__dirname, '../dist');
+const SEARCH_DIRS = [
+  path.resolve(__dirname, '../dist'),
+  path.resolve(__dirname, '../release'),
+];
 const DOWNLOADS = path.resolve(ROOT, 'site/public/downloads');
 
 fs.mkdirSync(DOWNLOADS, { recursive: true });
 
 const targets = [
-  { pattern: /\.dmg$/,  dest: 'CandidAI.dmg'       },
-  { pattern: /\.exe$/,  dest: 'CandidAI-Setup.exe'  },
+  { pattern: /\.dmg$/, dest: 'CandidAI.dmg'      },
+  { pattern: /\.exe$/, dest: 'CandidAI-Setup.exe' },
 ];
+
+function findNewest(dir, pattern) {
+  if (!fs.existsSync(dir)) return null;
+  let best = null;
+  const stack = [dir];
+  while (stack.length) {
+    const cur = stack.pop();
+    for (const entry of fs.readdirSync(cur, { withFileTypes: true })) {
+      const full = path.join(cur, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+      } else if (entry.isFile() && pattern.test(entry.name)) {
+        const mtime = fs.statSync(full).mtimeMs;
+        if (!best || mtime > best.mtime) best = { full, mtime };
+      }
+    }
+  }
+  return best ? best.full : null;
+}
 
 let copied = 0;
 
 for (const { pattern, dest } of targets) {
-  const match = fs.readdirSync(DIST).find(f => pattern.test(f));
-  if (!match) {
-    console.warn(`  ⚠  No file matching ${pattern} found in dist/`);
+  let src = null;
+  for (const dir of SEARCH_DIRS) {
+    src = findNewest(dir, pattern);
+    if (src) break;
+  }
+  if (!src) {
+    console.warn(`  ⚠  No file matching ${pattern} found under ${SEARCH_DIRS.map(d => path.relative(ROOT, d)).join(' or ')}`);
     continue;
   }
-  const src = path.join(DIST, match);
   const dst = path.join(DOWNLOADS, dest);
   fs.copyFileSync(src, dst);
   const mb = (fs.statSync(dst).size / 1024 / 1024).toFixed(1);
-  console.log(`  ✓  ${match}  →  site/public/downloads/${dest}  (${mb} MB)`);
+  console.log(`  ✓  ${path.relative(ROOT, src)}  →  site/public/downloads/${dest}  (${mb} MB)`);
   copied++;
 }
 
