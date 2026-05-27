@@ -51,6 +51,10 @@ yarn-error.log*
 store_pdl.json
 output/
 
+# ── PII / marketing campaigns (contains real user data in plain text) ──────
+marketing materials/outreach-drafts.command
+site/scripts/dump-users-for-outreach.mjs
+
 # ── Misc ────────────────────────────────────────────────────────────────────
 .DS_Store
 *.pem
