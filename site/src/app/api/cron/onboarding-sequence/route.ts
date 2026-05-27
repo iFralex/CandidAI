@@ -39,16 +39,34 @@ function isAuthorized(req: NextRequest): boolean {
     return token === process.env.CRON_SECRET || token === process.env.SESSION_API_KEY;
 }
 
+interface AccountContext {
+    hasCv: boolean;
+    hasCompanies: boolean;
+    hasCustomizations: boolean;
+}
+
 interface StageConfig {
     key: string;
     windowDays: [number, number];   // [start, end) days since signup
     extraFilter?: (u: Record<string, unknown>) => boolean;
-    render: (firstName: string) => { subject: string; html: string };
+    /** If true, fetch users/{uid}/data/account before rendering. */
+    needsAccountData?: boolean;
+    render: (firstName: string, ctx?: AccountContext) => { subject: string; html: string };
 }
 
 const STAGES: StageConfig[] = [
-    { key: "welcome",        windowDays: [1, 3],  render: renderWelcome },
-    { key: "feature_tip",    windowDays: [3, 5],  render: renderFeatureTip },
+    // Day 1-3: actionable check-in, not a generic welcome. The /api/auth signup
+    // path already sends a "Verify My Account" welcome; this one diagnoses
+    // exactly where the user got stuck and points them at the next step.
+    // Skipped for anyone who already finished onboarding within the window.
+    {
+        key: "first_action_check",
+        windowDays: [1, 3],
+        extraFilter: (u) => Number(u.onboardingStep ?? 0) < 5,
+        needsAccountData: true,
+        render: renderFirstActionCheck,
+    },
+    { key: "feature_tip", windowDays: [3, 5], render: renderFeatureTip },
     {
         key: "case_study",
         windowDays: [7, 9],
@@ -95,7 +113,24 @@ export async function GET(req: NextRequest) {
             if (stage.extraFilter && !stage.extraFilter(u)) { skipped++; continue; }
 
             const firstName = (u.name as string | undefined)?.split(" ")[0] ?? "";
-            const { subject, html } = stage.render(firstName);
+
+            let ctx: AccountContext | undefined;
+            if (stage.needsAccountData) {
+                try {
+                    const accountSnap = await adminDb
+                        .collection("users").doc(uid).collection("data").doc("account").get();
+                    const a = accountSnap.exists ? accountSnap.data() ?? {} : {};
+                    ctx = {
+                        hasCv: !!a.cvUrl,
+                        hasCompanies: Array.isArray(a.companies) && a.companies.length > 0,
+                        hasCustomizations: !!a.customizations,
+                    };
+                } catch {
+                    ctx = { hasCv: false, hasCompanies: false, hasCustomizations: false };
+                }
+            }
+
+            const { subject, html } = stage.render(firstName, ctx);
 
             try {
                 const { error } = await resend.emails.send({
@@ -131,26 +166,58 @@ function greet(firstName: string): string {
     return firstName ? `Hey ${escapeHtml(firstName)}! 👋` : "Hey there! 👋";
 }
 
-// ── Stage 1: welcome (day 1) ──────────────────────────────────────────────
-function renderWelcome(firstName: string) {
+// ── Stage 1: first_action_check (day 1-3) ────────────────────────────────
+// Diagnoses what the user has actually done vs. what's still missing, then
+// points at exactly the next step. Not a "welcome" — the /api/auth signup
+// flow already sends one. Skipped if onboardingStep >= 5 (= already done).
+function renderFirstActionCheck(firstName: string, ctx?: AccountContext) {
+    const c = ctx ?? { hasCv: false, hasCompanies: false, hasCustomizations: false };
+    const allDone = c.hasCv && c.hasCompanies && c.hasCustomizations;
+
+    // Compute next step + CTA destination based on what's missing.
+    const nextStep = !c.hasCompanies
+        ? { label: "Add your first company", url: `${DOMAIN}/dashboard` }
+        : !c.hasCv
+            ? { label: "Upload your CV", url: `${DOMAIN}/dashboard` }
+            : !c.hasCustomizations
+                ? { label: "Customize your email tone", url: `${DOMAIN}/dashboard` }
+                : { label: "Open my dashboard", url: `${DOMAIN}/dashboard` };
+
+    const item = (done: boolean, label: string) => `
+        <li style="display: flex; align-items: center; margin: 0 0 10px; color: ${done ? "#888888" : "#cccccc"}; font-size: 15px; ${done ? "text-decoration: line-through;" : ""}">
+            <span style="display: inline-block; width: 20px; height: 20px; border-radius: 50%; background: ${done ? "#22c55e" : "rgba(139, 92, 246, 0.15)"}; border: ${done ? "none" : "1px solid rgba(139, 92, 246, 0.5)"}; color: white; text-align: center; line-height: 20px; font-size: 12px; margin-right: 12px; flex-shrink: 0;">${done ? "✓" : ""}</span>
+            ${label}
+        </li>`;
+
     return {
-        subject: firstName ? `${firstName}, welcome to CandidAI 🚀` : "Welcome to CandidAI 🚀",
+        subject: allDone
+            ? (firstName ? `${firstName}, you're ready — send your first email` : "You're ready — send your first email")
+            : (firstName ? `${firstName}, ready to send your first email?` : "Ready to send your first email?"),
         html: wrapEmail(`
             ${heading(greet(firstName))}
-            ${paragraph(`I'm Alessio, the creator of CandidAI. Thanks for signing up!`)}
-            ${paragraph(`In a nutshell, CandidAI sends ultra-personalized emails to targeted recruiters on your behalf — based on your CV and the companies you want to reach. Three quick steps to get started:`)}
-            <ol style="color: #cccccc; font-size: 15px; line-height: 1.7; margin: 0 0 24px; padding-left: 22px;">
-                <li style="margin-bottom: 8px;">Upload your CV (PDF or DOCX, we'll parse everything automatically)</li>
-                <li style="margin-bottom: 8px;">Add 1-2 companies where you'd love to work</li>
-                <li>Review the generated email, tweak it if needed, and hit <strong style="color: #8b5cf6;">Send</strong></li>
-            </ol>
+            ${paragraph(allDone
+                ? `Quick check-in: your setup is complete! Your AI-generated email is in the dashboard waiting for you to review and send.`
+                : `Quick check-in on your onboarding. Here's where you are right now:`)}
+            <ul style="list-style: none; padding: 0; margin: 0 0 28px;">
+                ${item(c.hasCompanies, "Add a target company")}
+                ${item(c.hasCv, "Upload your CV")}
+                ${item(c.hasCustomizations, "Set your email preferences")}
+            </ul>
+            ${allDone
+                ? paragraph(`Just one click left.`)
+                : paragraph(`<strong style="color: #ffffff;">Next:</strong> ${escapeHtml(nextStep.label)}. Takes 2 minutes.`)}
             <div style="text-align: center; margin: 32px 0;">
-                ${button("Continue my onboarding →", `${DOMAIN}/dashboard`)}
+                ${button(allDone ? "Review my email →" : nextStep.label + " →", nextStep.url)}
             </div>
-            ${tipBox(`<strong style="color: #8b5cf6;">💡 Did you know?</strong> Personalized emails to recruiters get a <strong>5× higher reply rate</strong> than generic applications. You're already ahead of the game.`)}
-            ${paragraph(`If anything blocks you, just reply to this email — I read every message personally.`)}
-            <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">See you soon,<br>Alessio</p>
-        `, { preheader: "Three quick steps to start sending personalized emails to recruiters.", badge: "WELCOME ABOARD" }),
+            ${tipBox(`<strong style="color: #8b5cf6;">💡 Did you know?</strong> Personalized emails to recruiters get a <strong>5× higher reply rate</strong> than generic applications. The setup is what unlocks that.`)}
+            ${paragraph(`If something's blocking you — anything — reply to this email. I read every message personally.`)}
+            <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Thanks,<br>Alessio</p>
+        `, {
+            preheader: allDone
+                ? "Your email is generated and waiting for review."
+                : `Next: ${nextStep.label}. Two minutes max.`,
+            badge: allDone ? "READY TO SEND" : "QUICK CHECK-IN",
+        }),
     };
 }
 
