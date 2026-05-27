@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase-admin";
+import { wrapEmail, button, tipBox, heading, paragraph } from "@/lib/email-template";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -44,176 +45,47 @@ export async function POST(req) {
             const userId = userRecord.uid
             const domain = process.env.NEXT_PUBLIC_DOMAIN || 'https://candidai.com';
 
-            // Common email layout wrapper
-            const wrapEmail = (content, preheader = '') => `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="x-apple-disable-message-reformatting">
-  <title>CandidAI</title>
-  <meta name="color-scheme" content="light">
-  <meta name="supported-color-schemes" content="light">
-  <!--[if mso]>
-  <style type="text/css">
-    body, table, td {font-family: Arial, sans-serif !important;}
-  </style>
-  <![endif]-->
-</head>
-<body style="margin: 0; padding: 0; background-color: #0f0f0f; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <div style="display: none; max-height: 0; overflow: hidden;">${preheader}</div>
-  
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0f0f0f;">
-    <tr>
-      <td style="padding: 40px 20px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%); border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(139, 92, 246, 0.15);">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); padding: 40px 40px 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
-                CandidAI
-              </h1>
-              <p style="margin: 8px 0 0; color: rgba(255, 255, 255, 0.9); font-size: 14px; font-weight: 500;">
-                Your AI-Powered Career Accelerator
-              </p>
-            </td>
-          </tr>
-          
-          <!-- Content -->
-          <tr>
-            <td style="padding: 40px;">
-              ${content}
-            </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 30px 40px; background-color: #1a1a1a; border-top: 1px solid rgba(139, 92, 246, 0.2);">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td style="text-align: center; padding-bottom: 20px;">
-                    <a href="${domain}" style="color: #8b5cf6; text-decoration: none; font-weight: 600; font-size: 14px;">Visit Dashboard</a>
-                    <span style="color: #666666; margin: 0 12px;">•</span>
-                    <a href="${domain}/help" style="color: #8b5cf6; text-decoration: none; font-weight: 600; font-size: 14px;">Help Center</a>
-                    <span style="color: #666666; margin: 0 12px;">•</span>
-                    <a href="${domain}/contact" style="color: #8b5cf6; text-decoration: none; font-weight: 600; font-size: 14px;">Contact Us</a>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center; color: #888888; font-size: 12px; line-height: 18px;">
-                    <p style="margin: 0 0 8px;">© ${new Date().getFullYear()} CandidAI. All rights reserved.</p>
-                    <p style="margin: 0; color: #666666;">
-                      Transforming job search with AI-powered personalization
-                    </p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center; padding-top: 20px;">
-                    <a href="${domain}/unsubscribe" style="color: #666666; text-decoration: underline; font-size: 11px;">Unsubscribe</a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-  `;
-
-            // Button component
-            const button = (text, link, isPrimary = true) => `
-    <a href="${link}" style="display: inline-block; padding: 16px 32px; background: ${isPrimary ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)' : 'transparent'}; color: #ffffff !important; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; border: ${isPrimary ? 'none' : '2px solid #8b5cf6'}; transition: all 0.3s ease; margin: 10px 0;">
-      ${text}
-    </a>
-  `;
-
             switch (type) {
-                case "welcome":
+                case "welcome": {
                     const subject = "🚀 Welcome to CandidAI – Let's Get You Hired!";
                     const html = wrapEmail(`
-        <div style="text-align: center; margin-bottom: 30px;">
-          <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.1); border-radius: 24px; margin-bottom: 20px;">
-            <span style="color: #8b5cf6; font-size: 14px; font-weight: 600;">WELCOME ABOARD</span>
-          </div>
-        </div>
-
-        <h2 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0 0 16px; line-height: 1.3;">
-          Hey ${userRecord.displayName || 'there'}! 👋
-        </h2>
-        
-        <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-          Welcome to <strong style="color: #8b5cf6;">CandidAI</strong> – where AI meets opportunity! We're thrilled to have you join thousands of professionals who are landing their dream jobs with personalized outreach.
-        </p>
-
-        <div style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid #8b5cf6; padding: 20px; margin: 24px 0; border-radius: 8px;">
-          <p style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin: 0;">
-            <strong style="color: #8b5cf6;">💡 Did you know?</strong> Personalized emails to recruiters have a <strong>5x higher response rate</strong> than standard applications. You're already ahead of the game!
-          </p>
-        </div>
-
-        <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-          Before you start generating those game-changing emails, please verify your account:
-        </p>
-
+        ${heading(`Hey ${userRecord.displayName || 'there'}! 👋`)}
+        ${paragraph(`Welcome to <strong style="color: #8b5cf6;">CandidAI</strong> – where AI meets opportunity! We're thrilled to have you join thousands of professionals who are landing their dream jobs with personalized outreach.`)}
+        ${tipBox(`<strong style="color: #8b5cf6;">💡 Did you know?</strong> Personalized emails to recruiters have a <strong>5x higher response rate</strong> than standard applications. You're already ahead of the game!`)}
+        ${paragraph(`Before you start generating those game-changing emails, please verify your account:`)}
         <div style="text-align: center; margin: 32px 0;">
           ${button('Verify My Account', `${domain}/verify/${userId}`)}
         </div>
-
         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
           <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">
             <strong style="color: #aaaaaa;">What's next?</strong><br>
             Once verified, you'll complete your profile, select target companies, and let our AI craft perfectly personalized emails to the right recruiters.
           </p>
         </div>
-      `, "Complete your CandidAI verification and start your journey to landing interviews");
-
+      `, { preheader: "Complete your CandidAI verification and start your journey to landing interviews", badge: "WELCOME ABOARD" });
                     return { subject, html };
+                }
 
-                case "password-reset":
-                    if (!data.resetLink)
-                        throw new Error("no reset link")
+                case "password-reset": {
+                    if (!data.resetLink) throw new Error("no reset link")
                     email = data.email
                     const resetSubject = "🔒 Reset Your CandidAI Password";
                     const resetHtml = wrapEmail(`
-        <div style="text-align: center; margin-bottom: 30px;">
-          <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.1); border-radius: 24px; margin-bottom: 20px;">
-            <span style="color: #8b5cf6; font-size: 14px; font-weight: 600;">PASSWORD RESET</span>
-          </div>
-        </div>
-
-        <h2 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0 0 16px; line-height: 1.3;">
-          Reset Your Password
-        </h2>
-        
-        <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-          We received a request to reset the password for your CandidAI account. No worries – it happens to the best of us!
-        </p>
-
-        <div style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid #8b5cf6; padding: 20px; margin: 24px 0; border-radius: 8px;">
-          <p style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin: 0;">
-            <strong style="color: #8b5cf6;">🔐 Security Note:</strong> This link will expire in 24 hours for your protection. If you didn't request this reset, you can safely ignore this email.
-          </p>
-        </div>
-
+        ${heading("Reset Your Password")}
+        ${paragraph(`We received a request to reset the password for your CandidAI account. No worries – it happens to the best of us!`)}
+        ${tipBox(`<strong style="color: #8b5cf6;">🔐 Security Note:</strong> This link will expire in 24 hours for your protection. If you didn't request this reset, you can safely ignore this email.`)}
         <div style="text-align: center; margin: 32px 0;">
           ${button('Reset My Password', `${data.resetLink}`)}
         </div>
-
         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
           <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">
             <strong style="color: #aaaaaa;">Need help?</strong><br>
-            If you're having trouble accessing your account, our support team is here to help at <a href="mailto:support@candidai.com" style="color: #8b5cf6; text-decoration: none;">support@candidai.com</a>
+            If you're having trouble accessing your account, our support team is here to help at <a href="mailto:hello@candidai.tech" style="color: #8b5cf6; text-decoration: none;">hello@candidai.tech</a>
           </p>
         </div>
-      `, "Reset your CandidAI password securely");
-
+      `, { preheader: "Reset your CandidAI password securely", badge: "PASSWORD RESET" });
                     return { subject: resetSubject, html: resetHtml };
+                }
 
                 case "new_emails_generated":
                     const companiesCount = newData.length;
@@ -271,24 +143,11 @@ export async function POST(req) {
       `).join('');
 
                     const generatedHtml = wrapEmail(`
-        <div style="text-align: center; margin-bottom: 30px;">
-          <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.1); border-radius: 24px; margin-bottom: 20px;">
-            <span style="color: #8b5cf6; font-size: 14px; font-weight: 600;">EMAILS READY</span>
-          </div>
-        </div>
-
-        <h2 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0 0 16px; line-height: 1.3;">
-          Your Emails Are Ready, ${userRecord.displayName || 'there'}! 🎉
-        </h2>
-        
-        <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-          Great news! We've crafted ${companiesCount} personalized ${companiesCount === 1 ? 'email' : 'emails'} tailored to your target ${companiesCount === 1 ? 'company' : 'companies'}. Each one is uniquely designed to catch the recruiter's attention and showcase your strengths.
-        </p>
+        ${heading(`Your Emails Are Ready, ${userRecord.displayName || 'there'}! 🎉`)}
+        ${paragraph(`Great news! We've crafted ${companiesCount} personalized ${companiesCount === 1 ? 'email' : 'emails'} tailored to your target ${companiesCount === 1 ? 'company' : 'companies'}. Each one is uniquely designed to catch the recruiter's attention and showcase your strengths.`)}
 
         <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.1) 100%); border: 2px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center;">
-          <p style="color: #8b5cf6; font-size: 36px; font-weight: 700; margin: 0 0 8px;">
-            ${companiesCount}
-          </p>
+          <p style="color: #8b5cf6; font-size: 36px; font-weight: 700; margin: 0 0 8px;">${companiesCount}</p>
           <p style="color: #cccccc; font-size: 14px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">
             Personalized ${companiesCount === 1 ? 'Email' : 'Emails'} Generated
           </p>
@@ -304,11 +163,7 @@ export async function POST(req) {
           ${button('View & Send Emails', `${domain}/dashboard`)}
         </div>
 
-        <div style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid #8b5cf6; padding: 20px; margin: 24px 0; border-radius: 8px;">
-          <p style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin: 0;">
-            <strong style="color: #8b5cf6;">💼 Pro Tip:</strong> Send your emails during business hours (Tuesday-Thursday, 10 AM - 2 PM) for the highest response rates. You can review and customize each email before sending!
-          </p>
-        </div>
+        ${tipBox(`<strong style="color: #8b5cf6;">💼 Pro Tip:</strong> Send your emails during business hours (Tuesday-Thursday, 10 AM - 2 PM) for the highest response rates. You can review and customize each email before sending!`)}
 
         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
           <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">
@@ -316,7 +171,7 @@ export async function POST(req) {
             Review your personalized emails, make any final tweaks, and start sending! Remember to mark each as "sent" in your dashboard to track your outreach progress.
           </p>
         </div>
-      `, `${companiesCount} personalized emails ready for your review`);
+      `, { preheader: `${companiesCount} personalized emails ready for your review`, badge: "EMAILS READY" });
 
                     return { subject: generatedSubject, html: generatedHtml };
 
@@ -325,19 +180,8 @@ export async function POST(req) {
                     const firstSubject = `🎉 Your first AI-crafted email is ready — check it out!`;
 
                     const firstHtml = wrapEmail(`
-        <div style="text-align: center; margin-bottom: 30px;">
-          <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 24px; margin-bottom: 20px;">
-            <span style="color: #a78bfa; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">YOUR FIRST EMAIL IS READY</span>
-          </div>
-        </div>
-
-        <h2 style="color: #ffffff; font-size: 26px; font-weight: 700; margin: 0 0 16px; line-height: 1.35;">
-          It's done, ${userRecord.displayName || 'there'}. Your first personalized email is ready. 🎉
-        </h2>
-
-        <p style="color: #cccccc; font-size: 16px; line-height: 1.7; margin: 0 0 24px;">
-          Our AI has researched the recruiter at <strong style="color: #ffffff;">${firstItem.company?.name || 'your target company'}</strong> and crafted a personalized email just for you. No templates, no copy-paste — written from scratch based on the company's news and the recruiter's background.
-        </p>
+        ${heading(`It's done, ${userRecord.displayName || 'there'}. Your first personalized email is ready. 🎉`)}
+        ${paragraph(`Our AI has researched the recruiter at <strong style="color: #ffffff;">${firstItem.company?.name || 'your target company'}</strong> and crafted a personalized email just for you. No templates, no copy-paste — written from scratch based on the company's news and the recruiter's background.`)}
 
         <div style="background: rgba(139, 92, 246, 0.05); border-radius: 12px; padding: 20px; margin: 0 0 28px;">
           <div style="display: table; width: 100%;">
@@ -385,38 +229,23 @@ export async function POST(req) {
           ${button('Review & Send My Email', `${domain}/dashboard`)}
         </div>
 
-        <div style="background: rgba(139, 92, 246, 0.08); border-left: 4px solid #8b5cf6; padding: 18px 20px; margin: 0 0 28px; border-radius: 0 8px 8px 0;">
-          <p style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin: 0;">
-            💡 <strong style="color: #8b5cf6;">Like what you see?</strong> Upgrade your plan and run a full campaign — up to 100 companies, each with a fully personalized email crafted by AI.
-          </p>
-        </div>
+        ${tipBox(`💡 <strong style="color: #8b5cf6;">Like what you see?</strong> Upgrade your plan and run a full campaign — up to 100 companies, each with a fully personalized email crafted by AI.`)}
 
         <div style="padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.15);">
           <p style="color: #888888; font-size: 13px; line-height: 1.6; margin: 0;">
-            Questions? We're at <a href="mailto:support@candidai.com" style="color: #8b5cf6; text-decoration: none;">support@candidai.com</a> — we actually read every message.
+            Questions? We're at <a href="mailto:hello@candidai.tech" style="color: #8b5cf6; text-decoration: none;">hello@candidai.tech</a> — we actually read every message.
           </p>
         </div>
-      `, "Your first AI-crafted recruiter email is ready to review and send");
+      `, { preheader: "Your first AI-crafted recruiter email is ready to review and send", badge: "YOUR FIRST EMAIL IS READY" });
 
                     return { subject: firstSubject, html: firstHtml };
                 }
 
-                case "purchase-confirmation":
+                case "purchase-confirmation": {
                     const confirmSubject = `✅ Purchase Confirmed – ${data.item}`;
                     const confirmHtml = wrapEmail(`
-        <div style="text-align: center; margin-bottom: 30px;">
-          <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.1); border-radius: 24px; margin-bottom: 20px;">
-            <span style="color: #8b5cf6; font-size: 14px; font-weight: 600;">PURCHASE CONFIRMED</span>
-          </div>
-        </div>
-
-        <h2 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0 0 16px; line-height: 1.3;">
-          Payment Successful! 🎉
-        </h2>
-
-        <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-          Thank you for your purchase. Your account has been updated and you're ready to keep going!
-        </p>
+        ${heading("Payment Successful! 🎉")}
+        ${paragraph(`Thank you for your purchase. Your account has been updated and you're ready to keep going!`)}
 
         <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.1) 100%); border: 2px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 24px; margin: 24px 0;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
@@ -455,37 +284,22 @@ export async function POST(req) {
         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
           <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">
             <strong style="color: #aaaaaa;">Questions?</strong><br>
-            If you have any questions about your purchase, contact us at <a href="mailto:support@candidai.com" style="color: #8b5cf6; text-decoration: none;">support@candidai.com</a>
+            If you have any questions about your purchase, contact us at <a href="mailto:hello@candidai.tech" style="color: #8b5cf6; text-decoration: none;">hello@candidai.tech</a>
           </p>
         </div>
-      `, `Your purchase of ${data.item} for ${data.amount} is confirmed`);
-
+      `, { preheader: `Your purchase of ${data.item} for ${data.amount} is confirmed`, badge: "PURCHASE CONFIRMED" });
                     return { subject: confirmSubject, html: confirmHtml };
+                }
 
-                case "contact-confirmation":
+                case "contact-confirmation": {
                     email = data.email;
                     const contactSubject = `We received your message - CandidAI Support`;
                     const safeMessage = (data.message || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     const contactHtml = wrapEmail(`
-        <div style="text-align: center; margin-bottom: 30px;">
-          <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.1); border-radius: 24px; margin-bottom: 20px;">
-            <span style="color: #8b5cf6; font-size: 14px; font-weight: 600;">MESSAGE RECEIVED</span>
-          </div>
-        </div>
+        ${heading(`We got your message, ${data.name}! 👋`)}
+        ${paragraph(`Thanks for reaching out. Our team will review your request and get back to you as soon as possible.`)}
 
-        <h2 style="color: #ffffff; font-size: 28px; font-weight: 700; margin: 0 0 16px; line-height: 1.3;">
-          We got your message, ${data.name}! 👋
-        </h2>
-
-        <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-          Thanks for reaching out. Our team will review your request and get back to you as soon as possible.
-        </p>
-
-        <div style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid #8b5cf6; padding: 20px; margin: 24px 0; border-radius: 8px;">
-          <p style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin: 0;">
-            <strong style="color: #8b5cf6;">📬 What's next?</strong> You'll hear back from us at <strong>hello@candidai.tech</strong>, keep an eye on your inbox (and spam folder, just in case).
-          </p>
-        </div>
+        ${tipBox(`<strong style="color: #8b5cf6;">📬 What's next?</strong> You'll hear back from us at <strong>hello@candidai.tech</strong>, keep an eye on your inbox (and spam folder, just in case).`)}
 
         <div style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px; padding: 20px; margin: 24px 0;">
           <p style="margin: 0 0 8px; color: #888888; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Your message</p>
@@ -498,9 +312,9 @@ export async function POST(req) {
             This is an automated confirmation, please do not reply to this email.
           </p>
         </div>
-      `, "We've received your support request and will be in touch soon");
-
+      `, { preheader: "We've received your support request and will be in touch soon", badge: "MESSAGE RECEIVED" });
                     return { subject: contactSubject, html: contactHtml };
+                }
 
                 case "onboarding-complete": {
                     const plan = data.plan || "free_trial";
@@ -595,19 +409,8 @@ export async function POST(req) {
           </tr>`).join('');
 
                     const onboardingHtml = wrapEmail(`
-        <div style="text-align: center; margin-bottom: 30px;">
-          <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 24px; margin-bottom: 20px;">
-            <span style="color: #a78bfa; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">${content.badge}</span>
-          </div>
-        </div>
-
-        <h2 style="color: #ffffff; font-size: 26px; font-weight: 700; margin: 0 0 20px; line-height: 1.35;">
-          ${content.headline}
-        </h2>
-
-        <p style="color: #cccccc; font-size: 16px; line-height: 1.7; margin: 0 0 28px;">
-          ${content.intro}
-        </p>
+        ${heading(content.headline)}
+        ${paragraph(content.intro)}
 
         <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(124, 58, 237, 0.08) 100%); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 14px; padding: 24px; margin: 0 0 28px;">
           <p style="color: #8b5cf6; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 16px;">What you have access to</p>
@@ -623,11 +426,7 @@ export async function POST(req) {
           </p>
         </div>
 
-        <div style="background: rgba(139, 92, 246, 0.08); border-left: 4px solid #8b5cf6; padding: 18px 20px; margin: 0 0 36px; border-radius: 0 8px 8px 0;">
-          <p style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin: 0;">
-            ${content.tip}
-          </p>
-        </div>
+        ${tipBox(content.tip)}
 
         <div style="text-align: center; margin: 0 0 32px;">
           ${button('Open My Dashboard', `${domain}/dashboard`)}
@@ -635,10 +434,10 @@ export async function POST(req) {
 
         <div style="padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.15);">
           <p style="color: #888888; font-size: 13px; line-height: 1.6; margin: 0;">
-            Questions or feedback? We're at <a href="mailto:support@candidai.com" style="color: #8b5cf6; text-decoration: none;">support@candidai.com</a>, we actually read every message.
+            Questions or feedback? We're at <a href="mailto:hello@candidai.tech" style="color: #8b5cf6; text-decoration: none;">hello@candidai.tech</a>, we actually read every message.
           </p>
         </div>
-      `, content.preheader);
+      `, { preheader: content.preheader, badge: content.badge });
 
                     return { subject: content.subject, html: onboardingHtml };
                 }
@@ -646,11 +445,10 @@ export async function POST(req) {
                 default:
                     return {
                         subject: "CandidAI Notification",
-                        html: wrapEmail(`
-          <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin: 0;">
-            You have a new notification from CandidAI.
-          </p>
-        `, "New notification from CandidAI")
+                        html: wrapEmail(
+                            paragraph("You have a new notification from CandidAI."),
+                            { preheader: "New notification from CandidAI" }
+                        )
                     };
             }
         };
