@@ -18,7 +18,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { computePriceInCents, formatPrice, getPlanById, getDiscountCode, applyDiscount } from "@/lib/utils";
-import { CREDIT_PACKAGES } from "@/config";
+import { CREDIT_PACKAGES, discountCodes } from "@/config";
 import { track, refreshUserPropertiesFromFirestore, saveLastTouchToUserDoc } from "@/lib/analytics";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -376,6 +376,116 @@ function PurchaseSummary({ purchaseType, itemId, discountCode }: PurchaseSummary
     );
 }
 
+// ─── Discount code input ───────────────────────────────────────────────────
+
+interface DiscountCodeInputProps {
+    purchaseType: "plan" | "credits";
+    itemId: string;
+    value: string | null;
+    onApply: (code: string) => void;
+    onRemove: () => void;
+}
+
+function DiscountCodeInput({ purchaseType, itemId, value, onApply, onRemove }: DiscountCodeInputProps) {
+    const [expanded, setExpanded] = useState(false);
+    const [input, setInput] = useState("");
+    const [error, setError] = useState<string | null>(null);
+
+    // Already-applied state: compact badge with Remove
+    if (value) {
+        const baseAmount = computePriceInCents(purchaseType, itemId);
+        const finalAmount = applyDiscount(baseAmount, value);
+        const saved = baseAmount - finalAmount;
+        return (
+            <Card className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
+                        <div className="min-w-0">
+                            <div className="text-sm text-white font-medium truncate">
+                                Code <code className="text-violet-300 font-mono">{value}</code> applied
+                            </div>
+                            {saved > 0 && (
+                                <div className="text-xs text-gray-400">You save {formatPrice(saved)}</div>
+                            )}
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onRemove}
+                        className="text-xs text-gray-400 hover:text-white underline flex-shrink-0"
+                    >
+                        Remove
+                    </button>
+                </div>
+            </Card>
+        );
+    }
+
+    // Collapsed link state
+    if (!expanded) {
+        return (
+            <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="text-sm text-gray-400 hover:text-white underline w-full text-left"
+            >
+                Have a discount code?
+            </button>
+        );
+    }
+
+    // Expanded input state
+    const handleApply = () => {
+        const code = input.trim();
+        if (!code) return;
+        // Validate: lookup is case-sensitive in config (lowercase + UPPERCASE both supported)
+        const known = discountCodes[code] || discountCodes[code.toUpperCase()] || discountCodes[code.toLowerCase()];
+        if (!known) {
+            setError("This code isn't valid or has expired.");
+            return;
+        }
+        // Use the canonical key (the one that actually exists in the map)
+        const canonical = discountCodes[code]
+            ? code
+            : discountCodes[code.toUpperCase()] ? code.toUpperCase() : code.toLowerCase();
+        setError(null);
+        setInput("");
+        setExpanded(false);
+        onApply(canonical);
+    };
+
+    return (
+        <Card className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+                <label className="text-sm text-white font-medium">Discount code</label>
+                <button
+                    type="button"
+                    onClick={() => { setExpanded(false); setError(null); setInput(""); }}
+                    className="text-xs text-gray-500 hover:text-white"
+                >
+                    Cancel
+                </button>
+            </div>
+            <div className="flex gap-2">
+                <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => { setInput(e.target.value); if (error) setError(null); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleApply(); } }}
+                    placeholder="e.g. WELCOME15"
+                    autoFocus
+                    className="flex-1 rounded-md border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-400/60 font-mono"
+                />
+                <Button type="button" onClick={handleApply} disabled={!input.trim()}>
+                    Apply
+                </Button>
+            </div>
+            {error && <div className="text-xs text-red-400">{error}</div>}
+        </Card>
+    );
+}
+
 export interface UnifiedCheckoutProps {
     purchaseType: "plan" | "credits";
     itemId: string;
@@ -397,12 +507,32 @@ export function UnifiedCheckout({ purchaseType, itemId, email = "", onSuccess }:
         }
     }, [purchaseType, itemId]);
 
+    const handleApply = (code: string) => {
+        setDiscountCode(code);
+        document.cookie = `discount=${encodeURIComponent(code)}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
+        const baseAmount = computePriceInCents(purchaseType, itemId);
+        const finalAmount = applyDiscount(baseAmount, code);
+        track({ name: "discount_code_apply", params: { code, discount_type: "manual", discount_value: baseAmount - finalAmount } });
+    };
+
+    const handleRemove = () => {
+        setDiscountCode(null);
+        document.cookie = "discount=; path=/; max-age=0";
+    };
+
     return (
         <div className="no-scrollbar overflow-y-auto space-y-4">
             <Elements stripe={stripePromise}>
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                         <PurchaseSummary purchaseType={purchaseType} itemId={itemId} discountCode={discountCode} />
+                        <DiscountCodeInput
+                            purchaseType={purchaseType}
+                            itemId={itemId}
+                            value={discountCode}
+                            onApply={handleApply}
+                            onRemove={handleRemove}
+                        />
                         <Card className="p-4">
                             <div className="flex items-center justify-between">
                                 <div className="text-sm text-gray-300">Payment method</div>

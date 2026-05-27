@@ -206,4 +206,8 @@ export const referralCodes = {
 export const discountCodes: Record<string, { type: 'percentage' | 'fixed'; value: number }> = {
   "test": { type: 'fixed', value: 1 },
   "free": { type: 'percentage', value: 100 },
+  // Issued by the day-14 onboarding-sequence upgrade_offer email
+  "WELCOME15": { type: 'percentage', value: 15 },
+  // Issued in the manual outreach campaign drafts
+  "MERCI15": { type: 'percentage', value: 15 },
 }

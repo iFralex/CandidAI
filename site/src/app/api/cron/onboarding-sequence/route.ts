@@ -275,6 +275,10 @@ function renderCaseStudy(firstName: string) {
 
 // ── Stage 4: upgrade_offer (day 14) ────────────────────────────────────────
 function renderUpgradeOffer(firstName: string) {
+    // The ?discount=WELCOME15 param is captured by middleware.ts into a cookie,
+    // so by the time the user reaches checkout the discount is already applied
+    // automatically — no manual entry required.
+    const ctaUrl = `${DOMAIN}/dashboard/plan-and-credits?discount=WELCOME15`;
     return {
         subject: firstName ? `${firstName}, -15% on every plan (7 days only)` : "-15% on every plan (7 days only)",
         html: wrapEmail(`
@@ -286,12 +290,12 @@ function renderUpgradeOffer(firstName: string) {
                     <code style="color: #c4b5fd; font-size: 20px; font-weight: 700; letter-spacing: 2px; font-family: 'SF Mono', Menlo, monospace;">WELCOME15</code>
                 </div>
             </div>
-            ${paragraph(`<strong style="color: #ffffff;">15% off any plan</strong>, valid for 7 days. Apply at checkout.`)}
+            ${paragraph(`<strong style="color: #ffffff;">15% off any plan</strong>, valid for 7 days. The code is already attached to the link below — just pick a plan and check out.`)}
             <div style="text-align: center; margin: 32px 0;">
-                ${button("See plans →", `${DOMAIN}/dashboard/plan-and-credits`)}
+                ${button("See plans (code pre-applied) →", ctaUrl)}
             </div>
             ${paragraph(`If you have questions about which plan fits your case, just reply to this email.`)}
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Cheers,<br>Alessio</p>
-        `, { preheader: "Discount code WELCOME15 — valid 7 days on any plan.", badge: "MEMBER OFFER" }),
+        `, { preheader: "Discount code WELCOME15 — valid 7 days on any plan. Pre-applied via the link.", badge: "MEMBER OFFER" }),
     };
 }
