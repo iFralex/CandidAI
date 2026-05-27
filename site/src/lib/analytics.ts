@@ -300,8 +300,43 @@ export interface FirstTouchAttribution {
  * referrer (i.e. no attribution data was captured).
  */
 export function getFirstTouchAttribution(): FirstTouchAttribution | null {
+    return readAttributionCookie("_ca_first_touch");
+}
+
+/**
+ * Save the current last-touch cookie to users/{uid}.last_touch. Call after
+ * any conversion event (payment success, free checkout success, etc.) so the
+ * stored value reflects the campaign that actually closed THIS conversion.
+ * Safe to call without an explicit uid — falls back to the cached uid.
+ */
+export async function saveLastTouchToUserDoc(uid?: string): Promise<void> {
+    if (typeof window === "undefined") return;
+    const userId = uid ?? getCachedUserId();
+    if (!userId) return;
+    const lt = getLastTouchAttribution();
+    if (!lt) return;
+    try {
+        const [{ db }, { doc, updateDoc }] = await Promise.all([
+            import("@/lib/firebase"),
+            import("firebase/firestore"),
+        ]);
+        if (!db) return;
+        await updateDoc(doc(db, "users", userId), { last_touch: lt });
+    } catch { /* ignore — analytics must never break UX */ }
+}
+
+/**
+ * Read the last-touch attribution cookie (overwritten on every attributable
+ * page view). Read at checkout-time to credit the conversion to the campaign
+ * that actually closed it, not the one that originally brought the user.
+ */
+export function getLastTouchAttribution(): FirstTouchAttribution | null {
+    return readAttributionCookie("_ca_last_touch");
+}
+
+function readAttributionCookie(name: string): FirstTouchAttribution | null {
     if (typeof document === "undefined") return null;
-    const match = document.cookie.split("; ").find((c) => c.startsWith("_ca_first_touch="));
+    const match = document.cookie.split("; ").find((c) => c.startsWith(`${name}=`));
     if (!match) return null;
     try {
         return JSON.parse(decodeURIComponent(match.split("=").slice(1).join("=")));

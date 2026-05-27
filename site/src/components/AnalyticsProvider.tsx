@@ -100,6 +100,30 @@ function captureFirstTouch(utm: Record<string, string>): void {
     document.cookie = `_ca_first_touch=${value}; path=/; max-age=${maxAge}; SameSite=Lax`;
 }
 
+/**
+ * Capture LAST-TOUCH attribution: ALWAYS overwrites on every page view that
+ * has UTM params or arrives from an external referrer. Read at checkout-time
+ * so we know which campaign actually closed the conversion (vs. the first
+ * one that brought the user in).
+ */
+function captureLastTouch(utm: Record<string, string>): void {
+    if (typeof document === "undefined") return;
+    const ref = document.referrer || "";
+    const refHost = (() => { try { return new URL(ref).host; } catch { return ""; } })();
+    const internal = !refHost || refHost.endsWith("candidai.tech") || refHost.includes("localhost");
+    if (Object.keys(utm).length === 0 && internal) return;
+
+    const payload = {
+        ...utm,
+        referrer: ref || null,
+        landing_page: window.location.pathname,
+        captured_at: new Date().toISOString(),
+    };
+    const value = encodeURIComponent(JSON.stringify(payload));
+    const maxAge = 60 * 60 * 24 * 90; // 90 days
+    document.cookie = `_ca_last_touch=${value}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
+
 // ---------------------------------------------------------------------------
 // Web Vitals
 // ---------------------------------------------------------------------------
@@ -151,6 +175,7 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
             track({ name: "utm_session", params: currentUTM });
         }
         captureFirstTouch(currentUTM);
+        captureLastTouch(currentUTM);
 
         // Referral code from cookie (set by middleware)
         const refCode = getCookieValue("referral");
