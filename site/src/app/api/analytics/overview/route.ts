@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     const dr = rangeFor(range);
 
     try {
-        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity, cohorts] = await Promise.all([
+        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity, cohorts, timeToX] = await Promise.all([
             runReport({
                 dateRanges: [dr],
                 metrics: [
@@ -106,6 +106,8 @@ export async function GET(req: NextRequest) {
             loadClaritySnapshot().catch(() => null),
             // ── Activation + cohort retention computed from users docs ────
             computeActivationCohorts().catch(() => emptyCohorts()),
+            // ── Time-to-X conversion durations (signup → activation, etc.) ─
+            computeTimeToX().catch(() => emptyTimeToX()),
         ]);
 
         const k = kpis.totals;
@@ -156,6 +158,7 @@ export async function GET(req: NextRequest) {
             revenue,
             clarity,
             cohorts,
+            timeToX,
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -275,6 +278,99 @@ async function computeActivationCohorts() {
     out.activationRate24h = out.totalSignups > 0 ? out.activatedWithin24h / out.totalSignups : 0;
     out.weekly = Array.from(weekly.values()).sort((a, b) => b.weekStart.localeCompare(a.weekStart));
     return out;
+}
+
+// ─── Time-to-X conversion durations ─────────────────────────────────────────
+
+type TimeToBucket = { sampleSize: number; medianMs: number | null; p25Ms: number | null; p75Ms: number | null };
+type TimeToXReport = {
+    activation: TimeToBucket;
+    firstEmailSend: TimeToBucket;
+    firstPayment: TimeToBucket;
+};
+function emptyBucket(): TimeToBucket { return { sampleSize: 0, medianMs: null, p25Ms: null, p75Ms: null }; }
+function emptyTimeToX(): TimeToXReport {
+    return { activation: emptyBucket(), firstEmailSend: emptyBucket(), firstPayment: emptyBucket() };
+}
+
+function percentile(sorted: number[], p: number): number | null {
+    if (sorted.length === 0) return null;
+    if (sorted.length === 1) return sorted[0];
+    const idx = (sorted.length - 1) * p;
+    const lo = Math.floor(idx), hi = Math.ceil(idx);
+    if (lo === hi) return sorted[lo];
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+function summarize(samples: number[]): TimeToBucket {
+    if (samples.length === 0) return emptyBucket();
+    const sorted = [...samples].sort((a, b) => a - b);
+    return {
+        sampleSize: sorted.length,
+        medianMs: percentile(sorted, 0.5),
+        p25Ms: percentile(sorted, 0.25),
+        p75Ms: percentile(sorted, 0.75),
+    };
+}
+
+async function computeTimeToX(): Promise<TimeToXReport> {
+    // Build uid → signupMs and uid → activatedAtMs from Auth + Firestore.
+    const [authUsers, usersSnap] = await Promise.all([
+        listAllAuthUsers(),
+        adminDb.collection("users").get(),
+    ]);
+    const signupByUid = new Map<string, number>();
+    for (const u of authUsers) {
+        const ms = u.metadata?.creationTime ? new Date(u.metadata.creationTime).getTime() : NaN;
+        if (Number.isFinite(ms)) signupByUid.set(u.uid, ms);
+    }
+    const activationDurations: number[] = [];
+    for (const doc of usersSnap.docs) {
+        const signupMs = signupByUid.get(doc.id);
+        const activatedMs = doc.data()?.activated_at?.toMillis?.();
+        if (signupMs && activatedMs && activatedMs >= signupMs) {
+            activationDurations.push(activatedMs - signupMs);
+        }
+    }
+
+    // Scan analytics_events once: for each user_id, capture first occurrence
+    // of email_send and payment_succeeded. We overfetch and filter in JS to
+    // avoid a composite index requirement.
+    const firstEmailByUid = new Map<string, number>();
+    const firstPaymentByUid = new Map<string, number>();
+    const eventsSnap = await adminDb
+        .collection("analytics_events")
+        .orderBy("timestamp", "asc")
+        .limit(10000)
+        .get();
+    for (const d of eventsSnap.docs) {
+        const data = d.data();
+        const uid = data.user_id as string | null | undefined;
+        if (!uid) continue;
+        const ts = (data.timestamp as Timestamp | undefined)?.toMillis?.();
+        if (!ts) continue;
+        if (data.event === "email_send" && !firstEmailByUid.has(uid)) {
+            firstEmailByUid.set(uid, ts);
+        } else if (data.event === "payment_succeeded" && !firstPaymentByUid.has(uid)) {
+            firstPaymentByUid.set(uid, ts);
+        }
+    }
+
+    const emailDurations: number[] = [];
+    for (const [uid, ts] of firstEmailByUid) {
+        const signupMs = signupByUid.get(uid);
+        if (signupMs && ts >= signupMs) emailDurations.push(ts - signupMs);
+    }
+    const paymentDurations: number[] = [];
+    for (const [uid, ts] of firstPaymentByUid) {
+        const signupMs = signupByUid.get(uid);
+        if (signupMs && ts >= signupMs) paymentDurations.push(ts - signupMs);
+    }
+
+    return {
+        activation: summarize(activationDurations),
+        firstEmailSend: summarize(emailDurations),
+        firstPayment: summarize(paymentDurations),
+    };
 }
 
 async function listAllAuthUsers() {

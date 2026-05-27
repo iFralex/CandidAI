@@ -69,7 +69,14 @@ type Overview = {
             returned30d: number;
         }[];
     };
+    timeToX: {
+        activation: TimeBucket;
+        firstEmailSend: TimeBucket;
+        firstPayment: TimeBucket;
+    };
 };
+
+type TimeBucket = { sampleSize: number; medianMs: number | null; p25Ms: number | null; p75Ms: number | null };
 
 const RANGES: { value: Range; label: string }[] = [
     { value: "7d", label: "Ultimi 7 giorni" },
@@ -139,6 +146,7 @@ export function AnalyticsDashboardClient() {
                         </div>
                         <FrustrationPanel clarity={data.clarity} />
                         <CohortsPanel cohorts={data.cohorts} />
+                        <TimeToXPanel data={data.timeToX} />
                         <div className="grid lg:grid-cols-2 gap-6">
                             <TopPages pages={data.topPages} />
                             <Sources sources={data.sources} />
@@ -568,6 +576,47 @@ function CohortsPanel({ cohorts }: { cohorts: Overview["cohorts"] }) {
                         ))}
                     </tbody>
                 </table>
+            </div>
+        </Card>
+    );
+}
+
+// ─── Time-to-X (signup → activation → first email → first payment) ────────
+
+function formatDurationMs(ms: number | null): string {
+    if (ms == null) return "—";
+    if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
+    if (ms < 3600_000) return `${Math.round(ms / 60_000)}m`;
+    if (ms < 86400_000) return `${(ms / 3600_000).toFixed(1)}h`;
+    return `${(ms / 86400_000).toFixed(1)}d`;
+}
+
+function TimeToXPanel({ data }: { data: Overview["timeToX"] }) {
+    const items = [
+        { key: "activation", label: "Signup → Activation", b: data.activation, color: "violet" },
+        { key: "firstEmailSend", label: "Signup → First email_send", b: data.firstEmailSend, color: "pink" },
+        { key: "firstPayment", label: "Signup → First payment", b: data.firstPayment, color: "emerald" },
+    ] as const;
+    return (
+        <Card title="Time-to-X (leading indicators)">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {items.map((it) => (
+                    <div key={it.key} className="rounded-lg border border-white/10 bg-white/5 p-4">
+                        <div className="text-xs text-white/60 mb-2">{it.label}</div>
+                        <div className="flex items-baseline gap-2">
+                            <div className={`text-2xl font-semibold tabular-nums ${it.b.sampleSize === 0 ? "text-white/30" : "text-white"}`}>
+                                {formatDurationMs(it.b.medianMs)}
+                            </div>
+                            <div className="text-[10px] text-white/40">median (p50)</div>
+                        </div>
+                        <div className="mt-2 text-[10px] text-white/50 tabular-nums">
+                            p25 {formatDurationMs(it.b.p25Ms)} · p75 {formatDurationMs(it.b.p75Ms)} · n={it.b.sampleSize}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="text-[10px] text-white/40 mt-3">
+                Shorter is better. Track movement week over week — if median activation drops from 5h to 2h, the onboarding improved.
             </div>
         </Card>
     );
