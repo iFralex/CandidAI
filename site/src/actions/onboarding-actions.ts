@@ -465,10 +465,16 @@ export async function completeOnboarding(customizations: any) {
     const batch = adminDb.batch();
 
     batch.update(accountRef, { customizations: safeCustomizations });
-    batch.update(userRef, {
+    const userUpdate: Record<string, unknown> = {
         onboardingStep: nextStepBase,
         maxOnboardingStep: Math.max(nextStepBase, existingMax),
-    });
+    };
+    // Set activation timestamp only once — even if the user re-runs onboarding,
+    // first activation defines the cohort. Drives cohort retention metrics.
+    if (!userSnap.data()?.activated_at) {
+        userUpdate.activated_at = FieldValue.serverTimestamp();
+    }
+    batch.update(userRef, userUpdate);
 
     await batch.commit();
 

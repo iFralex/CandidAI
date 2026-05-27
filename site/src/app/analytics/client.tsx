@@ -53,6 +53,22 @@ type Overview = {
         topByMetric: Record<string, { url: string; count: number }[]>;
         rateLimitedOrEmpty: boolean;
     } | null;
+    cohorts: {
+        totalSignups: number;
+        activated: number;
+        activatedWithin24h: number;
+        activationRate: number;
+        activationRate24h: number;
+        weekly: {
+            weekStart: string;
+            signups: number;
+            activated: number;
+            activatedWithin24h: number;
+            returned1d: number;
+            returned7d: number;
+            returned30d: number;
+        }[];
+    };
 };
 
 const RANGES: { value: Range; label: string }[] = [
@@ -122,6 +138,7 @@ export function AnalyticsDashboardClient() {
                             <TopEvents events={data.topEvents} />
                         </div>
                         <FrustrationPanel clarity={data.clarity} />
+                        <CohortsPanel cohorts={data.cohorts} />
                         <div className="grid lg:grid-cols-2 gap-6">
                             <TopPages pages={data.topPages} />
                             <Sources sources={data.sources} />
@@ -512,6 +529,63 @@ function pathOnly(url: string): string {
     } catch {
         return url;
     }
+}
+
+// ─── Activation & Cohort Retention ─────────────────────────────────────────
+
+function CohortsPanel({ cohorts }: { cohorts: Overview["cohorts"] }) {
+    if (cohorts.totalSignups === 0) {
+        return <Card title="Activation & retention"><div className="text-sm text-white/50">Nessun utente registrato.</div></Card>;
+    }
+    return (
+        <Card title="Activation & retention">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                <KpiTile label="Signups totali" value={cohorts.totalSignups.toString()} />
+                <KpiTile label="Activated" value={`${cohorts.activated} (${Math.round(cohorts.activationRate * 100)}%)`} />
+                <KpiTile
+                    label="Activated <24h"
+                    value={`${cohorts.activatedWithin24h} (${Math.round(cohorts.activationRate24h * 100)}%)`}
+                    highlight={cohorts.activationRate24h >= 0.2}
+                />
+                <KpiTile label="Cohorts attive" value={cohorts.weekly.length.toString()} />
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="text-left text-xs text-white/50">
+                            <th className="font-normal pb-2">Cohort (settimana)</th>
+                            <th className="font-normal pb-2 text-right">Signups</th>
+                            <th className="font-normal pb-2 text-right">Activated</th>
+                            <th className="font-normal pb-2 text-right">&lt;24h</th>
+                            <th className="font-normal pb-2 text-right">Ret 1d</th>
+                            <th className="font-normal pb-2 text-right">Ret 7d</th>
+                            <th className="font-normal pb-2 text-right">Ret 30d</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {cohorts.weekly.slice(0, 12).map((c) => (
+                            <CohortRow key={c.weekStart} cohort={c} />
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </Card>
+    );
+}
+
+function CohortRow({ cohort: c }: { cohort: Overview["cohorts"]["weekly"][number] }) {
+    const pct = (n: number) => c.signups > 0 ? `${Math.round((n / c.signups) * 100)}%` : "—";
+    return (
+        <tr className="border-t border-white/5">
+            <td className="py-2 pr-3 text-white/90 font-mono text-xs">{c.weekStart}</td>
+            <td className="py-2 pr-3 text-right tabular-nums">{c.signups}</td>
+            <td className="py-2 pr-3 text-right tabular-nums">{c.activated} <span className="text-white/40 text-xs">({pct(c.activated)})</span></td>
+            <td className="py-2 pr-3 text-right tabular-nums text-white/70">{pct(c.activatedWithin24h)}</td>
+            <td className="py-2 pr-3 text-right tabular-nums text-white/70">{pct(c.returned1d)}</td>
+            <td className="py-2 pr-3 text-right tabular-nums text-white/70">{pct(c.returned7d)}</td>
+            <td className="py-2 pr-3 text-right tabular-nums text-white/70">{pct(c.returned30d)}</td>
+        </tr>
+    );
 }
 
 function timeAgo(iso: string): string {

@@ -3,6 +3,7 @@ import { runReport, runRealtimeReport, dateRange, GaDateRange } from "@/lib/ga-d
 import { adminDb } from "@/lib/firebase-admin";
 import { Timestamp } from "firebase-admin/firestore";
 import { loadClaritySnapshot } from "@/lib/clarity-data";
+import { adminAuth } from "@/lib/firebase-admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
     const dr = rangeFor(range);
 
     try {
-        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity] = await Promise.all([
+        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity, cohorts] = await Promise.all([
             runReport({
                 dateRanges: [dr],
                 metrics: [
@@ -103,6 +104,8 @@ export async function GET(req: NextRequest) {
             fetchRevenue(cutoffDate(range)).catch(() => emptyRevenue()),
             // ── Clarity frustration snapshot (cached, refreshed by daily cron) ─
             loadClaritySnapshot().catch(() => null),
+            // ── Activation + cohort retention computed from users docs ────
+            computeActivationCohorts().catch(() => emptyCohorts()),
         ]);
 
         const k = kpis.totals;
@@ -152,6 +155,7 @@ export async function GET(req: NextRequest) {
             },
             revenue,
             clarity,
+            cohorts,
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -181,6 +185,109 @@ function buildFunnel(rows: { dimensions: string[]; metrics: string[] }[]) {
         prevUsers = users;
         return { name, users, count, dropFromPrev: drop, retentionFromPrev };
     });
+}
+
+// ─── Activation + cohort retention ─────────────────────────────────────────
+
+type WeeklyCohort = {
+    weekStart: string;          // YYYY-MM-DD (Monday)
+    signups: number;
+    activated: number;          // # who hit activated_at
+    activatedWithin24h: number; // # whose activated_at - signup <= 24h
+    returned1d: number;
+    returned7d: number;
+    returned30d: number;
+};
+
+function emptyCohorts() {
+    return {
+        totalSignups: 0,
+        activated: 0,
+        activatedWithin24h: 0,
+        activationRate: 0,
+        activationRate24h: 0,
+        weekly: [] as WeeklyCohort[],
+    };
+}
+
+const DAY_MS = 86400_000;
+
+function mondayOfWeek(date: Date): string {
+    const d = new Date(date.getTime());
+    d.setUTCHours(0, 0, 0, 0);
+    // ISO week: Monday=1, Sunday=7. JS getUTCDay: Sun=0..Sat=6 → shift to Mon=0
+    const day = (d.getUTCDay() + 6) % 7;
+    d.setUTCDate(d.getUTCDate() - day);
+    return d.toISOString().slice(0, 10);
+}
+
+async function computeActivationCohorts() {
+    // Pull users from Auth (canonical createdAt) + Firestore docs in parallel.
+    // Firestore gives us activated_at; Auth metadata gives us signup + lastSignIn.
+    const [authPages, usersSnap] = await Promise.all([
+        listAllAuthUsers(),
+        adminDb.collection("users").get(),
+    ]);
+    const firestoreByUid = new Map(usersSnap.docs.map((d) => [d.id, d.data() ?? {}]));
+
+    const now = Date.now();
+    const weekly = new Map<string, WeeklyCohort>();
+    const out = emptyCohorts();
+
+    for (const u of authPages) {
+        const signupMs = u.metadata?.creationTime ? new Date(u.metadata.creationTime).getTime() : NaN;
+        if (!Number.isFinite(signupMs)) continue;
+        const lastLoginMs = u.metadata?.lastSignInTime ? new Date(u.metadata.lastSignInTime).getTime() : NaN;
+
+        const fs = firestoreByUid.get(u.uid) ?? {};
+        const activatedAtMs = fs.activated_at?.toMillis?.() ?? null;
+
+        const weekStart = mondayOfWeek(new Date(signupMs));
+        const row = weekly.get(weekStart) ?? {
+            weekStart, signups: 0, activated: 0, activatedWithin24h: 0,
+            returned1d: 0, returned7d: 0, returned30d: 0,
+        };
+        row.signups++;
+        out.totalSignups++;
+
+        if (activatedAtMs) {
+            row.activated++;
+            out.activated++;
+            if (activatedAtMs - signupMs <= DAY_MS) {
+                row.activatedWithin24h++;
+                out.activatedWithin24h++;
+            }
+        }
+
+        // Returned at N days = lastLogin happened at least N days after signup
+        // AND a full N days have actually elapsed since signup (otherwise the
+        // bucket is incomplete and would understate retention).
+        if (Number.isFinite(lastLoginMs)) {
+            const gap = lastLoginMs - signupMs;
+            if (now - signupMs >= 1 * DAY_MS && gap >= 1 * DAY_MS) row.returned1d++;
+            if (now - signupMs >= 7 * DAY_MS && gap >= 7 * DAY_MS) row.returned7d++;
+            if (now - signupMs >= 30 * DAY_MS && gap >= 30 * DAY_MS) row.returned30d++;
+        }
+        weekly.set(weekStart, row);
+    }
+
+    out.activationRate = out.totalSignups > 0 ? out.activated / out.totalSignups : 0;
+    out.activationRate24h = out.totalSignups > 0 ? out.activatedWithin24h / out.totalSignups : 0;
+    out.weekly = Array.from(weekly.values()).sort((a, b) => b.weekStart.localeCompare(a.weekStart));
+    return out;
+}
+
+async function listAllAuthUsers() {
+    const all: { uid: string; metadata: { creationTime?: string; lastSignInTime?: string } }[] = [];
+    let next: string | undefined;
+    do {
+        const page = await adminAuth.listUsers(1000, next);
+        for (const u of page.users) {
+            all.push({ uid: u.uid, metadata: { creationTime: u.metadata?.creationTime, lastSignInTime: u.metadata?.lastSignInTime } });
+        }
+        next = page.pageToken;
+    } while (next);
+    return all;
 }
 
 function emptyRevenue() {
