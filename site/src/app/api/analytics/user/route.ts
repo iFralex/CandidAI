@@ -68,9 +68,7 @@ export async function GET(req: NextRequest) {
             recruiter: val?.recruiter?.full_name ?? val?.recruiter?.name ?? null,
             recruiter_title: val?.recruiter?.job_title ?? null,
             blog_articles: Array.isArray(val?.blog_articles) ? val.blog_articles.length : 0,
-            email_sent_at: val?.email_sent && val.email_sent._seconds > 0
-                ? new Date(val.email_sent._seconds * 1000).toISOString()
-                : null,
+            email_sent_at: (val?.email_sent as Timestamp | undefined)?.toDate?.()?.toISOString?.() ?? null,
         }))
         : [];
 
