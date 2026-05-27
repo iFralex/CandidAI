@@ -353,9 +353,15 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
             # Esegui la richiesta
             response = requests.get(PDL_URL, headers=HEADERS, params=params).json()
 
+            # Log includes the ES query (parsed) so 404s can be debugged later.
+            try:
+                logged_params = {**params, "query": json.loads(params["query"])}
+            except Exception:
+                logged_params = params
+
             if response.get("status") == 200:
                 data = response.get('data', [])
-                log_pdl_call("person_search", {k: v for k, v in params.items() if k != "query"}, 200, data)
+                log_pdl_call("person_search", logged_params, 200, data)
 
                 # Aggiungi solo profili nuovi (evita duplicati)
                 for record in data:
@@ -373,7 +379,7 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
 
                 print(f"Query '{query['name']}' (ID: {query['id']}): trovati {len(data)} profili, totale accumulato: {len(found_profiles)}/{n_profiles}")
             else:
-                log_pdl_call("person_search", {k: v for k, v in params.items() if k != "query"}, response.get("status", 0), [], error=str(response))
+                log_pdl_call("person_search", logged_params, response.get("status", 0), [], error=str(response))
                 print(f"❌ '{query['id']}': {response}")
 
         except Exception as e:

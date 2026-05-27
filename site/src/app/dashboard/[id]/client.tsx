@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText, Copy, Download, ChevronRight, Lock, XCircle, Play, Pencil, Clock } from "lucide-react";
+import { ArrowRight, Link as LinkIcon, Brain, Check, CheckCircle2, Mail, Newspaper, Search, User, Linkedin, FileText, Copy, Download, ChevronRight, Lock, XCircle, Play, Pencil, Clock, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { CreditSelector } from "@/components/CreditSelector";
 import { UnifiedCheckout } from "@/components/UnifiedCheckout";
@@ -746,6 +746,19 @@ interface EmailData {
   attachmentUrl?: string;
 }
 
+/**
+ * Detect unreplaced placeholder tokens like `[Recruiter First Name]` or
+ * `{First Name}` that slipped through when the LLM lacked enough data
+ * (e.g. recruiter lookup returned null). Returns the list of unique tokens
+ * found — empty array means the email is safe to send.
+ */
+const PLACEHOLDER_RE = /[\[{][^\]}]*(?:name|first|last|recruiter|hiring|hr|company|position|title|manager|role)[^\]}]*[\]}]/gi;
+function findUnreplacedPlaceholders(body?: string | null): string[] {
+    if (!body) return [];
+    const matches = body.match(PLACEHOLDER_RE) ?? [];
+    return Array.from(new Set(matches)).slice(0, 5);
+}
+
 interface Props {
   data: EmailData;
 }
@@ -844,13 +857,22 @@ export function EmailDialog({
     subject || ""
   )}&body=${encodeURIComponent(body || "")}`;
 
+  const placeholders = findUnreplacedPlaceholders(body);
+  const hasPlaceholders = placeholders.length > 0;
+
+  const trigger = hasPlaceholders ? (
+    <Button className="w-full" disabled title="Replace the placeholders in the email body first">
+      {buttonLabel}
+    </Button>
+  ) : (
+    <Link href={mailtoLink}>
+      <Button className="w-full">{buttonLabel}</Button>
+    </Link>
+  );
+
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <Link href={mailtoLink}>
-          <Button className="w-full">{buttonLabel}</Button>
-        </Link>
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Attach Your CV</DialogTitle>
@@ -858,6 +880,21 @@ export function EmailDialog({
             Drag this file into your email client to quickly attach your CV.
           </DialogDescription>
         </DialogHeader>
+
+        {hasPlaceholders && (
+          <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-200">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div>
+              <div className="font-medium mb-1">L'email contiene placeholder non sostituiti</div>
+              <div className="text-amber-200/80">
+                {placeholders.join(", ")}
+              </div>
+              <div className="mt-1 text-amber-200/60">
+                Modifica il body prima di inviare per evitare di mandare un'email con segnaposto visibili.
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col items-center gap-4">
           <div
@@ -895,7 +932,8 @@ export function EmailDialog({
 
           <Button
             onClick={handleSubmit}
-            disabled={isLoading}
+            disabled={isLoading || hasPlaceholders}
+            title={hasPlaceholders ? "Replace the placeholders in the email body first" : undefined}
           >
             {isLoading
               ? "Sending..."
@@ -919,9 +957,16 @@ export function EmailDraftButton({
   buttonLabel = "Send email",
 }) {
   const [loading, startTransition] = useTransition();
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const placeholders = findUnreplacedPlaceholders(body);
+  const hasPlaceholders = placeholders.length > 0;
 
   const handleClick = () => {
+    if (hasPlaceholders) {
+      setError(`Replace placeholders first: ${placeholders.join(", ")}`);
+      return;
+    }
     startTransition(async () => {
       setError(null);
       try {
@@ -969,12 +1014,22 @@ export function EmailDraftButton({
   };
 
   return (
-    <Button className="w-full"
-      onClick={handleClick}
-      disabled={loading}
-    >
-      {loading ? "Creating..." : buttonLabel}
-    </Button>
+    <div className="w-full space-y-2">
+      <Button className="w-full"
+        onClick={handleClick}
+        disabled={loading || hasPlaceholders}
+        title={hasPlaceholders ? "Replace the placeholders in the email body first" : undefined}
+      >
+        {loading ? "Creating..." : buttonLabel}
+      </Button>
+      {hasPlaceholders && (
+        <div className="flex items-start gap-1.5 text-xs text-amber-300/90">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          <span>Placeholder da sostituire: <span className="font-mono">{placeholders.join(", ")}</span></span>
+        </div>
+      )}
+      {error && <div className="text-xs text-red-400">{error}</div>}
+    </div>
   );
 }
 
