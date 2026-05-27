@@ -96,3 +96,27 @@ export const dateRange = {
     last90Days: (): GaDateRange => ({ startDate: "90daysAgo", endDate: "today" }),
     today: (): GaDateRange => ({ startDate: "today", endDate: "today" }),
 };
+
+/**
+ * GA4 Realtime report (last 30 minutes by default).
+ * No dateRanges param — GA4 hard-codes the window.
+ */
+export async function runRealtimeReport(opts: {
+    dimensions?: string[];
+    metrics: string[];
+    limit?: number;
+}): Promise<GaReport> {
+    const client = getClient();
+    const [response] = await client.runRealtimeReport({
+        property: getPropertyPath(),
+        dimensions: opts.dimensions?.map((name) => ({ name })),
+        metrics: opts.metrics.map((name) => ({ name })),
+        limit: opts.limit,
+    });
+    const rows: GaRow[] = (response.rows ?? []).map((r) => ({
+        dimensions: (r.dimensionValues ?? []).map((v) => v.value ?? ""),
+        metrics: (r.metricValues ?? []).map((v) => v.value ?? "0"),
+    }));
+    const totals = (response.totals?.[0]?.metricValues ?? []).map((v) => v.value ?? "0");
+    return { rows, totals, rowCount: response.rowCount ?? rows.length };
+}

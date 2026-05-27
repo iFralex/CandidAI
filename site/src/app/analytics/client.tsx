@@ -20,7 +20,21 @@ type Overview = {
     topEvents: { name: string; count: number; users: number }[];
     topPages: { path: string; views: number; users: number; avgDurationSec: number }[];
     sources: { source: string; medium: string; sessions: number; users: number }[];
-    funnel: { name: string; count: number; users: number }[];
+    funnel: { name: string; users: number; count: number; dropFromPrev: number | null; retentionFromPrev: number | null }[];
+    realtime: {
+        activeUsers: number;
+        pageViews: number;
+        topScreens: { name: string; activeUsers: number; pageViews: number }[];
+    };
+    revenue: {
+        currency: string;
+        totalCents: number;
+        paymentCount: number;
+        uniquePayers: number;
+        firstPurchaseCount: number;
+        byPlan: { plan: string; revenueCents: number; count: number }[];
+        recent: { timestamp: string; amountCents: number; plan: string; isFirst: boolean }[];
+    };
 };
 
 const RANGES: { value: Range; label: string }[] = [
@@ -29,17 +43,6 @@ const RANGES: { value: Range; label: string }[] = [
     { value: "90d", label: "Ultimi 90 giorni" },
 ];
 
-const FUNNEL_ORDER = [
-    "page_view",
-    "signup_attempt",
-    "signup_success",
-    "onboarding_complete",
-    "checkout_open",
-    "checkout_submit",
-    "checkout_success",
-    "email_send",
-    "app_download_click",
-];
 
 export function AnalyticsDashboardClient() {
     const [range, setRange] = useState<Range>("30d");
@@ -92,10 +95,12 @@ export function AnalyticsDashboardClient() {
                     <LoadingState />
                 ) : data ? (
                     <>
+                        <Realtime data={data.realtime} />
                         <KpiGrid kpis={data.kpis} />
+                        <RevenuePanel revenue={data.revenue} />
                         <TrendChart trend={data.trend} />
                         <div className="grid lg:grid-cols-2 gap-6">
-                            <Funnel events={data.funnel} />
+                            <Funnel steps={data.funnel} />
                             <TopEvents events={data.topEvents} />
                         </div>
                         <div className="grid lg:grid-cols-2 gap-6">
@@ -209,33 +214,147 @@ function TrendChart({ trend }: { trend: Overview["trend"] }) {
     );
 }
 
-// ─── Funnel ────────────────────────────────────────────────────────────────
+// ─── Realtime (last 30 min) ────────────────────────────────────────────────
 
-function Funnel({ events }: { events: Overview["funnel"] }) {
-    const byName = new Map(events.map((e) => [e.name, e]));
-    const rows = FUNNEL_ORDER.map((name) => ({
-        name,
-        count: byName.get(name)?.count ?? 0,
-        users: byName.get(name)?.users ?? 0,
-    }));
-    const max = Math.max(...rows.map((r) => r.users), 1);
+function Realtime({ data }: { data: Overview["realtime"] }) {
+    return (
+        <section className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+            <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-medium text-white/90 flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    Realtime · ultimi 30 minuti
+                </h2>
+                <div className="text-xs text-white/50 tabular-nums">
+                    {data.activeUsers} utenti · {data.pageViews} page views
+                </div>
+            </div>
+            {data.topScreens.length > 0 ? (
+                <ul className="space-y-1">
+                    {data.topScreens.slice(0, 6).map((s) => (
+                        <li key={s.name} className="flex justify-between text-xs">
+                            <span className="font-mono text-white/80 truncate">{s.name}</span>
+                            <span className="text-white/60 tabular-nums">{s.activeUsers}u · {s.pageViews}v</span>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <div className="text-xs text-white/50">Nessuna attività negli ultimi 30 minuti.</div>
+            )}
+        </section>
+    );
+}
+
+// ─── Revenue ───────────────────────────────────────────────────────────────
+
+function RevenuePanel({ revenue }: { revenue: Overview["revenue"] }) {
+    if (revenue.paymentCount === 0) {
+        return (
+            <Card title="Revenue">
+                <div className="text-sm text-white/50">
+                    Nessun pagamento nel periodo selezionato.
+                </div>
+            </Card>
+        );
+    }
+    const total = (revenue.totalCents / 100).toLocaleString(undefined, {
+        style: "currency", currency: revenue.currency,
+    });
+    const arpu = revenue.uniquePayers > 0
+        ? (revenue.totalCents / 100 / revenue.uniquePayers).toLocaleString(undefined, {
+            style: "currency", currency: revenue.currency,
+        })
+        : "—";
 
     return (
+        <Card title="Revenue">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                <KpiTile label="Totale" value={total} highlight />
+                <KpiTile label="Pagamenti" value={revenue.paymentCount.toString()} />
+                <KpiTile label="Paganti unici" value={revenue.uniquePayers.toString()} />
+                <KpiTile label="ARPU" value={arpu} />
+            </div>
+            <div className="grid md:grid-cols-2 gap-5">
+                <div>
+                    <div className="text-xs text-white/50 mb-2">Per piano</div>
+                    {revenue.byPlan.length > 0 ? (
+                        <ul className="space-y-1">
+                            {revenue.byPlan.map((p) => (
+                                <li key={p.plan} className="flex justify-between text-xs">
+                                    <span className="font-mono text-white/80">{p.plan}</span>
+                                    <span className="tabular-nums">
+                                        {(p.revenueCents / 100).toLocaleString(undefined, {
+                                            style: "currency", currency: revenue.currency,
+                                        })}
+                                        <span className="text-white/40 ml-2">×{p.count}</span>
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : <div className="text-xs text-white/50">—</div>}
+                </div>
+                <div>
+                    <div className="text-xs text-white/50 mb-2">Ultimi pagamenti</div>
+                    <ul className="space-y-1">
+                        {revenue.recent.map((p, i) => (
+                            <li key={i} className="flex justify-between text-xs">
+                                <span className="text-white/70 tabular-nums">
+                                    {p.timestamp.slice(5, 16).replace("T", " ")}
+                                </span>
+                                <span className="tabular-nums">
+                                    {(p.amountCents / 100).toLocaleString(undefined, {
+                                        style: "currency", currency: revenue.currency,
+                                    })}
+                                    <span className="text-white/40 ml-2">{p.plan}</span>
+                                    {p.isFirst && <span className="ml-1 text-emerald-300/80">·new</span>}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+        </Card>
+    );
+}
+
+function KpiTile({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+    return (
+        <div className={`rounded-lg border p-3 ${highlight ? "border-emerald-400/40 bg-emerald-400/5" : "border-white/10 bg-white/5"}`}>
+            <div className="text-[10px] text-white/50 uppercase tracking-wide">{label}</div>
+            <div className={`text-lg font-semibold tabular-nums mt-1 ${highlight ? "text-emerald-300" : "text-white"}`}>
+                {value}
+            </div>
+        </div>
+    );
+}
+
+// ─── Funnel (with step-to-step drop %) ─────────────────────────────────────
+
+function Funnel({ steps }: { steps: Overview["funnel"] }) {
+    const max = Math.max(...steps.map((s) => s.users), 1);
+    return (
         <Card title="Funnel conversioni (per utenti)">
-            <ul className="space-y-2">
-                {rows.map((r) => {
-                    const pct = (r.users / max) * 100;
+            <ul className="space-y-3">
+                {steps.map((s) => {
+                    const pct = (s.users / max) * 100;
+                    const dropPct = s.dropFromPrev !== null ? Math.round(s.dropFromPrev * 100) : null;
+                    const retPct = s.retentionFromPrev !== null ? Math.round(s.retentionFromPrev * 100) : null;
+                    const isBigDrop = dropPct !== null && dropPct >= 60;
                     return (
-                        <li key={r.name} className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                                <span className="text-white/80 font-mono">{r.name}</span>
-                                <span className="text-white/60 tabular-nums">
-                                    {r.users.toLocaleString()} utenti · {r.count.toLocaleString()} eventi
+                        <li key={s.name} className="space-y-1">
+                            <div className="flex justify-between items-baseline text-xs">
+                                <span className="text-white/80 font-mono">{s.name}</span>
+                                <span className="text-white/60 tabular-nums flex items-center gap-2">
+                                    {retPct !== null && (
+                                        <span className={isBigDrop ? "text-red-300/90" : "text-white/40"}>
+                                            {retPct}% ↓
+                                        </span>
+                                    )}
+                                    <span>{s.users.toLocaleString()} utenti</span>
                                 </span>
                             </div>
                             <div className="h-2 rounded-full bg-white/5 overflow-hidden">
                                 <div
-                                    className="h-full bg-gradient-to-r from-violet-400 to-pink-400"
+                                    className={`h-full bg-gradient-to-r ${isBigDrop ? "from-red-400 to-orange-400" : "from-violet-400 to-pink-400"}`}
                                     style={{ width: `${pct}%` }}
                                 />
                             </div>
