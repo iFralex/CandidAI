@@ -16,6 +16,12 @@ import { Resend } from "resend";
 import { Timestamp } from "firebase-admin/firestore";
 import { runReport, dateRange, GaDateRange } from "@/lib/ga-data-client";
 import { adminDb } from "@/lib/firebase-admin";
+import {
+    fetchClarityLiveInsights,
+    saveClaritySnapshot,
+    loadClaritySnapshot,
+    type ClaritySnapshot,
+} from "@/lib/clarity-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +43,19 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const data = await buildDigestData();
+        // 1. Refresh Clarity FIRST (so the digest email can include frustration
+        //    signals). Failure here is non-fatal — we fall back to the previous
+        //    cached snapshot, or skip the section.
+        let clarity: ClaritySnapshot | null = null;
+        try {
+            clarity = await fetchClarityLiveInsights(3);
+            await saveClaritySnapshot(clarity);
+        } catch (err) {
+            console.error("Clarity refresh failed (falling back to cache):", err);
+            clarity = await loadClaritySnapshot().catch(() => null);
+        }
+
+        const data = await buildDigestData(clarity);
         const html = renderDigestHtml(data);
         const subject = renderDigestSubject(data);
 
@@ -62,7 +80,7 @@ export async function GET(req: NextRequest) {
 
 type DigestData = Awaited<ReturnType<typeof buildDigestData>>;
 
-async function buildDigestData() {
+async function buildDigestData(clarity: ClaritySnapshot | null) {
     const [kpisY, kpisD, funnelY, topErrorsY, serverFailsY, revenueY] = await Promise.all([
         kpisFor(dateRange.yesterday()),
         kpisFor(dateRange.dayBeforeYesterday()),
@@ -80,6 +98,7 @@ async function buildDigestData() {
         topErrors: groupAndTop(topErrorsY, (e) => String(e.params?.error_message ?? "?").slice(0, 100), 5),
         topServerFails: groupAndTop(serverFailsY, (e) => `${e.params?.step ?? "?"} · ${e.params?.company ?? "?"}`, 5),
         revenue: revenueY,
+        clarity,
     };
 }
 
@@ -233,6 +252,8 @@ function renderDigestHtml(d: DigestData): string {
         ? `€${(rev.totalCents / 100).toFixed(2)} · ${rev.count} pagamenti · ${rev.payers} paganti unici · ${rev.firstPurchase} primi acquisti`
         : `Nessun pagamento ieri`;
 
+    const clarityHtml = renderClaritySection(d.clarity);
+
     return `<!doctype html>
 <html><body style="margin:0;padding:24px;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#111">
 <div style="max-width:560px;margin:0 auto;background:white;border-radius:12px;border:1px solid #eee;padding:20px">
@@ -260,6 +281,8 @@ function renderDigestHtml(d: DigestData): string {
     <h2 style="font-size:14px;color:#666;margin:20px 0 8px">Top fallimenti pipeline (server)</h2>
     <table style="width:100%;border-collapse:collapse;border:1px solid #eee;border-radius:8px">${listRows(d.topServerFails)}</table>
 
+    ${clarityHtml}
+
     <div style="margin-top:24px;text-align:center;font-size:11px;color:#aaa">
         <a href="https://candidai.tech/analytics" style="color:#888">Apri dashboard completa →</a>
     </div>
@@ -271,4 +294,34 @@ function escapeHtml(s: string): string {
     return s
         .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function renderClaritySection(c: ClaritySnapshot | null): string {
+    if (!c || c.rateLimitedOrEmpty || c.traffic.totalSessions === 0) {
+        return `<h2 style="font-size:14px;color:#666;margin:20px 0 8px">Frustration signals (Clarity)</h2>
+            <div style="padding:12px;background:#f9f9f9;border-radius:8px;font-size:12px;color:#999">
+                Nessun dato Clarity disponibile per gli ultimi ${c?.numOfDays ?? 3} giorni.
+            </div>`;
+    }
+    const t = c.traffic;
+    const pct = (n: number) => t.totalSessions > 0 ? `${Math.round((n / t.totalSessions) * 100)}%` : "0%";
+    const rageList = (c.topByMetric.rageClicks ?? []).slice(0, 3);
+    const deadList = (c.topByMetric.deadClicks ?? []).slice(0, 3);
+    return `
+    <h2 style="font-size:14px;color:#666;margin:20px 0 8px">Frustration signals · ultimi ${c.numOfDays}gg (Clarity)</h2>
+    <table style="width:100%;border-collapse:collapse;border:1px solid #eee;border-radius:8px">
+        <tr><td style="padding:4px 12px;font-size:12px;color:#666">Sessioni totali</td>
+            <td style="padding:4px 12px;text-align:right;font-weight:600">${t.totalSessions}</td></tr>
+        <tr><td style="padding:4px 12px;font-size:12px;color:#666">Sessioni con rage clicks</td>
+            <td style="padding:4px 12px;text-align:right">${t.sessionsWithRageClicks} (${pct(t.sessionsWithRageClicks)})</td></tr>
+        <tr><td style="padding:4px 12px;font-size:12px;color:#666">Sessioni con dead clicks</td>
+            <td style="padding:4px 12px;text-align:right">${t.sessionsWithDeadClicks} (${pct(t.sessionsWithDeadClicks)})</td></tr>
+        <tr><td style="padding:4px 12px;font-size:12px;color:#666">Sessioni con quick backs</td>
+            <td style="padding:4px 12px;text-align:right">${t.sessionsWithQuickBacks} (${pct(t.sessionsWithQuickBacks)})</td></tr>
+        <tr><td style="padding:4px 12px;font-size:12px;color:#666">Sessioni con script errors</td>
+            <td style="padding:4px 12px;text-align:right">${t.sessionsWithScriptErrors} (${pct(t.sessionsWithScriptErrors)})</td></tr>
+    </table>
+    ${rageList.length > 0 ? `<div style="font-size:11px;color:#999;margin-top:6px">Top rage clicks: ${rageList.map(r => `${escapeHtml(r.url)} (${r.count})`).join(" · ")}</div>` : ""}
+    ${deadList.length > 0 ? `<div style="font-size:11px;color:#999;margin-top:2px">Top dead clicks: ${deadList.map(r => `${escapeHtml(r.url)} (${r.count})`).join(" · ")}</div>` : ""}
+    `;
 }

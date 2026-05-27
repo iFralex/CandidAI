@@ -35,6 +35,24 @@ type Overview = {
         byPlan: { plan: string; revenueCents: number; count: number }[];
         recent: { timestamp: string; amountCents: number; plan: string; isFirst: boolean }[];
     };
+    clarity: {
+        fetchedAt: string;
+        numOfDays: number;
+        traffic: {
+            totalSessions: number;
+            sessionsWithRageClicks: number;
+            sessionsWithDeadClicks: number;
+            sessionsWithExcessiveScroll: number;
+            sessionsWithQuickBacks: number;
+            sessionsWithScriptErrors: number;
+            sessionsWithErrorClicks: number;
+            botSessions: number | null;
+            averageEngagementTimeMs: number | null;
+            averageScrollDepth: number | null;
+        };
+        topByMetric: Record<string, { url: string; count: number }[]>;
+        rateLimitedOrEmpty: boolean;
+    } | null;
 };
 
 const RANGES: { value: Range; label: string }[] = [
@@ -103,6 +121,7 @@ export function AnalyticsDashboardClient() {
                             <Funnel steps={data.funnel} />
                             <TopEvents events={data.topEvents} />
                         </div>
+                        <FrustrationPanel clarity={data.clarity} />
                         <div className="grid lg:grid-cols-2 gap-6">
                             <TopPages pages={data.topPages} />
                             <Sources sources={data.sources} />
@@ -419,6 +438,88 @@ function Sources({ sources }: { sources: Overview["sources"] }) {
             />
         </Card>
     );
+}
+
+// ─── Frustration Signals (Microsoft Clarity, daily cache) ─────────────────
+
+function FrustrationPanel({ clarity }: { clarity: Overview["clarity"] }) {
+    if (!clarity) {
+        return (
+            <Card title="Frustration signals (Clarity)">
+                <div className="text-sm text-white/50">
+                    Snapshot Clarity non ancora disponibile. Il primo refresh parte col daily digest (08:00 UTC).
+                </div>
+            </Card>
+        );
+    }
+    if (clarity.rateLimitedOrEmpty || clarity.traffic.totalSessions === 0) {
+        return (
+            <Card title={`Frustration signals · ultimi ${clarity.numOfDays}gg (Clarity)`}>
+                <div className="text-sm text-white/50">
+                    Nessun dato Clarity per il periodo. Aggiornato {timeAgo(clarity.fetchedAt)}.
+                </div>
+            </Card>
+        );
+    }
+    const t = clarity.traffic;
+    const pct = (n: number) => t.totalSessions > 0 ? Math.round((n / t.totalSessions) * 100) : 0;
+    const signals = [
+        { label: "Rage clicks", count: t.sessionsWithRageClicks, urls: clarity.topByMetric.rageClicks ?? [], warn: 10 },
+        { label: "Dead clicks", count: t.sessionsWithDeadClicks, urls: clarity.topByMetric.deadClicks ?? [], warn: 10 },
+        { label: "Quick backs", count: t.sessionsWithQuickBacks, urls: clarity.topByMetric.quickBacks ?? [], warn: 20 },
+        { label: "Excessive scroll", count: t.sessionsWithExcessiveScroll, urls: clarity.topByMetric.excessiveScroll ?? [], warn: 15 },
+        { label: "Script errors", count: t.sessionsWithScriptErrors, urls: clarity.topByMetric.scriptErrors ?? [], warn: 5 },
+        { label: "Error clicks", count: t.sessionsWithErrorClicks, urls: clarity.topByMetric.errorClicks ?? [], warn: 5 },
+    ];
+    return (
+        <Card title={`Frustration signals · ${t.totalSessions} sessioni ultimi ${clarity.numOfDays}gg (Clarity)`}>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                {signals.map((s) => {
+                    const p = pct(s.count);
+                    const isBad = p >= s.warn;
+                    return (
+                        <div key={s.label} className={`rounded-lg border p-3 ${isBad ? "border-red-400/40 bg-red-400/5" : "border-white/10 bg-white/5"}`}>
+                            <div className="text-[10px] text-white/50 uppercase tracking-wide">{s.label}</div>
+                            <div className={`text-lg font-semibold tabular-nums mt-1 ${isBad ? "text-red-300" : "text-white"}`}>
+                                {s.count} <span className="text-xs text-white/50">({p}%)</span>
+                            </div>
+                            {s.urls.length > 0 && (
+                                <div className="mt-2 text-[10px] text-white/40 font-mono space-y-0.5">
+                                    {s.urls.slice(0, 2).map((u, i) => (
+                                        <div key={i} className="truncate">
+                                            <span className="text-white/30">{u.count}×</span> {pathOnly(u.url)}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+            <div className="flex justify-between text-[10px] text-white/40">
+                <span>Snapshot refreshed {timeAgo(clarity.fetchedAt)}</span>
+                <a href="https://clarity.microsoft.com" target="_blank" rel="noreferrer" className="hover:text-white/70">
+                    Apri Clarity per i recordings →
+                </a>
+            </div>
+        </Card>
+    );
+}
+
+function pathOnly(url: string): string {
+    try {
+        return new URL(url).pathname || url;
+    } catch {
+        return url;
+    }
+}
+
+function timeAgo(iso: string): string {
+    const ms = Date.now() - new Date(iso).getTime();
+    const h = Math.floor(ms / 3600_000);
+    if (h < 1) return `${Math.max(1, Math.floor(ms / 60_000))} min fa`;
+    if (h < 24) return `${h} ore fa`;
+    return `${Math.floor(h / 24)} giorni fa`;
 }
 
 // ─── Generic primitives ────────────────────────────────────────────────────

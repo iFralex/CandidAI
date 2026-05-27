@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { runReport, runRealtimeReport, dateRange, GaDateRange } from "@/lib/ga-data-client";
 import { adminDb } from "@/lib/firebase-admin";
 import { Timestamp } from "firebase-admin/firestore";
+import { loadClaritySnapshot } from "@/lib/clarity-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
     const dr = rangeFor(range);
 
     try {
-        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue] = await Promise.all([
+        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity] = await Promise.all([
             runReport({
                 dateRanges: [dr],
                 metrics: [
@@ -100,6 +101,8 @@ export async function GET(req: NextRequest) {
             }).catch(() => ({ rows: [], totals: [], rowCount: 0 })),
             // ── Revenue from Firestore payment_succeeded events ───────
             fetchRevenue(cutoffDate(range)).catch(() => emptyRevenue()),
+            // ── Clarity frustration snapshot (cached, refreshed by daily cron) ─
+            loadClaritySnapshot().catch(() => null),
         ]);
 
         const k = kpis.totals;
@@ -148,6 +151,7 @@ export async function GET(req: NextRequest) {
                 })),
             },
             revenue,
+            clarity,
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
