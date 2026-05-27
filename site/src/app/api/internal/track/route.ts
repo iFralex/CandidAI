@@ -11,8 +11,7 @@
  * `SESSION_API_KEY` (already used by /analytics dashboard Basic Auth).
  */
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
+import { recordServerEvent } from "@/lib/server-track";
 
 export const runtime = "nodejs";
 
@@ -47,22 +46,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "missing event" }, { status: 400 });
     }
 
-    try {
-        await adminDb.collection("analytics_events").add({
-            event: body.event,
-            params: body.params ?? {},
-            user_id: body.user_id ?? null,
-            session_id: null,
-            page_path: null,
-            timestamp: FieldValue.serverTimestamp(),
-            source: "server",
-            // Preserve caller's occurred_at if provided (server time may lag for async events)
-            occurred_at: body.occurred_at ?? null,
-        });
-        return NextResponse.json({ ok: true });
-    } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        console.error("Failed to persist server-side analytics event:", message);
-        return NextResponse.json({ error: "write_failed", message }, { status: 500 });
-    }
+    await recordServerEvent({
+        event: body.event,
+        params: { ...(body.params ?? {}), ...(body.occurred_at ? { occurred_at: body.occurred_at } : {}) },
+        userId: body.user_id,
+    });
+    return NextResponse.json({ ok: true });
 }

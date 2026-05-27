@@ -4,6 +4,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { plansData, CREDIT_PACKAGES } from "@/config";
 import { startServer } from "@/actions/onboarding-actions";
 import { FieldValue } from "firebase-admin/firestore";
+import { recordPaymentSuccess } from "@/lib/server-track";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-11-17.clover" });
 
@@ -37,6 +38,7 @@ export async function POST(req: Request) {
         }
 
         const batch = adminDb.batch();
+        let isOnboardingPurchase = false;
 
         batch.set(paymentRef, {
             type: "one_time",
@@ -73,6 +75,7 @@ export async function POST(req: Request) {
 
             const currentOnboardingStep: number = userSnap.data()?.onboardingStep ?? 50;
             const isOnboarding = currentOnboardingStep < 10;
+            isOnboardingPurchase = isOnboarding;
             batch.update(userRef, {
                 plan: itemId,
                 maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
@@ -82,6 +85,16 @@ export async function POST(req: Request) {
         }
 
         await batch.commit();
+
+        await recordPaymentSuccess({
+            userId,
+            purchaseType,
+            itemId,
+            amountCents: pi.amount,
+            currency: pi.currency,
+            isOnboarding: isOnboardingPurchase,
+            source: "payment-confirm",
+        });
 
         if (purchaseType === "plan") {
             try {

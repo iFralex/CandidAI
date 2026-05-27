@@ -5,6 +5,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { plansInfo, CREDIT_PACKAGES, plansData } from "@/config";
 import { startServer } from "@/actions/onboarding-actions";
 import { FieldValue } from "firebase-admin/firestore";
+import { recordPaymentSuccess } from "@/lib/server-track";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-16" });
 
@@ -39,6 +40,7 @@ export async function POST(req: Request) {
       }
 
       const batch = adminDb.batch();
+      let isOnboardingPurchase = false;
 
       // Write payment record
       batch.set(paymentRef, {
@@ -83,6 +85,7 @@ export async function POST(req: Request) {
 
         const currentOnboardingStep: number = userSnap.data()?.onboardingStep ?? 50;
         const isOnboarding = currentOnboardingStep < 10;
+        isOnboardingPurchase = isOnboarding;
         batch.update(userRef, {
           plan: itemId,
           maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
@@ -92,6 +95,18 @@ export async function POST(req: Request) {
       }
 
       await batch.commit();
+
+      // Revenue tracking — fire BEFORE startServer so it's recorded even if
+      // the pipeline kickoff later throws.
+      await recordPaymentSuccess({
+        userId,
+        purchaseType,
+        itemId,
+        amountCents: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        isOnboarding: isOnboardingPurchase,
+        source: "webhook",
+      });
 
       if (purchaseType === "plan") {
         try {
