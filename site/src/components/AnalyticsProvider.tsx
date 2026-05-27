@@ -73,6 +73,33 @@ function getPersistedUTM(): Record<string, string> {
     }
 }
 
+/**
+ * Capture FIRST-TOUCH attribution: only writes the cookie if it doesn't
+ * exist yet. Survives 90 days. Read at signup-time so the user doc is
+ * stamped with what brought them to the site originally, not what UTM
+ * happens to be in the URL the day they finally convert.
+ */
+function captureFirstTouch(utm: Record<string, string>): void {
+    if (typeof document === "undefined") return;
+    if (getCookieValue("_ca_first_touch")) return; // already captured — keep first
+
+    const ref = document.referrer || "";
+    const refHost = (() => { try { return new URL(ref).host; } catch { return ""; } })();
+    const internal = !refHost || refHost.endsWith("candidai.tech") || refHost.includes("localhost");
+    // Only capture if there's something attributable: UTM, or external referrer
+    if (Object.keys(utm).length === 0 && internal) return;
+
+    const payload = {
+        ...utm,
+        referrer: ref || null,
+        landing_page: window.location.pathname,
+        captured_at: new Date().toISOString(),
+    };
+    const value = encodeURIComponent(JSON.stringify(payload));
+    const maxAge = 60 * 60 * 24 * 90; // 90 days
+    document.cookie = `_ca_first_touch=${value}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
+
 // ---------------------------------------------------------------------------
 // Web Vitals
 // ---------------------------------------------------------------------------
@@ -117,12 +144,13 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
             initWebVitals(pathname);
         }
 
-        // UTM attribution
+        // UTM attribution (session) + first-touch attribution (90-day cookie)
         const currentUTM = getUTMParams();
         if (Object.keys(currentUTM).length > 0) {
             persistUTMToSession(currentUTM);
             track({ name: "utm_session", params: currentUTM });
         }
+        captureFirstTouch(currentUTM);
 
         // Referral code from cookie (set by middleware)
         const refCode = getCookieValue("referral");

@@ -11,7 +11,20 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { track, identifyUser } from "@/lib/analytics";
+import { track, identifyUser, getFirstTouchAttribution } from "@/lib/analytics";
+
+/** Fire-and-forget: stamp the new user doc with the first-touch attribution
+ *  cookie captured by AnalyticsProvider. Silent no-op if no attribution was
+ *  recorded (direct visit with no UTM and internal referrer). */
+async function saveFirstTouchToUserDoc(uid: string): Promise<void> {
+  const ft = getFirstTouchAttribution();
+  if (!ft) return;
+  try {
+    await updateDoc(doc(db, "users", uid), { first_touch: ft });
+  } catch (err) {
+    console.error("Failed to save first_touch to user doc:", err);
+  }
+}
 
 const mapFirebaseError = (code: string): string => {
   switch (code) {
@@ -342,7 +355,10 @@ export function RegisterForm({
       await internLogin(idToken)
 
       track({ name: "signup_success", params: { method: "email" } }, { userId: uid });
-      if (uid) identifyUser(uid, { plan: "free_trial", credits: 0, onboarding_step: 1, signup_method: "email" });
+      if (uid) {
+        identifyUser(uid, { plan: "free_trial", credits: 0, onboarding_step: 1, signup_method: "email" });
+        void saveFirstTouchToUserDoc(uid);
+      }
       window.location.href = "/dashboard";
     } catch (err: any) {
       track({ name: "signup_error", params: { method: "email", error_code: err.code ?? err.message ?? "unknown" } });
@@ -394,6 +410,7 @@ export function RegisterForm({
 
           track({ name: "signup_success", params: { method: "google" } }, { userId: user.uid });
           identifyUser(user.uid, { plan: "free_trial", credits: 0, onboarding_step: 1, signup_method: "google" });
+          void saveFirstTouchToUserDoc(user.uid);
           router.push('/dashboard');
         }
       } catch (err: any) {

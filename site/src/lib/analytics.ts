@@ -283,6 +283,33 @@ export function clearIdentifiedUser(): void {
     clearCachedUserId();
 }
 
+export interface FirstTouchAttribution {
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    utm_term?: string;
+    referrer?: string | null;
+    landing_page?: string;
+    captured_at?: string;
+}
+
+/**
+ * Read the 90-day first-touch attribution cookie set by AnalyticsProvider.
+ * Returns null if the user hit the site without any UTM and from an internal
+ * referrer (i.e. no attribution data was captured).
+ */
+export function getFirstTouchAttribution(): FirstTouchAttribution | null {
+    if (typeof document === "undefined") return null;
+    const match = document.cookie.split("; ").find((c) => c.startsWith("_ca_first_touch="));
+    if (!match) return null;
+    try {
+        return JSON.parse(decodeURIComponent(match.split("=").slice(1).join("=")));
+    } catch {
+        return null;
+    }
+}
+
 /**
  * Read the current user doc from Firestore and push fresh `plan`, `credits`,
  * `onboarding_step`, `is_paid` to GA4 as user properties. Call after every
