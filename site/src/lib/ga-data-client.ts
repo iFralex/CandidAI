@@ -95,6 +95,8 @@ export const dateRange = {
     last30Days: (): GaDateRange => ({ startDate: "30daysAgo", endDate: "today" }),
     last90Days: (): GaDateRange => ({ startDate: "90daysAgo", endDate: "today" }),
     today: (): GaDateRange => ({ startDate: "today", endDate: "today" }),
+    yesterday: (): GaDateRange => ({ startDate: "yesterday", endDate: "yesterday" }),
+    dayBeforeYesterday: (): GaDateRange => ({ startDate: "2daysAgo", endDate: "2daysAgo" }),
 };
 
 /**
