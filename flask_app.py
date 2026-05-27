@@ -31,6 +31,8 @@ def _api_key_valid() -> bool:
 
 @app.route("/start_emails_generation", methods=["POST"])
 def start_emails_generation():
+    if not _api_key_valid():
+        return jsonify({"error": "Unauthorized"}), 401
     data = request.json or {}
     user_id = data.get("user_id")
     if not user_id:
@@ -210,11 +212,15 @@ def serve_video(video_id: str):
 
 @app.route('/api/videos/pending')
 def api_videos_pending():
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
     return _jsonify(_vp_db().list_pending_videos())
 
 
 @app.route('/api/videos/approved')
 def api_videos_approved():
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
     return _jsonify(_vp_db().list_approved_videos())
 
 
@@ -266,6 +272,8 @@ def api_reject_video(video_id: str):
 
 @app.route('/api/videos/library')
 def api_video_library():
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
     return _jsonify(_vp_db().list_all_clips())
 
 
@@ -337,6 +345,8 @@ def api_video_ingest():
 
 @app.route('/api/videos/buffer-status')
 def api_buffer_status():
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
     from server.video_pipeline.buffer_client import BufferClient
     api_key = _os.environ.get("BUFFER_API_KEY", "")
     if not api_key:
@@ -350,11 +360,15 @@ def api_buffer_status():
 
 @app.route('/api/videos/stats')
 def api_videos_stats():
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
     return _jsonify(_vp_db().list_stats(limit=200))
 
 
 @app.route('/api/videos/sources')
 def api_video_sources():
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
     import re as _re
     db = _vp_db()
     sources = db.list_sources()
@@ -370,6 +384,8 @@ def api_video_sources():
 
 @app.route('/api/settings/<key>', methods=['GET'])
 def api_get_setting(key: str):
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
     return _jsonify({"value": _vp_db().get_setting(key)})
 
 
@@ -384,6 +400,8 @@ def api_set_setting(key: str):
 
 @app.route('/api/videos/captions', methods=['GET'])
 def api_list_captions():
+    if not _api_key_valid():
+        return _jsonify({"error": "Unauthorized"}), 401
     return _jsonify(_vp_db().list_captions())
 
 
