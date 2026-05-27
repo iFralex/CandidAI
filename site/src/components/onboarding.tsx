@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
-import { track } from "@/lib/analytics"
+import { track, refreshUserPropertiesFromFirestore } from "@/lib/analytics"
 import { motion, AnimatePresence } from "framer-motion"
 import { resendEmailVerification, selectPlan, goBackStep, deleteProfile, jumpToStep } from '@/actions/onboarding-actions'
 import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, ArrowLeft, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark, Lock } from 'lucide-react'
@@ -95,6 +95,9 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
                 // inside completeOnboarding(), so we pass persist:false here to avoid duplicates.
                 track({ name: "onboarding_step_complete", params: { step: currentStep ?? 5 } })
                 track({ name: "onboarding_complete", params: { plan: plan ?? "unknown" } }, { persist: false })
+                // Don't await — the redirect from completeOnboarding wins the race anyway,
+                // but the GA4 user property update goes out via beacon if it manages to fire.
+                void refreshUserPropertiesFromFirestore()
                 await completeOnboarding(customizations)
             }
         })

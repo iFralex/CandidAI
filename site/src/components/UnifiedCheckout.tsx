@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { computePriceInCents, formatPrice, getPlanById, getDiscountCode, applyDiscount } from "@/lib/utils";
 import { CREDIT_PACKAGES } from "@/config";
-import { track, updateUserProperties } from "@/lib/analytics";
+import { track, refreshUserPropertiesFromFirestore } from "@/lib/analytics";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -78,9 +78,9 @@ async function confirmPaymentAndNavigate(
 
     if (analyticsParams) {
         track({ name: "checkout_success", params: analyticsParams });
-        if (analyticsParams.type === "plan") {
-            updateUserProperties({ plan: analyticsParams.item_id });
-        }
+        // Pull every fresh user property (plan, credits, onboardingStep, is_paid)
+        // from Firestore — the payment-confirm route has already updated the doc.
+        void refreshUserPropertiesFromFirestore();
     }
 
     if (onSuccess) {
@@ -197,7 +197,7 @@ function CheckoutForm({ email, purchaseType, itemId, discountCode, onSuccess }: 
                 setSuccess(true);
                 setLoading(false);
                 track({ name: "checkout_free_success", params: { item_id: itemId } });
-                if (purchaseType === "plan") updateUserProperties({ plan: itemId });
+                void refreshUserPropertiesFromFirestore();
                 if (onSuccess) onSuccess(data); else window.location.href = "/dashboard";
                 return;
             }

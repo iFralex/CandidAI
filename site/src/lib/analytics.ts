@@ -284,6 +284,38 @@ export function clearIdentifiedUser(): void {
 }
 
 /**
+ * Read the current user doc from Firestore and push fresh `plan`, `credits`,
+ * `onboarding_step`, `is_paid` to GA4 as user properties. Call after every
+ * action that mutates user state (checkout, onboarding step, credits spent)
+ * so GA4 segmentation reports stay accurate over time.
+ *
+ * Silently no-ops if uid is unknown or Firestore read fails.
+ */
+export async function refreshUserPropertiesFromFirestore(uid?: string): Promise<void> {
+    if (typeof window === "undefined") return;
+    const userId = uid ?? getCachedUserId();
+    if (!userId) return;
+
+    try {
+        const [{ db }, { doc, getDoc }] = await Promise.all([
+            import("@/lib/firebase"),
+            import("firebase/firestore"),
+        ]);
+        if (!db) return;
+        const snap = await getDoc(doc(db, "users", userId));
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const plan = String(data.plan ?? "unknown");
+        updateUserProperties({
+            plan,
+            credits: Number(data.credits ?? 0),
+            onboarding_step: Number(data.onboardingStep ?? 0),
+            is_paid: plan !== "free_trial" && plan !== "unknown" ? "true" : "false",
+        });
+    } catch { /* ignore — analytics must never break UX */ }
+}
+
+/**
  * Update user properties without resetting the user ID.
  * Call when the user upgrades their plan, uses credits, etc.
  */

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { track } from "@/lib/analytics";
+import { track, refreshUserPropertiesFromFirestore } from "@/lib/analytics";
 import { CompanyLogo } from "@/components/dashboard";
 import SkillsListBase, { calculateProgress, EducationList, ExperienceList } from "@/components/detailsServer";
 import { AdvancedFiltersClient, CriteriaDisplay } from "@/components/onboarding";
@@ -1054,6 +1054,7 @@ export const CreditsDialog = ({ children, contentType, unlocked, className = "",
     }
 
     track({ name: "credits_used", params: { action: contentType, cost: requiredCredits, remaining: result.credits ?? 0 } });
+    void refreshUserPropertiesFromFirestore();
     if (contentType === "find-recruiter") {
       const companyName = document.querySelector<HTMLElement>("[data-company-name]")?.dataset.companyName ?? companyId ?? "unknown";
       track({ name: "recruiter_find", params: { company_name: companyName, cost: requiredCredits } });
