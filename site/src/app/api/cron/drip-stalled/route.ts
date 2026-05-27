@@ -22,6 +22,7 @@ import { Resend } from "resend";
 import { adminDb } from "@/lib/firebase-admin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { recordServerEvent } from "@/lib/server-track";
+import { wrapEmail, button, tipBox, heading, paragraph, escapeHtml } from "@/lib/email-template";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -80,7 +81,7 @@ export async function GET(req: NextRequest) {
                 from: DRIP_FROM,
                 to: email,
                 replyTo: DRIP_REPLY_TO,
-                subject: name ? `${name}, tu t'es arrêté en chemin sur CandidAI` : "Tu t'es arrêté en chemin sur CandidAI",
+                subject: name ? `${name}, you got stuck halfway` : "You got stuck halfway on CandidAI",
                 html: renderDripHtml(name),
             });
             if (error) throw new Error(JSON.stringify(error));
@@ -113,31 +114,21 @@ export async function GET(req: NextRequest) {
 }
 
 function renderDripHtml(firstName: string): string {
-    const greeting = firstName ? `Salut ${escapeHtml(firstName)},` : "Salut,";
-    return `<!doctype html>
-<html><body style="margin:0;padding:24px;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#222;line-height:1.55">
-<div style="max-width:520px;margin:0 auto;background:white;border-radius:12px;border:1px solid #eee;padding:28px">
-    <p style="margin:0 0 16px">${greeting}</p>
-    <p style="margin:0 0 16px">Je suis Alessio, le créateur de CandidAI. Je remarque que tu t'es inscrit il y a quelques jours mais que tu n'as pas continué après les premières étapes.</p>
-    <p style="margin:0 0 16px">C'est tout à fait normal — la plupart des gens n'arrivent pas à la fin du premier passage. Mais j'aimerais bien comprendre <strong>ce qui t'a freiné</strong> :</p>
-    <ul style="margin:0 0 16px;padding-left:20px;color:#555">
-        <li>L'étape suivante n'était pas claire ?</li>
-        <li>Tu n'avais pas ton CV sous la main ?</li>
-        <li>Tu cherchais autre chose ?</li>
-    </ul>
-    <p style="margin:0 0 16px">Réponds-moi en une ligne (même un simple « j'ai juste testé » m'aide). Et si tu veux reprendre, tu retrouves ton compte ici :</p>
-    <p style="margin:0 0 20px"><a href="https://candidai.tech/dashboard" style="display:inline-block;background:#8b5cf6;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">Continuer mon onboarding →</a></p>
-    <p style="margin:0;color:#777">À bientôt,<br>Alessio</p>
-    <p style="margin:24px 0 0;font-size:11px;color:#aaa;border-top:1px solid #eee;padding-top:12px">
-        Tu reçois ce message parce que tu t'es inscrit récemment sur candidai.tech.
-        Pour ne plus recevoir de mails de ma part, réponds simplement « stop » à ce mail.
-    </p>
-</div>
-</body></html>`;
-}
-
-function escapeHtml(s: string): string {
-    return s
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    const greeting = firstName ? `Hey ${escapeHtml(firstName)},` : "Hey there,";
+    return wrapEmail(`
+        ${heading(greeting)}
+        ${paragraph(`I'm Alessio, the creator of CandidAI. I noticed you signed up a couple of days ago but didn't make it past the first onboarding steps.`)}
+        ${paragraph(`That's completely normal — most people don't finish on the first pass. But I'd really like to understand <strong style="color: #8b5cf6;">what held you back</strong>:`)}
+        <ul style="color: #cccccc; font-size: 15px; line-height: 1.7; margin: 0 0 24px; padding-left: 22px;">
+            <li style="margin-bottom: 6px;">The next step wasn't clear?</li>
+            <li style="margin-bottom: 6px;">You didn't have your CV at hand?</li>
+            <li>You were looking for something different?</li>
+        </ul>
+        ${paragraph(`Just reply with a one-liner (even &ldquo;I was just testing&rdquo; helps me). And if you want to pick up where you left off, your account is right here:`)}
+        <div style="text-align: center; margin: 32px 0;">
+            ${button("Resume my onboarding →", "https://candidai.tech/dashboard")}
+        </div>
+        ${tipBox(`<strong style="color: #8b5cf6;">📝 Why I'm asking:</strong> Every reply makes the product better for the next person who signs up. No marketing tricks, just trying to figure out where we're losing people.`)}
+        <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Thanks,<br>Alessio</p>
+    `, { preheader: "I'd love to know what made you stop — even one line helps.", badge: "QUICK CHECK-IN" });
 }

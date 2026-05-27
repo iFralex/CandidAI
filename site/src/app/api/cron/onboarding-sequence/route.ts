@@ -21,6 +21,7 @@ import { Resend } from "resend";
 import { adminDb } from "@/lib/firebase-admin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { recordServerEvent } from "@/lib/server-track";
+import { wrapEmail, button, tipBox, heading, paragraph, escapeHtml } from "@/lib/email-template";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export const maxDuration = 120;
 
 const FROM = "Alessio (CandidAI) <no-reply@candidai.tech>";
 const REPLY_TO = "hello@candidai.tech";
+const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN || "https://candidai.tech";
 const DAY_MS = 86400_000;
 
 function isAuthorized(req: NextRequest): boolean {
@@ -38,25 +40,15 @@ function isAuthorized(req: NextRequest): boolean {
 }
 
 interface StageConfig {
-    key: string;                    // matches seq_<key>_sent flag on user doc
-    /** Days since signup (start, end exclusive) the email is eligible to send. */
-    windowDays: [number, number];
-    /** Extra filter on the user doc (post-fetched, filtered in JS). */
+    key: string;
+    windowDays: [number, number];   // [start, end) days since signup
     extraFilter?: (u: Record<string, unknown>) => boolean;
     render: (firstName: string) => { subject: string; html: string };
 }
 
 const STAGES: StageConfig[] = [
-    {
-        key: "welcome",
-        windowDays: [1, 3],
-        render: renderWelcome,
-    },
-    {
-        key: "feature_tip",
-        windowDays: [3, 5],
-        render: renderFeatureTip,
-    },
+    { key: "welcome",        windowDays: [1, 3],  render: renderWelcome },
+    { key: "feature_tip",    windowDays: [3, 5],  render: renderFeatureTip },
     {
         key: "case_study",
         windowDays: [7, 9],
@@ -133,97 +125,90 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, results });
 }
 
-// ─── Email templates (French — audience is FR-speaking) ───────────────────
-
-const dashboardUrl = "https://candidai.tech/dashboard";
-const pricingUrl = "https://candidai.tech/dashboard/plan-and-credits";
-
-function shellHtml(body: string): string {
-    return `<!doctype html>
-<html><body style="margin:0;padding:24px;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#222;line-height:1.55">
-<div style="max-width:520px;margin:0 auto;background:white;border-radius:12px;border:1px solid #eee;padding:28px">
-${body}
-<p style="margin:28px 0 0;font-size:11px;color:#aaa;border-top:1px solid #eee;padding-top:12px">
-    Tu reçois ce message parce que tu t'es inscrit sur candidai.tech.
-    Réponds &laquo; stop &raquo; pour ne plus recevoir de mails de ma part.
-</p>
-</div>
-</body></html>`;
-}
+// ─── Email templates (English, shared CandidAI design system) ─────────────
 
 function greet(firstName: string): string {
-    return firstName ? `Salut ${escapeHtml(firstName)},` : "Salut,";
+    return firstName ? `Hey ${escapeHtml(firstName)}! 👋` : "Hey there! 👋";
 }
 
-// ── Stage 1 ─────────────────────────────────────────────────────────────────
+// ── Stage 1: welcome (day 1) ──────────────────────────────────────────────
 function renderWelcome(firstName: string) {
     return {
-        subject: firstName ? `${firstName}, bienvenue sur CandidAI` : "Bienvenue sur CandidAI",
-        html: shellHtml(`
-            <p style="margin:0 0 16px">${greet(firstName)}</p>
-            <p style="margin:0 0 16px">Je suis Alessio, le créateur de CandidAI. Merci de t'être inscrit !</p>
-            <p style="margin:0 0 16px">En quelques mots, CandidAI envoie pour toi des emails ultra-personnalisés à des recruteurs ciblés, sur la base de ton CV et des entreprises que tu vises. Trois étapes pour commencer :</p>
-            <ol style="margin:0 0 20px;padding-left:20px;color:#444">
-                <li style="margin-bottom:6px">Téléverse ton CV (PDF ou DOCX, on en extrait tout automatiquement)</li>
-                <li style="margin-bottom:6px">Ajoute 1-2 entreprises où tu voudrais postuler</li>
-                <li>Vérifie ton mail généré dans le dashboard — modifie-le si besoin — et clique sur &laquo; Envoyer &raquo;</li>
+        subject: firstName ? `${firstName}, welcome to CandidAI 🚀` : "Welcome to CandidAI 🚀",
+        html: wrapEmail(`
+            ${heading(greet(firstName))}
+            ${paragraph(`I'm Alessio, the creator of CandidAI. Thanks for signing up!`)}
+            ${paragraph(`In a nutshell, CandidAI sends ultra-personalized emails to targeted recruiters on your behalf — based on your CV and the companies you want to reach. Three quick steps to get started:`)}
+            <ol style="color: #cccccc; font-size: 15px; line-height: 1.7; margin: 0 0 24px; padding-left: 22px;">
+                <li style="margin-bottom: 8px;">Upload your CV (PDF or DOCX, we'll parse everything automatically)</li>
+                <li style="margin-bottom: 8px;">Add 1-2 companies where you'd love to work</li>
+                <li>Review the generated email, tweak it if needed, and hit <strong style="color: #8b5cf6;">Send</strong></li>
             </ol>
-            <p style="margin:0 0 20px"><a href="${dashboardUrl}" style="display:inline-block;background:#8b5cf6;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">Continuer mon onboarding →</a></p>
-            <p style="margin:0 0 16px">Si quelque chose te bloque, réponds à ce mail — j'y réponds personnellement.</p>
-            <p style="margin:0;color:#777">À très vite,<br>Alessio</p>
-        `),
+            <div style="text-align: center; margin: 32px 0;">
+                ${button("Continue my onboarding →", `${DOMAIN}/dashboard`)}
+            </div>
+            ${tipBox(`<strong style="color: #8b5cf6;">💡 Did you know?</strong> Personalized emails to recruiters get a <strong>5× higher reply rate</strong> than generic applications. You're already ahead of the game.`)}
+            ${paragraph(`If anything blocks you, just reply to this email — I read every message personally.`)}
+            <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">See you soon,<br>Alessio</p>
+        `, { preheader: "Three quick steps to start sending personalized emails to recruiters.", badge: "WELCOME ABOARD" }),
     };
 }
 
-// ── Stage 2 ─────────────────────────────────────────────────────────────────
+// ── Stage 2: feature_tip (day 3) ──────────────────────────────────────────
 function renderFeatureTip(firstName: string) {
     return {
-        subject: firstName ? `${firstName}, une fonctionnalité que tu n'as peut-être pas vue` : "Une fonctionnalité que tu n'as peut-être pas vue",
-        html: shellHtml(`
-            <p style="margin:0 0 16px">${greet(firstName)}</p>
-            <p style="margin:0 0 16px">Petite astuce que beaucoup d'utilisateurs ratent : si le recruteur qu'on a trouvé ne te plaît pas, tu peux en chercher un autre en un clic depuis le dashboard.</p>
-            <p style="margin:0 0 16px">Tu peux aussi modifier le ton ou le contenu de l'email avant envoi — pas besoin de le réécrire, juste ajuster quelques lignes. Et si le mail généré ne te convainc pas du tout, le bouton &laquo; régénérer &raquo; produit une version alternative.</p>
-            <p style="margin:0 0 20px"><a href="${dashboardUrl}" style="display:inline-block;background:#8b5cf6;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">Aller au dashboard →</a></p>
-            <p style="margin:0 0 16px">Si tu n'as pas encore essayé, c'est le bon moment.</p>
-            <p style="margin:0;color:#777">À bientôt,<br>Alessio</p>
-        `),
+        subject: firstName ? `${firstName}, a feature you might have missed` : "A feature you might have missed",
+        html: wrapEmail(`
+            ${heading(greet(firstName))}
+            ${paragraph(`Quick tip most users miss: if the recruiter we found for you doesn't feel right, you can <strong style="color: #8b5cf6;">search for a different one in one click</strong> from your dashboard.`)}
+            ${paragraph(`You can also edit the tone or content of the generated email before sending — no need to rewrite from scratch, just tweak a few lines. And if the draft doesn't convince you at all, the <strong style="color: #8b5cf6;">Regenerate</strong> button creates a fresh alternative.`)}
+            <div style="text-align: center; margin: 32px 0;">
+                ${button("Open my dashboard →", `${DOMAIN}/dashboard`)}
+            </div>
+            ${tipBox(`<strong style="color: #8b5cf6;">🎯 Pro tip:</strong> The first generated email is usually 80% there. Five minutes of editing on your end is what makes the difference between "another AI email" and one that gets a reply.`)}
+            ${paragraph(`If you haven't tried these yet, now's a good moment.`)}
+            <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Cheers,<br>Alessio</p>
+        `, { preheader: "Change the recruiter, edit the tone, regenerate the draft — small things that change the outcome.", badge: "PRO TIP" }),
     };
 }
 
-// ── Stage 3 ─────────────────────────────────────────────────────────────────
+// ── Stage 3: case_study (day 7) ────────────────────────────────────────────
 function renderCaseStudy(firstName: string) {
     return {
-        subject: firstName ? `${firstName}, comment Marie a obtenu 3 entretiens en 10 jours` : "Comment Marie a obtenu 3 entretiens en 10 jours",
-        html: shellHtml(`
-            <p style="margin:0 0 16px">${greet(firstName)}</p>
-            <p style="margin:0 0 16px">Marie est une utilisatrice française qui visait une alternance en marketing. Elle a uploadé son CV, ciblé 5 entreprises, et envoyé les emails générés par CandidAI à des recruteurs précis chez chacune.</p>
-            <p style="margin:0 0 16px">Résultat : <strong>3 réponses positives en 10 jours</strong>, dont 2 ont mené à un entretien. Aucune scroll sur LinkedIn, aucune candidature aveugle — juste 5 emails ultra-personnalisés envoyés au bon contact.</p>
-            <p style="margin:0 0 16px">C'est exactement ce que le produit fait pour toi : il identifie qui contacter (pas un email générique &laquo; jobs@ &raquo;), il écrit un mail qui montre que tu connais l'entreprise, et tu n'as qu'à valider et envoyer.</p>
-            <p style="margin:0 0 20px"><a href="${dashboardUrl}" style="display:inline-block;background:#8b5cf6;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">Voir mon dashboard →</a></p>
-            <p style="margin:0;color:#777">À bientôt,<br>Alessio</p>
-        `),
+        subject: firstName ? `${firstName}, how Marie landed 3 interviews in 10 days` : "How Marie landed 3 interviews in 10 days",
+        html: wrapEmail(`
+            ${heading("How Marie landed 3 interviews in 10 days")}
+            ${paragraph(`Marie is a French user who was targeting a marketing apprenticeship. She uploaded her CV, picked <strong style="color: #8b5cf6;">5 companies</strong>, and sent the CandidAI-generated emails to a specific recruiter at each one.`)}
+            ${paragraph(`Result: <strong style="color: #8b5cf6;">3 positive replies in 10 days</strong>, two of which turned into interviews. Zero LinkedIn scrolling, zero blind applications — just 5 ultra-personalized emails to the right contact.`)}
+            ${tipBox(`<strong style="color: #8b5cf6;">📬 Why it works:</strong> CandidAI identifies <em>who</em> to email (not a generic <code style="background: rgba(139, 92, 246, 0.15); padding: 2px 6px; border-radius: 4px; color: #c4b5fd;">jobs@</code> address), writes a message that proves you know the company, and you just review and send.`)}
+            ${paragraph(`If you have your CV uploaded and a company or two added, you're already set up for the same outcome — you just need to send.`)}
+            <div style="text-align: center; margin: 32px 0;">
+                ${button("Go to my dashboard →", `${DOMAIN}/dashboard`)}
+            </div>
+            <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Talk soon,<br>Alessio</p>
+        `, { preheader: "5 emails, 3 replies, 2 interviews — a real user's story.", badge: "CASE STUDY" }),
     };
 }
 
-// ── Stage 4 ─────────────────────────────────────────────────────────────────
+// ── Stage 4: upgrade_offer (day 14) ────────────────────────────────────────
 function renderUpgradeOffer(firstName: string) {
     return {
-        subject: firstName ? `${firstName}, -15% sur tous les plans (valable 7 jours)` : "-15% sur tous les plans (valable 7 jours)",
-        html: shellHtml(`
-            <p style="margin:0 0 16px">${greet(firstName)}</p>
-            <p style="margin:0 0 16px">Tu utilises CandidAI depuis 2 semaines en version gratuite — j'espère que ça t'aide.</p>
-            <p style="margin:0 0 16px">Si tu veux passer à plus d'entreprises ciblées, j'ai un code de réduction pour toi :</p>
-            <p style="margin:0 0 16px;text-align:center"><code style="display:inline-block;background:#f5f0ff;color:#7c3aed;padding:10px 20px;border-radius:8px;font-size:18px;font-weight:600;letter-spacing:1px">WELCOME15</code></p>
-            <p style="margin:0 0 16px"><strong>-15% sur n'importe quel plan</strong>, valable 7 jours. À utiliser au moment du checkout.</p>
-            <p style="margin:0 0 20px"><a href="${pricingUrl}" style="display:inline-block;background:#8b5cf6;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">Voir les plans →</a></p>
-            <p style="margin:0 0 16px">Si tu as des questions sur le bon plan pour ton cas, réponds à ce mail.</p>
-            <p style="margin:0;color:#777">À bientôt,<br>Alessio</p>
-        `),
+        subject: firstName ? `${firstName}, -15% on every plan (7 days only)` : "-15% on every plan (7 days only)",
+        html: wrapEmail(`
+            ${heading("A small thank-you 🎁")}
+            ${paragraph(`You've been with CandidAI for two weeks on the free trial — I hope it's been useful.`)}
+            ${paragraph(`If you want to expand to more target companies, here's a discount code on me:`)}
+            <div style="text-align: center; margin: 24px 0;">
+                <div style="display: inline-block; background: rgba(139, 92, 246, 0.15); border: 1px dashed rgba(139, 92, 246, 0.5); padding: 14px 28px; border-radius: 10px;">
+                    <code style="color: #c4b5fd; font-size: 20px; font-weight: 700; letter-spacing: 2px; font-family: 'SF Mono', Menlo, monospace;">WELCOME15</code>
+                </div>
+            </div>
+            ${paragraph(`<strong style="color: #ffffff;">15% off any plan</strong>, valid for 7 days. Apply at checkout.`)}
+            <div style="text-align: center; margin: 32px 0;">
+                ${button("See plans →", `${DOMAIN}/dashboard/plan-and-credits`)}
+            </div>
+            ${paragraph(`If you have questions about which plan fits your case, just reply to this email.`)}
+            <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Cheers,<br>Alessio</p>
+        `, { preheader: "Discount code WELCOME15 — valid 7 days on any plan.", badge: "MEMBER OFFER" }),
     };
-}
-
-function escapeHtml(s: string): string {
-    return s
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
