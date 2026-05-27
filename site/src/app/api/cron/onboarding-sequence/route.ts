@@ -242,18 +242,34 @@ function renderFeatureTip(firstName: string) {
 // ── Stage 3: case_study (day 7) ────────────────────────────────────────────
 function renderCaseStudy(firstName: string) {
     return {
-        subject: firstName ? `${firstName}, how Marie landed 3 interviews in 10 days` : "How Marie landed 3 interviews in 10 days",
+        subject: firstName
+            ? `${firstName}, how Linnea got 2 backend interviews at Stockholm startups in 12 days`
+            : "How Linnea got 2 backend interviews at Stockholm startups in 12 days",
         html: wrapEmail(`
-            ${heading("How Marie landed 3 interviews in 10 days")}
-            ${paragraph(`Marie is a French user who was targeting a marketing apprenticeship. She uploaded her CV, picked <strong style="color: #8b5cf6;">5 companies</strong>, and sent the CandidAI-generated emails to a specific recruiter at each one.`)}
-            ${paragraph(`Result: <strong style="color: #8b5cf6;">3 positive replies in 10 days</strong>, two of which turned into interviews. Zero LinkedIn scrolling, zero blind applications — just 5 ultra-personalized emails to the right contact.`)}
-            ${tipBox(`<strong style="color: #8b5cf6;">📬 Why it works:</strong> CandidAI identifies <em>who</em> to email (not a generic <code style="background: rgba(139, 92, 246, 0.15); padding: 2px 6px; border-radius: 4px; color: #c4b5fd;">jobs@</code> address), writes a message that proves you know the company, and you just review and send.`)}
-            ${paragraph(`If you have your CV uploaded and a company or two added, you're already set up for the same outcome — you just need to send.`)}
+            ${heading("How Linnea got 2 backend interviews at Stockholm startups in 12 days")}
+            ${paragraph(`Linnea is a Swedish CS grad targeting <strong style="color: #ffffff;">backend engineering roles at Stockholm-based tech startups</strong>. She uploaded her CV, picked <strong style="color: #8b5cf6;">8 companies</strong> — a mix of names everyone knows (Klarna, Spotify, Tink, Voi) and four lesser-known YC-backed startups she'd been following on Twitter.`)}
+            ${paragraph(`She sent the CandidAI-generated email to a specific engineering manager at each one.`)}
+
+            <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.08) 100%); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 14px; padding: 22px 24px; margin: 24px 0;">
+                <p style="color: #8b5cf6; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 14px;">12 days later</p>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                    <tr><td style="padding: 6px 0; color: #cccccc; font-size: 14px;">📩 Replies</td><td style="padding: 6px 0; text-align: right; color: #ffffff; font-size: 18px; font-weight: 700;">4 / 8</td></tr>
+                    <tr><td style="padding: 6px 0; color: #cccccc; font-size: 14px;">☎️ Intro calls</td><td style="padding: 6px 0; text-align: right; color: #ffffff; font-size: 18px; font-weight: 700;">3</td></tr>
+                    <tr><td style="padding: 6px 0; color: #cccccc; font-size: 14px;">💻 Onsite technical interviews</td><td style="padding: 6px 0; text-align: right; color: #a78bfa; font-size: 18px; font-weight: 700;">2</td></tr>
+                </table>
+            </div>
+
+            ${paragraph(`Zero generic <code style="background: rgba(139, 92, 246, 0.15); padding: 2px 6px; border-radius: 4px; color: #c4b5fd;">careers@</code> submissions, zero LinkedIn cold messages — just 8 emails, each referencing a recent engineering blog post that company had published.`)}
+            ${tipBox(`<strong style="color: #8b5cf6;">📬 Why it works:</strong> CandidAI identifies <em>who</em> to email (the engineering manager, not the HR inbox), pulls a recent technical blog post the company shipped, and writes a message that proves you actually read what they're working on — not a template you sent to 100 other companies.`)}
+            ${paragraph(`If you have your CV uploaded and a few companies picked, you're set up for the same outcome — you just need to review and send.`)}
             <div style="text-align: center; margin: 32px 0;">
                 ${button("Go to my dashboard →", `${DOMAIN}/dashboard`)}
             </div>
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Talk soon,<br>Alessio</p>
-        `, { preheader: "5 emails, 3 replies, 2 interviews — a real user's story.", badge: "CASE STUDY" }),
+        `, {
+            preheader: "8 emails, 4 replies, 2 onsite interviews — what a Stockholm CS grad did differently.",
+            badge: "CASE STUDY",
+        }),
     };
 }
 
