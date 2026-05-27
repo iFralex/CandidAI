@@ -74,6 +74,12 @@ type Overview = {
         firstEmailSend: TimeBucket;
         firstPayment: TimeBucket;
     };
+    feedback: {
+        totalResponses: number;
+        averageScore: number | null;
+        distribution: { score: 1 | 2 | 3 | 4 | 5; count: number }[];
+        recent: { score: number; comment: string | null; source: string; timestamp: string }[];
+    };
 };
 
 type TimeBucket = { sampleSize: number; medianMs: number | null; p25Ms: number | null; p75Ms: number | null };
@@ -147,6 +153,7 @@ export function AnalyticsDashboardClient() {
                         <FrustrationPanel clarity={data.clarity} />
                         <CohortsPanel cohorts={data.cohorts} />
                         <TimeToXPanel data={data.timeToX} />
+                        <FeedbackPanel feedback={data.feedback} />
                         <div className="grid lg:grid-cols-2 gap-6">
                             <TopPages pages={data.topPages} />
                             <Sources sources={data.sources} />
@@ -617,6 +624,71 @@ function TimeToXPanel({ data }: { data: Overview["timeToX"] }) {
             </div>
             <div className="text-[10px] text-white/40 mt-3">
                 Shorter is better. Track movement week over week — if median activation drops from 5h to 2h, the onboarding improved.
+            </div>
+        </Card>
+    );
+}
+
+// ─── Voice of customer (in-app micro-survey responses) ────────────────────
+
+const SCORE_EMOJI: Record<number, string> = { 1: "😡", 2: "😐", 3: "🙂", 4: "😊", 5: "🤩" };
+
+function FeedbackPanel({ feedback }: { feedback: Overview["feedback"] }) {
+    if (feedback.totalResponses === 0) {
+        return (
+            <Card title="Voice of customer">
+                <div className="text-sm text-white/50">
+                    No responses yet. The micro-survey appears after a user clicks &quot;Email Sent&quot;.
+                </div>
+            </Card>
+        );
+    }
+    const max = Math.max(...feedback.distribution.map((d) => d.count), 1);
+    return (
+        <Card title="Voice of customer">
+            <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                    <div className="flex items-baseline gap-3 mb-4">
+                        <div className="text-3xl font-semibold tabular-nums">
+                            {feedback.averageScore?.toFixed(2) ?? "—"}
+                        </div>
+                        <div className="text-xs text-white/50">avg / 5 · {feedback.totalResponses} responses</div>
+                    </div>
+                    <ul className="space-y-1">
+                        {[5, 4, 3, 2, 1].map((s) => {
+                            const b = feedback.distribution.find((d) => d.score === s);
+                            const count = b?.count ?? 0;
+                            const pct = (count / max) * 100;
+                            return (
+                                <li key={s} className="flex items-center gap-3 text-xs">
+                                    <span className="w-6">{SCORE_EMOJI[s]}</span>
+                                    <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+                                        <div className="h-full bg-gradient-to-r from-violet-400 to-pink-400" style={{ width: `${pct}%` }} />
+                                    </div>
+                                    <span className="w-8 text-right tabular-nums text-white/60">{count}</span>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
+                <div>
+                    <div className="text-xs text-white/50 mb-2">Latest comments</div>
+                    {feedback.recent.filter((r) => r.comment).length > 0 ? (
+                        <ul className="space-y-2">
+                            {feedback.recent.filter((r) => r.comment).slice(0, 6).map((r, i) => (
+                                <li key={i} className="text-xs border-l-2 border-white/10 pl-3">
+                                    <div className="flex justify-between text-white/40 mb-0.5">
+                                        <span>{SCORE_EMOJI[r.score]} · {r.source}</span>
+                                        <span className="tabular-nums">{r.timestamp.slice(5, 10)}</span>
+                                    </div>
+                                    <div className="text-white/80">{r.comment}</div>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <div className="text-xs text-white/40">No comments yet — only star ratings so far.</div>
+                    )}
+                </div>
             </div>
         </Card>
     );

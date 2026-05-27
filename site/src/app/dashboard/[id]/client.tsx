@@ -3,6 +3,7 @@
 "use client";
 
 import { track, refreshUserPropertiesFromFirestore } from "@/lib/analytics";
+import { FeedbackPrompt } from "@/components/FeedbackPrompt";
 import { CompanyLogo } from "@/components/dashboard";
 import SkillsListBase, { calculateProgress, EducationList, ExperienceList } from "@/components/detailsServer";
 import { AdvancedFiltersClient, CriteriaDisplay } from "@/components/onboarding";
@@ -781,6 +782,7 @@ export function EmailDialog({
   const [fileData, setFileData] = useState<{ base64: string; mimeType: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const CACHE_PREFIX = "cachedEmailFiles";
   const CACHE_TTL = 2592000000; // 30 giorni
 
@@ -846,6 +848,8 @@ export function EmailDialog({
       await submitEmailSent(window.location.pathname.split("/").filter(Boolean).pop(), true);
       track({ name: "email_send", params: { company_name: to ?? "unknown" } });
       setSuccess(true);
+      // High-intent moment: ask for feedback right after they shipped an email.
+      setShowFeedback(true);
     } catch (err) {
       console.error("Error submitting email:", err);
     } finally {
@@ -871,6 +875,8 @@ export function EmailDialog({
   );
 
   return (
+    <>
+    <FeedbackPrompt show={showFeedback} source="email_send" onClose={() => setShowFeedback(false)} />
     <Dialog>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
@@ -944,6 +950,7 @@ export function EmailDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
 

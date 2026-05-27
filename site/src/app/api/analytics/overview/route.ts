@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     const dr = rangeFor(range);
 
     try {
-        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity, cohorts, timeToX] = await Promise.all([
+        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity, cohorts, timeToX, feedback] = await Promise.all([
             runReport({
                 dateRanges: [dr],
                 metrics: [
@@ -108,6 +108,8 @@ export async function GET(req: NextRequest) {
             computeActivationCohorts().catch(() => emptyCohorts()),
             // ── Time-to-X conversion durations (signup → activation, etc.) ─
             computeTimeToX().catch(() => emptyTimeToX()),
+            // ── Voice of customer (in-app micro-survey responses) ─────────
+            fetchFeedback().catch(() => emptyFeedback()),
         ]);
 
         const k = kpis.totals;
@@ -159,6 +161,7 @@ export async function GET(req: NextRequest) {
             clarity,
             cohorts,
             timeToX,
+            feedback,
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -371,6 +374,55 @@ async function computeTimeToX(): Promise<TimeToXReport> {
         firstEmailSend: summarize(emailDurations),
         firstPayment: summarize(paymentDurations),
     };
+}
+
+// ─── Voice of customer (Firestore `feedback` collection) ──────────────────
+
+type FeedbackReport = {
+    totalResponses: number;
+    averageScore: number | null;
+    distribution: { score: 1 | 2 | 3 | 4 | 5; count: number }[];
+    recent: { score: number; comment: string | null; source: string; timestamp: string }[];
+};
+
+function emptyFeedback(): FeedbackReport {
+    return {
+        totalResponses: 0,
+        averageScore: null,
+        distribution: [1, 2, 3, 4, 5].map((s) => ({ score: s as 1 | 2 | 3 | 4 | 5, count: 0 })),
+        recent: [],
+    };
+}
+
+async function fetchFeedback(): Promise<FeedbackReport> {
+    const snap = await adminDb
+        .collection("feedback")
+        .orderBy("timestamp", "desc")
+        .limit(500)
+        .get();
+
+    const out = emptyFeedback();
+    let sum = 0;
+    for (const d of snap.docs) {
+        const data = d.data();
+        const score = Number(data.score ?? 0);
+        if (score < 1 || score > 5) continue;
+        out.totalResponses++;
+        sum += score;
+        const bucket = out.distribution.find((b) => b.score === score);
+        if (bucket) bucket.count++;
+        if (out.recent.length < 10) {
+            const ts = (data.timestamp as Timestamp | undefined)?.toDate?.()?.toISOString?.() ?? new Date().toISOString();
+            out.recent.push({
+                score,
+                comment: data.comment ?? null,
+                source: String(data.source ?? "unknown"),
+                timestamp: ts,
+            });
+        }
+    }
+    out.averageScore = out.totalResponses > 0 ? sum / out.totalResponses : null;
+    return out;
 }
 
 async function listAllAuthUsers() {

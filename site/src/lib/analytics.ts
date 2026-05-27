@@ -113,13 +113,19 @@ export type TrackingEvent =
     | { name: "download_page_view"; params: { detected_platform: string } }
 
     // ── Errors ───────────────────────────────────────────────────────────────
-    | { name: "app_error"; params: { error_type: string; error_message: string; page_path: string } };
+    | { name: "app_error"; params: { error_type: string; error_message: string; page_path: string } }
+
+    // ── In-app feedback (post-action micro-survey) ───────────────────────────
+    | { name: "nps_prompt_shown"; params: { source: string } }
+    | { name: "nps_prompt_dismissed"; params: { source: string } }
+    | { name: "nps_response"; params: { source: string; score: 1 | 2 | 3 | 4 | 5; has_comment: boolean } };
 
 // ---------------------------------------------------------------------------
 // Events that should ALSO be persisted to Firestore for real-time dashboards
 // ---------------------------------------------------------------------------
 
 const PERSIST_EVENTS = new Set<TrackingEvent["name"]>([
+    "nps_response",
     "checkout_success",
     "checkout_free_success",
     "onboarding_complete",
