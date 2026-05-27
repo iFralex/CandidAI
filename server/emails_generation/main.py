@@ -115,15 +115,21 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
                     user_id, single_id, single_company_list, account.get("queries", [])
                 )
                 logging.info(f"✅ Recruiter completato per {name} ({time.time() - start:.2f}s)")
-                # Detect "recruiter not found" — non è exception, è risultato vuoto
-                rec_payload = (result_recruiters or {}).get(name)
-                rec_obj = rec_payload[0] if isinstance(rec_payload, list) and rec_payload else None
-                if not rec_obj or not (rec_obj.get("full_name") or rec_obj.get("name")):
-                    track("server_recruiter_not_found", {
-                        "company": name,
-                        "domain": company.get("domain", ""),
-                        "duration_s": round(time.time() - start, 1),
-                    }, user_id=user_id)
+                # Detect "recruiter not found" — risultato vuoto, non eccezione.
+                # `find_recruiters_for_user` returns results[name] = (result, query) — a tuple, not a list.
+                # Whole block guarded so a future shape change can never trip the outer except.
+                try:
+                    rec_payload = (result_recruiters or {}).get(name)
+                    rec_obj = rec_payload[0] if isinstance(rec_payload, (list, tuple)) and rec_payload else None
+                    has_name = isinstance(rec_obj, dict) and (rec_obj.get("full_name") or rec_obj.get("name"))
+                    if not has_name:
+                        track("server_recruiter_not_found", {
+                            "company": name,
+                            "domain": company.get("domain", ""),
+                            "duration_s": round(time.time() - start, 1),
+                        }, user_id=user_id)
+                except Exception:
+                    pass  # telemetry must never affect the recruiter step outcome
             except Exception as e:
                 logging.error(f"❌ Errore nello step 'recruiters' per {name}: {e}", exc_info=True)
                 failed_steps_by_company.setdefault(name, []).append("recruiters")
