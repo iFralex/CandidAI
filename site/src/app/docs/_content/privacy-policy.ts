@@ -78,7 +78,7 @@ Via delle Orchidee 2
 Cisterna di Latina, LT, 04012
 Italy
 
-**Owner contact email:** support@candidai.tech
+**Owner contact email:** hello@candidai.tech
 
 ---
 
@@ -427,6 +427,6 @@ Tracker indicates any technology - e.g Cookies, unique identifiers, web beacons,
 
 While we strive to create a positive user experience, we understand that issues may occasionally arise between us and our users.
 
-If this is the case, please feel free to contact us at support@candidai.tech
+If this is the case, please feel free to contact us at hello@candidai.tech
 `,
 };

@@ -36,7 +36,7 @@ In addition to what's specified in the descriptions within each of the categorie
 **ANTONUCCI ALESSIO**
 Via delle Orchidee 2, Cisterna di Latina, LT, 04012, Italy
 
-**Owner contact email:** support@candidai.tech
+**Owner contact email:** hello@candidai.tech
 
 ---
 
@@ -218,7 +218,7 @@ This policy relates solely to this Application, if not stated otherwise within t
 
 ### Your data
 
-You may contact support@candidai.tech to:
+You may contact hello@candidai.tech to:
 
 - **Request access:** Ask to know and access the information held about you
 - **Request correction:** Ask to correct inaccurate information
@@ -229,6 +229,6 @@ You may contact support@candidai.tech to:
 
 While we strive to create a positive user experience, we understand that issues may occasionally arise between us and our users. If this is the case, please feel free to contact us.
 
-**Contact:** support@candidai.tech
+**Contact:** hello@candidai.tech
 `,
 };

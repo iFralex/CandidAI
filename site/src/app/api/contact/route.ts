@@ -21,8 +21,8 @@ export async function POST(req: Request) {
         await Promise.all([
             // Internal notification to support team
             resend.emails.send({
-                from: "CandidAI Contact <noreply@candidai.tech>",
-                to: "support@candidai.tech",
+                from: "CandidAI Contact <no-reply@candidai.tech>",
+                to: "hello@candidai.tech",
                 replyTo: email,
                 subject: `[Contact] ${subject} - from ${name}`,
                 html: `

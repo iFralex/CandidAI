@@ -483,7 +483,7 @@ export async function POST(req) {
 
         <div style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid #8b5cf6; padding: 20px; margin: 24px 0; border-radius: 8px;">
           <p style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin: 0;">
-            <strong style="color: #8b5cf6;">📬 What's next?</strong> You'll hear back from us at <strong>support@candidai.tech</strong>, keep an eye on your inbox (and spam folder, just in case).
+            <strong style="color: #8b5cf6;">📬 What's next?</strong> You'll hear back from us at <strong>hello@candidai.tech</strong>, keep an eye on your inbox (and spam folder, just in case).
           </p>
         </div>
 

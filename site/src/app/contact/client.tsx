@@ -212,10 +212,10 @@ export default function ContactPage() {
                         <Mail className="w-4 h-4" />
                         <span>Or email us directly at</span>
                         <a
-                            href="mailto:support@candidai.tech"
+                            href="mailto:hello@candidai.tech"
                             className="text-violet-400 hover:text-violet-300 transition-colors"
                         >
-                            support@candidai.tech
+                            hello@candidai.tech
                         </a>
                     </div>
                 </div>
