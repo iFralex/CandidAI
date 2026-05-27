@@ -97,17 +97,6 @@ export async function validateDiscountCode(raw: string): Promise<ValidationResul
 }
 
 /**
- * Apply discount math. Same on client and server — no I/O.
- * Returns the discounted price in cents, with a 1-cent floor for
- * percentage discounts that would round to zero (Stripe rejects 0).
- */
-export function applyDiscountMath(priceInCents: number, discount: { type: "percentage" | "fixed"; value: number } | null | undefined): number {
-    if (!discount) return priceInCents;
-    if (discount.type === "fixed") return Math.max(1, Math.floor(discount.value));
-    return Math.max(1, Math.round(priceInCents * (1 - discount.value / 100)));
-}
-
-/**
  * Increment used_count atomically. Returns true if increment succeeded
  * within max_uses (or if no cap), false if cap was reached between
  * validation and payment confirmation (rare race).

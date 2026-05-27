@@ -1,0 +1,74 @@
+rules_version = '2';
+
+// CandidAI Firestore security rules.
+//
+// Strategy: deny-by-default, only open the minimal client paths the app
+// actually touches. Everything sensitive (discount codes, payments,
+// analytics events, server-side data) is admin-SDK-only — the admin SDK
+// bypasses these rules entirely, so cron jobs / API routes keep working.
+//
+// To deploy:
+//   cd site && firebase deploy --only firestore:rules
+//
+// Audited client touchpoints (must keep working):
+//   - login-form.tsx: read/write users/{uid} (own doc only)
+//   - FeedbackPrompt.tsx: addDoc feedback/* (any signed-in user)
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // User doc — owner-only read/write. login-form creates the doc on
+    // first sign-in and updates lastLogin/first_touch fields.
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid);
+      allow delete: if false;
+
+      // All subcollections (payments, data/*, etc.) — server-only.
+      // No client code reads or writes these paths.
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
+    // In-app micro-survey responses. Anyone signed in may create a
+    // feedback entry; nobody (other than admin SDK) may read or modify.
+    match /feedback/{id} {
+      allow create: if request.auth != null
+        && request.resource.data.score is number
+        && request.resource.data.score >= 1
+        && request.resource.data.score <= 5
+        && (
+          !('comment' in request.resource.data) ||
+          request.resource.data.comment is string
+        );
+      allow read, update, delete: if false;
+    }
+
+    // Discount codes — server-only registry. Validating / incrementing
+    // usage happens via admin SDK in api routes. Never expose to clients
+    // (that would leak active codes and let them be brute-forced).
+    match /discount_codes/{code} {
+      allow read, write: if false;
+    }
+
+    // Server-side analytics + caches — admin SDK only.
+    match /analytics_events/{id} {
+      allow read, write: if false;
+    }
+    match /analytics_cache/{id} {
+      allow read, write: if false;
+    }
+
+    // Default deny — anything not listed above is inaccessible from
+    // client SDKs (admin SDK still has full access).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

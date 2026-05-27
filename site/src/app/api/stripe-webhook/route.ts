@@ -35,74 +35,81 @@ export async function POST(req: Request) {
       const userRef = adminDb.collection("users").doc(userId);
       const paymentRef = userRef.collection("payments").doc(paymentIntent.id);
 
-      // Idempotency: skip if already processed
-      const existingPayment = await paymentRef.get();
-      if (existingPayment.exists) {
-        return new Response("ok", { status: 200 });
-      }
+      // Race-safe idempotency: stripe-webhook and /api/payment-confirm can
+      // both fire for the same payment within milliseconds. A non-transactional
+      // exists-then-set check let both pass and double-incremented credits +
+      // discount usage. Use a Firestore transaction so the existence check
+      // and the side-effecting writes happen atomically; if the doc already
+      // exists at commit time, the transaction's other writes never apply.
+      const isOnboardingPurchaseRef = { value: false };
+      let alreadyProcessed = false;
 
-      const batch = adminDb.batch();
-      let isOnboardingPurchase = false;
-
-      // Write payment record
-      batch.set(paymentRef, {
-        type: "one_time",
-        purchaseType,
-        itemId,
-        amount: paymentIntent.amount,
-        currency: paymentIntent.currency,
-        status: paymentIntent.status,
-        payment_method: paymentIntent.payment_method,
-        createdAt: new Date(),
-      });
-
-      if (purchaseType === "credits") {
-        const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId);
-        if (!pkg) throw new Error("Pacchetto crediti non trovato");
-
-        batch.update(userRef, {
-          credits: FieldValue.increment(pkg.credits),
-        });
-      } else if (purchaseType === "plan") {
-        const plan = plansInfo.find((p) => p.id === itemId);
-        if (!plan) throw new Error("Piano non trovato");
-
-        const planData = plansData[itemId as keyof typeof plansData];
-        const includedCredits = planData?.credits || 0;
-        const newPlanMaxCompanies = planData?.maxCompanies || 0;
-
-        // Compute how many companies the user has already used so we can carry
-        // over the unused remainder when re-purchasing or upgrading a plan.
+      // Pre-fetch out-of-transaction reads that don't need atomicity
+      // (these only inform the writes inside the transaction).
+      let userSnapData: Record<string, any> | undefined;
+      let resultsData: Record<string, any> | undefined;
+      if (purchaseType === "plan") {
         const [userSnap, resultsSnap] = await Promise.all([
           userRef.get(),
           adminDb.collection("users").doc(userId).collection("data").doc("results").get(),
         ]);
-        const currentMax: number = userSnap.data()?.maxCompanies ?? 0;
-        const resultsData = resultsSnap.exists ? (resultsSnap.data() ?? {}) : {};
-        const usedCount = Object.entries(resultsData).filter(
-          ([k, v]: any) => k !== "companies_to_confirm" && typeof v === "object" && v?.company
-        ).length;
-        const remaining = Math.max(0, currentMax - usedCount);
-        const maxCompanies = newPlanMaxCompanies + remaining;
-
-        const currentOnboardingStep: number = userSnap.data()?.onboardingStep ?? 50;
-        const isOnboarding = currentOnboardingStep < 10;
-        isOnboardingPurchase = isOnboarding;
-        batch.update(userRef, {
-          plan: itemId,
-          maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
-          credits: FieldValue.increment(includedCredits),
-          onboardingStep: isOnboarding ? 7 : 50,
-        });
+        userSnapData = userSnap.data();
+        resultsData = resultsSnap.exists ? (resultsSnap.data() ?? {}) : {};
       }
 
-      await batch.commit();
+      await adminDb.runTransaction(async (tx) => {
+        const existing = await tx.get(paymentRef);
+        if (existing.exists) { alreadyProcessed = true; return; }
 
-      // Revenue tracking — fire BEFORE startServer so it's recorded even if
-      // the pipeline kickoff later throws.
-      // Increment discount usage once, inside the idempotent first-write
-      // branch — paymentRef.exists check above guarantees we only land
-      // here the first time this Stripe event is processed.
+        tx.set(paymentRef, {
+          type: "one_time",
+          purchaseType,
+          itemId,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          status: paymentIntent.status,
+          payment_method: paymentIntent.payment_method,
+          discountCode: discountCode ?? null,
+          createdAt: new Date(),
+        });
+
+        if (purchaseType === "credits") {
+          const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId);
+          if (!pkg) throw new Error("Pacchetto crediti non trovato");
+          tx.update(userRef, { credits: FieldValue.increment(pkg.credits) });
+        } else if (purchaseType === "plan") {
+          const plan = plansInfo.find((p) => p.id === itemId);
+          if (!plan) throw new Error("Piano non trovato");
+          const planData = plansData[itemId as keyof typeof plansData];
+          const includedCredits = planData?.credits || 0;
+          const newPlanMaxCompanies = planData?.maxCompanies || 0;
+
+          const currentMax: number = userSnapData?.maxCompanies ?? 0;
+          const usedCount = Object.entries(resultsData ?? {}).filter(
+            ([k, v]: any) => k !== "companies_to_confirm" && typeof v === "object" && v?.company
+          ).length;
+          const remaining = Math.max(0, currentMax - usedCount);
+          const maxCompanies = newPlanMaxCompanies + remaining;
+
+          const currentOnboardingStep: number = userSnapData?.onboardingStep ?? 50;
+          const isOnboarding = currentOnboardingStep < 10;
+          isOnboardingPurchaseRef.value = isOnboarding;
+          tx.update(userRef, {
+            plan: itemId,
+            maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
+            credits: FieldValue.increment(includedCredits),
+            onboardingStep: isOnboarding ? 7 : 50,
+          });
+        }
+      });
+
+      if (alreadyProcessed) {
+        return new Response("ok (already processed)", { status: 200 });
+      }
+
+      // Side effects below are run AT MOST ONCE per payment because the
+      // transaction above is atomic — if a concurrent caller wrote the
+      // paymentRef first, this request short-circuits via alreadyProcessed.
       if (discountCode) {
         await incrementDiscountUsage(discountCode);
       }
@@ -113,7 +120,7 @@ export async function POST(req: Request) {
         itemId,
         amountCents: paymentIntent.amount,
         currency: paymentIntent.currency,
-        isOnboarding: isOnboardingPurchase,
+        isOnboarding: isOnboardingPurchaseRef.value,
         source: "webhook",
       });
 

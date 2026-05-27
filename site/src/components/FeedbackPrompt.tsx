@@ -8,7 +8,7 @@
  * The Firestore `feedback` collection accumulates responses for the
  * /analytics "Voice of customer" panel.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,11 +42,17 @@ export function FeedbackPrompt({ show, source, onClose, force }: FeedbackPromptP
     const [submitted, setSubmitted] = useState(false);
     const [open, setOpen] = useState(false);
 
+    // Keep onClose in a ref so a parent re-render (which often creates a
+    // fresh closure) doesn't re-run this effect, reset the 1.5s timer and
+    // delay the prompt forever.
+    const onCloseRef = useRef(onClose);
+    useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+
     // Gated open: only open if not yet shown to this user on this device
     useEffect(() => {
         if (!show) { setOpen(false); return; }
         if (!force && typeof window !== "undefined" && localStorage.getItem(STORAGE_KEY)) {
-            onClose();
+            onCloseRef.current();
             return;
         }
         // Tiny delay so we don't overlap with the celebratory state of email-sent
@@ -55,7 +61,7 @@ export function FeedbackPrompt({ show, source, onClose, force }: FeedbackPromptP
             track({ name: "nps_prompt_shown", params: { source } });
         }, 1500);
         return () => clearTimeout(t);
-    }, [show, source, onClose, force]);
+    }, [show, source, force]);
 
     const handleSubmit = async () => {
         if (!score) return;

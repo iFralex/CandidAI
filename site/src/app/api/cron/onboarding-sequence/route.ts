@@ -19,7 +19,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { adminDb } from "@/lib/firebase-admin";
-import { Timestamp, FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { recordServerEvent } from "@/lib/server-track";
 import { wrapEmail, button, tipBox, heading, paragraph, escapeHtml } from "@/lib/email-template";
 import { buildUnsubscribeUrl } from "@/lib/unsubscribe";
@@ -93,13 +93,15 @@ export async function GET(req: NextRequest) {
 
     for (const stage of STAGES) {
         const flagField = `seq_${stage.key}_sent`;
-        const minTs = Timestamp.fromMillis(now - stage.windowDays[1] * DAY_MS);
-        const maxTs = Timestamp.fromMillis(now - stage.windowDays[0] * DAY_MS);
+        // users.createdAt is an ISO 8601 string (lexicographically sortable),
+        // not a Firestore Timestamp — string range queries are correct here.
+        const minIso = new Date(now - stage.windowDays[1] * DAY_MS).toISOString();
+        const maxIso = new Date(now - stage.windowDays[0] * DAY_MS).toISOString();
 
         const snap = await adminDb
             .collection("users")
-            .where("createdAt", ">=", minTs)
-            .where("createdAt", "<", maxTs)
+            .where("createdAt", ">=", minIso)
+            .where("createdAt", "<", maxIso)
             .get();
 
         let sent = 0, skipped = 0, failed = 0;

@@ -47,7 +47,7 @@ export async function recordPaymentSuccess(args: {
     amountCents: number;
     currency: string;
     isOnboarding: boolean;
-    source: "webhook" | "payment-confirm";
+    source: "webhook" | "payment-confirm" | "create-payment-free";
 }): Promise<void> {
     let isFirstPurchase = false;
     try {

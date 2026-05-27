@@ -20,7 +20,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { adminDb } from "@/lib/firebase-admin";
-import { Timestamp, FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { recordServerEvent } from "@/lib/server-track";
 import { wrapEmail, button, tipBox, heading, paragraph, escapeHtml } from "@/lib/email-template";
 import { buildUnsubscribeUrl } from "@/lib/unsubscribe";
@@ -48,16 +48,20 @@ export async function GET(req: NextRequest) {
     }
 
     const now = Date.now();
-    const minTs = Timestamp.fromMillis(now - STALLED_MAX_HOURS * 3600_000);
-    const maxTs = Timestamp.fromMillis(now - STALLED_MIN_HOURS * 3600_000);
+    // users.createdAt is stored as an ISO 8601 string (see /api/auth and
+    // login-form Google flow). ISO 8601 is lexicographically ordered, so
+    // string range queries on Firestore work correctly without a converter.
+    // (Previous code compared against Timestamp objects and matched 0 docs.)
+    const minIso = new Date(now - STALLED_MAX_HOURS * 3600_000).toISOString();
+    const maxIso = new Date(now - STALLED_MIN_HOURS * 3600_000).toISOString();
 
     // We can't filter onboardingStep + createdAt + missing-drip-flag in a
     // single query without composite indexes, so we query by createdAt range
     // (the most selective) and filter the rest in JS.
     const snap = await adminDb
         .collection("users")
-        .where("createdAt", ">=", minTs)
-        .where("createdAt", "<", maxTs)
+        .where("createdAt", ">=", minIso)
+        .where("createdAt", "<", maxIso)
         .get();
 
     const resend = new Resend(process.env.RESEND_API_KEY);
@@ -100,10 +104,14 @@ export async function GET(req: NextRequest) {
                 drip_stalled_sent_at: FieldValue.serverTimestamp(),
             });
             sent.push(uid);
+            const createdAtMs = new Date(String(u.createdAt ?? "")).getTime();
+            const hoursSinceSignup = Number.isFinite(createdAtMs)
+                ? Math.round((now - createdAtMs) / 3600_000)
+                : null;
             await recordServerEvent({
                 event: "drip_stalled_sent",
                 userId: uid,
-                params: { onboarding_step: step, hours_since_signup: Math.round((now - (u.createdAt as Timestamp).toMillis()) / 3600_000) },
+                params: { onboarding_step: step, hours_since_signup: hoursSinceSignup },
             });
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);

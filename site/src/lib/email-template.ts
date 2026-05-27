@@ -26,7 +26,17 @@ export interface EmailShellOptions {
 
 export function wrapEmail(content: string, options: EmailShellOptions = {}): string {
     const { preheader = "", badge, unsubscribeUrl } = options;
-    const unsubHref = unsubscribeUrl || `${DOMAIN}/unsubscribed`;
+    // Only render the Unsubscribe row when a per-user URL is provided
+    // (marketing/drip emails). Transactional emails (receipts, password
+    // resets) aren't opt-in, so showing an Unsubscribe link there would
+    // be misleading — previously it pointed to /unsubscribed without a
+    // token, which can't actually unsubscribe anyone.
+    const unsubscribeRow = unsubscribeUrl ? `
+                <tr>
+                  <td style="text-align: center; padding-top: 20px;">
+                    <a href="${unsubscribeUrl}" style="color: #666666; text-decoration: underline; font-size: 11px;">Unsubscribe</a>
+                  </td>
+                </tr>` : "";
     const badgeHtml = badge ? `
         <div style="text-align: center; margin-bottom: 30px;">
           <div style="display: inline-block; padding: 12px 24px; background: rgba(139, 92, 246, 0.1); border-radius: 24px;">
@@ -81,11 +91,7 @@ export function wrapEmail(content: string, options: EmailShellOptions = {}): str
                     <p style="margin: 0; color: #666666;">Transforming job search with AI-powered personalization</p>
                   </td>
                 </tr>
-                <tr>
-                  <td style="text-align: center; padding-top: 20px;">
-                    <a href="${unsubHref}" style="color: #666666; text-decoration: underline; font-size: 11px;">Unsubscribe</a>
-                  </td>
-                </tr>
+                ${unsubscribeRow}
               </table>
             </td>
           </tr>

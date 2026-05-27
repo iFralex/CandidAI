@@ -8,6 +8,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { startServer } from "@/actions/onboarding-actions";
 import { validateDiscountCode, incrementDiscountUsage } from "@/lib/discount-codes";
+import { recordPaymentSuccess } from "@/lib/server-track";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-16" });
 
@@ -74,58 +75,86 @@ export async function POST(req: Request) {
         // Bypass Stripe for amounts under €1 (Stripe minimum is €0.50)
         if (amountInCents < 100) {
             const userRef = adminDb.collection("users").doc(user.uid);
-            const paymentRef = userRef.collection("payments").doc();
+            // Deterministic doc ID prevents double-claim on double-click /
+            // concurrent requests: a previous random doc ID let two requests
+            // both create distinct docs and double-grant credits.
+            const freeKey = `free-${purchaseType}-${itemId}-${appliedDiscountCode ?? "none"}`;
+            const paymentRef = userRef.collection("payments").doc(freeKey);
 
-            const batch = adminDb.batch();
-            batch.set(paymentRef, {
-                type: "free",
-                purchaseType,
-                itemId,
-                amount: 0,
-                currency: "eur",
-                status: "succeeded",
-                discountCode: appliedDiscountCode,
-                createdAt: new Date(),
-            });
+            let alreadyProcessed = false;
+            let isOnboardingPurchase = false;
 
-            if (purchaseType === "credits") {
-                const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId)!;
-                batch.update(userRef, { credits: FieldValue.increment(pkg.credits) });
-            } else if (purchaseType === "plan") {
-                const planData = plansData[itemId as keyof typeof plansData];
-                const newPlanMaxCompanies = planData?.maxCompanies ?? 0;
-
-                // Carry over unused companies from the previous allocation.
+            let userSnapData: Record<string, any> | undefined;
+            let resultsData: Record<string, any> | undefined;
+            if (purchaseType === "plan") {
                 const [userSnap, resultsSnap] = await Promise.all([
                     userRef.get(),
                     adminDb.collection("users").doc(user.uid).collection("data").doc("results").get(),
                 ]);
-                const currentMax: number = userSnap.data()?.maxCompanies ?? 0;
-                const resultsData = resultsSnap.exists ? (resultsSnap.data() ?? {}) : {};
-                const usedCount = Object.entries(resultsData).filter(
-                    ([k, v]: any) => k !== "companies_to_confirm" && typeof v === "object" && v?.company
-                ).length;
-                const remaining = Math.max(0, currentMax - usedCount);
-                const maxCompanies = newPlanMaxCompanies + remaining;
-
-                const currentOnboardingStep: number = userSnap.data()?.onboardingStep ?? 50;
-                const isOnboarding = currentOnboardingStep < 10;
-                batch.update(userRef, {
-                    plan: itemId,
-                    maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
-                    credits: FieldValue.increment(planData?.credits ?? 0),
-                    onboardingStep: isOnboarding ? 7 : 50,
-                });
+                userSnapData = userSnap.data();
+                resultsData = resultsSnap.exists ? (resultsSnap.data() ?? {}) : {};
             }
 
-            await batch.commit();
+            await adminDb.runTransaction(async (tx) => {
+                const existing = await tx.get(paymentRef);
+                if (existing.exists) { alreadyProcessed = true; return; }
 
-            // Increment usage only after the free payment doc is committed —
-            // doc creation is idempotent (paymentRef is a fresh doc ID per
-            // request, but the discount usage MUST track real conversions).
+                tx.set(paymentRef, {
+                    type: "free",
+                    purchaseType,
+                    itemId,
+                    amount: 0,
+                    currency: "eur",
+                    status: "succeeded",
+                    discountCode: appliedDiscountCode,
+                    createdAt: new Date(),
+                });
+
+                if (purchaseType === "credits") {
+                    const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId)!;
+                    tx.update(userRef, { credits: FieldValue.increment(pkg.credits) });
+                } else if (purchaseType === "plan") {
+                    const planData = plansData[itemId as keyof typeof plansData];
+                    const newPlanMaxCompanies = planData?.maxCompanies ?? 0;
+
+                    const currentMax: number = userSnapData?.maxCompanies ?? 0;
+                    const usedCount = Object.entries(resultsData ?? {}).filter(
+                        ([k, v]: any) => k !== "companies_to_confirm" && typeof v === "object" && v?.company
+                    ).length;
+                    const remaining = Math.max(0, currentMax - usedCount);
+                    const maxCompanies = newPlanMaxCompanies + remaining;
+
+                    const currentOnboardingStep: number = userSnapData?.onboardingStep ?? 50;
+                    const isOnboarding = currentOnboardingStep < 10;
+                    isOnboardingPurchase = isOnboarding;
+                    tx.update(userRef, {
+                        plan: itemId,
+                        maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
+                        credits: FieldValue.increment(planData?.credits ?? 0),
+                        onboardingStep: isOnboarding ? 7 : 50,
+                    });
+                }
+            });
+
+            if (alreadyProcessed) {
+                return NextResponse.json({ success: true, free: true, alreadyProcessed: true });
+            }
+
+            // Side effects run AT MOST ONCE per (user, item, discount) combo
+            // thanks to the deterministic paymentRef + transaction.
             if (appliedDiscountCode) {
                 await incrementDiscountUsage(appliedDiscountCode);
             }
+
+            await recordPaymentSuccess({
+                userId: user.uid,
+                purchaseType,
+                itemId,
+                amountCents: 0,
+                currency: "eur",
+                isOnboarding: isOnboardingPurchase,
+                source: "create-payment-free",
+            });
 
             if (purchaseType === "plan") {
                 try { await startServer(user.uid); } catch { /* non bloccante */ }
