@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CookieBanner } from "@/components/CookieBanner";
+import { ClarityScript } from "@/components/ClarityScript";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -173,6 +174,7 @@ export default function RootLayout({
           </ErrorBoundary>
         </AnalyticsProvider>
         <CookieBanner />
+        <ClarityScript />
         <SpeedInsights />
       </body>
     </html>
