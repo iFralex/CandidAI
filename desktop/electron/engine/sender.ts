@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron';
-import { SERVER_URL, SESSION_API_KEY } from '../config';
+import { SERVER_URL } from '../config';
 
 export interface EmailItem {
   id: string;
@@ -14,6 +14,7 @@ export interface EmailItem {
 
 export async function startRemoteCampaign(
   userId: string,
+  idToken: string,
   emails: EmailItem[],
   provider: string,
   mainWindow: BrowserWindow,
@@ -23,7 +24,7 @@ export async function startRemoteCampaign(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': SESSION_API_KEY,
+        Authorization: `Bearer ${idToken}`,
       },
       body: JSON.stringify({ user_id: userId, provider, emails }),
     });
@@ -50,6 +51,7 @@ export async function startRemoteCampaign(
 
 export async function stopRemoteCampaign(
   userId: string,
+  idToken: string,
   mainWindow: BrowserWindow,
 ): Promise<void> {
   try {
@@ -57,7 +59,7 @@ export async function stopRemoteCampaign(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': SESSION_API_KEY,
+        Authorization: `Bearer ${idToken}`,
       },
       body: JSON.stringify({ user_id: userId }),
     });

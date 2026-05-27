@@ -4,6 +4,7 @@ export interface CampaignPayload {
   emails: EmailItem[];
   provider: string;
   userId: string;
+  idToken: string;
 }
 
 export interface EmailItem {
@@ -29,11 +30,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternalLogin: () => ipcRenderer.invoke('open-external-login'),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
 
-  connectProvider: (provider: 'gmail' | 'outlook', userId: string) =>
-    ipcRenderer.invoke('connect-provider', { provider, userId }),
+  connectProvider: (provider: 'gmail' | 'outlook', userId: string, idToken: string) =>
+    ipcRenderer.invoke('connect-provider', { provider, userId, idToken }),
 
-  connectResend: (userId: string, apiKey: string, fromEmail: string, senderName: string) =>
-    ipcRenderer.invoke('connect-resend', { userId, apiKey, fromEmail, senderName }),
+  connectResend: (userId: string, idToken: string, apiKey: string, fromEmail: string, senderName: string) =>
+    ipcRenderer.invoke('connect-resend', { userId, idToken, apiKey, fromEmail, senderName }),
 
   disconnectProvider: (provider: string) =>
     ipcRenderer.invoke('disconnect-provider', provider),
@@ -44,7 +45,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startCampaign: (payload: CampaignPayload) =>
     ipcRenderer.invoke('start-campaign', payload),
 
-  stopCampaign: (userId: string) => ipcRenderer.invoke('stop-campaign', userId),
+  stopCampaign: (userId: string, idToken: string) =>
+    ipcRenderer.invoke('stop-campaign', { userId, idToken }),
 
   onCampaignQueued: (cb: (total: number) => void) =>
     ipcRenderer.on('campaign-queued', (_event, total: number) => cb(total)),

@@ -29,6 +29,34 @@ def _api_key_valid() -> bool:
     return request.headers.get("X-API-Key", "") == expected
 
 
+def _firebase_uid_from_bearer():
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    token = auth_header[7:].strip()
+    if not token:
+        return None
+    try:
+        import server  # triggers firebase_admin.initialize_app()
+        from firebase_admin import auth as fb_auth
+        return fb_auth.verify_id_token(token).get("uid")
+    except Exception:
+        return None
+
+
+def _auth_or_unauthorized(required_user_id=None):
+    """Accept either valid X-API-Key (server-to-server) or Firebase Bearer (end user).
+    If Bearer, the token's uid must match required_user_id when provided."""
+    if _api_key_valid():
+        return None
+    uid = _firebase_uid_from_bearer()
+    if uid:
+        if required_user_id is not None and str(uid) != str(required_user_id):
+            return jsonify({"error": "Forbidden: user mismatch"}), 403
+        return None
+    return jsonify({"error": "Unauthorized"}), 401
+
+
 @app.route("/start_emails_generation", methods=["POST"])
 def start_emails_generation():
     if not _api_key_valid():
@@ -42,33 +70,37 @@ def start_emails_generation():
 
 @app.route("/save_session", methods=["POST"])
 def save_session():
-    if not _api_key_valid():
-        return jsonify({"error": "Unauthorized"}), 401
     data = request.json or {}
+    err = _auth_or_unauthorized(data.get("user_id"))
+    if err:
+        return err
     return send_emails_service.save_session(data)
 
 
 @app.route("/send_emails", methods=["POST"])
 def send_emails():
-    if not _api_key_valid():
-        return jsonify({"error": "Unauthorized"}), 401
     data = request.json or {}
+    err = _auth_or_unauthorized(data.get("user_id"))
+    if err:
+        return err
     return send_emails_service.send_emails(data)
 
 
 @app.route("/save_resend_config", methods=["POST"])
 def save_resend_config():
-    if not _api_key_valid():
-        return jsonify({"error": "Unauthorized"}), 401
     data = request.json or {}
+    err = _auth_or_unauthorized(data.get("user_id"))
+    if err:
+        return err
     return send_emails_service.save_resend_config(data)
 
 
 @app.route("/stop_campaign", methods=["POST"])
 def stop_campaign():
-    if not _api_key_valid():
-        return jsonify({"error": "Unauthorized"}), 401
     data = request.json or {}
+    err = _auth_or_unauthorized(data.get("user_id"))
+    if err:
+        return err
     return send_emails_service.stop_campaign(data)
 
 

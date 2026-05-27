@@ -13,6 +13,7 @@ export interface CampaignPayload {
   emails: EmailItem[];
   provider: string;
   userId: string;
+  idToken: string;
 }
 
 export interface ProgressPayload {
@@ -24,12 +25,12 @@ export interface ElectronAPI {
   onAuthSuccess: (cb: (token: string) => void) => void;
   openExternalLogin: () => Promise<void>;
   openExternal: (url: string) => Promise<void>;
-  connectProvider: (provider: 'gmail' | 'outlook', userId: string) => Promise<'connected' | 'error'>;
-  connectResend: (userId: string, apiKey: string, fromEmail: string, senderName: string) => Promise<'connected' | 'error'>;
+  connectProvider: (provider: 'gmail' | 'outlook', userId: string, idToken: string) => Promise<'connected' | 'error'>;
+  connectResend: (userId: string, idToken: string, apiKey: string, fromEmail: string, senderName: string) => Promise<'connected' | 'error'>;
   disconnectProvider: (provider: string) => Promise<void>;
   getProviderStatus: (provider: string) => Promise<boolean>;
   startCampaign: (payload: CampaignPayload) => Promise<void>;
-  stopCampaign: (userId: string) => Promise<void>;
+  stopCampaign: (userId: string, idToken: string) => Promise<void>;
   onCampaignQueued: (cb: (total: number) => void) => void;
   onCampaignStopped: (cb: () => void) => void;
   onCampaignProgress: (cb: (p: ProgressPayload) => void) => void;

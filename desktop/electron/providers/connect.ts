@@ -5,7 +5,7 @@ import puppeteer from 'puppeteer-extra';
 import type { Page, Target } from 'puppeteer-core';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { findChromePath } from '../utils/chrome';
-import { SERVER_URL, SESSION_API_KEY } from '../config';
+import { SERVER_URL } from '../config';
 
 puppeteer.use(StealthPlugin());
 
@@ -27,6 +27,7 @@ function getSessionDir(provider: string): string {
 
 async function saveSessionToServer(
   userId: string,
+  idToken: string,
   provider: string,
   cookies: object[],
   fingerprint: object,
@@ -35,7 +36,7 @@ async function saveSessionToServer(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-API-Key': SESSION_API_KEY,
+      Authorization: `Bearer ${idToken}`,
     },
     body: JSON.stringify({ user_id: userId, provider, cookies, fingerprint }),
   });
@@ -48,6 +49,7 @@ async function saveSessionToServer(
 export async function connectProvider(
   provider: 'gmail' | 'outlook' | 'yahoo',
   userId: string,
+  idToken: string,
 ): Promise<'connected' | 'error'> {
   const loginUrl = PROVIDER_URLS[provider];
   const inboxIndicator = INBOX_INDICATORS[provider];
@@ -181,7 +183,7 @@ export async function connectProvider(
     await browser.close();
 
     try {
-      await saveSessionToServer(userId, provider, cookies, fingerprint);
+      await saveSessionToServer(userId, idToken, provider, cookies, fingerprint);
       console.log(`[connect] Sessione salvata sul server per provider ${provider}`);
     } catch (err) {
       // Non blocca il flusso: la sessione locale è comunque valida
@@ -220,6 +222,7 @@ export async function disconnectProvider(provider: string): Promise<void> {
 
 export async function connectResend(
   userId: string,
+  idToken: string,
   apiKey: string,
   fromEmail: string,
   senderName: string,
@@ -227,7 +230,7 @@ export async function connectResend(
   try {
     const res = await fetch(`${SERVER_URL}/save_resend_config`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': SESSION_API_KEY },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
       body: JSON.stringify({ user_id: userId, api_key: apiKey, from_email: fromEmail, sender_name: senderName }),
     });
     if (!res.ok) {

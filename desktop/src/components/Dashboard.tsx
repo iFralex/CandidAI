@@ -123,6 +123,12 @@ export default function Dashboard({ user, onSignOut }: Props) {
     });
   }, []);
 
+  async function getIdToken(): Promise<string> {
+    const current = auth.currentUser;
+    if (!current) throw new Error('Not authenticated');
+    return current.getIdToken();
+  }
+
   async function handleConnect() {
     if (selectedProvider === 'resend') {
       setResendStep(0);
@@ -134,7 +140,8 @@ export default function Dashboard({ user, onSignOut }: Props) {
     if (!api) return;
     setConnectError(null);
     setProviderStatuses((prev) => ({ ...prev, [selectedProvider]: 'connecting' }));
-    const result = await api.connectProvider(selectedProvider, user.uid);
+    const idToken = await getIdToken();
+    const result = await api.connectProvider(selectedProvider, user.uid, idToken);
     if (result === 'connected') {
       setProviderStatuses((prev) => ({ ...prev, [selectedProvider]: 'connected' }));
     } else {
@@ -149,8 +156,10 @@ export default function Dashboard({ user, onSignOut }: Props) {
     const api = window.electronAPI;
     if (!api) return;
     setResendStep(4);
+    const idToken = await getIdToken();
     const result = await api.connectResend(
       user.uid,
+      idToken,
       resendForm.apiKey,
       resendForm.fromEmail,
       resendForm.senderName,
@@ -178,7 +187,8 @@ export default function Dashboard({ user, onSignOut }: Props) {
     const emails = pendingEmails.map((e) =>
       cvOverrides[e.id] ? { ...e, cvUrl: cvOverrides[e.id] } : e
     );
-    await api.startCampaign({ emails, provider: selectedProvider, userId: user.uid });
+    const idToken = await getIdToken();
+    await api.startCampaign({ emails, provider: selectedProvider, userId: user.uid, idToken });
   }
 
   async function handleSendOne(email: EmailItem) {
@@ -186,13 +196,15 @@ export default function Dashboard({ user, onSignOut }: Props) {
     if (!api) return;
     setCampaignError(null);
     const item = cvOverrides[email.id] ? { ...email, cvUrl: cvOverrides[email.id] } : email;
-    await api.startCampaign({ emails: [item], provider: selectedProvider, userId: user.uid });
+    const idToken = await getIdToken();
+    await api.startCampaign({ emails: [item], provider: selectedProvider, userId: user.uid, idToken });
   }
 
   async function handleStopCampaign() {
     const api = window.electronAPI;
     if (!api) return;
-    await api.stopCampaign(user.uid);
+    const idToken = await getIdToken();
+    await api.stopCampaign(user.uid, idToken);
     setCampaign({ active: false, queued: 0 });
   }
 

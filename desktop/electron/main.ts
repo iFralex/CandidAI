@@ -141,15 +141,15 @@ ipcMain.handle('open-external', async (_event, url: string) => {
 
 ipcMain.handle(
   'connect-provider',
-  async (_event, payload: { provider: 'gmail' | 'outlook'; userId: string }) => {
-    return connectProvider(payload.provider, payload.userId);
+  async (_event, payload: { provider: 'gmail' | 'outlook'; userId: string; idToken: string }) => {
+    return connectProvider(payload.provider, payload.userId, payload.idToken);
   },
 );
 
 ipcMain.handle(
   'connect-resend',
-  async (_event, payload: { userId: string; apiKey: string; fromEmail: string; senderName: string }) => {
-    return connectResend(payload.userId, payload.apiKey, payload.fromEmail, payload.senderName);
+  async (_event, payload: { userId: string; idToken: string; apiKey: string; fromEmail: string; senderName: string }) => {
+    return connectResend(payload.userId, payload.idToken, payload.apiKey, payload.fromEmail, payload.senderName);
   },
 );
 
@@ -163,13 +163,13 @@ ipcMain.handle('get-provider-status', async (_event, provider: string) => {
 
 ipcMain.handle(
   'start-campaign',
-  (_event, payload: { emails: EmailItem[]; provider: string; userId: string }) => {
+  (_event, payload: { emails: EmailItem[]; provider: string; userId: string; idToken: string }) => {
     if (!mainWindow) return;
-    void startRemoteCampaign(payload.userId, payload.emails, payload.provider, mainWindow);
+    void startRemoteCampaign(payload.userId, payload.idToken, payload.emails, payload.provider, mainWindow);
   },
 );
 
-ipcMain.handle('stop-campaign', (_event, userId: string) => {
+ipcMain.handle('stop-campaign', (_event, payload: { userId: string; idToken: string }) => {
   if (!mainWindow) return;
-  void stopRemoteCampaign(userId, mainWindow);
+  void stopRemoteCampaign(payload.userId, payload.idToken, mainWindow);
 });
