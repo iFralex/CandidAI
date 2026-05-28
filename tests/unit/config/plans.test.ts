@@ -40,4 +40,25 @@ describe("PLANS Constants Structure", () => {
       expect(CREDIT_PACKAGES).toHaveLength(3);
     });
   });
+
+  describe("recruiter email reveal feature", () => {
+    it("revealRecruiterEmail is false for free_trial and true for paid plans", () => {
+      expect(plansData.free_trial.revealRecruiterEmail).toBe(false);
+      expect(plansData.base.revealRecruiterEmail).toBe(true);
+      expect(plansData.pro.revealRecruiterEmail).toBe(true);
+      expect(plansData.ultra.revealRecruiterEmail).toBe(true);
+    });
+
+    it("free_trial features do NOT mention the recruiter email", () => {
+      const free = plansInfo.find((p) => p.id === "free_trial")!;
+      expect(free.features.some((f) => /recruiter.*email/i.test(f))).toBe(false);
+    });
+
+    it("every paid plan lists the recruiter email feature", () => {
+      ["base", "pro", "ultra"].forEach((id) => {
+        const plan = plansInfo.find((p) => p.id === id)!;
+        expect(plan.features.some((f) => /recruiter.*email/i.test(f))).toBe(true);
+      });
+    });
+  });
 });

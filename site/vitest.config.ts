@@ -4,6 +4,11 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    fs: {
+      allow: [path.resolve(__dirname, ".."), __dirname],
+    },
+  },
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
