@@ -5,7 +5,7 @@ import time
 import requests
 from typing import List, Dict, Optional, Any
 from server.emails_generation import db
-from server.emails_generation.database import get_account_data, save_recruiter_and_query, save_company_info, get_custom_queries
+from server.emails_generation.database import get_account_data, save_recruiter_and_query, save_company_info, get_custom_queries, get_user_data
 from datetime import datetime, timezone
 import pytz
 import math
@@ -716,6 +716,15 @@ def find_recruiter_by_linkedin_urls(linkedin_urls: List[str], api_key: Optional[
 def find_recruiters_for_user(user_id, ids, companies, defaultQueries):
     results = {}
     user_instructions = {}
+
+    plan = (get_user_data(user_id) or {}).get("plan", "free_trial")
+    is_free = plan == "free_trial"
+    standard_key = os.environ.get("PEOPLE_DATA_API_KEY")
+    free_key = os.environ.get("PEOPLE_DATA_API_KEY_FREE")
+    if is_free and not free_key:
+        print("⚠️ PEOPLE_DATA_API_KEY_FREE non impostata: fallback alla chiave standard")
+    api_key = (free_key or standard_key) if is_free else standard_key
+
     for company in companies:
         _queries, user_instruction, recruiter_linkedin_urls = get_custom_queries(user_id, ids[f'{company["name"]}-{user_id}'])
         queries = _queries or defaultQueries
@@ -723,18 +732,24 @@ def find_recruiters_for_user(user_id, ids, companies, defaultQueries):
 
         if recruiter_linkedin_urls:
             print(f"🔗 Usando LinkedIn URLs override per {company['name']}: {recruiter_linkedin_urls}")
-            result = find_recruiter_by_linkedin_urls(recruiter_linkedin_urls)
+            result = find_recruiter_by_linkedin_urls(recruiter_linkedin_urls, api_key=api_key)
             if not isinstance(result, dict):
                 result = {}
             if result:
                 query = {"id": "linkedin_override", "name": "Manually specified via LinkedIn URL", "criteria": []}
             else:
                 print(f"⚠️ Nessun profilo trovato via LinkedIn URL per {company['name']}, uso ricerca normale")
-                result_list, query = find_company_recruiters(company, queries)
+                result_list, query = find_company_recruiters(company, queries, api_key=api_key)
                 result = result_list[0] if result_list else {}
         else:
-            result_list, query = find_company_recruiters(company, queries)
+            result_list, query = find_company_recruiters(company, queries, api_key=api_key)
             result = result_list[0] if result_list else {}
+
+        # Free trial: a recruiter with a verified email was found, but the address
+        # is revealed only on paid plans. Replace it with the sentinel True so the
+        # real email is never persisted or exposed to the client.
+        if is_free and result and result.get("work_email"):
+            result["work_email"] = True
 
         company["linkedin_url"] = result.get("job_company_linkedin_url", None)
 
