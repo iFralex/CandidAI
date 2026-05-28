@@ -53,6 +53,7 @@ export const plansData = {
   free_trial: {
     credits: 0,
     maxCompanies: 1,
+    revealRecruiterEmail: false,
     customInstructions: false,
     recruiterStrategy: false,
     followUpAutomation: false,
@@ -64,6 +65,7 @@ export const plansData = {
   base: {
     credits: 0,
     maxCompanies: 20,
+    revealRecruiterEmail: true,
     customInstructions: false,
     recruiterStrategy: false,
     followUpAutomation: false,
@@ -75,6 +77,7 @@ export const plansData = {
   pro: {
     credits: 1000,
     maxCompanies: 50,
+    revealRecruiterEmail: true,
     customInstructions: true,
     recruiterStrategy: 30,
     followUpAutomation: true,
@@ -86,6 +89,7 @@ export const plansData = {
   ultra: {
     credits: 2500,
     maxCompanies: 100,
+    revealRecruiterEmail: true,
     customInstructions: true,
     recruiterStrategy: 50,
     followUpAutomation: true,
@@ -107,6 +111,9 @@ function buildFeatures(data) {
 
   if (data.credits > 0)
     features.push(`${data.credits} credits included`);
+
+  if (data.revealRecruiterEmail)
+    features.push("Recruiter's verified email included");
 
   if (data.customInstructions)
     features.push("Custom Instructions");
