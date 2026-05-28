@@ -740,7 +740,7 @@ export function EmailAttachmentDragger({ fileUrl, fileName }) {
 
 interface EmailData {
   email?: {
-    email_address: string;
+    email_address: string | boolean;
   };
   subject?: string;
   body?: string;
@@ -778,6 +778,7 @@ export function EmailDialog({
   attachmentUrl,
   attachmentName = "cv.pdf",
   buttonLabel = "Send email",
+  locked = false,
 }) {
   const [fileData, setFileData] = useState<{ base64: string; mimeType: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -897,6 +898,18 @@ export function EmailDialog({
               </div>
               <div className="mt-1 text-amber-200/60">
                 Modifica il body prima di inviare per evitare di mandare un'email con segnaposto visibili.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {locked && (
+          <div className="flex items-start gap-2 rounded-md border border-violet-500/40 bg-violet-500/10 p-3 text-xs text-violet-200">
+            <Lock className="w-4 h-4 shrink-0 mt-0.5" />
+            <div>
+              <div className="font-medium mb-1">Recruiter email locked on the free trial</div>
+              <div className="text-violet-200/80">
+                We found a recruiter with a verified email at this company, but the email address is only revealed on paid plans. You can still reach out to them directly on LinkedIn — or upgrade to unlock the email and send it from here.
               </div>
             </div>
           </div>
@@ -1244,6 +1257,7 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
   const [emailSentSuccess, setEmailSentSuccess] = useState(false);
   const [selectedHistoryIndex, setSelectedHistoryIndex] = useState<number | null>(null);
   const isEmailSent = (ts: any) => ts?._seconds > 0;
+  const isEmailLocked = email?.email_address === true;
 
   const viewedEmail = selectedHistoryIndex !== null ? emailHistory[selectedHistoryIndex] : email;
   const isViewingHistory = selectedHistoryIndex !== null;
@@ -1464,11 +1478,12 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 {!isEmailSent(email.email_sent) ? (
                   <EmailDialog
-                    to={email?.email_address}
+                    to={isEmailLocked ? "" : (email?.email_address as string)}
                     from={"ifralex.business@gmail.com"}
                     subject={email?.subject}
                     body={email?.body}
                     attachmentUrl={email?.cv_url}
+                    locked={isEmailLocked}
                   />
                 ) : (
                   <Button
@@ -1482,6 +1497,12 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
                   </Button>
                 )}
               </motion.div>
+            )}
+
+            {!isViewingHistory && isEmailLocked && (
+              <p className="text-xs text-violet-300/80 px-1">
+                Email hidden on the free trial — you can still connect on LinkedIn, or upgrade to reveal it.
+              </p>
             )}
 
             {/* Dialog per rigenerare email */}
