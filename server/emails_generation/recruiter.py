@@ -244,20 +244,20 @@ def get_pdl_data(params):
 
     return {}
 
-def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None, n_profiles: int = 1) -> List[Dict]:
+def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None, n_profiles: int = 1, api_key: Optional[str] = None) -> List[Dict]:
     """
     Trova n_profiles recruiters per un'azienda specifica eseguendo queries progressive.
     Se non trova recruiters, cerca owner/founder, poi senior, poi qualsiasi persona.
-    
+
     Args:
         company: Dizionario con 'domain' e 'name' dell'azienda
         queries: Lista di query ordinate per priorità (dalla più specifica alla più generica)
         n_profiles: Numero di profili da trovare
-    
+
     Returns:
         Lista di profili trovati
     """
-    API_KEY = os.environ.get("PEOPLE_DATA_API_KEY")
+    API_KEY = api_key or os.environ.get("PEOPLE_DATA_API_KEY")
     PDL_URL = "https://api.peopledatalabs.com/v5/person/search"
     HEADERS = {
         "Content-Type": "application/json",
@@ -669,12 +669,12 @@ def get_work_email_from_rocketreach(name: str, company_domain: str) -> str:
         print(f"⚠️ Errore nella richiesta RocketReach: {e}")
         return None
     
-def find_recruiter_by_linkedin_urls(linkedin_urls: List[str]) -> Dict:
+def find_recruiter_by_linkedin_urls(linkedin_urls: List[str], api_key: Optional[str] = None) -> Dict:
     """
     Tries to enrich a person profile from PDL using a list of LinkedIn URLs in priority order.
     Returns the first profile found, or an empty dict if none match.
     """
-    API_KEY = os.environ.get("PEOPLE_DATA_API_KEY")
+    API_KEY = api_key or os.environ.get("PEOPLE_DATA_API_KEY")
     PDL_URL = "https://api.peopledatalabs.com/v5/person/enrich"
     HEADERS = {
         "Content-Type": "application/json",
