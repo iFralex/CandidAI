@@ -68,3 +68,20 @@ def test_free_trial_falls_back_to_standard_key_when_free_unset():
             results, _ = find_recruiters_for_user("u1", {"Acme-u1": "uid-acme"}, [{"name": "Acme", "domain": "acme.com"}], [])
     assert results["Acme"][0]["work_email"] is True
     assert mock_find.call_args.kwargs.get("api_key") == "STD"
+
+
+def test_paid_plan_falls_back_to_free_key_when_standard_unset():
+    record = {"full_name": "Alice", "work_email": "alice@acme.com",
+              "job_company_linkedin_url": "linkedin.com/company/acme"}
+    env = {"PEOPLE_DATA_API_KEY_FREE": "FREE"}
+    with patch.dict(os.environ, env, clear=False):
+        os.environ.pop("PEOPLE_DATA_API_KEY", None)
+        with patch("server.emails_generation.recruiter.get_user_data", return_value={"plan": "pro"}), \
+             patch("server.emails_generation.recruiter.get_custom_queries", return_value=(None, "", [])), \
+             patch("server.emails_generation.recruiter.find_company_recruiters", return_value=([record], {"id": 1})) as mock_find, \
+             patch("server.emails_generation.recruiter.save_recruiter_and_query"), \
+             patch("server.emails_generation.recruiter.time.sleep"):
+            results, _ = find_recruiters_for_user("u1", {"Acme-u1": "uid-acme"}, [{"name": "Acme", "domain": "acme.com"}], [])
+    # paid plan never masks the email, even when borrowing the free key
+    assert results["Acme"][0]["work_email"] == "alice@acme.com"
+    assert mock_find.call_args.kwargs.get("api_key") == "FREE"

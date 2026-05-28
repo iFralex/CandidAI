@@ -721,9 +721,11 @@ def find_recruiters_for_user(user_id, ids, companies, defaultQueries):
     is_free = plan == "free_trial"
     standard_key = os.environ.get("PEOPLE_DATA_API_KEY")
     free_key = os.environ.get("PEOPLE_DATA_API_KEY_FREE")
-    if is_free and not free_key:
-        print("⚠️ PEOPLE_DATA_API_KEY_FREE non impostata: fallback alla chiave standard")
-    api_key = (free_key or standard_key) if is_free else standard_key
+    # Free trial prefers the dedicated free-credit key; paid plans prefer the
+    # standard key. Either falls back to the other when its preferred key is unset.
+    api_key = (free_key or standard_key) if is_free else (standard_key or free_key)
+    if not api_key:
+        print("⚠️ Nessuna chiave PDL configurata (PEOPLE_DATA_API_KEY / PEOPLE_DATA_API_KEY_FREE)")
 
     for company in companies:
         _queries, user_instruction, recruiter_linkedin_urls = get_custom_queries(user_id, ids[f'{company["name"]}-{user_id}'])
