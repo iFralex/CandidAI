@@ -136,7 +136,7 @@ def extract_cv_text(url: str) -> str:
     """
     try:
         # 1️⃣ Scarica il file PDF dalla rete
-        response = requests.get(url)
+        response = requests.get(url, timeout=30)
         response.raise_for_status()  # solleva errore se la richiesta fallisce
 
         # 2️⃣ Crea un buffer in memoria

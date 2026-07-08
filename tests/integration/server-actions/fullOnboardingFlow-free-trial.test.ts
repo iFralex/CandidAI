@@ -523,16 +523,12 @@ describe("Full Onboarding Flow - Free Trial", () => {
       expect(mockBatchCommit).toHaveBeenCalledTimes(1);
     });
 
-    it("selectPlan sets plan='free_trial' and credits=0 on user document", async () => {
+    it("selectPlan sets plan='free_trial' without granting credits (granted only after payment)", async () => {
       await selectPlan("free_trial");
 
-      expect(mockBatchUpdate).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          plan: "free_trial",
-          credits: 0,
-        })
-      );
+      const updateArg = mockBatchUpdate.mock.calls[0]?.[1] ?? {};
+      expect(updateArg).toMatchObject({ plan: "free_trial", onboardingStep: 2 });
+      expect(updateArg).not.toHaveProperty("credits");
     });
   });
 

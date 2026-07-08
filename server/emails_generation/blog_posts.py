@@ -803,7 +803,7 @@ def search_on_google(query, exclude_url="", num_results=3):
 
     for attempt in range(max_retries + 1):
         try:
-            response = requests.get(url, params=params, headers=headers)
+            response = requests.get(url, params=params, headers=headers, timeout=30)
             data = response.json()
 
             if not response.ok:
@@ -4660,7 +4660,7 @@ def get_tech_recruiter_emails(company_name: str):
         "department": "hr"
     }
 
-    response = requests.get(url, params=params)
+    response = requests.get(url, params=params, timeout=30)
     if response.status_code != 200:
         raise Exception(f"Errore {response.status_code}: {response.text}")
 
@@ -4738,7 +4738,7 @@ def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superfic
         }
         
         try:
-            response = requests.post(url, json=payload, headers=headers)
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
             response.raise_for_status()
 
             data = response.json()

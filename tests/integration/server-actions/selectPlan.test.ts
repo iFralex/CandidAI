@@ -127,26 +127,28 @@ describe("selectPlan server action", () => {
       expect(mockBatchCommit).toHaveBeenCalledOnce();
     });
 
-    it("plan credits are included in the Firestore update for pro plan", async () => {
+    // SECURITY: selecting a plan during onboarding must NOT grant credits.
+    // Entitlements are granted only after a successful payment. Previously
+    // selectPlan wrote `credits: plansData[planId].credits`, so a user could
+    // pick Pro/Ultra and get 1000/2500 credits without ever paying.
+    it("does NOT grant plan credits on selection (pro)", async () => {
       mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
 
       await selectPlan("pro");
 
-      expect(mockBatchUpdate).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ credits: 1000 })
-      );
+      const updateArg = mockBatchUpdate.mock.calls[0]?.[1] ?? {};
+      expect(updateArg).not.toHaveProperty("credits");
+      expect(updateArg).toMatchObject({ plan: "pro", onboardingStep: 2 });
     });
 
-    it("plan credits are included in the Firestore update for ultra plan", async () => {
+    it("does NOT grant plan credits on selection (ultra)", async () => {
       mockGetTokens.mockResolvedValue({ decodedToken: validDecodedToken });
 
       await selectPlan("ultra");
 
-      expect(mockBatchUpdate).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ credits: 2500 })
-      );
+      const updateArg = mockBatchUpdate.mock.calls[0]?.[1] ?? {};
+      expect(updateArg).not.toHaveProperty("credits");
+      expect(updateArg).toMatchObject({ plan: "ultra", onboardingStep: 2 });
     });
   });
 

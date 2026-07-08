@@ -34,13 +34,29 @@ def get_pdl_data(params):
                 try:
                     return json.load(f)
                 except Exception:
-                    pass
+                    # Corrupt file: preserve it for manual recovery instead of
+                    # letting the next save_store() overwrite it with an empty
+                    # store, which would wipe every configured PDL key.
+                    backup = f"{STORE_FILE}.corrupt-{int(time.time())}"
+                    try:
+                        os.replace(STORE_FILE, backup)
+                        print(f"⚠️ Store corrotto: backup salvato in {backup}")
+                    except Exception:
+                        pass
         print("⚠️ Store non trovato o corrotto, ne creo uno nuovo.")
         return {"data": {}, "usage": {}}
 
     def save_store(store):
-        with open(STORE_FILE, "w") as f:
+        # Atomic write: dumping straight onto STORE_FILE can leave a truncated
+        # file if the process dies mid-write, and load_store() would then reset
+        # to an empty store — losing all PDL keys and credit state. Write to a
+        # temp file and os.replace() (atomic on POSIX).
+        tmp = f"{STORE_FILE}.tmp"
+        with open(tmp, "w") as f:
             json.dump(store, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, STORE_FILE)
 
     def build_floppy_proxy(api_key_config, session_id):
         """Costruisce l'URL del proxy parametrico FloppyData."""
@@ -351,7 +367,7 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
             request_timestamps.append(time.time())
 
             # Esegui la richiesta
-            response = requests.get(PDL_URL, headers=HEADERS, params=params).json()
+            response = requests.get(PDL_URL, headers=HEADERS, params=params, timeout=30).json()
 
             # Log includes the ES query (parsed) so 404s can be debugged later.
             try:
@@ -689,7 +705,7 @@ def find_recruiter_by_linkedin_urls(linkedin_urls: List[str], api_key: Optional[
             "titlecase": True,
         }
         try:
-            response = requests.get(PDL_URL, headers=HEADERS, params=params).json()
+            response = requests.get(PDL_URL, headers=HEADERS, params=params, timeout=30).json()
             if isinstance(response, list):
                 response = response[0] if response else {}
             if response.get("status") == 200:

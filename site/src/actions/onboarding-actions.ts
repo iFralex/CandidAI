@@ -136,6 +136,12 @@ export async function selectPlan(planId: string) {
         }
     }
 
+    // Validate the plan id — an unknown id used to crash on plansData[planId]
+    // (uncaught 500). Reject it explicitly instead.
+    if (!(planId in plansData)) {
+        throw new Error("Invalid plan");
+    }
+
     const userId = await checkAuth()
 
     const userRef = adminDb.collection("users").doc(userId)
@@ -146,11 +152,15 @@ export async function selectPlan(planId: string) {
 
     const batch = adminDb.batch()
 
+    // NOTE: do NOT grant credits here. `plan` is only the *selected* plan during
+    // onboarding; entitlements (credits + plan features) are granted exclusively
+    // after a successful payment (create-payment / payment-confirm / webhook).
+    // Writing `credits: plansData[planId].credits` at selection time let a user
+    // pick Pro/Ultra and receive 1000/2500 credits without ever paying.
     batch.update(userRef, {
         onboardingStep: 2,
         maxOnboardingStep: planChanged ? 2 : Math.max(2, existingMax),
         plan: planId,
-        credits: plansData[planId].credits || 0,
     })
 
     if (planChanged) {
