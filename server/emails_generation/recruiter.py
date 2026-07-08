@@ -17,7 +17,7 @@ from server.emails_generation.utils import log_pdl_call, log_rocketreach_call
 def get_pdl_data(params):
     # --- CONFIGURAZIONE FLOPPYDATA ---
     STORE_FILE="store_pdl.json"
-    PROXY_USER = "9081P161DdU541pP"
+    PROXY_USER = os.environ.get("PROXY_USER", "")
     PROXY_PASS = os.environ.get("PROXY_PASS")
     PROXY_HOST = "geo.g-w.info"
     PROXY_PORT = "10080"
@@ -644,8 +644,11 @@ def get_work_email_from_rocketreach(name: str, company_domain: str) -> str:
     Returns:
         str: Email lavorativa trovata, oppure None se non disponibile
     """
-    # Chiave API RocketReach (puoi anche impostarla come variabile d’ambiente)
-    API_KEY = os.environ.get("ROCKETREACH_API_KEY", "INSERISCI_LA_TUA_API_KEY")
+    # Chiave API RocketReach (obbligatoria via env — niente placeholder hardcoded)
+    API_KEY = os.environ.get("ROCKETREACH_API_KEY", "")
+    if not API_KEY:
+        print("⚠️ ROCKETREACH_API_KEY non configurata, salto il lookup.")
+        return None
 
     url = f"https://api.rocketreach.co/api/v2/person/lookup"
     params = {

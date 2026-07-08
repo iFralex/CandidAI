@@ -28,13 +28,13 @@ export async function POST(request: NextRequest) {
             cookieName: serverConfig.cookieName,
             cookieSignatureKeys: serverConfig.cookieSignatureKeys,
             serviceAccount: serverConfig.serviceAccount,
-            cookieSerializeOptions: {
-                path: '/',
-                httpOnly: true,
-                secure: false, // Set this to true on HTTPS environments
-                sameSite: 'strict' as const,
-                maxAge: 12 * 60 * 60 * 24 // twelve days
-            },
+            // Reuse the canonical cookie options (Secure in production, sameSite=lax)
+            // instead of a hardcoded `secure:false`. The old override re-issued the
+            // session cookie without the Secure flag on every refresh (verify-email
+            // and onboarding), so it could travel over plain HTTP; and its
+            // sameSite:'strict' diverged from the app's 'lax', logging users out
+            // when arriving from external links.
+            cookieSerializeOptions: serverConfig.cookieSerializeOptions,
         }
     );
 }

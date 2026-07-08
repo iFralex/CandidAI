@@ -16,7 +16,22 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
         }
 
-        const safeMessage = message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        // Length caps — bound the payload of this public, unauthenticated endpoint.
+        if (String(name).length > 100 || String(email).length > 120 ||
+            String(subject).length > 200 || String(message).length > 5000) {
+            return NextResponse.json({ error: "One or more fields are too long" }, { status: 400 });
+        }
+
+        // Escape every user-supplied field before interpolating into HTML — not
+        // just the message. name/email/subject/userId were previously injected raw.
+        const esc = (s: unknown) => String(s ?? "")
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        const safeName = esc(name);
+        const safeEmail = esc(email);
+        const safeSubject = esc(subject);
+        const safeUserId = esc(userId);
+        const safeMessage = esc(message);
 
         await Promise.all([
             // Internal notification to support team
@@ -39,18 +54,18 @@ export async function POST(req: Request) {
         </td></tr>
         <tr><td style="padding:40px;">
           <p style="margin:0 0 4px;color:#888888;font-size:12px;text-transform:uppercase;letter-spacing:1px;">From</p>
-          <p style="margin:0;color:#ffffff;font-size:16px;font-weight:600;">${name}</p>
-          <p style="margin:4px 0 0;color:#8b5cf6;font-size:14px;">${email}</p>
-          ${userId ? `<p style="margin:4px 0 0;color:#666666;font-size:12px;">User ID: ${userId}</p>` : ""}
+          <p style="margin:0;color:#ffffff;font-size:16px;font-weight:600;">${safeName}</p>
+          <p style="margin:4px 0 0;color:#8b5cf6;font-size:14px;">${safeEmail}</p>
+          ${userId ? `<p style="margin:4px 0 0;color:#666666;font-size:12px;">User ID: ${safeUserId}</p>` : ""}
           <p style="margin:20px 0 4px;color:#888888;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-top:1px solid rgba(139,92,246,0.2);padding-top:20px;">Subject</p>
-          <p style="margin:0;color:#ffffff;font-size:16px;font-weight:600;">${subject}</p>
+          <p style="margin:0;color:#ffffff;font-size:16px;font-weight:600;">${safeSubject}</p>
           <p style="margin:20px 0 12px;color:#888888;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-top:1px solid rgba(139,92,246,0.2);padding-top:20px;">Message</p>
           <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.2);border-radius:8px;padding:20px;">
             <p style="margin:0;color:#e5e7eb;font-size:15px;line-height:1.7;white-space:pre-wrap;">${safeMessage}</p>
           </div>
         </td></tr>
         <tr><td style="padding:20px 40px;background-color:#1a1a1a;border-top:1px solid rgba(139,92,246,0.2);text-align:center;">
-          <p style="margin:0;color:#666666;font-size:12px;">Reply directly to this email to respond to ${name}</p>
+          <p style="margin:0;color:#666666;font-size:12px;">Reply directly to this email to respond to ${safeName}</p>
         </td></tr>
       </table>
     </td></tr>

@@ -76,13 +76,14 @@ def init_driver(force_new=False):
             logging.info("🚀 Launching undetected Chrome...")
             driver = uc.Chrome(version_main=146, options=options)
             logging.info("✅ Driver created")
-    return driver
+            return driver
 
-    # Controllo se il driver è ancora vivo
+    # Driver già esistente: verifica che sia ancora vivo, altrimenti ricrea.
+    # (Prima questo blocco era irraggiungibile a causa di un `return driver`
+    # anticipato, quindi un driver globale crashato non veniva mai rilevato.)
     try:
-        _ = driver.title  # comando leggero
-        logging.info("driver fun")
-        return driver      # driver funzionante
+        _ = driver.title  # liveness probe leggero
+        return driver
     except (WebDriverException, urllib3.exceptions.NewConnectionError):
         logging.info("🔴 Driver crashato! Ricreazione...")
         return init_driver(force_new=True)

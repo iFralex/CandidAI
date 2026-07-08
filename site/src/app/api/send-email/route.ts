@@ -1,8 +1,13 @@
 import { Resend } from "resend";
 import { NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase-admin";
-import { wrapEmail, button, tipBox, heading, paragraph } from "@/lib/email-template";
+import { wrapEmail, button, tipBox, heading, paragraph, escapeHtml } from "@/lib/email-template";
 import { buildVerifyUrl } from "@/lib/verify-token";
+
+// Null-safe HTML escaper for values that originate from scraping / PDL / AI /
+// user input (company names, recruiter names, article titles, email previews,
+// display names). Prevents HTML/attribute injection into transactional emails.
+const esc = (v: unknown) => escapeHtml(String(v ?? ""));
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -64,7 +69,7 @@ export async function POST(req) {
                 case "welcome": {
                     const subject = "🚀 Welcome to CandidAI – Let's Get You Hired!";
                     const html = wrapEmail(`
-        ${heading(`Hey ${userRecord.displayName || 'there'}! 👋`)}
+        ${heading(`Hey ${esc(userRecord.displayName || 'there')}! 👋`)}
         ${paragraph(`Welcome to <strong style="color: #8b5cf6;">CandidAI</strong> – where AI meets opportunity! We're thrilled to have you join thousands of professionals who are landing their dream jobs with personalized outreach.`)}
         ${tipBox(`<strong style="color: #8b5cf6;">💡 Did you know?</strong> Personalized emails to recruiters have a <strong>5x higher response rate</strong> than standard applications. You're already ahead of the game!`)}
         ${paragraph(`Before you start generating those game-changing emails, please verify your account:`)}
@@ -112,24 +117,24 @@ export async function POST(req) {
             <div style="display: table-row;">
               <div style="display: table-cell; vertical-align: top; padding-right: 12px; width: 40px;">
                 <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 8px; overflow: hidden; position: relative; color: #ffffff; font-weight: 700; font-size: 18px; text-align: center; line-height: 40px;">
-                  ${item.company.name.charAt(0).toUpperCase()}
-                  ${item.company.domain ? `<img src="https://logo.clearbit.com/${item.company.domain}" width="40" height="40" alt="" style="position: absolute; top: 0; left: 0; width: 40px; height: 40px; object-fit: contain; background: white; border-radius: 8px;">` : ''}
+                  ${esc(item.company.name).charAt(0).toUpperCase()}
+                  ${item.company.domain ? `<img src="https://logo.clearbit.com/${esc(item.company.domain)}" width="40" height="40" alt="" style="position: absolute; top: 0; left: 0; width: 40px; height: 40px; object-fit: contain; background: white; border-radius: 8px;">` : ''}
                 </div>
               </div>
               <div style="display: table-cell; vertical-align: top;">
                 <h3 style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0 0 4px;">
-                  ${item.company.name}
+                  ${esc(item.company.name)}
                 </h3>
                 <p style="color: #888888; font-size: 13px; margin: 0 0 12px;">
-                  ${item.company.domain}
+                  ${esc(item.company.domain)}
                 </p>
-                
+
                 <div style="margin: 12px 0;">
                   <p style="color: #aaaaaa; font-size: 14px; margin: 0 0 4px;">
-                    <strong style="color: #8b5cf6;">👤 Recruiter:</strong> ${item.recruiter.name}
+                    <strong style="color: #8b5cf6;">👤 Recruiter:</strong> ${esc(item.recruiter.name)}
                   </p>
                   <p style="color: #888888; font-size: 13px; margin: 0;">
-                    ${item.recruiter.jobTitle}
+                    ${esc(item.recruiter.jobTitle)}
                   </p>
                 </div>
 
@@ -139,8 +144,8 @@ export async function POST(req) {
                       <strong style="color: #8b5cf6;">📰 Referenced Articles:</strong>
                     </p>
                     ${item.articles.map(article => `
-                      <a href="${article.link}" style="display: block; color: #7c3aed; text-decoration: none; font-size: 13px; margin: 4px 0; padding: 4px 0;">
-                        → ${article.title}
+                      <a href="${esc(article.link)}" style="display: block; color: #7c3aed; text-decoration: none; font-size: 13px; margin: 4px 0; padding: 4px 0;">
+                        → ${esc(article.title)}
                       </a>
                     `).join('')}
                   </div>
@@ -148,7 +153,7 @@ export async function POST(req) {
 
                 <div style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 12px; margin-top: 12px;">
                   <p style="color: #cccccc; font-size: 13px; line-height: 1.5; margin: 0; font-style: italic;">
-                    "${item.preview.substring(0, 150)}${item.preview.length > 150 ? '...' : ''}"
+                    "${esc(item.preview.substring(0, 150))}${item.preview.length > 150 ? '...' : ''}"
                   </p>
                 </div>
               </div>
@@ -158,7 +163,7 @@ export async function POST(req) {
       `).join('');
 
                     const generatedHtml = wrapEmail(`
-        ${heading(`Your Emails Are Ready, ${userRecord.displayName || 'there'}! 🎉`)}
+        ${heading(`Your Emails Are Ready, ${esc(userRecord.displayName || 'there')}! 🎉`)}
         ${paragraph(`Great news! We've crafted ${companiesCount} personalized ${companiesCount === 1 ? 'email' : 'emails'} tailored to your target ${companiesCount === 1 ? 'company' : 'companies'}. Each one is uniquely designed to catch the recruiter's attention and showcase your strengths.`)}
 
         <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.1) 100%); border: 2px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center;">
@@ -195,35 +200,35 @@ export async function POST(req) {
                     const firstSubject = `🎉 Your first AI-crafted email is ready — check it out!`;
 
                     const firstHtml = wrapEmail(`
-        ${heading(`It's done, ${userRecord.displayName || 'there'}. Your first personalized email is ready. 🎉`)}
-        ${paragraph(`Our AI has researched the recruiter at <strong style="color: #ffffff;">${firstItem.company?.name || 'your target company'}</strong> and crafted a personalized email just for you. No templates, no copy-paste — written from scratch based on the company's news and the recruiter's background.`)}
+        ${heading(`It's done, ${esc(userRecord.displayName || 'there')}. Your first personalized email is ready. 🎉`)}
+        ${paragraph(`Our AI has researched the recruiter at <strong style="color: #ffffff;">${esc(firstItem.company?.name || 'your target company')}</strong> and crafted a personalized email just for you. No templates, no copy-paste — written from scratch based on the company's news and the recruiter's background.`)}
 
         <div style="background: rgba(139, 92, 246, 0.05); border-radius: 12px; padding: 20px; margin: 0 0 28px;">
           <div style="display: table; width: 100%;">
             <div style="display: table-row;">
               <div style="display: table-cell; vertical-align: top; padding-right: 14px; width: 44px;">
                 <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 10px; overflow: hidden; position: relative; color: #ffffff; font-weight: 700; font-size: 20px; text-align: center; line-height: 44px;">
-                  ${firstItem.company?.name?.charAt(0)?.toUpperCase() || '?'}
-                  ${firstItem.company?.domain ? `<img src="https://logo.clearbit.com/${firstItem.company.domain}" width="44" height="44" alt="" style="position: absolute; top: 0; left: 0; width: 44px; height: 44px; object-fit: contain; background: white; border-radius: 10px;">` : ''}
+                  ${esc(firstItem.company?.name || '?').charAt(0).toUpperCase() || '?'}
+                  ${firstItem.company?.domain ? `<img src="https://logo.clearbit.com/${esc(firstItem.company.domain)}" width="44" height="44" alt="" style="position: absolute; top: 0; left: 0; width: 44px; height: 44px; object-fit: contain; background: white; border-radius: 10px;">` : ''}
                 </div>
               </div>
               <div style="display: table-cell; vertical-align: top;">
                 <h3 style="color: #ffffff; font-size: 18px; font-weight: 600; margin: 0 0 4px;">
-                  ${firstItem.company?.name || ''}
+                  ${esc(firstItem.company?.name || '')}
                 </h3>
-                <p style="color: #888888; font-size: 13px; margin: 0 0 10px;">${firstItem.company?.domain || ''}</p>
+                <p style="color: #888888; font-size: 13px; margin: 0 0 10px;">${esc(firstItem.company?.domain || '')}</p>
                 ${firstItem.recruiter?.name ? `
                 <p style="color: #aaaaaa; font-size: 14px; margin: 0 0 4px;">
-                  <strong style="color: #8b5cf6;">👤 Recruiter:</strong> ${firstItem.recruiter.name}
+                  <strong style="color: #8b5cf6;">👤 Recruiter:</strong> ${esc(firstItem.recruiter.name)}
                 </p>
-                <p style="color: #888888; font-size: 13px; margin: 0 0 12px;">${firstItem.recruiter.jobTitle || ''}</p>
+                <p style="color: #888888; font-size: 13px; margin: 0 0 12px;">${esc(firstItem.recruiter.jobTitle || '')}</p>
                 ` : ''}
                 ${firstItem.articles && firstItem.articles.length > 0 ? `
                 <p style="color: #aaaaaa; font-size: 14px; margin: 0 0 6px;">
                   <strong style="color: #8b5cf6;">📰 Referenced:</strong>
                 </p>
                 ${firstItem.articles.map((a: any) => `
-                  <a href="${a.link}" style="display: block; color: #7c3aed; text-decoration: none; font-size: 13px; margin: 3px 0;">→ ${a.title}</a>
+                  <a href="${esc(a.link)}" style="display: block; color: #7c3aed; text-decoration: none; font-size: 13px; margin: 3px 0;">→ ${esc(a.title)}</a>
                 `).join('')}
                 ` : ''}
               </div>
@@ -234,7 +239,7 @@ export async function POST(req) {
           <div style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 14px; margin-top: 16px;">
             <p style="color: #aaaaaa; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px;">Email preview</p>
             <p style="color: #cccccc; font-size: 13px; line-height: 1.6; margin: 0; font-style: italic;">
-              "${firstItem.preview.substring(0, 180)}${firstItem.preview.length > 180 ? '...' : ''}"
+              "${esc(firstItem.preview.substring(0, 180))}${firstItem.preview.length > 180 ? '...' : ''}"
             </p>
           </div>
           ` : ''}
@@ -311,14 +316,14 @@ export async function POST(req) {
                     const contactSubject = `We received your message - CandidAI Support`;
                     const safeMessage = (data.message || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     const contactHtml = wrapEmail(`
-        ${heading(`We got your message, ${data.name}! 👋`)}
+        ${heading(`We got your message, ${esc(data.name)}! 👋`)}
         ${paragraph(`Thanks for reaching out. Our team will review your request and get back to you as soon as possible.`)}
 
         ${tipBox(`<strong style="color: #8b5cf6;">📬 What's next?</strong> You'll hear back from us at <strong>hello@candidai.tech</strong>, keep an eye on your inbox (and spam folder, just in case).`)}
 
         <div style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px; padding: 20px; margin: 24px 0;">
           <p style="margin: 0 0 8px; color: #888888; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Your message</p>
-          <p style="margin: 0 0 4px; color: #a78bfa; font-size: 13px; font-weight: 600;">${data.subject}</p>
+          <p style="margin: 0 0 4px; color: #a78bfa; font-size: 13px; font-weight: 600;">${esc(data.subject)}</p>
           <p style="margin: 8px 0 0; color: #d1d5db; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${safeMessage}</p>
         </div>
 
