@@ -48,7 +48,7 @@ function makeForgotPasswordRequest(body: unknown) {
 
 describe("POST /api/auth/forgot-password", () => {
   describe("happy path", () => {
-    it("generates reset link and returns it for a valid registered email", async () => {
+    it("returns a generic success WITHOUT leaking the reset link", async () => {
       const fakeLink = "https://example.com/reset?oobCode=abc123";
       mockGeneratePasswordResetLink.mockResolvedValue(fakeLink);
 
@@ -57,7 +57,10 @@ describe("POST /api/auth/forgot-password", () => {
       const data = await res.json();
 
       expect(res.status).toBe(200);
-      expect(data.link).toBe(fakeLink);
+      // SECURITY: the reset link must never be returned to the caller — it is
+      // emailed only. Returning it here was an account-takeover vector.
+      expect(data.link).toBeUndefined();
+      expect(data.success).toBe(true);
     });
 
     it("calls adminAuth.generatePasswordResetLink with the provided email", async () => {
@@ -91,7 +94,7 @@ describe("POST /api/auth/forgot-password", () => {
   });
 
   describe("error cases", () => {
-    it("returns appropriate error when email is not found in Firebase", async () => {
+    it("returns generic 200 for an unknown email (no user-enumeration)", async () => {
       const error = Object.assign(
         new Error("There is no user record corresponding to the provided identifier."),
         { code: "auth/user-not-found" }
@@ -102,8 +105,11 @@ describe("POST /api/auth/forgot-password", () => {
       const res = await POST(req);
       const data = await res.json();
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
-      expect(data.error).toBeTruthy();
+      // SECURITY: an unknown email must be indistinguishable from a known one,
+      // otherwise the endpoint is a registered-email oracle. Same 200 + body.
+      expect(res.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.error).toBeUndefined();
     });
 
     it("handles Resend 429 gracefully without crashing (still returns a response)", async () => {
@@ -122,7 +128,8 @@ describe("POST /api/auth/forgot-password", () => {
       const req = makeForgotPasswordRequest({ email: "user@example.com" });
       const res = await POST(req);
 
-      // Route does not check send-email response, so it should still return the link
+      // Route does not check the send-email response, so it still returns the
+      // generic 200 success (never the link).
       expect(res).toBeDefined();
       expect(res.status).toBe(200);
     });

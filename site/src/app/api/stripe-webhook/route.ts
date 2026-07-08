@@ -156,7 +156,10 @@ export async function POST(req: Request) {
         const domain = process.env.NEXT_PUBLIC_DOMAIN || "https://candidai.com";
         void fetch(`${domain}/api/send-email`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Internal-Key": process.env.SESSION_API_KEY ?? "",
+          },
           body: JSON.stringify({
             userId,
             type: "purchase-confirmation",

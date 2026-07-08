@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 export const metadata = { title: "Verify Email" };
 import { refreshCredentials } from "next-firebase-auth-edge/next/cookies";
 import { cookies } from "next/headers";
+import { verifyVerifyToken } from "@/lib/verify-token";
 
 // Helper che attende un certo numero di millisecondi
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -17,10 +18,20 @@ const RedirectAfterDelay = async ({ ms }) => {
     return <></>
 };
 
-const Page = async ({ params }) => {
+const Page = async ({ params, searchParams }) => {
+    const { id } = await params;
+    const { token } = (await searchParams) ?? {};
+
+    // The UID alone is NOT proof of ownership — it appears in many API
+    // responses. Require the HMAC token from the welcome email, otherwise anyone
+    // could verify anyone's email by visiting /verify/<uid>.
+    if (!token || typeof token !== "string" || !verifyVerifyToken(id, token)) {
+        redirect("/dashboard");
+    }
+
     // Aggiorna l'utente su Firebase Admin
     try {
-        await adminAuth.updateUser((await params).id, {
+        await adminAuth.updateUser(id, {
             emailVerified: true
         })
 

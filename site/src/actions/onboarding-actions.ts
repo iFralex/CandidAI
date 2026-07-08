@@ -518,7 +518,10 @@ export async function completeOnboarding(customizations: any) {
     try {
         await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "X-Internal-Key": process.env.SESSION_API_KEY ?? "",
+            },
             body: JSON.stringify({
                 userId,
                 type: "onboarding-complete",
@@ -1390,7 +1393,10 @@ export const resendEmailVerification = async () => {
     const userId = await checkAuth(false)
     const res = await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json",
+            "X-Internal-Key": process.env.SESSION_API_KEY ?? "",
+        },
         body: JSON.stringify({
             userId,
             type: "welcome"

@@ -21,12 +21,34 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid;
     }
 
-    // User doc — owner-only read/write. login-form creates the doc on
-    // first sign-in and updates lastLogin/first_touch fields.
+    // User doc — owner-only read, but sensitive fields are server-only.
+    //
+    // login-form.tsx creates the doc on first (Google) sign-in and updates
+    // lastLogin / first_touch / last_touch. Everything that controls money or
+    // entitlements (credits, plan, maxCompanies, onboardingStep, billingType,
+    // activated_at, unsubscribed, drip flags, …) MUST be written exclusively by
+    // the admin SDK (API routes / server actions), which bypasses these rules.
+    //
+    // WHY: a plain `allow update: if isOwner(uid)` let any signed-in user do
+    // `updateDoc(users/<myUid>, {credits: 999999, plan: "ultra"})` straight from
+    // the browser console and grant themselves paid features for free.
     match /users/{uid} {
+      // Fields a client is allowed to set at creation. Sensitive fields are
+      // pinned to their free-tier defaults so a fresh signup can't self-elevate.
+      allow create: if isOwner(uid)
+        && request.resource.data.get('credits', 0) == 0
+        && request.resource.data.get('plan', 'free_trial') == 'free_trial'
+        && request.resource.data.get('onboardingStep', 1) == 1
+        && !('maxCompanies' in request.resource.data)
+        && !('billingType' in request.resource.data);
+
+      // On update the client may only touch non-sensitive login/attribution
+      // fields. Any write that adds/changes another key is denied.
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['lastLogin', 'first_touch', 'last_touch']);
+
       allow read: if isOwner(uid);
-      allow create: if isOwner(uid);
-      allow update: if isOwner(uid);
       allow delete: if false;
 
       // All subcollections (payments, data/*, etc.) — server-only.

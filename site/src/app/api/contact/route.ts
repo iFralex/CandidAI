@@ -62,7 +62,10 @@ export async function POST(req: Request) {
             // Confirmation email to the requester via send-email API (shared template)
             fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Internal-Key": process.env.SESSION_API_KEY ?? "",
+                },
                 body: JSON.stringify({
                     type: "contact-confirmation",
                     data: { email, name, subject, message: safeMessage },

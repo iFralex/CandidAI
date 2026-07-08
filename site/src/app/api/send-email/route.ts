@@ -2,10 +2,25 @@ import { Resend } from "resend";
 import { NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase-admin";
 import { wrapEmail, button, tipBox, heading, paragraph } from "@/lib/email-template";
+import { buildVerifyUrl } from "@/lib/verify-token";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Server-to-server only. This route can send arbitrary templated mail (welcome,
+// password-reset, purchase-confirmation, …) to any user/address, so it must
+// never be callable from the public internet — otherwise it becomes an
+// email-bombing + phishing relay on our own domain. Every internal caller
+// (API routes, server actions, the Python pipeline) passes X-Internal-Key.
+function isAuthorized(req: Request): boolean {
+    const key = process.env.SESSION_API_KEY;
+    if (!key) return false;
+    return req.headers.get("x-internal-key") === key;
+}
+
 export async function POST(req) {
+    if (!isAuthorized(req)) {
+        return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
     try {
         const { userId, type, data = {} } = await req.json();
 
@@ -54,7 +69,7 @@ export async function POST(req) {
         ${tipBox(`<strong style="color: #8b5cf6;">💡 Did you know?</strong> Personalized emails to recruiters have a <strong>5x higher response rate</strong> than standard applications. You're already ahead of the game!`)}
         ${paragraph(`Before you start generating those game-changing emails, please verify your account:`)}
         <div style="text-align: center; margin: 32px 0;">
-          ${button('Verify My Account', `${domain}/verify/${userId}`)}
+          ${button('Verify My Account', buildVerifyUrl(userId))}
         </div>
         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
           <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">

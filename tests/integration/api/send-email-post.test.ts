@@ -24,10 +24,18 @@ vi.mock("@/lib/firebase-admin", () => ({
 
 import { POST } from "@/app/api/send-email/route";
 
-function makeRequest(body: Record<string, unknown>) {
+// /api/send-email is server-to-server: it requires X-Internal-Key == SESSION_API_KEY.
+const TEST_INTERNAL_KEY = "test-session-api-key";
+
+function makeRequest(
+  body: Record<string, unknown>,
+  internalKey: string | null = TEST_INTERNAL_KEY
+) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (internalKey !== null) headers["X-Internal-Key"] = internalKey;
   return new Request("http://localhost:3000/api/send-email", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body),
   });
 }
@@ -40,12 +48,31 @@ const mockUserRecord = {
 
 describe("POST /api/send-email", () => {
   beforeEach(() => {
+    process.env.SESSION_API_KEY = TEST_INTERNAL_KEY;
     mockGetUser.mockResolvedValue(mockUserRecord);
     mockEmailsSend.mockResolvedValue({ data: { id: "email-id-123" }, error: null });
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe("auth", () => {
+    it("returns 401 when X-Internal-Key is missing", async () => {
+      const res = await POST(
+        makeRequest({ userId: "user123", type: "welcome", data: {} }, null)
+      );
+      expect(res.status).toBe(401);
+      expect(mockEmailsSend).not.toHaveBeenCalled();
+    });
+
+    it("returns 401 when X-Internal-Key is wrong", async () => {
+      const res = await POST(
+        makeRequest({ userId: "user123", type: "welcome", data: {} }, "nope")
+      );
+      expect(res.status).toBe(401);
+      expect(mockEmailsSend).not.toHaveBeenCalled();
+    });
   });
 
   describe("type: welcome", () => {

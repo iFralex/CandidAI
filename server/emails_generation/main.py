@@ -263,6 +263,9 @@ def _send_notification_email(user_id, generated_email_data):
         logging.warning("⚠️ NEXT_PUBLIC_DOMAIN non impostato, notifica email saltata")
         return
 
+    # /api/send-email è server-to-server: richiede X-Internal-Key == SESSION_API_KEY.
+    send_email_headers = {"X-Internal-Key": os.environ.get("SESSION_API_KEY", "")}
+
     # Caso speciale: free trial con prima email generata
     user_data = get_user_data(user_id) or {}
     plan = user_data.get("plan", "free_trial")
@@ -275,6 +278,7 @@ def _send_notification_email(user_id, generated_email_data):
                     "type": "first_email_generated",
                     "data": {"newData": generated_email_data},
                 },
+                headers=send_email_headers,
                 timeout=30,
             )
             if resp.ok:
@@ -302,6 +306,7 @@ def _send_notification_email(user_id, generated_email_data):
                 "type": "new_emails_generated",
                 "data": {"newData": generated_email_data},
             },
+            headers=send_email_headers,
             timeout=30,
         )
         if resp.ok:
