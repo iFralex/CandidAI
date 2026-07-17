@@ -51,10 +51,6 @@ export async function translateSkillsToEnglish(skills: string[]): Promise<string
 }
 
 export async function enrichProfileAI(profileSummary: ProfileSummary | null, formData: FormData): Promise<ProfileSummary> {
-  const { GoogleGenerativeAI } = await import("@google/generative-ai");
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" });
-
   // Build website lookup maps from PDL data.
   // These are used after Gemini merge to ensure PDL websites are never lost,
   // and to give the client enough info to fetch logos via Brandfetch.
@@ -160,8 +156,27 @@ interface ProfileSummary {
   certifications: Certification[];
 }`;
 
-  const result = await model.generateContent(prompt);
-  const raw = result.response.text().trim();
+  const res = await fetch("https://api.deepseek.com/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "deepseek-v4-flash",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+      stream: false,
+    }),
+  });
+  if (!res.ok) {
+    console.error("DeepSeek enrichProfileAI failed:", res.status, (await res.text()).slice(0, 200));
+    return profileSummary ?? {
+      name: "", title: "", skills: [], experience: [], education: [], projects: [], certifications: []
+    };
+  }
+  const dsData = await res.json();
+  const raw = String(dsData?.choices?.[0]?.message?.content ?? "").trim();
   const json = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
 
   let merged: ProfileSummary;
