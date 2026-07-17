@@ -3,7 +3,7 @@ import logging
 import os
 import re
 import time
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import requests
 
@@ -18,8 +18,8 @@ def parse_json(response: str) -> Any:
     if not isinstance(response, str):
         raise TypeError("response deve essere una stringa")
     response = (response
-                .replace(""", '"').replace(""", '"')
-                .replace("'", "'").replace("'", "'"))
+                .replace("\u201c", '"').replace("\u201d", '"')
+                .replace("\u2018", "'").replace("\u2019", "'"))
     response = re.sub(r"```[^\n]*\n?", "", response)
     response = response.replace("```", "").replace("`", "")
     response = re.sub(r"[​-‍﻿]", "", response)
