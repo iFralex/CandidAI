@@ -20,6 +20,7 @@ _MOCK_MODULES = [
     "anthropic",
     "dateutil",
     "dateutil.parser",
+    "dateutil.relativedelta",
     # Required by server.emails_generation.blog_posts and its dependencies
     "bs4",
     "undetected_chromedriver",
@@ -38,6 +39,9 @@ _MOCK_MODULES = [
     "dotenv",
     "spacy",
     "sentence_transformers",
+    "sklearn",
+    "sklearn.metrics",
+    "sklearn.metrics.pairwise",
 ]
 
 for _mod in _MOCK_MODULES:
