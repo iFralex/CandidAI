@@ -76,10 +76,30 @@ def test_ai_chat_parses_json_when_format_json(monkeypatch):
     with patch.object(ai_client, "_call_deepseek", return_value='{"a": 1}'):
         assert ai_client.ai_chat("q", format="json") == {"a": 1}
 
-def test_ai_chat_parses_json_when_format_true(monkeypatch):
+def test_ai_chat_does_not_parse_when_format_true(monkeypatch):
     monkeypatch.setenv("AI_PROVIDER", "deepseek")
     with patch.object(ai_client, "_call_deepseek", return_value='[1, 2]'):
-        assert ai_client.ai_chat("q", True) == [1, 2]
+        assert ai_client.ai_chat("q", True) == '[1, 2]'
+
+
+# --- _call_deepseek logging (Finding 2) ---
+
+def test_call_deepseek_logs_interaction(monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
+    resp = _resp(content="hello")
+    resp.json.return_value = {
+        "choices": [{"message": {"content": "hello"}}],
+        "usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3},
+    }
+    with patch.object(ai_client.requests, "post", return_value=resp), \
+         patch("server.emails_generation.blog_posts.log_ai_interaction") as log_mock:
+        out = ai_client._call_deepseek("hi", want_json=False)
+    assert out == "hello"
+    log_mock.assert_called_once()
+    args, kwargs = log_mock.call_args
+    assert args[0] == "./logs/ai/ai_log.json"
+    assert args[1] == "hi"
+    assert args[2] == resp.json.return_value
 
 
 # --- blog_posts re-export (Task 4) ---

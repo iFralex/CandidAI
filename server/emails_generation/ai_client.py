@@ -54,9 +54,15 @@ def _call_deepseek(prompt: str, want_json: bool, timeout: int = 60) -> str:
         try:
             resp = requests.post(DEEPSEEK_URL, headers=headers, json=body, timeout=timeout)
             if resp.status_code == 200:
-                content = resp.json()["choices"][0]["message"]["content"]
+                result = resp.json()
+                content = result["choices"][0]["message"]["content"]
                 if not content:
                     raise RuntimeError("deepseek returned empty content")
+                try:
+                    from server.emails_generation.blog_posts import log_ai_interaction
+                    log_ai_interaction("./logs/ai/ai_log.json", prompt, result)
+                except Exception as log_err:  # noqa: BLE001
+                    logger.warning(f"Failed to log DeepSeek interaction: {log_err}")
                 return content
             if resp.status_code in (429, 500, 502, 503):
                 last_err = RuntimeError(f"deepseek transient {resp.status_code}")
@@ -520,7 +526,7 @@ def _call_openrouter(
 def ai_chat(prompt: str, format: str = "str", model: str = DEEPSEEK_MODEL,
             site_url: Optional[str] = None, site_name: Optional[str] = None
             ) -> Optional[Union[str, Dict]]:
-    want_json = (format is True) or (format == "json")
+    want_json = (format == "json")
     provider = os.getenv("AI_PROVIDER", "deepseek").lower()
 
     text: Optional[str] = None

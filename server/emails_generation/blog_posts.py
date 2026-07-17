@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 import time
 from urllib.parse import urljoin, urlparse
-from typing import Optional, List, Tuple, Union, Dict
+from typing import Optional, List, Tuple, Dict
 import time
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By

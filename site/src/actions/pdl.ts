@@ -52,7 +52,7 @@ export async function translateSkillsToEnglish(skills: string[]): Promise<string
 
 export async function enrichProfileAI(profileSummary: ProfileSummary | null, formData: FormData): Promise<ProfileSummary> {
   // Build website lookup maps from PDL data.
-  // These are used after Gemini merge to ensure PDL websites are never lost,
+  // These are used after DeepSeek merge to ensure PDL websites are never lost,
   // and to give the client enough info to fetch logos via Brandfetch.
   const companyWebsiteMap = new Map<string, string>(); // company name -> website
   const schoolWebsiteMap = new Map<string, string>();  // school name -> website
@@ -73,7 +73,7 @@ export async function enrichProfileAI(profileSummary: ProfileSummary | null, for
   const cv = formData.get("cv") as File;
   const cvText = await getTextFromCV(cv);
 
-  // Strip logos before sending to Gemini — they are binary metadata, not text
+  // Strip logos before sending to DeepSeek — they are binary metadata, not text
   const pdlForPrompt = profileSummary
     ? {
         ...profileSummary,
@@ -183,13 +183,13 @@ interface ProfileSummary {
   try {
     merged = JSON.parse(json);
   } catch {
-    console.error("Gemini returned invalid JSON:", json);
+    console.error("DeepSeek returned invalid JSON:", json);
     return profileSummary ?? {
       name: "", title: "", skills: [], experience: [], education: [], projects: [], certifications: []
     };
   }
 
-  // Re-attach PDL websites when Gemini dropped them (without fetching logos — that stays client-side)
+  // Re-attach PDL websites when DeepSeek dropped them (without fetching logos — that stays client-side)
   merged.experience = merged.experience.map((exp: any) => {
     const website = exp.company?.website ?? (exp.company?.name ? companyWebsiteMap.get(exp.company.name) : undefined);
     if (!website || exp.company?.website === website) return exp;
