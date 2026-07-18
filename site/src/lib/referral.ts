@@ -11,10 +11,10 @@ export interface ReferralEarnings {
 }
 
 const REFERRAL_TIERS: { max: number; rate: number; label: string }[] = [
-    { max: 5, rate: 0.05, label: "Sales 1–5 (5%)" },
-    { max: 15, rate: 0.10, label: "Sales 6–15 (10%)" },
-    { max: 30, rate: 0.15, label: "Sales 16–30 (15%)" },
-    { max: Infinity, rate: 0.20, label: "Sales 31+ (20%)" },
+    { max: 5, rate: 0.05, label: "Purchases 1–5 (5%)" },
+    { max: 15, rate: 0.10, label: "Purchases 6–15 (10%)" },
+    { max: 30, rate: 0.15, label: "Purchases 16–30 (15%)" },
+    { max: Infinity, rate: 0.20, label: "Purchases 31+ (20%)" },
 ];
 
 /**

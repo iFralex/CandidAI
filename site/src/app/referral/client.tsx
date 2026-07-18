@@ -10,15 +10,17 @@ import {
     Newspaper, Stamp, BookOpen, Megaphone, FileX, Scissors, ChevronDown,
 } from "lucide-react";
 import { Navigation } from "@/components/navigation";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Footer } from "@/components/landing";
 import Link from "next/link";
+import Image from "next/image";
 import { track } from "@/lib/analytics";
 import { plansInfo } from "@/config";
 import { computePriceInCents, formatPrice } from "@/lib/utils";
 import { computeReferralEarnings } from "@/lib/referral";
+import { ReferralDashboardPreview } from "@/components/referral-dashboard-preview";
 
 const caveat = Caveat({
     variable: "--font-caveat",
@@ -29,10 +31,10 @@ const caveat = Caveat({
 // ---------- Data ----------
 
 const COMMISSION_TIERS = [
-    { range: "Sales 1–5", rate: "5%", note: "Your first five conversions", icon: TrendingUp },
-    { range: "Sales 6–15", rate: "10%", note: "Ten more at double the rate", icon: Zap },
-    { range: "Sales 16–30", rate: "15%", note: "Fifteen more, compounding", icon: Rocket },
-    { range: "Sales 31+", rate: "20%", note: "Every sale after that, forever", icon: Crown },
+    { range: "Purchases 1–5", rate: "5%", note: "Your first five qualifying purchases", icon: TrendingUp },
+    { range: "Purchases 6–15", rate: "10%", note: "Ten more at double the rate", icon: Zap },
+    { range: "Purchases 16–30", rate: "15%", note: "Fifteen more at the next tier", icon: Rocket },
+    { range: "Purchases 31+", rate: "20%", note: "Every later qualifying purchase while you remain eligible", icon: Crown },
 ];
 
 // ---------- Sections ----------
@@ -51,35 +53,35 @@ const HeroSection = () => {
                 </Badge>
 
                 <h1 className="font-black leading-[0.95] mb-6 tracking-tight text-white" style={{ fontFamily: "'Syne', sans-serif" }}>
-                    <span className="block text-[clamp(2.5rem,5.5vw,4.5rem)]">Get Paid to Kill</span>
+                    <span className="block text-[clamp(2.5rem,5.5vw,4.5rem)]">Get Paid to Help Job Seekers</span>
                     <span className="block text-[clamp(2.5rem,5.5vw,4.5rem)] bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
-                        the LinkedIn Application
+                        Escape the Application Pile
                     </span>
                 </h1>
 
                 <p className="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto mb-10">
-                    Bring people to CandidAI and earn up to{" "}
-                    <span className="text-violet-300 font-medium">20% on every sale</span>. Apply and we'll ship you a
-                    full guerrilla-marketing kit — hundreds of stickers and props included, you only cover shipping.
+                    Help job seekers reach recruiters directly and earn{" "}
+                    <span className="text-violet-300 font-medium">up to 20% on qualifying purchases</span>. Approved
+                    ambassadors can request a full guerrilla-marketing kit — materials are included, while shipping is charged separately.
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Button
-                        size="lg"
-                        icon={<ArrowRight className="w-4 h-4" />}
+                    <Link
+                        href="/contact?mode=referral"
+                        className={buttonVariants({ size: "lg" })}
                         onClick={() => {
                             track({ name: "referral_cta_click", params: { button_label: "Apply to become an Ambassador", section: "hero" } });
-                            document.getElementById("apply")?.scrollIntoView({ behavior: "smooth" });
                         }}
                     >
                         Apply to become an Ambassador
-                    </Button>
+                        <ArrowRight className="ml-2 w-4 h-4" />
+                    </Link>
                     <Button
                         variant="secondary"
                         size="lg"
                         onClick={() => document.getElementById("tiers")?.scrollIntoView({ behavior: "smooth" })}
                     >
-                        See how the payout works
+                        Explore the program
                     </Button>
                 </div>
             </div>
@@ -96,7 +98,7 @@ const TiersSection = () => {
                         The More You Sell, the More You Keep
                     </h2>
                     <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                        Commissions stack automatically. No renegotiating, no resetting — every sale pushes you up.
+                        Commission tiers stack automatically. No renegotiating, no resetting — every qualifying purchase moves you forward.
                     </p>
                 </div>
 
@@ -169,13 +171,13 @@ const EarningsSimulatorSection = () => {
                     </p>
                 </div>
 
-                <Card className="p-8 md:p-10" gradient>
-                    <div className="grid md:grid-cols-2 gap-10">
+                <Card className="p-5 sm:p-8 md:p-10" gradient>
+                    <div className="grid md:grid-cols-2 gap-8 md:gap-10">
                         <div>
                             <label className="text-sm text-gray-400 uppercase tracking-widest mb-3 block">
-                                Plan your referrals buy
+                                Plan purchased
                             </label>
-                            <div className="flex gap-3 mb-8">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
                                 {paidPlans.map((plan) => (
                                     <button
                                         key={plan.id}
@@ -200,7 +202,7 @@ const EarningsSimulatorSection = () => {
                             </div>
 
                             <label className="text-sm text-gray-400 uppercase tracking-widest mb-3 block">
-                                Purchases through your link
+                                Qualifying purchases through your link
                             </label>
                             <div className="flex items-center gap-3 mb-4">
                                 <button
@@ -232,7 +234,7 @@ const EarningsSimulatorSection = () => {
                                         }}
                                         className="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-colors"
                                     >
-                                        {preset} referrals
+                                        {preset} purchases
                                     </button>
                                 ))}
                             </div>
@@ -252,9 +254,52 @@ const EarningsSimulatorSection = () => {
                                         </div>
                                     ))}
                             </div>
+                            <p className="mt-5 text-xs leading-relaxed text-gray-500">
+                                Estimate based on the current full list price of the selected plan. It does not account for discounts, refunds, taxes, chargebacks, or future price changes.
+                            </p>
                         </div>
                     </div>
                 </Card>
+            </div>
+        </section>
+    );
+};
+
+const DashboardPreviewSection = () => {
+    const steps = [
+        { number: "01", title: "Apply", text: "Tell us where and how you would activate the campaign." },
+        { number: "02", title: "Get approved", text: "Receive the current terms, your personal link, and dashboard access." },
+        { number: "03", title: "Launch", text: "Share online or use the physical kit in approved locations." },
+        { number: "04", title: "Track and earn", text: "Follow scans, signups, qualifying purchases, and commissions in real time." },
+    ];
+
+    return (
+        <section className="relative py-20 md:py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
+            <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-10 md:mb-14">
+                    <Badge className="mb-5">Real-time ambassador dashboard</Badge>
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-5 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                        Know exactly what your work generates.
+                    </h2>
+                    <p className="text-base sm:text-xl text-gray-400 max-w-2xl mx-auto">
+                        See the complete path from QR scan to qualifying purchase, follow your tier progress, and keep your referral link ready to share.
+                    </p>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-violet-500/25 bg-violet-500/5 p-2 sm:p-3 shadow-2xl shadow-violet-950/30">
+                    <ReferralDashboardPreview />
+                </div>
+                <p className="mt-3 text-center text-xs text-gray-600 lg:hidden">Swipe horizontally to explore the dashboard.</p>
+
+                <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {steps.map((step) => (
+                        <div key={step.number} className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+                            <span className="text-xs font-bold tracking-widest text-violet-400">{step.number}</span>
+                            <h3 className="mt-3 text-lg font-semibold text-white">{step.title}</h3>
+                            <p className="mt-2 text-sm leading-relaxed text-gray-400">{step.text}</p>
+                        </div>
+                    ))}
+                </div>
             </div>
         </section>
     );
@@ -273,18 +318,21 @@ const KIT_PHYSICAL_ITEMS = [
 ];
 
 const KIT_DIGITAL_ITEMS = [
-    { icon: Crown, name: "Free Pro plan", description: "For as long as you're an active ambassador." },
+    { icon: Crown, name: "Pro plan benefit", description: "Available to eligible active ambassadors under the current program terms." },
     { icon: Archive, name: "Print-ready archive", description: "Every material, reprintable on your own — including the large-format stunt files." },
     { icon: Share2, name: "Social assets", description: "Story templates, memes, and copy ready to post." },
     { icon: Users, name: "Private community", description: "The ambassador-only channel." },
 ];
 
 const KitSection = () => {
+    const [showAllItems, setShowAllItems] = useState(false);
+    const visibleItems = showAllItems ? KIT_PHYSICAL_ITEMS : KIT_PHYSICAL_ITEMS.slice(0, 4);
+
     return (
-        <section className="relative py-24 px-6 lg:px-8">
+        <section className="relative py-20 md:py-24 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-4">
-                    <Badge className="mb-6">Free — you only pay shipping (calculated at checkout, by country)</Badge>
+                    <Badge className="mb-6">For approved ambassadors — kit availability and shipping cost are confirmed before ordering</Badge>
                 </div>
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
@@ -295,8 +343,17 @@ const KitSection = () => {
                     </p>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-6 mb-10">
-                    {KIT_PHYSICAL_ITEMS.map((item, index) => {
+                <div className="grid lg:grid-cols-[1.35fr_0.65fr] gap-5 mb-10">
+                    <div className="overflow-hidden rounded-2xl border border-violet-500/20 bg-violet-500/5">
+                        <Image src="/images/referral/ambassador-kit-mockup.webp" alt="The CandidAI Ambassador Kit" width={1672} height={941} className="h-full w-full object-cover" sizes="(max-width: 1024px) 100vw, 760px" />
+                    </div>
+                    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+                        <Image src="/images/referral/campaign-materials-mockup.webp" alt="CandidAI campaign cards, stickers, rejection letter, and diploma" width={1536} height={1024} className="h-full min-h-64 w-full object-cover" sizes="(max-width: 1024px) 100vw, 380px" />
+                    </div>
+                </div>
+
+                <div className={`grid sm:grid-cols-2 gap-6 mb-10 ${showAllItems ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
+                    {visibleItems.map((item, index) => {
                         const Icon = item.icon;
                         const isRare = item.name.includes("holographic");
                         return (
@@ -322,6 +379,13 @@ const KitSection = () => {
                     })}
                 </div>
 
+                <div className="mb-10 text-center">
+                    <Button variant="secondary" size="sm" onClick={() => setShowAllItems(value => !value)} aria-expanded={showAllItems}>
+                        {showAllItems ? "Show fewer kit items" : "See everything included"}
+                        <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAllItems ? "rotate-180" : ""}`} />
+                    </Button>
+                </div>
+
                 <Card className="p-8" gradient>
                     <h3 className="text-xl font-bold text-white mb-2">Plus, unlocked digitally via a QR in the kit</h3>
                     <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6">
@@ -341,6 +405,20 @@ const KitSection = () => {
         </section>
     );
 };
+
+const InlineApplyCTA = () => (
+    <section className="px-4 sm:px-6 lg:px-8 pb-10">
+        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-5 rounded-2xl border border-violet-500/25 bg-gradient-to-r from-violet-500/10 to-purple-500/5 p-6 text-center sm:p-8 md:flex-row md:text-left">
+            <div>
+                <h2 className="text-2xl font-bold text-white">Can you picture this campaign in your community?</h2>
+                <p className="mt-2 text-sm text-gray-400">Apply now; you can finish exploring every campaign idea afterward.</p>
+            </div>
+            <Link href="/contact?mode=referral" className={buttonVariants({ size: "md", className: "shrink-0" })} onClick={() => track({ name: "referral_cta_click", params: { button_label: "Apply now", section: "mid_page" } })}>
+                Apply now <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+        </div>
+    </section>
+);
 
 const PLAYBOOK = [
     {
@@ -383,14 +461,16 @@ const PLAYBOOK = [
         icon: FileX,
         title: "The CV Funeral",
         tag: "Advanced stunt",
-        description: "A headstone, a wreath, a minute of silence for the CV sent through LinkedIn — opened by no one, remembered by no one. Print files are in the digital kit; we cover printing costs if you document it on video.",
+        description: "A headstone, a wreath, a minute of silence for the CV sent through LinkedIn — opened by no one, remembered by no one. Print files are in the digital kit; larger stunts may qualify for pre-approved printing support.",
     },
 ];
 
 const PlaybookSection = () => {
     const [selected, setSelected] = useState(0);
+    const [showAllPlaybook, setShowAllPlaybook] = useState(false);
     const active = PLAYBOOK[selected];
     const ActiveIcon = active.icon;
+    const visiblePlaybook = showAllPlaybook ? PLAYBOOK : PLAYBOOK.slice(0, 3);
 
     return (
         <section className="relative py-24 px-6 lg:px-8 bg-black">
@@ -401,19 +481,20 @@ const PlaybookSection = () => {
                         7 Ways to Use the Kit
                     </h2>
                     <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                        Field-tested guerrilla moves, from "reliable" to "advanced stunt."
+                        Campaign ideas ranging from simple campus activations to advanced stunts.
                     </p>
                 </div>
 
                 <div className="grid lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-1 space-y-3">
-                        {PLAYBOOK.map((item, index) => {
+                        {visiblePlaybook.map((item, index) => {
                             const Icon = item.icon;
                             return (
-                                <Card
+                                <button
+                                    type="button"
                                     key={item.title}
-                                    hover={false}
-                                    className={`p-4 cursor-pointer transition-all duration-300 flex items-center gap-3 ${
+                                    aria-pressed={selected === index}
+                                    className={`w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition-all duration-300 flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
                                         selected === index ? "ring-2 ring-violet-500 bg-white/10" : ""
                                     }`}
                                     onClick={() => {
@@ -426,9 +507,13 @@ const PlaybookSection = () => {
                                     <span className="text-gray-600 font-bold text-sm w-5">{index + 1}</span>
                                     <Icon className="w-5 h-5 text-violet-400 flex-shrink-0" />
                                     <span className="text-white text-sm font-medium">{item.title}</span>
-                                </Card>
+                                </button>
                             );
                         })}
+                        <Button variant="secondary" size="sm" className="w-full" onClick={() => { setShowAllPlaybook(value => !value); if (showAllPlaybook && selected > 2) setSelected(0); }} aria-expanded={showAllPlaybook}>
+                            {showAllPlaybook ? "Show the essentials" : "See all 7 campaign ideas"}
+                            <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAllPlaybook ? "rotate-180" : ""}`} />
+                        </Button>
                     </div>
 
                     <div className="lg:col-span-2">
@@ -454,13 +539,13 @@ const PlaybookSection = () => {
 const MILESTONES = [
     {
         level: "Level 1",
-        threshold: "15 referrals in a month",
+        threshold: "15 qualifying purchases in a month",
         icon: Shirt,
         rewards: ["The official campaign t-shirt — the uniform of people who understand how the job market actually works"],
     },
     {
         level: "Level 2",
-        threshold: "50 referrals in 3 months",
+        threshold: "50 qualifying purchases in 3 months",
         icon: Award,
         rewards: [
             "Limited holographic sticker pack — not sold in any kit",
@@ -471,7 +556,7 @@ const MILESTONES = [
     },
     {
         level: "Level 3",
-        threshold: "200 referrals in a year",
+        threshold: "200 qualifying purchases in a year",
         icon: Crown,
         rewards: [
             "The official hoodie — reserved for people who go all in",
@@ -501,7 +586,7 @@ const MilestonesSection = () => {
                         </div>
                         <div>
                             <h3 className="text-white font-semibold mb-1">Your own QR, only yours</h3>
-                            <p className="text-gray-400 text-sm">Every scan and every signup, tracked in real time from your ambassador dashboard.</p>
+                            <p className="text-gray-400 text-sm">Every scan, signup, and qualifying purchase is tracked in real time from your ambassador dashboard.</p>
                         </div>
                     </Card>
                     <Card className="p-6 flex items-center gap-4">
@@ -510,7 +595,7 @@ const MilestonesSection = () => {
                         </div>
                         <div>
                             <h3 className="text-white font-semibold mb-1">Commissions, your way</h3>
-                            <p className="text-gray-400 text-sm">Cash out or convert to CandidAI credits — you decide every month.</p>
+                            <p className="text-gray-400 text-sm">Eligible commissions can be paid out or converted to CandidAI credits under the current payout terms.</p>
                         </div>
                     </Card>
                 </div>
@@ -520,7 +605,7 @@ const MilestonesSection = () => {
                         Milestone Rewards
                     </h2>
                     <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                        Commissions pay per sale. These stack on top, for volume.
+                        Commissions apply per qualifying purchase. These rewards stack on top for sustained volume.
                     </p>
                 </div>
 
@@ -571,7 +656,7 @@ const MilestonesSection = () => {
                 </Card>
 
                 <p className={`${caveat.className} text-gray-400 text-xl text-center mt-10 -rotate-1`}>
-                    Every physical prize ships with a note written by hand. Yes, actually by hand.
+                    Reward availability and fulfilment details are confirmed when each milestone is validated.
                 </p>
             </div>
         </section>
@@ -588,7 +673,7 @@ const GROUND_RULES = [
 const FAQS = [
     {
         question: "How do I actually get paid?",
-        answer: "You choose, every payout cycle, whether to receive your commissions as a bank transfer/PayPal payment or as CandidAI credits. Commissions of €50 or more are paid out automatically every month; anything under that rolls over to the next month.",
+        answer: "Eligible commissions can be paid by an available payout method or converted to CandidAI credits. The applicable threshold, timing, supported methods, and rollover rules are confirmed in the program terms provided when your application is accepted.",
     },
     {
         question: "What counts as a referral?",
@@ -596,15 +681,15 @@ const FAQS = [
     },
     {
         question: "When does my Ambassador Kit arrive?",
-        answer: "Once your application is approved, we ship it right away. You only pay for shipping, calculated at checkout based on your country — everything inside is free.",
+        answer: "Once your application is approved, we'll confirm kit availability, shipping cost, and the expected dispatch window before you order. Shipping varies by destination.",
     },
     {
         question: "How does the application process work?",
-        answer: "There's no instant sign-up. You apply through the form, our team reviews it, and you'll hear back by email with next steps — your personal QR code and kit shipment.",
+        answer: "There's no instant sign-up. You apply through the form, our team reviews it, and you'll hear back by email with the current program terms and next steps, including link activation and kit availability.",
     },
     {
-        question: "What does 'free Pro plan for the duration of the program' mean?",
-        answer: "It's tied to your active participation, not a fixed end date — as long as you're an ambassador in good standing, your Pro plan stays free.",
+        question: "How does the Pro plan benefit work?",
+        answer: "It is an eligibility-based program benefit rather than a guaranteed lifetime plan. Its duration and the activity requirements are specified in the terms provided when your application is accepted.",
     },
 ];
 
@@ -649,7 +734,10 @@ const ReferralFAQSection = () => {
                     {FAQS.map((faq, index) => (
                         <Card key={faq.question} className="overflow-hidden" hover={false}>
                             <button
-                                className="w-full p-6 text-left focus:outline-none"
+                                id={`referral-faq-button-${index}`}
+                                aria-expanded={openFaq === index}
+                                aria-controls={`referral-faq-panel-${index}`}
+                                className="w-full p-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500"
                                 onClick={() => {
                                     if (openFaq !== index) {
                                         track({ name: "referral_faq_open", params: { question: faq.question } });
@@ -665,7 +753,7 @@ const ReferralFAQSection = () => {
                                 </div>
                             </button>
                             {openFaq === index && (
-                                <div className="px-6 pb-6">
+                                <div id={`referral-faq-panel-${index}`} role="region" aria-labelledby={`referral-faq-button-${index}`} className="px-6 pb-6">
                                     <p className="text-gray-300 leading-relaxed">{faq.answer}</p>
                                 </div>
                             )}
@@ -689,22 +777,20 @@ const ApplyCTASection = () => {
                         Tell us a bit about yourself and where you'd run the playbook. We review every application by hand.
                     </p>
 
-                    <Link href="/contact">
-                        <Button
-                            size="lg"
-                            className="min-w-64"
-                            icon={<ArrowRight className="w-5 h-5" />}
-                            onClick={() => {
-                                document.cookie = `defaultSubject=Referral Program; path=/; max-age=${60 * 60}`;
-                                track({ name: "referral_cta_click", params: { button_label: "Apply to become an Ambassador", section: "bottom_cta" } });
-                            }}
-                        >
-                            Apply to become an Ambassador
-                        </Button>
+                    <Link
+                        href="/contact?mode=referral"
+                        className={buttonVariants({ size: "lg", className: "min-w-64" })}
+                        onClick={() => {
+                            document.cookie = `defaultSubject=Referral Program; path=/; max-age=${60 * 60}`;
+                            track({ name: "referral_cta_click", params: { button_label: "Apply to become an Ambassador", section: "bottom_cta" } });
+                        }}
+                    >
+                        Apply to become an Ambassador
+                        <ArrowRight className="ml-2 w-5 h-5" />
                     </Link>
 
                     <p className="text-gray-500 text-sm mt-6">
-                        Applications are reviewed manually — we'll email you the next steps.
+                        Applications are reviewed manually. Benefits, rewards, commissions, and fulfilment remain subject to eligibility, availability, and the terms shared upon acceptance.
                     </p>
                 </Card>
             </div>
@@ -721,7 +807,9 @@ export default function ReferralPage() {
             <HeroSection />
             <TiersSection />
             <EarningsSimulatorSection />
+            <DashboardPreviewSection />
             <KitSection />
+            <InlineApplyCTA />
             <PlaybookSection />
             <MilestonesSection />
             <GroundRulesSection />
