@@ -19,6 +19,7 @@ import { useRef } from "react";
 import { Pause, Maximize } from "lucide-react";
 import Image from 'next/image';
 import type { ExperimentAssignments } from '@/lib/experiments';
+import { AmbassadorPromo } from '@/components/AmbassadorPromo';
 
 const videos = [
     {
@@ -1574,6 +1575,7 @@ export const Footer = () => {
                             <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
                             <li><a href="#process" className="hover:text-white transition-colors">How it Works</a></li>
                             <li><a href="#reviews" className="hover:text-white transition-colors">Reviews</a></li>
+                            <li><Link href="/referral" className="hover:text-white transition-colors">Ambassador Program</Link></li>
                         </ul>
                     </div>
 
@@ -1606,6 +1608,14 @@ export const Footer = () => {
     );
 };
 
+const AmbassadorSection = () => (
+    <section className="relative px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+            <AmbassadorPromo placement="homepage" />
+        </div>
+    </section>
+);
+
 // Main Landing Page Component
 const LandingPage = ({ experiments = {} }: { experiments?: ExperimentAssignments }) => {
     const landingVariant = experiments.landing_redesign_v1 ?? "control";
@@ -1623,6 +1633,7 @@ const LandingPage = ({ experiments = {} }: { experiments?: ExperimentAssignments
                 <EmailExamplesSection />
                 <RedesignWorkflow />
                 <ReviewsSection />
+                <AmbassadorSection />
                 <PricingSection />
                 <FAQSection />
                 <CTASection />
@@ -1645,6 +1656,7 @@ const LandingPage = ({ experiments = {} }: { experiments?: ExperimentAssignments
             <FeaturesSection />
             <ProcessSection />
             <ReviewsSection />
+            <AmbassadorSection />
             <FAQSection />
             <CTASection />
             <Footer />

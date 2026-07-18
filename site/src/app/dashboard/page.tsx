@@ -15,6 +15,7 @@ import { DashboardTracker } from "@/components/DashboardTracker";
 import { calculateProgress } from "@/components/detailsServer";
 import Link from "next/link";
 import { TutorialTrigger } from "@/components/TutorialTrigger";
+import { AmbassadorPromo } from "@/components/AmbassadorPromo";
 
 const DASHBOARD_STEPS = [
     {
@@ -365,6 +366,8 @@ const Page = async () => {
             <Suspense fallback={<DashboardSkeleton />}>
                 <ResultsWrapper userId={user.uid} plan={user.plan ?? "unknown"} maxCompanies={user.maxCompanies} companiesUsed={user.companiesUsed} />
             </Suspense>
+
+            <AmbassadorPromo placement="dashboard" />
 
             {/* Quick Actions */}
             <div className="grid md:grid-cols-2 gap-6">
