@@ -80,6 +80,41 @@ type Overview = {
         distribution: { score: 1 | 2 | 3 | 4 | 5; count: number }[];
         recent: { score: number; comment: string | null; source: string; timestamp: string }[];
     };
+    experiments: {
+        id: string;
+        status: "draft" | "running" | "paused" | "completed";
+        primaryGoal: string;
+        secondaryGoals: string[];
+        guardrailGoals: string[];
+        hypothesis: string;
+        owner: string;
+        minimumSamplePerVariant: number;
+        minimumRuntimeDays: number;
+        conversionWindowDays: number;
+        runtimeDays: number;
+        srmPValue: number | null;
+        alerts: string[];
+        scannedEvents: number;
+        startedAt?: string;
+        variants: {
+            name: string;
+            exposures: number;
+            primaryConversions: number;
+            conversionRate: number;
+            revenueCents: number;
+            revenuePerExposureCents: number;
+            goals: { name: string; conversions: number }[];
+            guardrails: { name: string; occurrences: number }[];
+            comparison: {
+                uplift: number | null;
+                ciLow: number | null;
+                ciHigh: number | null;
+                pValue: number | null;
+                probabilityBest: number | null;
+            };
+        }[];
+    }[];
+    experimentFilters: Record<string, string>;
 };
 
 type TimeBucket = { sampleSize: number; medianMs: number | null; p25Ms: number | null; p75Ms: number | null };
@@ -96,11 +131,20 @@ export function AnalyticsDashboardClient() {
     const [data, setData] = useState<Overview | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [experimentDevice, setExperimentDevice] = useState("all");
+    const [experimentSource, setExperimentSource] = useState("all");
+    const [experimentBrowser, setExperimentBrowser] = useState("all");
+    const [experimentAuth, setExperimentAuth] = useState("all");
+    const [experimentPlan, setExperimentPlan] = useState("all");
 
     useEffect(() => {
         setLoading(true);
         setError(null);
-        fetch(`/api/analytics/overview?range=${range}`, { cache: "no-store" })
+        const qs = new URLSearchParams({
+            range, device: experimentDevice, source: experimentSource,
+            browser: experimentBrowser, auth: experimentAuth, plan: experimentPlan,
+        });
+        fetch(`/api/analytics/overview?${qs}`, { cache: "no-store" })
             .then(async (r) => {
                 if (!r.ok) {
                     const body = await r.json().catch(() => ({}));
@@ -111,7 +155,7 @@ export function AnalyticsDashboardClient() {
             .then(setData)
             .catch((e: Error) => setError(e.message))
             .finally(() => setLoading(false));
-    }, [range]);
+    }, [range, experimentDevice, experimentSource, experimentBrowser, experimentAuth, experimentPlan]);
 
     return (
         <div className="min-h-screen bg-black text-white">
@@ -150,6 +194,19 @@ export function AnalyticsDashboardClient() {
                         <Realtime data={data.realtime} />
                         <KpiGrid kpis={data.kpis} />
                         <RevenuePanel revenue={data.revenue} />
+                        <ExperimentsPanel
+                            experiments={data.experiments}
+                            device={experimentDevice}
+                            source={experimentSource}
+                            onDeviceChange={setExperimentDevice}
+                            onSourceChange={setExperimentSource}
+                            browser={experimentBrowser}
+                            auth={experimentAuth}
+                            plan={experimentPlan}
+                            onBrowserChange={setExperimentBrowser}
+                            onAuthChange={setExperimentAuth}
+                            onPlanChange={setExperimentPlan}
+                        />
                         <TrendChart trend={data.trend} />
                         <div className="grid lg:grid-cols-2 gap-6">
                             <Funnel steps={data.funnel} />
@@ -167,6 +224,113 @@ export function AnalyticsDashboardClient() {
                 ) : null}
             </div>
         </div>
+    );
+}
+
+function ExperimentsPanel({
+    experiments,
+    device,
+    source,
+    onDeviceChange,
+    onSourceChange,
+    browser,
+    auth,
+    plan,
+    onBrowserChange,
+    onAuthChange,
+    onPlanChange,
+}: {
+    experiments: Overview["experiments"];
+    device: string;
+    source: string;
+    onDeviceChange: (value: string) => void;
+    onSourceChange: (value: string) => void;
+    browser: string;
+    auth: string;
+    plan: string;
+    onBrowserChange: (value: string) => void;
+    onAuthChange: (value: string) => void;
+    onPlanChange: (value: string) => void;
+}) {
+    return (
+        <Card title="A/B experiments · internal assignment, GA4 + Firestore + Clarity">
+            <div className="space-y-5">
+                <div className="flex flex-wrap items-center gap-3 text-xs">
+                    <select value={device} onChange={(e) => onDeviceChange(e.target.value)} className="rounded-md border border-white/10 bg-black px-3 py-2">
+                        <option value="all">All devices</option>
+                        <option value="desktop">Desktop</option>
+                        <option value="mobile">Mobile</option>
+                    </select>
+                    <input
+                        value={source}
+                        onChange={(e) => onSourceChange(e.target.value || "all")}
+                        placeholder="Source: all, direct, google…"
+                        className="w-52 rounded-md border border-white/10 bg-black px-3 py-2"
+                    />
+                    <select value={browser} onChange={(e) => onBrowserChange(e.target.value)} className="rounded-md border border-white/10 bg-black px-3 py-2">
+                        <option value="all">All browsers</option><option value="chrome">Chrome</option><option value="safari">Safari</option><option value="firefox">Firefox</option><option value="edge">Edge</option>
+                    </select>
+                    <select value={auth} onChange={(e) => onAuthChange(e.target.value)} className="rounded-md border border-white/10 bg-black px-3 py-2">
+                        <option value="all">All users</option><option value="anonymous">Anonymous</option><option value="authenticated">Authenticated</option>
+                    </select>
+                    <input value={plan} onChange={(e) => onPlanChange(e.target.value || "all")} placeholder="Plan: all, pro…" className="w-36 rounded-md border border-white/10 bg-black px-3 py-2" />
+                    <a href={`/api/analytics/overview?format=csv&device=${encodeURIComponent(device)}&source=${encodeURIComponent(source)}&browser=${encodeURIComponent(browser)}&auth=${encodeURIComponent(auth)}&plan=${encodeURIComponent(plan)}`} className="rounded-md border border-white/10 px-3 py-2 text-white/70 hover:text-white">Export CSV</a>
+                    <a href="https://clarity.microsoft.com/" target="_blank" rel="noreferrer" className="rounded-md border border-white/10 px-3 py-2 text-white/70 hover:text-white">Clarity recordings ↗</a>
+                </div>
+                {experiments.map((experiment) => (
+                    <div key={experiment.id} className="rounded-lg border border-white/10 bg-black/20 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <div>
+                                <div className="font-mono text-sm text-white/90">{experiment.id}</div>
+                                <div className="text-xs text-white/45 mt-1">Primary goal: {experiment.primaryGoal}</div>
+                                <div className="text-xs text-white/35 mt-1">{experiment.hypothesis}</div>
+                            </div>
+                            <span className={`rounded-full px-2.5 py-1 text-xs ${
+                                experiment.status === "running"
+                                    ? "bg-emerald-500/15 text-emerald-300"
+                                    : "bg-white/10 text-white/60"
+                            }`}>
+                                {experiment.status}
+                            </span>
+                        </div>
+                        {experiment.alerts.length > 0 && (
+                            <div className="mb-3 rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                                {experiment.alerts.join(" · ")}
+                            </div>
+                        )}
+                        <Table
+                            head={["Variant", "Exposures", experiment.primaryGoal, "Conversion", "Uplift", "95% CI", "P(best)", "Revenue / exposure"]}
+                            rows={experiment.variants.map((variant) => [
+                                <span key="name" className="font-medium">{variant.name}</span>,
+                                <span key="exposures" className="tabular-nums">{variant.exposures.toLocaleString()}</span>,
+                                <span key="conversions" className="tabular-nums">{variant.primaryConversions.toLocaleString()}</span>,
+                                <span key="rate" className="tabular-nums">{variant.exposures ? `${(variant.conversionRate * 100).toFixed(1)}%` : "—"}</span>,
+                                <span key="uplift" className="tabular-nums">{variant.comparison.uplift == null ? "—" : `${variant.comparison.uplift >= 0 ? "+" : ""}${(variant.comparison.uplift * 100).toFixed(1)}%`}</span>,
+                                <span key="ci" className="tabular-nums text-xs">{variant.comparison.ciLow == null ? "—" : `${(variant.comparison.ciLow * 100).toFixed(1)}–${(variant.comparison.ciHigh! * 100).toFixed(1)}pp`}</span>,
+                                <span key="probability" className="tabular-nums">{variant.comparison.probabilityBest == null ? "—" : `${(variant.comparison.probabilityBest * 100).toFixed(1)}%`}</span>,
+                                <span key="rpe" className="tabular-nums">{variant.exposures ? `€${(variant.revenuePerExposureCents / 100).toFixed(2)}` : "—"}</span>,
+                            ])}
+                        />
+                        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-white/45">
+                            <span>Window: {experiment.conversionWindowDays}d</span>
+                            <span>Runtime: {experiment.runtimeDays.toFixed(1)} / {experiment.minimumRuntimeDays}d</span>
+                            <span>Minimum sample: {experiment.minimumSamplePerVariant}/variant</span>
+                            <span>SRM p: {experiment.srmPValue == null ? "—" : experiment.srmPValue.toFixed(4)}</span>
+                            <span>Events scanned: {experiment.scannedEvents.toLocaleString()}</span>
+                        </div>
+                        <div className="mt-3 grid gap-2 md:grid-cols-2">
+                            {experiment.variants.map((variant) => (
+                                <div key={variant.name} className="rounded-md bg-black/20 px-3 py-2 text-xs text-white/50">
+                                    <span className="text-white/75">{variant.name} guardrails:</span>{" "}
+                                    {variant.guardrails.map((guardrail) => `${guardrail.name} ${guardrail.occurrences}`).join(" · ")}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+                {experiments.length === 0 && <div className="text-sm text-white/50">No experiments configured.</div>}
+            </div>
+        </Card>
     );
 }
 

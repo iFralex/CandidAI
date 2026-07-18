@@ -34,6 +34,16 @@ export function ClarityScript() {
         w.clarity = w.clarity ?? function (...args: unknown[]) {
             ((w.clarity as { q?: unknown[] }).q = ((w.clarity as { q?: unknown[] }).q ?? [])).push(args);
         };
+        const clarity = w.clarity as (...args: unknown[]) => void;
+        clarity("set", "experiment_qa", document.cookie.includes("_ca_exp_qa=1") ? "true" : "false");
+        // The experiment provider may mount before Clarity. Replay its context
+        // into the official Clarity queue so recordings and heatmaps can be
+        // filtered by experiment and variant from their very first page.
+        for (const assignment of window.__caExperimentContext ?? []) {
+            clarity("set", "experiment", assignment.id);
+            clarity("set", `experiment_${assignment.id}`, assignment.variant);
+            clarity("set", "experiment_variant", assignment.variant);
+        }
         const t = document.createElement("script");
         t.async = true;
         t.src = `https://www.clarity.ms/tag/${projectId}`;

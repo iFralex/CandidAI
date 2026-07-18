@@ -4,6 +4,15 @@ import { authMiddleware, redirectToHome, redirectToLogin } from "next-firebase-a
 import { clientConfig, serverConfig } from "./config";
 import { Path } from "next-firebase-auth-edge/next/middleware";
 import { checkBasicAuth, ANALYTICS_REALM } from "./lib/analytics-auth";
+import {
+  EXPERIMENT_COOKIE,
+  EXPERIMENT_COOKIE_MAX_AGE,
+  EXPERIMENT_HEADER,
+  EXPERIMENT_QA_COOKIE,
+  VISITOR_COOKIE,
+  resolveExperiments,
+  serializeExperimentAssignments,
+} from "./lib/experiments";
 
 const PUBLIC_PATHS: Path = [/^(?!\/dashboard).*/];
 
@@ -39,6 +48,61 @@ export async function middleware(request: NextRequest) {
       response.cookies.set('__dev_mode__', '1', { path: '/' });
     } else {
       response.cookies.delete('__dev_mode__');
+    }
+    return response;
+  }
+
+  // The public landing is rendered with a server-side experiment assignment.
+  // Passing it as a request header lets the Server Component render the right
+  // version on the first response; the cookie keeps the assignment stable for
+  // later signup, onboarding and payment events.
+  if (pathname === "/") {
+    const visitorId = request.cookies.get(VISITOR_COOKIE)?.value ?? crypto.randomUUID();
+    const resolved = resolveExperiments({
+      pathname,
+      cookieValue: request.cookies.get(EXPERIMENT_COOKIE)?.value,
+      overrides: url.searchParams,
+      allowOverrides: process.env.NODE_ENV !== "production",
+    });
+    const serialized = serializeExperimentAssignments(resolved.assignments);
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(EXPERIMENT_HEADER, serialized);
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+
+    if (resolved.changed) {
+      response.cookies.set(EXPERIMENT_COOKIE, serialized, {
+        path: "/",
+        maxAge: EXPERIMENT_COOKIE_MAX_AGE,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      });
+    }
+    if (!request.cookies.get(VISITOR_COOKIE)?.value) {
+      response.cookies.set(VISITOR_COOKIE, visitorId, {
+        path: "/",
+        maxAge: EXPERIMENT_COOKIE_MAX_AGE,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      });
+    }
+    const hasExperimentOverride = process.env.NODE_ENV !== "production"
+      && Array.from(url.searchParams.keys()).some((key) => key.startsWith("ca_exp_"));
+    if (hasExperimentOverride) {
+      response.cookies.set(EXPERIMENT_QA_COOKIE, "1", {
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      });
+    }
+    if (referralCode) {
+      response.cookies.set('referral', referralCode, {
+        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      });
+    }
+    if (discountCode) {
+      response.cookies.set('discount', discountCode, {
+        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      });
     }
     return response;
   }

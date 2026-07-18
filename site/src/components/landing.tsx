@@ -18,6 +18,7 @@ import Player from "@vimeo/player";
 import { useRef } from "react";
 import { Pause, Maximize } from "lucide-react";
 import Image from 'next/image';
+import type { ExperimentAssignments } from '@/lib/experiments';
 
 const videos = [
     {
@@ -1424,9 +1425,14 @@ const Footer = () => {
 };
 
 // Main Landing Page Component
-const LandingPage = () => {
+const LandingPage = ({ experiments = {} }: { experiments?: ExperimentAssignments }) => {
+    const landingVariant = experiments.landing_redesign_v1 ?? "control";
     return (
-        <div className="min-h-screen bg-black text-white">
+        <div
+            className="min-h-screen bg-black text-white"
+            data-experiment="landing_redesign_v1"
+            data-variant={landingVariant}
+        >
             <HeroSection />
             <StatsSection />
             <JobMarketCrisisSections />

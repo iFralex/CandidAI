@@ -18,12 +18,20 @@ import {
     setUserId,
     Analytics,
 } from "firebase/analytics";
+import {
+    getActiveExperimentContext,
+    getExperimentEventParams,
+    getVisitorId,
+    isExperimentQaSession,
+} from "@/lib/experiments-client";
 
 // ---------------------------------------------------------------------------
 // Event catalogue — every event name + its required params
 // ---------------------------------------------------------------------------
 
 export type TrackingEvent =
+    // ── Experiments ──────────────────────────────────────────────────────────
+    | { name: "experiment_exposure"; params: { experiment_id: string; experiment_variant: string; experiment_source: "server" } }
     // ── Page ────────────────────────────────────────────────────────────────
     | { name: "page_view"; params: { page_path: string; page_title: string; page_referrer?: string } }
     | { name: "scroll_depth"; params: { percent: 25 | 50 | 75 | 100; page_path: string } }
@@ -125,6 +133,10 @@ export type TrackingEvent =
 // ---------------------------------------------------------------------------
 
 const PERSIST_EVENTS = new Set<TrackingEvent["name"]>([
+    "experiment_exposure",
+    "page_view",
+    "page_engagement",
+    "web_vital",
     "nps_response",
     "checkout_success",
     "checkout_free_success",
@@ -132,6 +144,20 @@ const PERSIST_EVENTS = new Set<TrackingEvent["name"]>([
     "signup_success",
     "email_send",
     "email_send_all",
+    "app_error",
+]);
+
+const CLARITY_EVENTS = new Set<TrackingEvent["name"]>([
+    "landing_cta_click",
+    "landing_video_play",
+    "landing_plan_click",
+    "signup_attempt",
+    "signup_success",
+    "onboarding_complete",
+    "checkout_open",
+    "checkout_success",
+    "checkout_error",
+    "email_send",
     "app_error",
 ]);
 
@@ -164,6 +190,17 @@ export interface TrackOptions {
 export function track(event: TrackingEvent, options?: TrackOptions): void {
     if (typeof window === "undefined") return;
 
+    const experimentParams = event.name === "experiment_exposure"
+        ? {
+            experiment_qa: isExperimentQaSession() ? "true" : "false",
+            visitor_id: getVisitorId() ?? "unknown",
+        }
+        : getExperimentEventParams();
+    const enrichedEvent = {
+        ...event,
+        params: { ...event.params, ...experimentParams },
+    } as TrackingEvent;
+
     // Explicit `persist: false` lets a caller opt OUT even for events that
     // are persisted by default (e.g. when the server already wrote the event).
     const shouldPersist = options?.persist !== undefined
@@ -174,13 +211,22 @@ export function track(event: TrackingEvent, options?: TrackOptions): void {
     import("@/lib/firebase").then(({ analytics }) => {
         if (!analytics) return;
         try {
-            logEvent(analytics, event.name, event.params as Record<string, any>);
+            const sendEvent = logEvent as unknown as (
+                instance: Analytics,
+                name: string,
+                params?: Record<string, unknown>,
+            ) => void;
+            sendEvent(analytics, enrichedEvent.name, enrichedEvent.params as Record<string, unknown>);
         } catch { /* never throw from analytics */ }
     }).catch(() => { /* ignore */ });
 
+    if (CLARITY_EVENTS.has(event.name)) {
+        try { window.clarity?.("event", event.name); } catch { /* ignore */ }
+    }
+
     // Write to Firestore for critical events
     if (shouldPersist) {
-        persistToFirestore(event, options?.userId).catch(() => { /* ignore — analytics must never break UX */ });
+        persistToFirestore(enrichedEvent, options?.userId).catch(() => { /* ignore — analytics must never break UX */ });
     }
 }
 
@@ -201,6 +247,14 @@ async function persistToFirestore(event: TrackingEvent, explicitUserId?: string)
             session_id: getSessionId(),
             page_path: window.location.pathname,
             user_agent: navigator.userAgent.slice(0, 200),
+            experiments: getActiveExperimentContext(),
+            visitor_id: getVisitorId(),
+            experiment_qa: isExperimentQaSession(),
+            attribution: getLastTouchAttribution() ?? getFirstTouchAttribution(),
+            locale: navigator.language,
+            screen: `${window.screen.width}x${window.screen.height}`,
+            authenticated: Boolean(userId),
+            user_properties: getCachedUserProperties(),
         });
 
         // Write server-side (admin SDK) through the public /api/track sink, so the
@@ -226,6 +280,7 @@ async function persistToFirestore(event: TrackingEvent, explicitUserId?: string)
  * populates `firebase.auth().currentUser` client-side.
  */
 const USER_ID_KEY = "_ca_uid";
+const USER_PROPERTIES_KEY = "_ca_user_props";
 function getCachedUserId(): string | null {
     try { return sessionStorage.getItem(USER_ID_KEY); } catch { return null; }
 }
@@ -234,6 +289,18 @@ function setCachedUserId(uid: string): void {
 }
 function clearCachedUserId(): void {
     try { sessionStorage.removeItem(USER_ID_KEY); } catch { /* ignore */ }
+}
+function getCachedUserProperties(): Record<string, string> {
+    try { return JSON.parse(sessionStorage.getItem(USER_PROPERTIES_KEY) ?? "{}"); } catch { return {}; }
+}
+function cacheUserProperties(properties: Record<string, unknown>): void {
+    try {
+        const current = getCachedUserProperties();
+        for (const [key, value] of Object.entries(properties)) {
+            if (value !== undefined && value !== null) current[key] = String(value);
+        }
+        sessionStorage.setItem(USER_PROPERTIES_KEY, JSON.stringify(current));
+    } catch { /* ignore */ }
 }
 
 /** Stable per-session ID (survives page navigations, reset on new tab). */
@@ -272,6 +339,7 @@ export function identifyUser(
 
     // Cache uid for persistToFirestore — survives navigation within the tab.
     setCachedUserId(userId);
+    if (properties) cacheUserProperties(properties);
 
     import("@/lib/firebase").then(({ analytics }) => {
         if (!analytics) return;
@@ -293,6 +361,7 @@ export function identifyUser(
 export function clearIdentifiedUser(): void {
     if (typeof window === "undefined") return;
     clearCachedUserId();
+    try { sessionStorage.removeItem(USER_PROPERTIES_KEY); } catch { /* ignore */ }
 }
 
 export interface FirstTouchAttribution {
@@ -346,6 +415,30 @@ export function getLastTouchAttribution(): FirstTouchAttribution | null {
     return readAttributionCookie("_ca_last_touch");
 }
 
+/** Persist the browser's stable experiment assignment on the user document.
+ * Server-side conversions (for example Stripe webhooks) can then retain the
+ * original variant even though they do not receive browser cookies. */
+export async function saveExperimentAssignmentsToUserDoc(uid?: string): Promise<void> {
+    if (typeof window === "undefined") return;
+    const userId = uid ?? getCachedUserId();
+    if (!userId) return;
+    const experiments = getActiveExperimentContext();
+    if (experiments.length === 0) return;
+    try {
+        const [{ db }, { doc, updateDoc }] = await Promise.all([
+            import("@/lib/firebase"),
+            import("firebase/firestore"),
+        ]);
+        await updateDoc(doc(db, "users", userId), {
+            experiment_visitor_id: getVisitorId(),
+            experiments: Object.fromEntries(experiments.map(({ id, variant, source }) => [
+                id,
+                { variant, source, assigned_at: new Date().toISOString() },
+            ])),
+        });
+    } catch { /* ignore — analytics must never break signup */ }
+}
+
 function readAttributionCookie(name: string): FirstTouchAttribution | null {
     if (typeof document === "undefined") return null;
     const match = document.cookie.split("; ").find((c) => c.startsWith(`${name}=`));
@@ -397,6 +490,7 @@ export function updateUserProperties(
     properties: Record<string, string | number | null>
 ): void {
     if (typeof window === "undefined") return;
+    cacheUserProperties(properties);
 
     import("@/lib/firebase").then(({ analytics }) => {
         if (!analytics) return;

@@ -1,7 +1,7 @@
 export const content: Record<string, string> = {
   en: `# Cookie Policy of CandidAI
 
-**Latest update:** May 27, 2026
+**Latest update:** July 18, 2026
 
 ---
 
@@ -120,6 +120,15 @@ This Application uses Trackers to attribute new sign-ups and conversions to the 
 
 This Application uses Trackers to measure traffic and analyze User behavior to improve the Service.
 
+#### Trackers managed directly by this Application (first-party)
+
+- **\`_ca_experiments\`** (cookie, 90 days): stores an opaque mapping between active experiment identifiers and the version assigned to this browser. It keeps the experience stable across page views and allows the Application to compare aggregate outcomes between versions. The cookie does not contain the User's name, email address or the content entered into forms.
+- **\`_ca_vid\`** (cookie, 90 days): a randomly generated, pseudonymous browser identifier used to keep experiment exposure, registration and later conversion events attached to the same measurement unit across tabs and sessions. It is not derived from the User's name, email address or device fingerprint.
+- **\`_ca_exp_qa\`** (session cookie): marks internal quality-assurance sessions in which a version has been forced manually. Events from these sessions are excluded from experiment results.
+- **\`_ca_exp_seen_<experiment>_<variant>\`** (localStorage, persistent until browser data is cleared): stores the first exposure timestamp, anonymous visitor identifier and schema version for a specific experiment version. It prevents repeated visits from inflating experiment exposure counts.
+
+Experiment assignments and related interaction events may be sent to the Owner's internal analytics storage, Google Analytics 4 and Microsoft Clarity. The internal system is the sole source of experiment assignment; third-party measurement services receive the assigned experiment and version only for aggregate analysis, funnel measurement, session filtering and usability evaluation.
+
 #### Trackers managed by third parties
 
 ##### Microsoft Clarity
@@ -136,6 +145,8 @@ This Application uses Trackers to measure traffic and analyze User behavior to i
 
 Microsoft Clarity is a behavior-analytics service that records anonymous Users' interactions with the site (mouse position, scrolls, clicks, page transitions) and produces aggregated heatmaps. Sensitive form fields are masked by default. Clarity does not collect text typed into input fields unless explicitly unmasked by the Owner (this Application does not unmask any field).
 
+When the User participates in an interface experiment, this Application also sends Clarity the experiment identifier, assigned version and selected interaction events as custom tags and events. These values allow the Owner to filter recordings and heatmaps by version and do not include names, email addresses or form contents.
+
 **Service provided by:** Microsoft Corporation (United States) – [Privacy Policy](https://privacy.microsoft.com/privacystatement)
 
 **Trackers duration:**
@@ -145,17 +156,17 @@ Microsoft Clarity is a behavior-analytics service that records anonymous Users' 
 - ANONCHK: 10 minutes
 - SM: duration of the session
 
-##### Google Analytics for Firebase (for apps)
+##### Google Analytics 4 and Google Analytics for Firebase
 
 **Company:** Google LLC
 
 **Place of processing:** United States
 
-Google Analytics for Firebase (for apps) or Firebase Analytics is an analytics service provided by Google LLC. In order to understand Google's use of Data, consult [Google's partner policy](https://www.google.com/policies/privacy/partners/).
+Google Analytics 4 and Google Analytics for Firebase are analytics services provided by Google LLC for the web Application and its related apps. In order to understand Google's use of Data, consult [Google's partner policy](https://www.google.com/policies/privacy/partners/).
 
 Firebase Analytics may share Data with other tools provided by Firebase, such as Crash Reporting, Authentication, Remote Config or Notifications. The User may check this privacy policy to find a detailed explanation about the other tools used by the Owner.
 
-This Application uses identifiers for mobile devices and technologies similar to cookies to run the Firebase Analytics service.
+This Application uses browser and device identifiers and technologies similar to cookies to run the Analytics service. Experiment identifiers, assigned versions and related conversion events may be sent as event parameters so aggregate outcomes can be compared between versions.
 
 Users may opt-out of certain Firebase features through applicable device settings, such as the device advertising settings for mobile phones or by following the instructions in other Firebase related sections of this privacy policy, if available.
 

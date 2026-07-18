@@ -17,9 +17,11 @@ export interface ServerEvent {
     userId?: string | null;
     /** Optional override for `page_path` (defaults to null server-side). */
     pagePath?: string | null;
+    experiments?: Record<string, unknown> | null;
+    visitorId?: string | null;
 }
 
-export async function recordServerEvent({ event, params, userId, pagePath }: ServerEvent): Promise<void> {
+export async function recordServerEvent({ event, params, userId, pagePath, experiments, visitorId }: ServerEvent): Promise<void> {
     try {
         await adminDb.collection("analytics_events").add({
             event,
@@ -27,6 +29,8 @@ export async function recordServerEvent({ event, params, userId, pagePath }: Ser
             user_id: userId ?? null,
             session_id: null,
             page_path: pagePath ?? null,
+            experiments: experiments ?? {},
+            visitor_id: visitorId ?? null,
             timestamp: FieldValue.serverTimestamp(),
             source: "server",
         });
@@ -50,15 +54,24 @@ export async function recordPaymentSuccess(args: {
     source: "webhook" | "payment-confirm" | "create-payment-free";
 }): Promise<void> {
     let isFirstPurchase = false;
+    let experiments: Record<string, unknown> = {};
+    let visitorId: string | null = null;
     try {
         // The just-written payment doc is already counted — first purchase ⇔ exactly 1 doc.
         const payments = await adminDb.collection("users").doc(args.userId).collection("payments").limit(2).get();
         isFirstPurchase = payments.size <= 1;
     } catch { /* ignore — analytics must never break the webhook */ }
+    try {
+        const user = await adminDb.collection("users").doc(args.userId).get();
+        experiments = user.data()?.experiments ?? {};
+        visitorId = user.data()?.experiment_visitor_id ?? null;
+    } catch { /* attribution is best effort */ }
 
     await recordServerEvent({
         event: "payment_succeeded",
         userId: args.userId,
+        experiments,
+        visitorId,
         params: {
             purchase_type: args.purchaseType ?? "unknown",
             item_id: args.itemId ?? "unknown",
