@@ -14,10 +14,12 @@ const SUBJECTS = [
     { value: "Support", label: "Support" },
     { value: "Billing", label: "Billing" },
     { value: "General", label: "General" },
+    { value: "Referral Program", label: "Referral Program" },
 ];
 
-export default function ContactPage() {
-    const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+export default function ContactPage({ defaultSubject }: { defaultSubject?: string }) {
+    const initialSubject = defaultSubject && SUBJECTS.some((s) => s.value === defaultSubject) ? defaultSubject : "";
+    const [form, setForm] = useState({ name: "", email: "", subject: initialSubject, message: "" });
     const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [submitError, setSubmitError] = useState("");
