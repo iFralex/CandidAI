@@ -13,6 +13,7 @@ import { Navigation } from "@/components/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Footer } from "@/components/landing";
 import Link from "next/link";
 import { track } from "@/lib/analytics";
 import { plansInfo } from "@/config";
@@ -555,7 +556,7 @@ const GROUND_RULES = [
 const FAQS = [
     {
         question: "How do I actually get paid?",
-        answer: "You choose, every payout cycle, whether to receive your commissions as a bank transfer/PayPal payment or as CandidAI credits. Commissions above €50 are paid out automatically every month; anything under that rolls over to the next month.",
+        answer: "You choose, every payout cycle, whether to receive your commissions as a bank transfer/PayPal payment or as CandidAI credits. Commissions of €50 or more are paid out automatically every month; anything under that rolls over to the next month.",
     },
     {
         question: "What counts as a referral?",
@@ -689,6 +690,7 @@ export default function ReferralPage() {
             <GroundRulesSection />
             <ReferralFAQSection />
             <ApplyCTASection />
+            <Footer />
         </div>
     );
 }
