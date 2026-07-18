@@ -129,6 +129,109 @@ const TiersSection = () => {
     );
 };
 
+const SIMULATOR_PRESETS = [10, 25, 50];
+
+const EarningsSimulatorSection = () => {
+    const paidPlans = plansInfo.filter((p) => p.id !== "free_trial");
+    const [planId, setPlanId] = useState("pro");
+    const [count, setCount] = useState(20);
+
+    const priceCents = computePriceInCents("plan", planId);
+    const result = useMemo(() => computeReferralEarnings(count, priceCents), [count, priceCents]);
+
+    return (
+        <section className="relative py-24 px-6 lg:px-8 bg-black">
+            <div className="max-w-5xl mx-auto">
+                <div className="text-center mb-16">
+                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                        Run the Numbers Yourself
+                    </h2>
+                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                        Pick a plan, pick a volume, see what it's worth.
+                    </p>
+                </div>
+
+                <Card className="p-8 md:p-10" gradient>
+                    <div className="grid md:grid-cols-2 gap-10">
+                        <div>
+                            <label className="text-sm text-gray-400 uppercase tracking-widest mb-3 block">
+                                Plan your referrals buy
+                            </label>
+                            <div className="flex gap-3 mb-8">
+                                {paidPlans.map((plan) => (
+                                    <button
+                                        key={plan.id}
+                                        onClick={() => setPlanId(plan.id)}
+                                        className={`flex-1 rounded-xl px-4 py-3 text-sm font-semibold transition-all border ${
+                                            planId === plan.id
+                                                ? "bg-violet-500/20 border-violet-500 text-white"
+                                                : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20"
+                                        }`}
+                                    >
+                                        {plan.name}
+                                        <div className="text-xs font-normal mt-1 opacity-70">
+                                            {formatPrice(computePriceInCents("plan", plan.id))}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+
+                            <label className="text-sm text-gray-400 uppercase tracking-widest mb-3 block">
+                                Purchases through your link
+                            </label>
+                            <div className="flex items-center gap-3 mb-4">
+                                <button
+                                    onClick={() => setCount((c) => Math.max(0, c - 1))}
+                                    className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 flex items-center justify-center text-lg"
+                                    aria-label="Decrease"
+                                >
+                                    −
+                                </button>
+                                <div className="flex-1 text-center text-2xl font-bold text-white">{count}</div>
+                                <button
+                                    onClick={() => setCount((c) => Math.min(200, c + 1))}
+                                    className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 flex items-center justify-center text-lg"
+                                    aria-label="Increase"
+                                >
+                                    +
+                                </button>
+                            </div>
+
+                            <div className="flex gap-2">
+                                {SIMULATOR_PRESETS.map((preset) => (
+                                    <button
+                                        key={preset}
+                                        onClick={() => setCount(preset)}
+                                        className="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-colors"
+                                    >
+                                        {preset} referrals
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-black/30 rounded-xl p-6">
+                            <div className="text-gray-400 text-sm mb-1">Estimated earnings</div>
+                            <div className="text-4xl font-bold text-green-400 mb-6">{formatPrice(result.totalCents)}</div>
+
+                            <div className="space-y-2">
+                                {result.breakdown
+                                    .filter((tier) => tier.count > 0)
+                                    .map((tier) => (
+                                        <div key={tier.label} className="flex justify-between text-sm">
+                                            <span className="text-gray-400">{tier.label} × {tier.count}</span>
+                                            <span className="text-gray-300 font-medium">{formatPrice(tier.subtotalCents)}</span>
+                                        </div>
+                                    ))}
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+        </section>
+    );
+};
+
 // ---------- Page ----------
 
 export default function ReferralPage() {
@@ -137,6 +240,7 @@ export default function ReferralPage() {
             <Navigation simple />
             <HeroSection />
             <TiersSection />
+            <EarningsSimulatorSection />
         </div>
     );
 }
