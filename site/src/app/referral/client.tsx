@@ -418,6 +418,133 @@ const PlaybookSection = () => {
     );
 };
 
+const MILESTONES = [
+    {
+        level: "Level 1",
+        threshold: "15 referrals in a month",
+        icon: Shirt,
+        rewards: ["The official campaign t-shirt — the uniform of people who understand how the job market actually works"],
+    },
+    {
+        level: "Level 2",
+        threshold: "50 referrals in 3 months",
+        icon: Award,
+        rewards: [
+            "Limited holographic sticker pack — not sold in any kit",
+            "Enamel pin: \"Survived 400 rejections\"",
+            "Your pick: tote bag, mug, or campaign socks",
+            "+25,000 bonus credits on your account",
+        ],
+    },
+    {
+        level: "Level 3",
+        threshold: "200 referrals in a year",
+        icon: Crown,
+        rewards: [
+            "The official hoodie — reserved for people who go all in",
+            "Free Ultra plan, all of CandidAI",
+            "A 1:1 CV/LinkedIn review with the founder",
+        ],
+    },
+];
+
+const LEADERBOARD_REWARD = {
+    title: "Top 3 of the Semester",
+    rewards: [
+        "A signed reference letter + \"Top Campus Ambassador\" LinkedIn badge — real, verifiable experience for your CV",
+        "20% more on every commission earned in those 3 months",
+        "Insider access: a direct call with the founder, a say in upcoming features, your name in the site credits",
+    ],
+};
+
+const MilestonesSection = () => {
+    return (
+        <section className="relative py-24 px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto">
+                <div className="grid md:grid-cols-2 gap-6 mb-16">
+                    <Card className="p-6 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                            <QrCode className="w-6 h-6 text-violet-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-white font-semibold mb-1">Your own QR, only yours</h3>
+                            <p className="text-gray-400 text-sm">Every scan and every signup, tracked in real time from your ambassador dashboard.</p>
+                        </div>
+                    </Card>
+                    <Card className="p-6 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                            <Gift className="w-6 h-6 text-violet-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-white font-semibold mb-1">Commissions, your way</h3>
+                            <p className="text-gray-400 text-sm">Cash out or convert to CandidAI credits — you decide every month.</p>
+                        </div>
+                    </Card>
+                </div>
+
+                <div className="text-center mb-16">
+                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                        Milestone Rewards
+                    </h2>
+                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                        Commissions pay per sale. These stack on top, for volume.
+                    </p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-8 mb-8">
+                    {MILESTONES.map((milestone) => {
+                        const Icon = milestone.icon;
+                        return (
+                            <motion.div
+                                key={milestone.level}
+                                initial={{ opacity: 0, y: 30 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                <Card className="p-8 h-full">
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center mb-4">
+                                        <Icon className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div className="text-violet-400 text-sm font-semibold uppercase tracking-widest mb-1">{milestone.level}</div>
+                                    <div className="text-white text-lg font-bold mb-4">{milestone.threshold}</div>
+                                    <ul className="space-y-2">
+                                        {milestone.rewards.map((reward) => (
+                                            <li key={reward} className="text-gray-400 text-sm flex gap-2">
+                                                <Check className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                                                {reward}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </Card>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+
+                <Card className="p-8 md:p-10" gradient>
+                    <div className="flex items-center gap-3 mb-4">
+                        <Trophy className="w-8 h-8 text-yellow-400" />
+                        <h3 className="text-2xl font-bold text-white">{LEADERBOARD_REWARD.title}</h3>
+                    </div>
+                    <ul className="grid md:grid-cols-3 gap-4">
+                        {LEADERBOARD_REWARD.rewards.map((reward) => (
+                            <li key={reward} className="text-gray-300 text-sm flex gap-2">
+                                <Check className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                                {reward}
+                            </li>
+                        ))}
+                    </ul>
+                </Card>
+
+                <p className={`${caveat.className} text-gray-400 text-xl text-center mt-10 -rotate-1`}>
+                    Every physical prize ships with a note written by hand. Yes, actually by hand.
+                </p>
+            </div>
+        </section>
+    );
+};
+
 // ---------- Page ----------
 
 export default function ReferralPage() {
@@ -429,6 +556,7 @@ export default function ReferralPage() {
             <EarningsSimulatorSection />
             <KitSection />
             <PlaybookSection />
+            <MilestonesSection />
         </div>
     );
 }
