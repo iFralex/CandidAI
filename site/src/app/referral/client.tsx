@@ -639,6 +639,41 @@ const ReferralFAQSection = () => {
     );
 };
 
+const ApplyCTASection = () => {
+    return (
+        <section id="apply" className="relative py-24 px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto text-center">
+                <Card className="p-12" gradient>
+                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-100 bg-clip-text text-transparent">
+                        Ready to Make Some Noise?
+                    </h2>
+                    <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+                        Tell us a bit about yourself and where you'd run the playbook. We review every application by hand.
+                    </p>
+
+                    <Link href="/contact">
+                        <Button
+                            size="lg"
+                            className="min-w-64"
+                            icon={<ArrowRight className="w-5 h-5" />}
+                            onClick={() => {
+                                document.cookie = `defaultSubject=Referral Program; path=/; max-age=${60 * 60}`;
+                                track({ name: "referral_cta_click", params: { button_label: "Apply to become an Ambassador", section: "bottom_cta" } });
+                            }}
+                        >
+                            Apply to become an Ambassador
+                        </Button>
+                    </Link>
+
+                    <p className="text-gray-500 text-sm mt-6">
+                        Applications are reviewed manually — we'll email you the next steps.
+                    </p>
+                </Card>
+            </div>
+        </section>
+    );
+};
+
 // ---------- Page ----------
 
 export default function ReferralPage() {
@@ -653,6 +688,7 @@ export default function ReferralPage() {
             <MilestonesSection />
             <GroundRulesSection />
             <ReferralFAQSection />
+            <ApplyCTASection />
         </div>
     );
 }
