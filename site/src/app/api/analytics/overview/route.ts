@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runReport, runRealtimeReport, dateRange, GaDateRange } from "@/lib/ga-data-client";
 import { adminDb } from "@/lib/firebase-admin";
-import { Timestamp } from "firebase-admin/firestore";
+import { QueryDocumentSnapshot, Timestamp } from "firebase-admin/firestore";
 import { loadClaritySnapshot } from "@/lib/clarity-data";
 import { adminAuth } from "@/lib/firebase-admin";
+import { publicExperimentDefinitions } from "@/lib/experiments";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,9 +41,39 @@ const FUNNEL_ORDER = [
 export async function GET(req: NextRequest) {
     const range: Range = (req.nextUrl.searchParams.get("range") as Range) || "30d";
     const dr = rangeFor(range);
+    const experimentFilters = {
+        device: req.nextUrl.searchParams.get("device") ?? "all",
+        source: req.nextUrl.searchParams.get("source") ?? "all",
+        browser: req.nextUrl.searchParams.get("browser") ?? "all",
+        campaign: req.nextUrl.searchParams.get("campaign") ?? "all",
+        locale: req.nextUrl.searchParams.get("locale") ?? "all",
+        country: req.nextUrl.searchParams.get("country") ?? "all",
+        auth: req.nextUrl.searchParams.get("auth") ?? "all",
+        plan: req.nextUrl.searchParams.get("plan") ?? "all",
+    };
+    if (req.nextUrl.searchParams.get("format") === "csv") {
+        const report = await fetchExperimentReport(cutoffDate(range), experimentFilters);
+        const header = ["experiment", "status", "variant", "exposures", "primary_goal", "conversions", "conversion_rate", "uplift", "ci_low", "ci_high", "p_value", "probability_best", "revenue_cents", "revenue_per_exposure_cents", "srm_p_value", "alerts"];
+        const rows: unknown[][] = [header];
+        for (const experiment of report) for (const variant of experiment.variants) rows.push([
+            experiment.id, experiment.status, variant.name, variant.exposures, experiment.primaryGoal,
+            variant.primaryConversions, variant.conversionRate, variant.comparison.uplift ?? "",
+            variant.comparison.ciLow ?? "", variant.comparison.ciHigh ?? "", variant.comparison.pValue ?? "",
+            variant.comparison.probabilityBest ?? "", variant.revenueCents, variant.revenuePerExposureCents,
+            experiment.srmPValue ?? "", experiment.alerts.join("; "),
+        ]);
+        const quote = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+        return new Response(rows.map((row) => row.map(quote).join(",")).join("\n"), {
+            headers: {
+                "Content-Type": "text/csv; charset=utf-8",
+                "Content-Disposition": `attachment; filename="candidai-experiments-${new Date().toISOString().slice(0, 10)}.csv"`,
+                "Cache-Control": "no-store",
+            },
+        });
+    }
 
     try {
-        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity, cohorts, timeToX, feedback] = await Promise.all([
+        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity, cohorts, timeToX, feedback, experiments] = await Promise.all([
             runReport({
                 dateRanges: [dr],
                 metrics: [
@@ -110,6 +141,7 @@ export async function GET(req: NextRequest) {
             computeTimeToX().catch(() => emptyTimeToX()),
             // ── Voice of customer (in-app micro-survey responses) ─────────
             fetchFeedback().catch(() => emptyFeedback()),
+            fetchExperimentReport(cutoffDate(range), experimentFilters).catch(() => []),
         ]);
 
         const k = kpis.totals;
@@ -162,6 +194,8 @@ export async function GET(req: NextRequest) {
             cohorts,
             timeToX,
             feedback,
+            experiments,
+            experimentFilters,
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -171,6 +205,202 @@ export async function GET(req: NextRequest) {
             { status: 500 }
         );
     }
+}
+
+// ─── Experiments ───────────────────────────────────────────────────────────
+
+type ExperimentVariantAccumulator = {
+    exposures: Map<string, { at: number; segments: Record<string, string> }>;
+    events: Map<string, Map<string, number[]>>;
+    revenue: Map<string, { at: number; cents: number }[]>;
+};
+
+function eventAssignments(data: Record<string, any>): { id: string; variant: string }[] {
+    const params = data.params ?? {};
+    if (typeof params.experiment_id === "string" && typeof params.experiment_variant === "string") {
+        const ids = params.experiment_id.split(",");
+        const variants = params.experiment_variant.split(",");
+        return ids.flatMap((id: string, index: number) => variants[index] ? [{ id, variant: variants[index] }] : []);
+    }
+    if (Array.isArray(data.experiments)) {
+        return data.experiments.flatMap((row: any) =>
+            typeof row?.id === "string" && typeof row?.variant === "string"
+                ? [{ id: row.id, variant: row.variant }]
+                : []
+        );
+    }
+    if (data.experiments && typeof data.experiments === "object") {
+        return Object.entries(data.experiments).flatMap(([id, row]: [string, any]) =>
+            typeof row?.variant === "string" ? [{ id, variant: row.variant }] : []
+        );
+    }
+    return [];
+}
+
+function normalCdf(x: number): number {
+    const sign = x < 0 ? -1 : 1;
+    const z = Math.abs(x) / Math.sqrt(2);
+    const t = 1 / (1 + 0.3275911 * z);
+    const erf = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z);
+    return 0.5 * (1 + sign * erf);
+}
+
+function comparison(controlConversions: number, controlN: number, conversions: number, n: number) {
+    if (!controlN || !n) return { uplift: null, ciLow: null, ciHigh: null, pValue: null, probabilityBest: null };
+    const pc = controlConversions / controlN;
+    const pv = conversions / n;
+    const diff = pv - pc;
+    const se = Math.sqrt((pc * (1 - pc)) / controlN + (pv * (1 - pv)) / n);
+    const z = se > 0 ? diff / se : 0;
+    return {
+        uplift: pc > 0 ? pv / pc - 1 : null,
+        ciLow: diff - 1.96 * se,
+        ciHigh: diff + 1.96 * se,
+        pValue: 2 * (1 - normalCdf(Math.abs(z))),
+        probabilityBest: normalCdf(z),
+    };
+}
+
+function deviceFromUserAgent(userAgent: unknown): string {
+    const ua = String(userAgent ?? "").toLowerCase();
+    return /mobile|android|iphone|ipad/.test(ua) ? "mobile" : "desktop";
+}
+
+function browserFromUserAgent(userAgent: unknown): string {
+    const ua = String(userAgent ?? "").toLowerCase();
+    if (ua.includes("edg/")) return "edge";
+    if (ua.includes("firefox/")) return "firefox";
+    if (ua.includes("chrome/")) return "chrome";
+    if (ua.includes("safari/")) return "safari";
+    return "other";
+}
+
+async function loadExperimentEvents(cutoff: Date) {
+    const rows: QueryDocumentSnapshot[] = [];
+    let cursor: QueryDocumentSnapshot | null = null;
+    const pageSize = 5000;
+    const hardLimit = 100000;
+    while (rows.length < hardLimit) {
+        let query = adminDb.collection("analytics_events")
+            .where("timestamp", ">=", Timestamp.fromDate(cutoff))
+            .orderBy("timestamp", "asc")
+            .limit(pageSize);
+        if (cursor) query = query.startAfter(cursor);
+        const page = await query.get();
+        rows.push(...page.docs);
+        if (page.size < pageSize) return { rows, truncated: false };
+        cursor = page.docs[page.docs.length - 1];
+    }
+    return { rows, truncated: true };
+}
+
+async function fetchExperimentReport(cutoff: Date, filters: Record<string, string>) {
+    const definitions = publicExperimentDefinitions();
+    const loaded = await loadExperimentEvents(cutoff);
+
+    const byExperiment = new Map<string, Map<string, ExperimentVariantAccumulator>>();
+    for (const definition of definitions) {
+        byExperiment.set(definition.id, new Map(definition.variants.map((variant) => [variant, {
+            exposures: new Map(),
+            events: new Map(),
+            revenue: new Map(),
+        }])));
+    }
+
+    for (const doc of loaded.rows) {
+        const data = doc.data() as Record<string, any>;
+        if (data.experiment_qa === true || data.params?.experiment_qa === "true") continue;
+        const subject = String(data.visitor_id ?? data.user_id ?? data.session_id ?? doc.id);
+        const at = (data.timestamp as Timestamp | undefined)?.toMillis?.();
+        if (!at) continue;
+        const device = deviceFromUserAgent(data.user_agent);
+        const browser = browserFromUserAgent(data.user_agent);
+        const source = String(data.attribution?.utm_source ?? "direct");
+        const campaign = String(data.attribution?.utm_campaign ?? "none");
+        const locale = String(data.locale ?? "unknown");
+        const country = String(data.country ?? "unknown");
+        const auth = data.authenticated ? "authenticated" : "anonymous";
+        const plan = String(data.user_properties?.plan ?? "unknown");
+        const segments = { device, source, browser, campaign, locale, country, auth, plan };
+        for (const { id, variant } of eventAssignments(data)) {
+            const accumulator = byExperiment.get(id)?.get(variant);
+            if (!accumulator) continue;
+            const matchesFilters = Object.entries(filters).every(([key, value]) =>
+                value === "all" || segments[key] === value
+            );
+            if (data.event === "experiment_exposure" && matchesFilters && !accumulator.exposures.has(subject)) {
+                accumulator.exposures.set(subject, { at, segments });
+            }
+            const subjectEvents = accumulator.events.get(subject) ?? new Map<string, number[]>();
+            const times = subjectEvents.get(data.event) ?? [];
+            times.push(at);
+            subjectEvents.set(data.event, times);
+            if (data.event === "web_vital" && data.params?.rating === "poor") {
+                const poorVitals = subjectEvents.get("web_vital_poor") ?? [];
+                poorVitals.push(at);
+                subjectEvents.set("web_vital_poor", poorVitals);
+            }
+            accumulator.events.set(subject, subjectEvents);
+            if (data.event === "payment_succeeded") {
+                const payments = accumulator.revenue.get(subject) ?? [];
+                payments.push({ at, cents: Number(data.params?.amount_cents ?? 0) });
+                accumulator.revenue.set(subject, payments);
+            }
+        }
+    }
+
+    return definitions.map((definition) => {
+        const evaluated = definition.variants.map((variant) => {
+            const row = byExperiment.get(definition.id)!.get(variant)!;
+            const exposures = row.exposures.size;
+            const windowMs = definition.conversionWindowDays * 86400_000;
+            const converted = (goal: string) => Array.from(row.exposures.entries()).filter(([subject, exposure]) =>
+                (row.events.get(subject)?.get(goal) ?? []).some((at) => at >= exposure.at && at <= exposure.at + windowMs)
+            ).length;
+            const primaryConversions = converted(definition.primaryGoal);
+            const revenueCents = Array.from(row.exposures.entries()).reduce((sum, [subject, exposure]) =>
+                sum + (row.revenue.get(subject) ?? [])
+                    .filter((payment) => payment.at >= exposure.at && payment.at <= exposure.at + windowMs)
+                    .reduce((paymentSum, payment) => paymentSum + payment.cents, 0), 0
+            );
+            return {
+                name: variant,
+                exposures,
+                primaryConversions,
+                conversionRate: exposures > 0 ? primaryConversions / exposures : 0,
+                revenueCents,
+                revenuePerExposureCents: exposures > 0 ? revenueCents / exposures : 0,
+                goals: [definition.primaryGoal, ...definition.secondaryGoals].map((goal) => ({
+                    name: goal,
+                    conversions: converted(goal),
+                })),
+                guardrails: definition.guardrailGoals.map((goal) => ({ name: goal, occurrences: converted(goal) })),
+            };
+        });
+        const control = evaluated.find((row) => row.name === "control") ?? evaluated[0];
+        const variants = evaluated.map((row) => ({
+            ...row,
+            comparison: row.name === control.name
+                ? { uplift: 0, ciLow: 0, ciHigh: 0, pValue: 1, probabilityBest: 0.5 }
+                : comparison(control.primaryConversions, control.exposures, row.primaryConversions, row.exposures),
+        }));
+        const totalExposures = variants.reduce((sum, row) => sum + row.exposures, 0);
+        const expected = definition.variantWeights;
+        const chiSquare = totalExposures > 0 ? variants.reduce((sum, row) => {
+            const expectedCount = totalExposures * (Number(expected[row.name] ?? 0) / Object.values(expected).reduce((a, b) => a + Number(b), 0));
+            return expectedCount > 0 ? sum + ((row.exposures - expectedCount) ** 2) / expectedCount : sum;
+        }, 0) : 0;
+        const srmPValue = variants.length === 2 ? 2 * (1 - normalCdf(Math.sqrt(chiSquare))) : null;
+        const runtimeDays = definition.startedAt ? (Date.now() - new Date(definition.startedAt).getTime()) / 86400_000 : 0;
+        const alerts = [
+            ...(srmPValue !== null && srmPValue < 0.01 ? ["Sample ratio mismatch detected"] : []),
+            ...(loaded.truncated ? ["Event scan reached the 100,000 row safety limit"] : []),
+            ...(definition.status === "running" && totalExposures === 0 ? ["Running experiment has no exposures"] : []),
+            ...(variants.some((row) => row.exposures < definition.minimumSamplePerVariant) ? ["Minimum sample not reached"] : []),
+            ...(definition.status === "running" && runtimeDays < definition.minimumRuntimeDays ? ["Minimum runtime not reached"] : []),
+        ];
+        return { ...definition, variants, srmPValue, runtimeDays, alerts, scannedEvents: loaded.rows.length };
+    });
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

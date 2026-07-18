@@ -11,7 +11,12 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { track, identifyUser, getFirstTouchAttribution } from "@/lib/analytics";
+import {
+  track,
+  identifyUser,
+  getFirstTouchAttribution,
+  saveExperimentAssignmentsToUserDoc,
+} from "@/lib/analytics";
 
 /** Fire-and-forget: stamp the new user doc with the first-touch attribution
  *  cookie captured by AnalyticsProvider. Silent no-op if no attribution was
@@ -358,6 +363,7 @@ export function RegisterForm({
       if (uid) {
         identifyUser(uid, { plan: "free_trial", credits: 0, onboarding_step: 1, signup_method: "email" });
         void saveFirstTouchToUserDoc(uid);
+        void saveExperimentAssignmentsToUserDoc(uid);
       }
       window.location.href = "/dashboard";
     } catch (err: any) {
@@ -411,6 +417,7 @@ export function RegisterForm({
           track({ name: "signup_success", params: { method: "google" } }, { userId: user.uid });
           identifyUser(user.uid, { plan: "free_trial", credits: 0, onboarding_step: 1, signup_method: "google" });
           void saveFirstTouchToUserDoc(user.uid);
+          void saveExperimentAssignmentsToUserDoc(user.uid);
           router.push('/dashboard');
         }
       } catch (err: any) {

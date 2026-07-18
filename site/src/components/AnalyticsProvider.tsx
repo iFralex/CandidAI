@@ -16,6 +16,10 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { track } from "@/lib/analytics";
+import {
+    getActiveExperimentContext,
+    markExperimentExposed,
+} from "@/lib/experiments-client";
 
 // Errors that come from third-party scripts or browser quirks — not our code.
 // Filtering them keeps `app_error` actionable instead of being 90% noise.
@@ -188,8 +192,25 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
         if (discountCode) {
             track({ name: "discount_code_detected", params: { code: discountCode } });
         }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // intentionally run once
+
+    // Re-evaluate exposure on every App Router navigation. This covers users
+    // who reach an experiment through a client-side Link without a full reload.
+    useEffect(() => {
+        const newlyExposed = markExperimentExposed(getActiveExperimentContext(pathname));
+        for (const assignment of newlyExposed) {
+            track({
+                name: "experiment_exposure",
+                params: {
+                    experiment_id: assignment.id,
+                    experiment_variant: assignment.variant,
+                    experiment_source: assignment.source,
+                },
+            });
+        }
+    }, [pathname]);
 
     // ── Page view tracking on route change ────────────────────────────────────
     useEffect(() => {
