@@ -99,7 +99,7 @@ export function HeroVideo() { // Assicurati che 'videos' sia passato come prop o
 
             // Verifica che 'videos' sia disponibile
             if (videos && videos.length > 1) {
-                if (width >= 1500) {
+                if (width >= 1024) {
                     setVideo(videos[1]);
                 } else {
                     setVideo(videos[0]);
@@ -108,6 +108,7 @@ export function HeroVideo() { // Assicurati che 'videos' sia passato come prop o
         };
 
         checkLayout();
+        window.addEventListener("resize", checkLayout);
 
         const handler = () => setIsFullscreen(!!document.fullscreenElement);
         document.addEventListener("fullscreenchange", handler);
@@ -289,7 +290,7 @@ const HeroSection = () => {
                             className="whitespace-normal inline-flex items-center gap-2 bg-violet-500/10 border border-violet-500/30 text-violet-300 text-xs font-semibold tracking-widest uppercase px-4 py-2 rounded-full backdrop-blur-sm"
                         >
                             <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                            Revolut ionary AI-Powered Recruitment
+                            AI-Powered Recruiter Outreach
                         </Badge>
                     </div>
 
@@ -353,7 +354,7 @@ const HeroSection = () => {
                         {[
                             "No credit card required",
                             "One free test email",
-                            "Setup in 2 minutes",
+                            "Create your account in 2 minutes",
                         ].map((item) => (
                             <div
                                 key={item}
@@ -405,13 +406,194 @@ const HeroSection = () => {
     );
 };
 
+// Product-led hero used by the redesign experiment. It deliberately avoids
+// stock imagery: the visual explains the actual profile → recruiter → email
+// workflow before asking the visitor to register.
+const ProductLedHero = () => {
+    return (
+        <section className="relative overflow-hidden bg-[#080510] px-6 pb-20 pt-28 lg:px-8 lg:pb-28 lg:pt-36">
+            <AnimatedBackground />
+            <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-[0.9fr_1.1fr]">
+                <div>
+                    <Badge className="mb-7 max-w-full whitespace-normal border-violet-400/25 bg-violet-400/10 px-4 py-2 text-xs font-semibold uppercase leading-5 tracking-[0.15em] text-violet-200">
+                        <Target className="mr-2 h-3.5 w-3.5" />
+                        Direct recruiter outreach, personalized by AI
+                    </Badge>
+                    <h1 className="max-w-3xl break-words text-[2.75rem] font-black leading-[0.96] tracking-[-0.04em] text-white sm:text-6xl xl:text-7xl">
+                        Skip the application pile.
+                        <span className="mt-3 block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent">
+                            Reach the right recruiter.
+                        </span>
+                    </h1>
+                    <p className="mt-7 max-w-xl text-lg leading-8 text-gray-300">
+                        CandidAI analyzes your experience, identifies relevant recruiters at your target companies, and drafts outreach grounded in your profile and their business.
+                    </p>
+                    <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+                        <Link href="/register">
+                            <Button
+                                size="lg"
+                                className="h-14 w-full rounded-xl px-7 text-base sm:w-auto"
+                                icon={<ArrowRight className="h-4 w-4" />}
+                                onClick={() => track({ name: "landing_cta_click", params: { button_label: "Generate my free email", section: "redesign_hero" } })}
+                            >
+                                Generate my free email
+                            </Button>
+                        </Link>
+                        <a href="#email-example" className="inline-flex h-14 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-7 text-base font-semibold text-white transition hover:bg-white/10">
+                            See an example <ChevronDown className="h-4 w-4" />
+                        </a>
+                    </div>
+                    <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3 text-sm text-gray-400">
+                        {["No credit card", "One free test email", "Review before sending"].map((item) => (
+                            <span key={item} className="flex items-center gap-2">
+                                <Check className="h-4 w-4 text-emerald-400" /> {item}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="relative">
+                    <div className="absolute -inset-10 bg-violet-600/15 blur-3xl" />
+                    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#100d18]/95 shadow-2xl shadow-violet-950/50">
+                        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+                            <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/20"><Sparkles className="h-4 w-4 text-violet-300" /></div>
+                                Outreach workspace
+                            </div>
+                            <Badge className="border-emerald-400/20 bg-emerald-400/10 text-emerald-300">Ready to review</Badge>
+                        </div>
+                        <div className="grid gap-4 p-5 sm:p-6">
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                {[
+                                    { label: "Your profile", value: "Product Designer", icon: <Briefcase className="h-4 w-4" /> },
+                                    { label: "Target company", value: "Northstar Labs", icon: <Target className="h-4 w-4" /> },
+                                    { label: "Recruiter match", value: "Talent Partner", icon: <Users className="h-4 w-4" /> },
+                                ].map((item) => (
+                                    <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.035] p-4">
+                                        <div className="mb-3 text-violet-300">{item.icon}</div>
+                                        <p className="text-xs text-gray-500">{item.label}</p>
+                                        <p className="mt-1 text-sm font-semibold text-white">{item.value}</p>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="rounded-2xl border border-white/10 bg-black/25 p-5 sm:p-6">
+                                <div className="mb-5 flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+                                    <div>
+                                        <p className="text-xs uppercase tracking-wider text-gray-500">Subject</p>
+                                        <p className="mt-1 text-sm font-medium text-white">Product designer inspired by Northstar&apos;s new workspace</p>
+                                    </div>
+                                    <Mail className="h-5 w-5 shrink-0 text-violet-300" />
+                                </div>
+                                <div className="space-y-3 text-sm leading-6 text-gray-300">
+                                    <p>Hi Maya,</p>
+                                    <p>I enjoyed Northstar&apos;s recent case study on collaborative planning—especially the decision to validate workflows with distributed teams.</p>
+                                    <p className="text-gray-500">CandidAI connects this company context with your relevant experience and a clear reason to talk.</p>
+                                </div>
+                                <div className="mt-5 flex items-center justify-between rounded-xl bg-violet-500/10 px-4 py-3 text-xs text-violet-200">
+                                    <span className="flex items-center gap-2"><Brain className="h-4 w-4" /> Personalized from profile + company research</span>
+                                    <Check className="h-4 w-4 text-emerald-400" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
+const RedesignTrustStrip = () => (
+    <section className="border-y border-white/10 bg-white/[0.025] px-6 py-7 lg:px-8">
+        <div className="mx-auto grid max-w-6xl gap-5 text-center text-sm text-gray-300 sm:grid-cols-2 lg:grid-cols-4">
+            {["One free test email", "No recurring subscription", "Edit every message", "Your email client sends it"].map((item) => (
+                <div key={item} className="flex items-center justify-center gap-2"><Check className="h-4 w-4 text-emerald-400" />{item}</div>
+            ))}
+        </div>
+    </section>
+);
+
+const RedesignCampaignVideo = () => (
+    <section className="relative overflow-hidden px-6 py-24 lg:px-8">
+        <div className="absolute inset-x-0 top-1/2 h-96 -translate-y-1/2 bg-violet-600/10 blur-3xl" />
+        <div className="relative mx-auto max-w-6xl">
+            <div className="mx-auto mb-12 max-w-3xl text-center">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-300">Your next opportunity starts with being seen</p>
+                <h2 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
+                    You are more than another application in the queue.
+                </h2>
+                <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-400">
+                    Discover a more direct and personal way to introduce your experience to the people shaping your target companies.
+                </p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-2 shadow-2xl shadow-violet-950/40 sm:p-3">
+                <HeroVideo />
+            </div>
+        </div>
+    </section>
+);
+
+const RedesignBenefits = () => {
+    const benefits = [
+        { icon: <Target className="h-6 w-6" />, title: "Find a relevant contact", text: "Go beyond generic application forms and identify recruiters aligned with your role and target company." },
+        { icon: <Brain className="h-6 w-6" />, title: "Make the message specific", text: "Connect your experience with company context so the email has a credible reason to exist." },
+        { icon: <Eye className="h-6 w-6" />, title: "Stay in control", text: "Review and edit the recruiter, subject line, and complete message before anything is sent." },
+    ];
+    return (
+        <section id="features" className="px-6 py-24 lg:px-8">
+            <div className="mx-auto max-w-6xl">
+                <div className="max-w-2xl">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-300">Why direct outreach</p>
+                    <h2 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">A focused path from profile to conversation.</h2>
+                </div>
+                <div className="mt-12 grid gap-5 md:grid-cols-3">
+                    {benefits.map((benefit) => (
+                        <div key={benefit.title} className="rounded-2xl border border-white/10 bg-white/[0.035] p-7">
+                            <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">{benefit.icon}</div>
+                            <h3 className="text-xl font-semibold text-white">{benefit.title}</h3>
+                            <p className="mt-3 leading-7 text-gray-400">{benefit.text}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+const RedesignWorkflow = () => {
+    const steps = [
+        { number: "01", title: "Share your profile", text: "Add your LinkedIn profile and the companies you want to reach." },
+        { number: "02", title: "CandidAI researches", text: "We analyze your background, company context, and relevant recruiter matches." },
+        { number: "03", title: "Review and reach out", text: "Edit the personalized email, then open it in your preferred email client." },
+    ];
+    return (
+        <section id="process" className="bg-white/[0.02] px-6 py-24 lg:px-8">
+            <div className="mx-auto max-w-6xl">
+                <div className="text-center">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-300">How it works</p>
+                    <h2 className="mt-4 text-4xl font-bold text-white md:text-5xl">Three steps. You approve the result.</h2>
+                </div>
+                <div className="mt-14 grid gap-5 md:grid-cols-3">
+                    {steps.map((step) => (
+                        <div key={step.number} className="relative rounded-2xl border border-white/10 bg-[#0d0a13] p-7">
+                            <span className="text-sm font-bold text-violet-300">{step.number}</span>
+                            <h3 className="mt-7 text-xl font-semibold text-white">{step.title}</h3>
+                            <p className="mt-3 leading-7 text-gray-400">{step.text}</p>
+                        </div>
+                    ))}
+                </div>
+                <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-gray-500">Each email is usually generated within a few minutes. During peak periods, processing may take up to 24 hours.</p>
+            </div>
+        </section>
+    );
+};
+
 // Stats Section Component
 const StatsSection = () => {
     const stats = [
         { number: "10,000+", label: "Emails Generated", icon: <Mail className="w-8 h-8" /> },
         { number: "87%", label: "Response Rate", icon: <TrendingUp className="w-8 h-8" /> },
         { number: "700+", label: "Happy Job Seekers", icon: <Users className="w-8 h-8" /> },
-        { number: "24hrs", label: "Average Processing", icon: <Clock className="w-8 h-8" /> }
+        { number: "Minutes", label: "Typical Email Generation", icon: <Clock className="w-8 h-8" /> }
     ];
 
     return (
@@ -717,7 +899,7 @@ const JobMarketCrisisSections = () => {
                                         What Actually Works?
                                     </p>
                                     <p className="text-gray-300">
-                                        Direct contact with recruiters bypasses the competition entirely. But crafting a single personalized outreach email takes 1-2 hours, making it impossible to scale. <span className="text-violet-400 font-semibold">Until now.</span>
+                                        Direct recruiter outreach helps you step outside the standard application queue. Researching the right contact and writing a relevant message manually can take 1–2 hours per company. <span className="text-violet-400 font-semibold">CandidAI helps you scale that work.</span>
                                     </p>
                                 </div>
                             </div>
@@ -846,12 +1028,12 @@ const FeaturesSection = () => {
         {
             icon: <Mail className="w-8 h-8" />,
             title: "One-Click Sending",
-            description: "Review and send your personalized emails directly from your pc with just one click, depending on your operating system and your email client."
+            description: "Review, edit, and open each personalized email in your preferred desktop email client, ready to send."
         },
         {
             icon: <Calendar className="w-8 h-8" />,
             title: "Follow-up Automation",
-            description: "AI-powered follow-up sequences with perfect timing notifications to maximize your response rates."
+            description: "Get AI-written follow-up suggestions and timely reminders designed to improve your chances of receiving a reply."
         },
     ];
 
@@ -907,7 +1089,7 @@ const ProcessSection = () => {
         {
             step: "04",
             title: "AI Processing",
-            description: "Our AI researches companies, analyzes recruiters, and generates personalized emails. Takes 24hrs maximum.",
+            description: "Our AI researches companies, analyzes recruiters, and usually generates each personalized email within a few minutes. During peak periods, processing may take up to 24 hours.",
             icon: <Zap className="w-6 h-6" />
         },
         {
@@ -919,7 +1101,7 @@ const ProcessSection = () => {
         {
             step: "06",
             title: "Follow-up & Track",
-            description: "Automatic follow-up suggestions with perfect timing, plus detailed analytics on all your outreach.",
+            description: "Get follow-up suggestions, timely reminders, and analytics for your outreach.",
             icon: <BarChart3 className="w-6 h-6" />
         }
     ];
@@ -976,7 +1158,7 @@ const EmailExamplesSection = () => {
             subject: "Passionate Frontend Developer - Excited About TechCorp's Innovation",
             preview: "Hi Sarah,\n\nI came across TechCorp's recent blog post about micro-frontend architecture and was genuinely impressed by your team's innovative approach...\n\nAs a Senior Frontend Developer with 5 years of experience in React and TypeScript, I've implemented similar solutions at my current role...",
             recruiter: "Sarah Johnson",
-            responseRate: "92%"
+            matchScore: "92%"
         },
         {
             company: "StartupXYZ",
@@ -984,7 +1166,7 @@ const EmailExamplesSection = () => {
             subject: "Product Manager with B2B SaaS Experience - StartupXYZ Opportunity",
             preview: "Hi Michael,\n\nStartupXYZ's recent Series B announcement caught my attention, particularly your expansion into the enterprise market...\n\nWith 4 years of B2B SaaS product management experience, I've successfully launched products that align perfectly with your roadmap...",
             recruiter: "Michael Chen",
-            responseRate: "89%"
+            matchScore: "89%"
         },
         {
             company: "FinanceFlow",
@@ -992,19 +1174,19 @@ const EmailExamplesSection = () => {
             subject: "ML Engineer Excited About FinanceFlow's AI-Driven Solutions",
             preview: "Hi Emma,\n\nI was fascinated by FinanceFlow's recent presentation at FinTech Summit about using ML for fraud detection...\n\nAs a Data Scientist with expertise in anomaly detection and financial modeling, I've developed similar systems...",
             recruiter: "Emma Rodriguez",
-            responseRate: "94%"
+            matchScore: "94%"
         }
     ];
 
     return (
-        <section className="relative py-24 px-6 lg:px-8">
+        <section id="email-example" className="relative py-24 px-6 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                         See AI-Generated Emails in Action
                     </h2>
                     <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                        Real examples of personalized emails that got responses. Each one crafted specifically for the recruiter and company.
+                        Representative examples of how CandidAI personalizes outreach for a recruiter, company, and role.
                     </p>
                 </div>
 
@@ -1020,7 +1202,7 @@ const EmailExamplesSection = () => {
                             >
                                 <div className="flex items-center justify-between mb-3">
                                     <h3 className="text-white font-semibold">{example.company}</h3>
-                                    <Badge variant="success">{example.responseRate} response</Badge>
+                                    <Badge variant="success">{example.matchScore} AI match</Badge>
                                 </div>
                                 <p className="text-gray-400 text-sm mb-2">{example.role}</p>
                                 <p className="text-gray-500 text-xs">To: {example.recruiter}</p>
@@ -1048,7 +1230,7 @@ const EmailExamplesSection = () => {
                                         <Mail className="w-4 h-4 text-violet-400" />
                                         <span className="text-sm text-gray-400">To: {examples[selectedExample].recruiter}</span>
                                     </div>
-                                    <Badge variant="success">{examples[selectedExample].responseRate}</Badge>
+                                    <Badge variant="success">{examples[selectedExample].matchScore} AI match</Badge>
                                 </div>
 
                                 <div className="text-gray-300 leading-relaxed whitespace-pre-line">
@@ -1115,7 +1297,7 @@ const PricingSection = () => {
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="text-xl text-gray-400 max-w-2xl mx-auto"
                     >
-                        Pay once, use until finished. No subscriptions, no recurring charges. Start with a free test!
+                        Pay once and use your included capacity when you need it. No subscription or recurring charge. Start with one free test email.
                     </motion.p>
                 </div>
 
@@ -1239,7 +1421,7 @@ const FAQSection = () => {
         },
         {
             question: "How long does the AI processing take?",
-            answer: "Typically 24 hours for most requests. During peak times, it may take up to 7 days. Premium plans (Pro and Ultra) get priority processing. You'll receive email updates throughout the process."
+            answer: "Each email is usually generated within a few minutes. During peak periods, processing may take up to 24 hours. Premium plans (Pro and Ultra) receive priority processing, and you'll receive email updates throughout the process."
         },
         {
             question: "Can I edit the generated emails?",
@@ -1247,7 +1429,7 @@ const FAQSection = () => {
         },
         {
             question: "What if I'm not satisfied with the results?",
-            answer: "We're confident in our AI's quality, but if you're not satisfied within the first 7 days, we offer a full refund. Our success rate speaks for itself with 87% average response rates."
+            answer: "If you're not satisfied within the first 7 days, contact our support team to request a refund under the applicable refund terms."
         },
         {
             question: "Do you provide the recruiter contact information?",
@@ -1324,8 +1506,8 @@ const CTASection = () => {
                         Ready to Transform Your Job Search?
                     </h2>
                     <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-                        Join thousands of successful job seekers who landed their dream roles with AI-powered personalization.
-                        Start with a free test email today.
+                        Reach relevant recruiters with personalized outreach based on your experience and target companies.
+                        Start with one free test email today.
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-xl mx-auto mb-8">
@@ -1356,7 +1538,7 @@ const CTASection = () => {
                         </div>
                         <div className="flex items-center space-x-2">
                             <Clock className="w-4 h-4 text-green-400" />
-                            <span>Setup in 5 minutes</span>
+                            <span>Create your account in 2 minutes</span>
                         </div>
                     </div>
                 </Card>
@@ -1381,7 +1563,7 @@ const Footer = () => {
                             </span>
                         </div>
                         <p className="text-gray-400 max-w-md">
-                            Transform your job search with AI-powered personalization. Land your dream job faster with emails that actually get responses.
+                            Make recruiter outreach more focused with AI-powered research and personalized emails you can review before sending.
                         </p>
                     </div>
 
@@ -1427,6 +1609,27 @@ const Footer = () => {
 // Main Landing Page Component
 const LandingPage = ({ experiments = {} }: { experiments?: ExperimentAssignments }) => {
     const landingVariant = experiments.landing_redesign_v1 ?? "control";
+    if (landingVariant === "redesign") {
+        return (
+            <div
+                className="min-h-screen bg-black text-white"
+                data-experiment="landing_redesign_v1"
+                data-variant="redesign"
+            >
+                <ProductLedHero />
+                <RedesignTrustStrip />
+                <RedesignCampaignVideo />
+                <RedesignBenefits />
+                <EmailExamplesSection />
+                <RedesignWorkflow />
+                <ReviewsSection />
+                <PricingSection />
+                <FAQSection />
+                <CTASection />
+                <Footer />
+            </div>
+        );
+    }
     return (
         <div
             className="min-h-screen bg-black text-white"

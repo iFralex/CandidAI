@@ -6,7 +6,7 @@ import {
   parseExperimentAssignments,
 } from "@/lib/experiments";
 
-export const metadata = { title: "Land Your Dream Job with AI" };
+export const metadata = { title: "Reach the Right Recruiters with Personalized AI Outreach" };
 
 export default async function Home() {
   const requestHeaders = await headers();
