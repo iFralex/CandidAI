@@ -712,13 +712,14 @@ Consider:
 - Are the topics covered relevant to what someone in this position would care about?
 
 IMPORTANT:
-- Respond ONLY with a single integer from 1 to 10.
-- Do NOT add explanations or any additional text.
+- Think briefly: in ONE short sentence, justify the rating.
+- Then, on a NEW final line, output ONLY the integer (1-10) and nothing else on that line.
 """
 
         try:
             result = ai_chat(ai_prompt)
-            score = int(result.strip())
+            # reason-then-answer: the number is on the last line, so take the last integer
+            score = int(re.findall(r'-?\d+', result)[-1])
             logging.info(link, score, texts)
             return score >= 6
         except Exception:
@@ -2200,6 +2201,12 @@ Instructions:
 
 Example output: [8, 3, 5, 7, 9, 1, 2, ...]
 
+## CRITICAL SCORING DISCIPLINE (this overrides any tendency to be generous):
+- Every score MUST be an integer from 1 to 10. NEVER use 0 and NEVER use a value above 10.
+- These numbers RANK the articles for selection: the best few must clearly stand out. Use the FULL 1-10 range and do NOT cluster scores at the top — most articles must NOT be a 9 or 10.
+- Anchor the scale: give 9-10 to only the 1-2 most strategically valuable articles; give 1-3 to clearly weak or irrelevant ones; spread the remaining articles across 4-8.
+- Ties are allowed (there are more articles than score values) but keep them the exception — differentiate wherever you reasonably can.
+
 **Available Articles:**
 {article_list_str}"""
 
@@ -3293,9 +3300,9 @@ def get_about_page_link_with_google(company):
     
     ## Instructions
     - Evaluate each search result carefully
-    - Respond with ONLY a single number (1, 2, 3, or 0)
-    - Do not provide any explanation or additional text
-    
+    - Think briefly: in ONE short sentence, note which result best matches the criteria and why (or why none qualifies).
+    - Then, on a NEW final line, output ONLY the number (1, 2, 3, or 0) and nothing else on that line.
+
     ## Priority Ranking (from highest to lowest)
     1. Official company About/About Us/Our Company/Who We Are page
     2. Official company Team/Leadership/Our Story page
@@ -3315,11 +3322,12 @@ def get_about_page_link_with_google(company):
     
     try:
         deepseek_response = ai_chat(prompt).strip()
-        selected_index = int(deepseek_response)
+        # reason-then-answer: the number is on the last line, so take the last integer
+        selected_index = int(re.findall(r'-?\d+', deepseek_response)[-1])
     except Exception as e:
         logging.info(f"Errore chiamata DeepSeek o conversione numero: {e}")
         return None
-    
+
     if 1 <= selected_index <= len(results):
         return results[selected_index - 1]["link"]
     else:
@@ -4147,10 +4155,10 @@ def get_tech_recruiter_emails(company_name: str):
         (e.g., for common staff such as HR, administration, etc.).
 
         ## Instructions:
-        - Respond with ONLY a single number: {choices_str}
-        - Do NOT include explanations or additional text.
         - Prefer the **main corporate domain** (e.g., 'company.com') over support, regional, or campaign-specific domains.
         - Choose the domain that is most likely used by regular employees for work email addresses.
+        - Think briefly: in ONE short sentence, note which domain is the main corporate one and why.
+        - Then, on a NEW final line, output ONLY the number ({choices_str}) and nothing else on that line.
 
         ## Domains:
         """
@@ -4160,7 +4168,8 @@ def get_tech_recruiter_emails(company_name: str):
 
         try:
             deepseek_response = ai_chat(prompt).strip()
-            selected_index = int(deepseek_response)
+            # reason-then-answer: the number is on the last line, so take the last integer
+            selected_index = int(re.findall(r'-?\d+', deepseek_response)[-1])
         except Exception as e:
             logging.info(f"Errore chiamata DeepSeek o conversione numero: {e}")
             return None

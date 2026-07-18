@@ -182,25 +182,20 @@ COMPANY NEWS/ARTICLES:
 ------
 
 CRITICAL INSTRUCTIONS:
-1. **FIND COMMON GROUND (OR CREATE IT)**: Analyze the recruiter's background deeply to identify shared elements.
-   - Primary targets: Same university, previous companies, mutual connections, shared professional groups.
-   - **Fallback strategy**: If no direct common ground exists, identify a specific, non-generic aspect of their career you genuinely admire (e.g., an article they wrote, a talk they gave, their transition from one industry to another).
+Write a cold email a busy recruiter would actually reply to. The candidate's FULL CV is attached, so the email is the HOOK, not the résumé — do not try to convey the whole profile; make them want to open the CV and reply. Four short beats, natural paragraphs, no headers.
+1. GREETING + HOOK (1-2 sentences): "Hi <recruiter first name>," then the hook.
+   - Prefer ONE specific, genuine common ground with this recruiter (a shared school, a company they worked at, a specific topic/cause they engage with).
+   - If there is no strong, specific common ground, do NOT force a weak one (never "you're based in Europe" or a vague "interest in education"): open instead with ONE specific recent development/product of the company, connected to the candidate.
+   - No praise of the recruiter; never start a sentence with "Your".
+2. ONE FLAGSHIP SELL, CHOSEN FOR RELEVANCE (2 sentences): the candidate's single achievement MOST RELEVANT to THIS company's domain — chosen by relevance, not raw impressiveness. Anchor it to ONE concrete result or number.
+3. ONE RANGE SIGNAL (optional, at most ONE short clause — NOT a sentence, NOT a list): only if there is a genuinely relevant second dimension, you may append a single clause hinting at breadth, e.g. "...alongside my AI engineering work" or "...on top of full-stack product delivery". This signals versatility so the candidate doesn't read as one-note. NEVER expand it into a second full sell, a second project write-up, or a skills/tools/degree list. If in doubt, omit it. You may also nod once to the attached CV for the full picture.
+4. WHY THIS COMPANY (1 sentence): connect the flagship to a real product, team, or problem of THIS company.
+5. THE ASK (1 sentence): a 15-minute conversation to explore roles/fit in a named concrete area, framed around what the candidate could do for them. Never "contribute to your recruiting needs", "seeking interview", or generic "opportunities/advice/perspective".
 
-2. **LEAD WITH A STRATEGIC SUBJECT LINE**: Create a subject line that is both professional and intriguing, ideally hinting at the common ground or a key value proposition. *Example: "Fellow [University Name] Alum & Data Scientist" or "Question about your work at [Previous Company]"*.
-
-3. **LEAD WITH CONNECTION**: Start the email's first sentence by mentioning the most compelling commonality naturally. Avoid clichés like "I hope this email finds you well."
-
-4. **CREATE A HYPOTHETICAL BRIDGE**: Use the articles/news to demonstrate deep interest. **Don't just mention the news; connect it to a potential challenge or opportunity for the company.** *Example: "I read about your recent launch of Product X. I imagine that optimizing user engagement is a key priority. In my previous role at Y, I increased engagement by 20% by..."* This shows proactive problem-solving.
-
-5. **FRAME YOURSELF AS A SOLUTION**: Connect your most relevant experience directly to the hypothesis you just created or to the recruiter's specific focus area. Show how you can deliver value to *their* team or *their* specific hiring goals.
-
-6. **BE SPECIFIC**: Avoid generic phrases. Use concrete examples and specific metrics from your background and your research on the company and recruiter.
-
-7. **TONE**: Professional yet warm and human. Write like you're reaching out to a potential peer, not begging for attention.
-
-8. **LENGTH**: 150-250 words maximum. Respect their time.
-
-9. **LOW-FRICTION CALL TO ACTION**: End with a clear, confident request for a **brief, 15-minute conversation** to explore potential alignment.
+LENGTH 110-150 words. Sober, confident-peer tone. No superlatives, no exclamation marks.
+ABSOLUTE BAN — the email must contain NONE of these words: inspiring, excited, thrilled, truly, passionate, passion, love, amazing, incredible, impressed, impressive, admire, eager, keen, glad, resonates, honored, deeply invested, intrigued. Re-read the draft and remove any before finalizing.
+Only claim common ground supportable from the recruiter data.
+SUBJECT: max 8 words, concrete, names the fit. No "Let's connect", no "seeking interview", no colon-stuffed clauses.
 
 OUTPUT FORMAT: JSON with subject, body, and key_points fields
 
