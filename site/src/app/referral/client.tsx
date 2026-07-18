@@ -232,6 +232,88 @@ const EarningsSimulatorSection = () => {
     );
 };
 
+const KIT_PHYSICAL_ITEMS = [
+    { icon: Sticker, name: "50 stickers, 5 designs", description: "Bulletin-board size and laptop/bottle size, each with a tracked QR." },
+    { icon: QrCode, name: "50 personal QR cards", description: "Your link, pocket-sized. Hand them out or leave them behind." },
+    { icon: Newspaper, name: "15 fake job postings", description: "Pre-cut tear-off tabs, straight out of a '90s bulletin board." },
+    { icon: Mail, name: "30 rejection letters", description: "Fake, but painfully realistic — plus a few 'special' ones." },
+    { icon: StickyNote, name: "Post-it pad", description: "Targeted messages, made to be left where no one expects them." },
+    { icon: GraduationCap, name: "10 'Ignored Applications' diplomas", description: "Rolled with ribbon, indistinguishable from the real thing." },
+    { icon: Presentation, name: "Foldable A3 poster", description: "Built for career days." },
+    { icon: Pin, name: "Removable tape + adhesive putty", description: "Hang anything, anywhere, without leaving a trace." },
+    { icon: Sparkle, name: "1 rare holographic sticker", description: "Only for those who actually open the kit." },
+];
+
+const KIT_DIGITAL_ITEMS = [
+    { icon: Crown, name: "Free Pro plan", description: "For as long as you're an active ambassador." },
+    { icon: Archive, name: "Print-ready archive", description: "Every material, reprintable on your own — including the large-format stunt files." },
+    { icon: Share2, name: "Social assets", description: "Story templates, memes, and copy ready to post." },
+    { icon: Users, name: "Private community", description: "The ambassador-only channel." },
+];
+
+const KitSection = () => {
+    return (
+        <section className="relative py-24 px-6 lg:px-8">
+            <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-4">
+                    <Badge className="mb-6">Free — you only pay shipping (calculated at checkout, by country)</Badge>
+                </div>
+                <div className="text-center mb-16">
+                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                        The Ambassador Kit
+                    </h2>
+                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                        Everything you need to make noise on campus. Nine physical pieces, four digital perks.
+                    </p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6 mb-10">
+                    {KIT_PHYSICAL_ITEMS.map((item, index) => {
+                        const Icon = item.icon;
+                        const isRare = item.name.includes("holographic");
+                        return (
+                            <motion.div
+                                key={item.name}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.4, delay: index * 0.05 }}
+                            >
+                                <Card className="p-6 h-full relative" gradient={isRare}>
+                                    <Icon className="w-7 h-7 text-violet-400 mb-3" />
+                                    <h3 className="text-white font-semibold mb-1">{item.name}</h3>
+                                    <p className="text-gray-400 text-sm">{item.description}</p>
+                                    {isRare && (
+                                        <p className={`${caveat.className} text-violet-300 text-lg mt-3 -rotate-2`}>
+                                            psst — this one's real 👀
+                                        </p>
+                                    )}
+                                </Card>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+
+                <Card className="p-8" gradient>
+                    <h3 className="text-xl font-bold text-white mb-2">Plus, unlocked digitally via a QR in the kit</h3>
+                    <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6">
+                        {KIT_DIGITAL_ITEMS.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <div key={item.name}>
+                                    <Icon className="w-6 h-6 text-violet-400 mb-2" />
+                                    <div className="text-white font-medium text-sm mb-1">{item.name}</div>
+                                    <div className="text-gray-500 text-xs">{item.description}</div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </Card>
+            </div>
+        </section>
+    );
+};
+
 // ---------- Page ----------
 
 export default function ReferralPage() {
@@ -241,6 +323,7 @@ export default function ReferralPage() {
             <HeroSection />
             <TiersSection />
             <EarningsSimulatorSection />
+            <KitSection />
         </div>
     );
 }
