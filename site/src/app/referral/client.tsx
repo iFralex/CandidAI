@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Caveat } from "next/font/google";
 import {
     Sparkles, TrendingUp, Zap, Rocket, Crown, ArrowRight, Check, X,
@@ -136,12 +136,29 @@ const EarningsSimulatorSection = () => {
     const paidPlans = plansInfo.filter((p) => p.id !== "free_trial");
     const [planId, setPlanId] = useState("pro");
     const [count, setCount] = useState(20);
+    const simulatorSectionRef = useRef<HTMLElement>(null);
 
     const priceCents = computePriceInCents("plan", planId);
     const result = useMemo(() => computeReferralEarnings(count, priceCents), [count, priceCents]);
 
+    useEffect(() => {
+        const el = simulatorSectionRef.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    track({ name: "referral_simulator_section_view", params: {} });
+                    observer.disconnect();
+                }
+            },
+            { threshold: 0.3 }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
     return (
-        <section className="relative py-24 px-6 lg:px-8 bg-black">
+        <section ref={simulatorSectionRef} className="relative py-24 px-6 lg:px-8 bg-black">
             <div className="max-w-5xl mx-auto">
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
@@ -162,7 +179,12 @@ const EarningsSimulatorSection = () => {
                                 {paidPlans.map((plan) => (
                                     <button
                                         key={plan.id}
-                                        onClick={() => setPlanId(plan.id)}
+                                        onClick={() => {
+                                            if (planId !== plan.id) {
+                                                track({ name: "referral_simulator_plan_select", params: { plan_id: plan.id, plan_name: plan.name, plan_price: plan.price } });
+                                            }
+                                            setPlanId(plan.id);
+                                        }}
                                         className={`flex-1 rounded-xl px-4 py-3 text-sm font-semibold transition-all border ${
                                             planId === plan.id
                                                 ? "bg-violet-500/20 border-violet-500 text-white"
@@ -202,7 +224,12 @@ const EarningsSimulatorSection = () => {
                                 {SIMULATOR_PRESETS.map((preset) => (
                                     <button
                                         key={preset}
-                                        onClick={() => setCount(preset)}
+                                        onClick={() => {
+                                            if (count !== preset) {
+                                                track({ name: "referral_simulator_preset_select", params: { count: preset } });
+                                            }
+                                            setCount(preset);
+                                        }}
                                         className="text-xs px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-colors"
                                     >
                                         {preset} referrals
@@ -389,7 +416,12 @@ const PlaybookSection = () => {
                                     className={`p-4 cursor-pointer transition-all duration-300 flex items-center gap-3 ${
                                         selected === index ? "ring-2 ring-violet-500 bg-white/10" : ""
                                     }`}
-                                    onClick={() => setSelected(index)}
+                                    onClick={() => {
+                                        if (selected !== index) {
+                                            track({ name: "referral_playbook_select", params: { title: item.title } });
+                                        }
+                                        setSelected(index);
+                                    }}
                                 >
                                     <span className="text-gray-600 font-bold text-sm w-5">{index + 1}</span>
                                     <Icon className="w-5 h-5 text-violet-400 flex-shrink-0" />
@@ -618,7 +650,12 @@ const ReferralFAQSection = () => {
                         <Card key={faq.question} className="overflow-hidden" hover={false}>
                             <button
                                 className="w-full p-6 text-left focus:outline-none"
-                                onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                                onClick={() => {
+                                    if (openFaq !== index) {
+                                        track({ name: "referral_faq_open", params: { question: faq.question } });
+                                    }
+                                    setOpenFaq(openFaq === index ? null : index);
+                                }}
                             >
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-lg font-semibold text-white pr-4">{faq.question}</h3>
