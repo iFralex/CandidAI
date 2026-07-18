@@ -332,7 +332,9 @@ const KitSection = () => {
         <section className="relative py-20 md:py-24 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-4">
-                    <Badge className="mb-6">For approved ambassadors — kit availability and shipping cost are confirmed before ordering</Badge>
+                    <Badge className="mb-6 max-w-full w-full sm:w-fit whitespace-normal break-words shrink text-center leading-relaxed px-3 py-2">
+                        For approved ambassadors — kit availability and shipping cost are confirmed before ordering
+                    </Badge>
                 </div>
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
@@ -769,7 +771,7 @@ const ApplyCTASection = () => {
     return (
         <section id="apply" className="relative py-24 px-6 lg:px-8">
             <div className="max-w-4xl mx-auto text-center">
-                <Card className="p-12" gradient>
+                <Card className="p-6 sm:p-12" gradient>
                     <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-100 bg-clip-text text-transparent">
                         Ready to Make Some Noise?
                     </h2>
@@ -779,7 +781,7 @@ const ApplyCTASection = () => {
 
                     <Link
                         href="/contact?mode=referral"
-                        className={buttonVariants({ size: "lg", className: "min-w-64" })}
+                        className={buttonVariants({ size: "lg", className: "w-full sm:w-auto sm:min-w-64 whitespace-normal text-center" })}
                         onClick={() => {
                             document.cookie = `defaultSubject=Referral Program; path=/; max-age=${60 * 60}`;
                             track({ name: "referral_cta_click", params: { button_label: "Apply to become an Ambassador", section: "bottom_cta" } });
