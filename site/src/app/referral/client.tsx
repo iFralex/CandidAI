@@ -314,6 +314,110 @@ const KitSection = () => {
     );
 };
 
+const PLAYBOOK = [
+    {
+        icon: Sticker,
+        title: "Sticker Bombing",
+        tag: "Reliable",
+        description: "Bulletin boards, study rooms, any free surface. Five designs — find out which one converts best on your campus.",
+    },
+    {
+        icon: Newspaper,
+        title: "The Fake Job Posting",
+        tag: "Reliable",
+        description: "Pin it up with tear-off tabs: \"Wanted: Junior Developer. Requirements: 5 years of experience for an entry-level role. Or just tear a tab.\" Every tab torn off is a potential signup.",
+    },
+    {
+        icon: Stamp,
+        title: "The Rejection Wall",
+        tag: "High impact",
+        description: "Cover a board with dozens of identical rejection letters. In the middle, one that's different — a recruiter who actually replies. The contrast says everything.",
+    },
+    {
+        icon: BookOpen,
+        title: "Post-its in the Right Books",
+        tag: "Sneaky",
+        description: "A post-it inside Cracking the Coding Interview or a finance textbook: whoever finds it is preparing for interviews that LinkedIn was never going to bring them.",
+    },
+    {
+        icon: GraduationCap,
+        title: "The 'Ignored Applications' Diploma",
+        tag: "Perfect timing",
+        description: "On graduation day, hand new graduates the diploma nobody wants — but everyone photographs. Timed to the exact day job-search anxiety kicks in.",
+    },
+    {
+        icon: Megaphone,
+        title: "Career Day Mission",
+        tag: "Reliable",
+        description: "The line to talk to the big-name booth lasts two hours. You, with a poster and a card: \"This line: 2 hours. A direct email to the right recruiter: 2 minutes.\"",
+    },
+    {
+        icon: FileX,
+        title: "The CV Funeral",
+        tag: "Advanced stunt",
+        description: "A headstone, a wreath, a minute of silence for the CV sent through LinkedIn — opened by no one, remembered by no one. Print files are in the digital kit; we cover printing costs if you document it on video.",
+    },
+];
+
+const PlaybookSection = () => {
+    const [selected, setSelected] = useState(0);
+    const active = PLAYBOOK[selected];
+    const ActiveIcon = active.icon;
+
+    return (
+        <section className="relative py-24 px-6 lg:px-8 bg-black">
+            <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-16">
+                    <p className={`${caveat.className} text-violet-400 text-2xl mb-2`}>the field manual</p>
+                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                        7 Ways to Use the Kit
+                    </h2>
+                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                        Field-tested guerrilla moves, from "reliable" to "advanced stunt."
+                    </p>
+                </div>
+
+                <div className="grid lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-1 space-y-3">
+                        {PLAYBOOK.map((item, index) => {
+                            const Icon = item.icon;
+                            return (
+                                <Card
+                                    key={item.title}
+                                    hover={false}
+                                    className={`p-4 cursor-pointer transition-all duration-300 flex items-center gap-3 ${
+                                        selected === index ? "ring-2 ring-violet-500 bg-white/10" : ""
+                                    }`}
+                                    onClick={() => setSelected(index)}
+                                >
+                                    <span className="text-gray-600 font-bold text-sm w-5">{index + 1}</span>
+                                    <Icon className="w-5 h-5 text-violet-400 flex-shrink-0" />
+                                    <span className="text-white text-sm font-medium">{item.title}</span>
+                                </Card>
+                            );
+                        })}
+                    </div>
+
+                    <div className="lg:col-span-2">
+                        <Card className="p-8 h-full">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                                        <ActiveIcon className="w-6 h-6 text-violet-400" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-white">{active.title}</h3>
+                                </div>
+                                <Badge variant={active.tag === "Advanced stunt" ? "destructive" : "secondary"}>{active.tag}</Badge>
+                            </div>
+                            <p className="text-gray-300 leading-relaxed text-lg">{active.description}</p>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
 // ---------- Page ----------
 
 export default function ReferralPage() {
@@ -324,6 +428,7 @@ export default function ReferralPage() {
             <TiersSection />
             <EarningsSimulatorSection />
             <KitSection />
+            <PlaybookSection />
         </div>
     );
 }
