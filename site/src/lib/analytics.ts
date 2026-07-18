@@ -190,28 +190,34 @@ export function track(event: TrackingEvent, options?: TrackOptions): void {
 
 async function persistToFirestore(event: TrackingEvent, explicitUserId?: string): Promise<void> {
     try {
-        const [{ db, auth }, { collection, addDoc, serverTimestamp }] = await Promise.all([
-            import("@/lib/firebase"),
-            import("firebase/firestore"),
-        ]);
+        if (typeof window === "undefined") return;
 
-        if (!db) return;
+        const userId = explicitUserId ?? getCachedUserId() ?? null;
 
-        const userId = explicitUserId
-            ?? auth?.currentUser?.uid
-            ?? getCachedUserId()
-            ?? null;
-
-        await addDoc(collection(db, "analytics_events"), {
+        const body = JSON.stringify({
             event: event.name,
             params: event.params,
             user_id: userId,
             session_id: getSessionId(),
             page_path: window.location.pathname,
-            timestamp: serverTimestamp(),
             user_agent: navigator.userAgent.slice(0, 200),
         });
-    } catch { /* ignore */ }
+
+        // Write server-side (admin SDK) through the public /api/track sink, so the
+        // Firestore rules can deny direct client writes to analytics_events.
+        // sendBeacon survives page unload (best for telemetry); fall back to a
+        // keepalive fetch when it's unavailable.
+        if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+            navigator.sendBeacon("/api/track", new Blob([body], { type: "application/json" }));
+        } else {
+            void fetch("/api/track", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body,
+                keepalive: true,
+            }).catch(() => { /* ignore */ });
+        }
+    } catch { /* ignore — analytics must never break UX */ }
 }
 
 /**
