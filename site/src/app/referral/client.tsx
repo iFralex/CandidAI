@@ -545,6 +545,100 @@ const MilestonesSection = () => {
     );
 };
 
+const GROUND_RULES = [
+    { ok: true, text: "Irony? Always welcome." },
+    { ok: false, text: "Personal attacks — never. The target is the job market, not a person." },
+    { ok: false, text: "Vandalism — never." },
+    { ok: false, text: "Posting where it's explicitly forbidden — never." },
+];
+
+const FAQS = [
+    {
+        question: "How do I actually get paid?",
+        answer: "You choose, every payout cycle, whether to receive your commissions as a bank transfer/PayPal payment or as CandidAI credits. Commissions above €50 are paid out automatically every month; anything under that rolls over to the next month.",
+    },
+    {
+        question: "What counts as a referral?",
+        answer: "A completed purchase made through your personal QR code or link — not a click, not a signup. Commission tiers are based on the number of purchases, applied progressively as you cross each threshold.",
+    },
+    {
+        question: "When does my Ambassador Kit arrive?",
+        answer: "Once your application is approved, we ship it right away. You only pay for shipping, calculated at checkout based on your country — everything inside is free.",
+    },
+    {
+        question: "How does the application process work?",
+        answer: "There's no instant sign-up. You apply through the form, our team reviews it, and you'll hear back by email with next steps — your personal QR code and kit shipment.",
+    },
+    {
+        question: "What does 'free Pro plan for the duration of the program' mean?",
+        answer: "It's tied to your active participation, not a fixed end date — as long as you're an ambassador in good standing, your Pro plan stays free.",
+    },
+];
+
+const GroundRulesSection = () => {
+    return (
+        <section className="relative py-16 px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto">
+                <Card className="p-8 md:p-10">
+                    <h3 className="text-2xl font-bold text-white mb-2">Ground Rules</h3>
+                    <p className="text-gray-400 mb-6">The kit includes a "where yes / where no" mini-guide. The short version:</p>
+                    <ul className="space-y-3">
+                        {GROUND_RULES.map((rule) => (
+                            <li key={rule.text} className="flex items-start gap-3">
+                                {rule.ok ? (
+                                    <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                                ) : (
+                                    <X className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                                )}
+                                <span className="text-gray-300">{rule.text}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </Card>
+            </div>
+        </section>
+    );
+};
+
+const ReferralFAQSection = () => {
+    const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+    return (
+        <section className="relative py-24 px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-16">
+                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                        Frequently Asked Questions
+                    </h2>
+                </div>
+
+                <div className="space-y-4">
+                    {FAQS.map((faq, index) => (
+                        <Card key={faq.question} className="overflow-hidden" hover={false}>
+                            <button
+                                className="w-full p-6 text-left focus:outline-none"
+                                onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-semibold text-white pr-4">{faq.question}</h3>
+                                    <ChevronDown
+                                        className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ${openFaq === index ? "rotate-180" : ""}`}
+                                    />
+                                </div>
+                            </button>
+                            {openFaq === index && (
+                                <div className="px-6 pb-6">
+                                    <p className="text-gray-300 leading-relaxed">{faq.answer}</p>
+                                </div>
+                            )}
+                        </Card>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+};
+
 // ---------- Page ----------
 
 export default function ReferralPage() {
@@ -557,6 +651,8 @@ export default function ReferralPage() {
             <KitSection />
             <PlaybookSection />
             <MilestonesSection />
+            <GroundRulesSection />
+            <ReferralFAQSection />
         </div>
     );
 }
