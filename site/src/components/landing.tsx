@@ -1365,7 +1365,7 @@ const CTASection = () => {
 };
 
 // Footer Component
-const Footer = () => {
+export const Footer = () => {
     return (
         <footer className="relative border-t border-white/10 py-12 px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">

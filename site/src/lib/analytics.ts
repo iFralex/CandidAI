@@ -36,6 +36,12 @@ export type TrackingEvent =
     | { name: "utm_session"; params: { utm_source?: string; utm_medium?: string; utm_campaign?: string; utm_content?: string; utm_term?: string } }
     | { name: "referral_code_use"; params: { code: string } }
     | { name: "discount_code_detected"; params: { code: string } }
+    | { name: "referral_cta_click"; params: { button_label: string; section: string } }
+    | { name: "referral_simulator_section_view"; params: Record<string, never> }
+    | { name: "referral_simulator_plan_select"; params: { plan_id: string; plan_name: string; plan_price: number } }
+    | { name: "referral_simulator_preset_select"; params: { count: number } }
+    | { name: "referral_playbook_select"; params: { title: string } }
+    | { name: "referral_faq_open"; params: { question: string } }
 
     // ── Landing page ────────────────────────────────────────────────────────
     | { name: "landing_cta_click"; params: { button_label: string; section: string } }
