@@ -13,6 +13,7 @@ import { Navigation } from "@/components/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Footer } from "@/components/landing";
 import Link from "next/link";
 import Image from "next/image";
@@ -90,42 +91,56 @@ const HeroSection = () => {
 };
 
 const TiersSection = () => {
+    const renderTier = (tier: typeof COMMISSION_TIERS[number], index: number) => {
+        const Icon = tier.icon;
+        return (
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="h-full"
+            >
+                <Card className="p-6 pt-8 h-full relative border-dashed border-t-2 border-t-white/20">
+                    <div className="absolute -top-3 left-6 bg-black px-2 flex items-center gap-1 text-gray-600 text-[10px] uppercase tracking-widest">
+                        <Scissors className="w-3 h-3" />
+                        tear here
+                    </div>
+                    <Icon className="w-8 h-8 text-violet-400 mb-4" />
+                    <div className="text-3xl font-bold text-white mb-1">{tier.rate}</div>
+                    <div className="text-gray-300 font-medium mb-2">{tier.range}</div>
+                    <div className="text-gray-500 text-sm">{tier.note}</div>
+                </Card>
+            </motion.div>
+        );
+    };
+
     return (
-        <section id="tiers" className="relative py-24 px-6 lg:px-8">
+        <section id="tiers" className="relative px-4 py-14 sm:px-6 md:py-24 lg:px-8">
             <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                <div className="mb-10 text-center md:mb-16">
+                    <h2 className="mb-4 text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent md:mb-6 md:text-5xl">
                         The More You Sell, the More You Keep
                     </h2>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                    <p className="mx-auto max-w-2xl text-base text-gray-400 md:text-xl">
                         Commission tiers stack automatically. No renegotiating, no resetting — every qualifying purchase moves you forward.
                     </p>
                 </div>
 
-                <div className="grid md:grid-cols-4 gap-6">
-                    {COMMISSION_TIERS.map((tier, index) => {
-                        const Icon = tier.icon;
-                        return (
-                            <motion.div
-                                key={tier.range}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5, delay: index * 0.1 }}
-                            >
-                                <Card className="p-6 pt-8 h-full relative border-dashed border-t-2 border-t-white/20">
-                                    <div className="absolute -top-3 left-6 bg-black px-2 flex items-center gap-1 text-gray-600 text-[10px] uppercase tracking-widest">
-                                        <Scissors className="w-3 h-3" />
-                                        tear here
-                                    </div>
-                                    <Icon className="w-8 h-8 text-violet-400 mb-4" />
-                                    <div className="text-3xl font-bold text-white mb-1">{tier.rate}</div>
-                                    <div className="text-gray-300 font-medium mb-2">{tier.range}</div>
-                                    <div className="text-gray-500 text-sm">{tier.note}</div>
-                                </Card>
-                            </motion.div>
-                        );
-                    })}
+                <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} className="md:hidden">
+                    <CarouselContent className="-ml-3">
+                        {COMMISSION_TIERS.map((tier, index) => (
+                            <CarouselItem key={tier.range} className="basis-[86%] pl-3 sm:basis-[48%]">
+                                {renderTier(tier, index)}
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                    <p className="mt-4 text-center text-xs text-gray-600">Swipe to compare tiers</p>
+                </Carousel>
+                <div className="hidden gap-6 md:grid md:grid-cols-4">
+                    {COMMISSION_TIERS.map((tier, index) => (
+                        <div key={tier.range}>{renderTier(tier, index)}</div>
+                    ))}
                 </div>
             </div>
         </section>
@@ -160,13 +175,13 @@ const EarningsSimulatorSection = () => {
     }, []);
 
     return (
-        <section ref={simulatorSectionRef} className="relative py-24 px-6 lg:px-8 bg-black">
+        <section ref={simulatorSectionRef} className="relative bg-black px-4 py-14 sm:px-6 md:py-24 lg:px-8">
             <div className="max-w-5xl mx-auto">
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                <div className="mb-10 text-center md:mb-16">
+                    <h2 className="mb-4 text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent md:mb-6 md:text-5xl">
                         Run the Numbers Yourself
                     </h2>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                    <p className="mx-auto max-w-2xl text-base text-gray-400 md:text-xl">
                         Pick a plan, pick a volume, see what it's worth.
                     </p>
                 </div>
@@ -274,7 +289,7 @@ const DashboardPreviewSection = () => {
     ];
 
     return (
-        <section className="relative py-20 md:py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <section className="relative overflow-hidden px-4 py-14 sm:px-6 md:py-24 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-10 md:mb-14">
                     <Badge className="mb-5">Real-time ambassador dashboard</Badge>
@@ -291,7 +306,20 @@ const DashboardPreviewSection = () => {
                 </div>
                 <p className="mt-3 text-center text-xs text-gray-600 lg:hidden">Swipe horizontally to explore the dashboard.</p>
 
-                <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} className="mt-8 sm:hidden">
+                    <CarouselContent className="-ml-3">
+                        {steps.map((step) => (
+                            <CarouselItem key={step.number} className="basis-[84%] pl-3">
+                                <div className="h-full rounded-xl border border-white/10 bg-white/[0.03] p-5">
+                                    <span className="text-xs font-bold tracking-widest text-violet-400">{step.number}</span>
+                                    <h3 className="mt-3 text-lg font-semibold text-white">{step.title}</h3>
+                                    <p className="mt-2 text-sm leading-relaxed text-gray-400">{step.text}</p>
+                                </div>
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                </Carousel>
+                <div className="mt-12 hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-4">
                     {steps.map((step) => (
                         <div key={step.number} className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
                             <span className="text-xs font-bold tracking-widest text-violet-400">{step.number}</span>
@@ -324,18 +352,56 @@ const KIT_DIGITAL_ITEMS = [
     { icon: Users, name: "Private community", description: "The ambassador-only channel." },
 ];
 
+const KitItemCard = ({ item, index = 0 }: { item: typeof KIT_PHYSICAL_ITEMS[number]; index?: number }) => {
+    const Icon = item.icon;
+    const isRare = item.name.includes("holographic");
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: index * 0.05 }}
+            className="h-full"
+        >
+            <Card className="p-4 sm:p-5 h-full relative" gradient={isRare}>
+                {item.name === "30 rejection letters" ? (
+                    <div className="relative mb-5 h-44 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                        <a href="/images/referral/materials/rejection-letter-01.svg" target="_blank" rel="noopener noreferrer" className="absolute inset-y-3 left-2 z-10 w-[68%] -rotate-3 overflow-hidden rounded-md border border-white/15 bg-transparent p-1 shadow-lg transition-transform duration-300 hover:z-30 hover:rotate-0 hover:scale-[1.03]" aria-label="Open a full-size rejection letter">
+                            <img src="/images/referral/materials/rejection-letter-01.svg" alt="Rejection letter" loading="lazy" className="h-full w-full object-contain" />
+                        </a>
+                        <a href="/images/referral/materials/letter-special.svg" target="_blank" rel="noopener noreferrer" className="absolute inset-y-3 right-2 z-20 w-[64%] rotate-3 overflow-hidden rounded-md border border-violet-300/30 bg-transparent p-1 shadow-xl transition-transform duration-300 hover:rotate-0 hover:scale-[1.03]" aria-label="Open the recruiter interview email">
+                            <img src="/images/referral/materials/letter-special.svg" alt="Recruiter email inviting the candidate to an interview" loading="lazy" className="h-full w-full object-contain" />
+                        </a>
+                    </div>
+                ) : item.preview && (
+                    <a href={item.preview} target="_blank" rel="noopener noreferrer" className="group/preview mb-5 flex h-44 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-3" aria-label={`Open a full-size preview of ${item.name}`}>
+                        <img src={item.preview} alt="" loading="lazy" className="h-full w-full object-contain transition-transform duration-300 group-hover/preview:scale-[1.03]" />
+                    </a>
+                )}
+                <Icon className="w-7 h-7 text-violet-400 mb-3" />
+                <h3 className="text-white font-semibold mb-1">{item.name}</h3>
+                <p className="text-gray-400 text-sm">{item.description}</p>
+                {isRare && (
+                    <p className={`${caveat.className} text-violet-300 text-lg mt-3 -rotate-2`}>psst — this one's real 👀</p>
+                )}
+            </Card>
+        </motion.div>
+    );
+};
+
 const KitSection = () => {
     const [showAllItems, setShowAllItems] = useState(false);
     const visibleItems = showAllItems ? KIT_PHYSICAL_ITEMS : KIT_PHYSICAL_ITEMS.slice(0, 4);
 
     return (
-        <section className="relative py-20 md:py-24 px-4 sm:px-6 lg:px-8">
+        <section className="relative px-4 py-14 sm:px-6 md:py-24 lg:px-8">
             <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                <div className="mb-10 text-center md:mb-16">
+                    <h2 className="mb-4 text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent md:mb-6 md:text-5xl">
                         The Ambassador Kit
                     </h2>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                    <p className="mx-auto max-w-2xl text-base text-gray-400 md:text-xl">
                         Everything you need to make noise on campus. Nine physical pieces, four digital perks.
                     </p>
                     <p className="mx-auto mt-5 flex max-w-xl items-start justify-center gap-2 text-sm leading-relaxed text-gray-500">
@@ -355,61 +421,25 @@ const KitSection = () => {
                     />
                 </div>
 
-                <div className={`grid sm:grid-cols-2 gap-6 mb-10 ${showAllItems ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
-                    {visibleItems.map((item, index) => {
-                        const Icon = item.icon;
-                        const isRare = item.name.includes("holographic");
-                        return (
-                            <motion.div
-                                key={item.name}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.4, delay: index * 0.05 }}
-                            >
-                                <Card className="p-4 sm:p-5 h-full relative" gradient={isRare}>
-                                    {item.name === "30 rejection letters" ? (
-                                        <div className="relative mb-5 h-44 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-3">
-                                            <a
-                                                href="/images/referral/materials/rejection-letter-01.svg"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="absolute inset-y-3 left-2 z-10 w-[68%] -rotate-3 overflow-hidden rounded-md border border-white/15 bg-transparent p-1 shadow-lg transition-transform duration-300 hover:z-30 hover:rotate-0 hover:scale-[1.03]"
-                                                aria-label="Open a full-size rejection letter"
-                                            >
-                                                <img src="/images/referral/materials/rejection-letter-01.svg" alt="Rejection letter" loading="lazy" className="h-full w-full object-contain" />
-                                            </a>
-                                            <a
-                                                href="/images/referral/materials/letter-special.svg"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="absolute inset-y-3 right-2 z-20 w-[64%] rotate-3 overflow-hidden rounded-md border border-violet-300/30 bg-transparent p-1 shadow-xl transition-transform duration-300 hover:rotate-0 hover:scale-[1.03]"
-                                                aria-label="Open the recruiter interview email"
-                                            >
-                                                <img src="/images/referral/materials/letter-special.svg" alt="Recruiter email inviting the candidate to an interview" loading="lazy" className="h-full w-full object-contain" />
-                                            </a>
-                                        </div>
-                                    ) : item.preview && (
-                                        <a href={item.preview} target="_blank" rel="noopener noreferrer" className="group/preview mb-5 flex h-44 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-3" aria-label={`Open a full-size preview of ${item.name}`}>
-                                            <img src={item.preview} alt="" loading="lazy" className="h-full w-full object-contain transition-transform duration-300 group-hover/preview:scale-[1.03]" />
-                                        </a>
-                                    )}
-                                    <Icon className="w-7 h-7 text-violet-400 mb-3" />
-                                    <h3 className="text-white font-semibold mb-1">{item.name}</h3>
-                                    <p className="text-gray-400 text-sm">{item.description}</p>
-                                    {isRare && (
-                                        <p className={`${caveat.className} text-violet-300 text-lg mt-3 -rotate-2`}>
-                                            psst — this one's real 👀
-                                        </p>
-                                    )}
-                                </Card>
-                            </motion.div>
-                        );
-                    })}
+                <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} className="mb-8 sm:hidden">
+                    <CarouselContent className="-ml-3">
+                        {KIT_PHYSICAL_ITEMS.map((item, index) => (
+                            <CarouselItem key={item.name} className="basis-[88%] pl-3">
+                                <KitItemCard item={item} index={index} />
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                    <p className="mt-4 text-center text-xs text-gray-600">Swipe to explore all 9 kit items</p>
+                </Carousel>
+
+                <div className={`mb-10 hidden gap-6 sm:grid sm:grid-cols-2 ${showAllItems ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
+                    {visibleItems.map((item, index) => (
+                        <KitItemCard key={item.name} item={item} index={index} />
+                    ))}
                 </div>
 
                 {!showAllItems && (
-                    <div className="mb-10 text-center">
+                    <div className="mb-10 hidden text-center sm:block">
                         <Button variant="secondary" size="sm" onClick={() => setShowAllItems(true)} aria-expanded={showAllItems}>
                             See everything included
                             <ChevronDown className="ml-2 h-4 w-4" />
@@ -417,9 +447,9 @@ const KitSection = () => {
                     </div>
                 )}
 
-                <Card className="p-8" gradient>
+                <Card className="p-5 sm:p-8" gradient>
                     <h3 className="text-xl font-bold text-white mb-2">Plus, unlocked digitally via a QR in the kit</h3>
-                    <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6 mt-6">
+                    <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
                         {KIT_DIGITAL_ITEMS.map((item) => {
                             const Icon = item.icon;
                             return (
@@ -511,20 +541,44 @@ const PlaybookSection = () => {
     const visiblePlaybook = showAllPlaybook ? PLAYBOOK : PLAYBOOK.slice(0, 3);
 
     return (
-        <section className="relative py-24 px-6 lg:px-8 bg-black">
+        <section className="relative bg-black px-4 py-14 sm:px-6 md:py-24 lg:px-8">
             <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-16">
+                <div className="mb-10 text-center md:mb-16">
                     <p className={`${caveat.className} text-violet-400 text-2xl mb-2`}>the field manual</p>
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                    <h2 className="mb-4 text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent md:mb-6 md:text-5xl">
                         7 Ways to Use the Kit
                     </h2>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                    <p className="mx-auto max-w-2xl text-base text-gray-400 md:text-xl">
                         Campaign ideas ranging from simple campus activations to advanced stunts.
                     </p>
                 </div>
 
-                <div className="grid lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-1 space-y-3">
+                <div className="grid min-w-0 gap-8 lg:grid-cols-3">
+                    <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} className="min-w-0 max-w-full overflow-hidden lg:hidden">
+                        <CarouselContent className="-ml-2">
+                            {PLAYBOOK.map((item, index) => {
+                                const Icon = item.icon;
+                                return (
+                                    <CarouselItem key={item.title} className="basis-auto pl-2">
+                                        <button
+                                            type="button"
+                                            aria-pressed={selected === index}
+                                            className={`flex h-11 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${selected === index ? "border-violet-500 bg-violet-500/20 text-white" : "border-white/10 bg-white/5 text-gray-400"}`}
+                                            onClick={() => {
+                                                if (selected !== index) track({ name: "referral_playbook_select", params: { title: item.title } });
+                                                setSelected(index);
+                                            }}
+                                        >
+                                            <Icon className="h-4 w-4 text-violet-400" />
+                                            {index + 1}. {item.title}
+                                        </button>
+                                    </CarouselItem>
+                                );
+                            })}
+                        </CarouselContent>
+                    </Carousel>
+
+                    <div className="hidden space-y-3 lg:col-span-1 lg:block">
                         {visiblePlaybook.map((item, index) => {
                             const Icon = item.icon;
                             return (
@@ -656,10 +710,33 @@ const LEADERBOARD_REWARD = {
 };
 
 const MilestonesSection = () => {
+    const renderMilestone = (milestone: typeof MILESTONES[number]) => {
+        const Icon = milestone.icon;
+        return (
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="h-full">
+                <Card className="p-6 md:p-8 h-full">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center mb-4">
+                        <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-violet-400 text-sm font-semibold uppercase tracking-widest mb-1">{milestone.level}</div>
+                    <div className="text-white text-lg font-bold mb-4">{milestone.threshold}</div>
+                    <ul className="space-y-2">
+                        {milestone.rewards.map((reward) => (
+                            <li key={reward} className="text-gray-400 text-sm flex gap-2">
+                                <Check className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                                {reward}
+                            </li>
+                        ))}
+                    </ul>
+                </Card>
+            </motion.div>
+        );
+    };
+
     return (
-        <section className="relative py-24 px-6 lg:px-8">
+        <section className="relative px-4 py-14 sm:px-6 md:py-24 lg:px-8">
             <div className="max-w-6xl mx-auto">
-                <div className="grid md:grid-cols-2 gap-6 mb-16">
+                <div className="mb-10 grid gap-4 sm:grid-cols-2 md:mb-16 md:gap-6">
                     <Card className="p-6 flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center flex-shrink-0">
                             <QrCode className="w-6 h-6 text-violet-400" />
@@ -680,44 +757,29 @@ const MilestonesSection = () => {
                     </Card>
                 </div>
 
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                <div className="mb-10 text-center md:mb-16">
+                    <h2 className="mb-4 text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent md:mb-6 md:text-5xl">
                         Milestone Rewards
                     </h2>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                    <p className="mx-auto max-w-2xl text-base text-gray-400 md:text-xl">
                         Commissions apply per qualifying purchase. These rewards stack on top for sustained volume.
                     </p>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-8 mb-8">
-                    {MILESTONES.map((milestone) => {
-                        const Icon = milestone.icon;
-                        return (
-                            <motion.div
-                                key={milestone.level}
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5 }}
-                            >
-                                <Card className="p-8 h-full">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center mb-4">
-                                        <Icon className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div className="text-violet-400 text-sm font-semibold uppercase tracking-widest mb-1">{milestone.level}</div>
-                                    <div className="text-white text-lg font-bold mb-4">{milestone.threshold}</div>
-                                    <ul className="space-y-2">
-                                        {milestone.rewards.map((reward) => (
-                                            <li key={reward} className="text-gray-400 text-sm flex gap-2">
-                                                <Check className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                                                {reward}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </Card>
-                            </motion.div>
-                        );
-                    })}
+                <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} className="mb-8 md:hidden">
+                    <CarouselContent className="-ml-3">
+                        {MILESTONES.map((milestone) => (
+                            <CarouselItem key={milestone.level} className="basis-[88%] pl-3">
+                                {renderMilestone(milestone)}
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                    <p className="mt-4 text-center text-xs text-gray-600">Swipe to compare milestones</p>
+                </Carousel>
+                <div className="mb-8 hidden gap-8 md:grid md:grid-cols-3">
+                    {MILESTONES.map((milestone) => (
+                        <div key={milestone.level}>{renderMilestone(milestone)}</div>
+                    ))}
                 </div>
 
                 <Card className="p-8 md:p-10" gradient>
@@ -775,12 +837,12 @@ const FAQS = [
 
 const GroundRulesSection = () => {
     return (
-        <section className="relative py-16 px-6 lg:px-8">
+        <section className="relative px-4 py-10 sm:px-6 md:py-16 lg:px-8">
             <div className="max-w-4xl mx-auto">
-                <Card className="p-8 md:p-10">
+                <Card className="p-5 sm:p-8 md:p-10">
                     <h3 className="text-2xl font-bold text-white mb-2">Ground Rules</h3>
                     <p className="text-gray-400 mb-6">The kit includes a "where yes / where no" mini-guide. The short version:</p>
-                    <ul className="space-y-3">
+                    <ul className="space-y-2.5">
                         {GROUND_RULES.map((rule) => (
                             <li key={rule.text} className="flex items-start gap-3">
                                 {rule.ok ? (
@@ -802,10 +864,10 @@ const ReferralFAQSection = () => {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
     return (
-        <section className="relative py-24 px-6 lg:px-8">
+        <section className="relative px-4 py-14 sm:px-6 md:py-24 lg:px-8">
             <div className="max-w-4xl mx-auto">
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                <div className="mb-10 text-center md:mb-16">
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent md:text-5xl">
                         Frequently Asked Questions
                     </h2>
                 </div>
@@ -817,7 +879,7 @@ const ReferralFAQSection = () => {
                                 id={`referral-faq-button-${index}`}
                                 aria-expanded={openFaq === index}
                                 aria-controls={`referral-faq-panel-${index}`}
-                                className="w-full p-6 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500"
+                                className="w-full p-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 sm:p-6"
                                 onClick={() => {
                                     if (openFaq !== index) {
                                         track({ name: "referral_faq_open", params: { question: faq.question } });
@@ -833,7 +895,7 @@ const ReferralFAQSection = () => {
                                 </div>
                             </button>
                             {openFaq === index && (
-                                <div id={`referral-faq-panel-${index}`} role="region" aria-labelledby={`referral-faq-button-${index}`} className="px-6 pb-6">
+                                <div id={`referral-faq-panel-${index}`} role="region" aria-labelledby={`referral-faq-button-${index}`} className="px-5 pb-5 sm:px-6 sm:pb-6">
                                     <p className="text-gray-300 leading-relaxed">{faq.answer}</p>
                                 </div>
                             )}
@@ -847,10 +909,10 @@ const ReferralFAQSection = () => {
 
 const ApplyCTASection = () => {
     return (
-        <section id="apply" className="relative py-24 px-6 lg:px-8">
+        <section id="apply" className="relative px-4 py-14 sm:px-6 md:py-24 lg:px-8">
             <div className="max-w-4xl mx-auto text-center">
                 <Card className="p-6 sm:p-12" gradient>
-                    <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-100 bg-clip-text text-transparent">
+                    <h2 className="mb-4 text-3xl font-bold bg-gradient-to-r from-white to-gray-100 bg-clip-text text-transparent md:mb-6 md:text-5xl">
                         Ready to Make Some Noise?
                     </h2>
                     <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
