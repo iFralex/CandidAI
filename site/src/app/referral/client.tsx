@@ -579,7 +579,7 @@ const PlaybookSection = () => {
                                             href="/images/referral/materials/rejection-letter-02.svg"
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="absolute inset-y-5 left-3 z-10 w-[68%] -rotate-3 overflow-hidden rounded-lg border border-white/15 bg-transparent p-1 shadow-xl transition-transform duration-300 hover:z-30 hover:rotate-0 hover:scale-[1.03]"
+                                            className="absolute inset-y-5 left-3 z-10 w-[68%] -rotate-3 transition-transform duration-300 hover:z-30 hover:rotate-0 hover:scale-[1.03]"
                                             aria-label="Open the rejection letter"
                                         >
                                             <img src="/images/referral/materials/rejection-letter-02.svg" alt="Rejection letter" loading="lazy" className="h-full w-full object-contain" />
@@ -588,7 +588,7 @@ const PlaybookSection = () => {
                                             href="/images/referral/materials/letter-special.svg"
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="absolute inset-y-5 right-3 z-20 w-[64%] rotate-3 overflow-hidden rounded-lg border border-violet-300/30 bg-transparent p-1 shadow-2xl transition-transform duration-300 hover:rotate-0 hover:scale-[1.03]"
+                                            className="absolute inset-y-5 right-3 z-20 w-[64%] rotate-3 transition-transform duration-300 hover:rotate-0 hover:scale-[1.03]"
                                             aria-label="Open the recruiter interview email"
                                         >
                                             <img src="/images/referral/materials/letter-special.svg" alt="Recruiter email inviting the candidate to an interview" loading="lazy" className="h-full w-full object-contain" />
