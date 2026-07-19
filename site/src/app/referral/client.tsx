@@ -409,12 +409,14 @@ const KitSection = () => {
                     })}
                 </div>
 
-                <div className="mb-10 text-center">
-                    <Button variant="secondary" size="sm" onClick={() => setShowAllItems(value => !value)} aria-expanded={showAllItems}>
-                        {showAllItems ? "Show fewer kit items" : "See everything included"}
-                        <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAllItems ? "rotate-180" : ""}`} />
-                    </Button>
-                </div>
+                {!showAllItems && (
+                    <div className="mb-10 text-center">
+                        <Button variant="secondary" size="sm" onClick={() => setShowAllItems(true)} aria-expanded={showAllItems}>
+                            See everything included
+                            <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
 
                 <Card className="p-8" gradient>
                     <h3 className="text-xl font-bold text-white mb-2">Plus, unlocked digitally via a QR in the kit</h3>
@@ -548,7 +550,7 @@ const PlaybookSection = () => {
                             );
                         })}
                         <Button variant="secondary" size="sm" className="w-full" onClick={() => { setShowAllPlaybook(value => !value); if (showAllPlaybook && selected > 2) setSelected(0); }} aria-expanded={showAllPlaybook}>
-                            {showAllPlaybook ? "Show the essentials" : "See all 7 campaign ideas"}
+                            {showAllPlaybook ? "Show fewer ideas" : "See all 7 campaign ideas"}
                             <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showAllPlaybook ? "rotate-180" : ""}`} />
                         </Button>
                     </div>
