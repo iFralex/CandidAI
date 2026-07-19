@@ -3,6 +3,23 @@ from server.emails_generation.blog_posts import ai_chat
 from server.emails_generation.database import save_email
 from server.emails_generation.recruiter import get_work_email_from_rocketreach
 from typing import Dict
+import re
+
+
+def strip_em_dashes(text):
+    """Strip the em-dash / en-dash 'AI tell' from generated email prose.
+
+    Number ranges (e.g. 2,000-9,000) keep a hyphen; a dash used as a sentence
+    break becomes a comma (surrounding spaces collapsed). Belt-and-suspenders
+    with the prompt instruction that already asks the model to avoid dashes.
+    """
+    if not isinstance(text, str):
+        return text
+    text = re.sub(r'(\d)\s*[—–]\s*(\d)', r'\1-\2', text)   # keep numeric ranges as hyphens
+    text = re.sub(r'\s*[—–]\s*', ', ', text)              # dash-as-break -> comma
+    text = re.sub(r'\s+,', ',', text)                              # tidy stray space-before-comma
+    text = re.sub(r',\s*,', ',', text)                            # collapse accidental double commas
+    return text
 
 def generate_email(user_id, ids, companies, profile_summary, cv_url, result_blog, result_recruiters, result_company_info, user_instructions):
     def parse_company_info(record):
@@ -192,7 +209,7 @@ Write a cold email a busy recruiter would actually reply to. The candidate's FUL
 4. WHY THIS COMPANY (1 sentence): connect the flagship to a real product, team, or problem of THIS company.
 5. THE ASK (1 sentence): a 15-minute conversation to explore roles/fit in a named concrete area, framed around what the candidate could do for them. Never "contribute to your recruiting needs", "seeking interview", or generic "opportunities/advice/perspective".
 
-LENGTH 110-150 words. Sober, confident-peer tone. No superlatives, no exclamation marks.
+LENGTH 110-150 words. Sober, confident-peer tone. No superlatives, no exclamation marks. Do NOT use em-dashes or en-dashes (— –); use commas, periods, or parentheses instead. Em-dashes are the most visible tell of AI-written text.
 ABSOLUTE BAN — the email must contain NONE of these words: inspiring, excited, thrilled, truly, passionate, passion, love, amazing, incredible, impressed, impressive, admire, eager, keen, glad, resonates, honored, deeply invested, intrigued. Re-read the draft and remove any before finalizing.
 Only claim common ground supportable from the recruiter data.
 SUBJECT: max 8 words, concrete, names the fit. No "Let's connect", no "seeking interview", no colon-stuffed clauses.
@@ -209,6 +226,14 @@ Generate ONLY the JSON output with no additional commentary.
 """
 
         email = ai_chat(prompt, "json")
+
+        # Post-processing safety net: strip the em-dash / en-dash AI tell that
+        # the model still emits occasionally despite the prompt instruction.
+        if isinstance(email, dict):
+            if isinstance(email.get("subject"), str):
+                email["subject"] = strip_em_dashes(email["subject"])
+            if isinstance(email.get("body"), str):
+                email["body"] = strip_em_dashes(email["body"])
 
         save_email(user_id, ids[f'{company["name"]}-{user_id}'], email, prompt, email_address, cv_url)
         emails[company["name"]] = email
