@@ -25,11 +25,11 @@ interface HeroVideoProps {
 }
 
 export function HeroVideo({ wrapperClassName = "max-w-5xl mx-auto", bare = false }: HeroVideoProps = {}) {
-    const [video, setVideo] = useState<any>({});
-    const containerRef = useRef<HTMLDivElement>(null);
-    const playerRef = useRef<any>(null);
-    const iframeRef = useRef<HTMLIFrameElement>(null);
-    const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [video, setVideo] = useState({});
+    const containerRef = useRef(null);
+    const playerRef = useRef(null);
+    const iframeRef = useRef(null);
+    const idleTimeoutRef = useRef(null);
 
     const [playing, setPlaying] = useState(false);
     const [showControls, setShowControls] = useState(false);
@@ -72,13 +72,12 @@ export function HeroVideo({ wrapperClassName = "max-w-5xl mx-auto", bare = false
     const enterFullscreen = (e) => {
         e?.stopPropagation();
         if (!containerRef.current) return;
-        const el = containerRef.current as any;
-        if (el.requestFullscreen) {
-            el.requestFullscreen();
-        } else if (el.webkitRequestFullscreen) {
-            el.webkitRequestFullscreen();
-        } else if (el.msRequestFullscreen) {
-            el.msRequestFullscreen();
+        if (containerRef.current.requestFullscreen) {
+            containerRef.current.requestFullscreen();
+        } else if (containerRef.current.webkitRequestFullscreen) {
+            containerRef.current.webkitRequestFullscreen();
+        } else if (containerRef.current.msRequestFullscreen) {
+            containerRef.current.msRequestFullscreen();
         }
     };
 
