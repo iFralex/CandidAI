@@ -331,17 +331,16 @@ const KitSection = () => {
     return (
         <section className="relative py-20 md:py-24 px-4 sm:px-6 lg:px-8">
             <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-4">
-                    <Badge className="mb-6 max-w-full w-full sm:w-fit whitespace-normal break-words shrink text-center leading-relaxed px-3 py-2">
-                        For approved ambassadors — kit availability and shipping cost are confirmed before ordering
-                    </Badge>
-                </div>
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                         The Ambassador Kit
                     </h2>
                     <p className="text-xl text-gray-400 max-w-2xl mx-auto">
                         Everything you need to make noise on campus. Nine physical pieces, four digital perks.
+                    </p>
+                    <p className="mx-auto mt-5 flex max-w-xl items-start justify-center gap-2 text-sm leading-relaxed text-gray-500">
+                        <span className="mt-[0.55rem] h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500" aria-hidden="true" />
+                        <span>For approved ambassadors, kit availability and shipping cost are confirmed before ordering.</span>
                     </p>
                 </div>
 
