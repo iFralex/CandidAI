@@ -36,8 +36,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   connectResend: (userId: string, idToken: string, apiKey: string, fromEmail: string, senderName: string) =>
     ipcRenderer.invoke('connect-resend', { userId, idToken, apiKey, fromEmail, senderName }),
 
-  disconnectProvider: (provider: string) =>
-    ipcRenderer.invoke('disconnect-provider', provider),
+  disconnectProvider: (provider: string, userId: string, idToken: string) =>
+    ipcRenderer.invoke('disconnect-provider', { provider, userId, idToken }),
 
   getProviderStatus: (provider: string) =>
     ipcRenderer.invoke('get-provider-status', provider),

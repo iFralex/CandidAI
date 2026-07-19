@@ -153,8 +153,8 @@ ipcMain.handle(
   },
 );
 
-ipcMain.handle('disconnect-provider', async (_event, provider: string) => {
-  return disconnectProvider(provider);
+ipcMain.handle('disconnect-provider', async (_event, payload: { provider: string; userId: string; idToken: string }) => {
+  return disconnectProvider(payload.provider, payload.userId, payload.idToken);
 });
 
 ipcMain.handle('get-provider-status', async (_event, provider: string) => {

@@ -208,7 +208,22 @@ export function getProviderStatus(provider: string): boolean {
   return fs.existsSync(cookiesFile) || fs.existsSync(cookiesFileAlt);
 }
 
-export async function disconnectProvider(provider: string): Promise<void> {
+export async function disconnectProvider(
+  provider: string,
+  userId: string,
+  idToken: string,
+): Promise<void> {
+  const response = await fetch(`${SERVER_URL}/delete_session`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ user_id: userId, provider }),
+  });
+  if (!response.ok) {
+    throw new Error(`Remote session deletion failed: ${response.status}`);
+  }
   if (provider === 'resend') {
     const marker = path.join(app.getPath('userData'), 'resend_connected');
     if (fs.existsSync(marker)) fs.rmSync(marker);

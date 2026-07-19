@@ -316,6 +316,7 @@ export function RegisterForm({
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -328,6 +329,12 @@ export function RegisterForm({
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirmPassword') as string;
     const name = formData.get('name') as string;
+
+    if (!termsAccepted) {
+      setError('Please accept the Terms of Service to create an account.');
+      setLoading(false);
+      return;
+    }
 
     // Validazione password
     if (password !== confirmPassword) {
@@ -346,6 +353,8 @@ export function RegisterForm({
           name,
           email,
           password,
+          acceptedTerms: true,
+          termsVersion: "2026-07-19",
         }),
       });
 
@@ -382,6 +391,9 @@ export function RegisterForm({
       try {
         const result = await getRedirectResult(auth);
         if (result?.user) {
+          if (sessionStorage.getItem('signupTermsVersion') !== '2026-07-19') {
+            throw new Error('Terms acceptance could not be verified. Please try again.');
+          }
           const user = result.user;
           const userDocRef = doc(db, 'users', user.uid);
           const userDoc = await getDoc(userDocRef);
@@ -398,10 +410,18 @@ export function RegisterForm({
               plan: "free_trial",
               credits: 0,
               emailVerified: true,
+              termsAcceptance: {
+                version: "2026-07-19",
+                acceptedAt: now,
+              },
             });
           } else {
             await updateDoc(userDocRef, {
               lastLogin: now,
+              termsAcceptance: {
+                version: "2026-07-19",
+                acceptedAt: now,
+              },
             });
           }
 
@@ -418,6 +438,7 @@ export function RegisterForm({
           identifyUser(user.uid, { plan: "free_trial", credits: 0, onboarding_step: 1, signup_method: "google" });
           void saveFirstTouchToUserDoc(user.uid);
           void saveExperimentAssignmentsToUserDoc(user.uid);
+          sessionStorage.removeItem('signupTermsVersion');
           router.push('/dashboard');
         }
       } catch (err: any) {
@@ -433,6 +454,10 @@ export function RegisterForm({
   }, [router, setError, setGoogleLoading]);
 
   const handleGoogleSignup = async () => {
+    if (!termsAccepted) {
+      setError('Please accept the Terms of Service to create an account.');
+      return;
+    }
     setGoogleLoading(true);
     setError('');
 
@@ -441,6 +466,7 @@ export function RegisterForm({
       const provider = new GoogleAuthProvider();
       provider.addScope('profile');
       provider.addScope('email');
+      sessionStorage.setItem('signupTermsVersion', '2026-07-19');
       //useDeviceLanguage(auth);
       await signInWithRedirect(auth, provider);
     } catch (err: any) {
@@ -529,6 +555,21 @@ export function RegisterForm({
             required
           />
         </div>
+        <label className="flex items-start gap-3 text-xs leading-relaxed text-gray-400">
+          <input
+            type="checkbox"
+            checked={termsAccepted}
+            onChange={(event) => {
+              setTermsAccepted(event.target.checked);
+              if (event.target.checked) setError('');
+            }}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-violet-500"
+            required
+          />
+          <span>
+            I am at least 18, or I am 16–17 and have permission from my parent or guardian. I accept the <Link href="/docs/terms-of-service" target="_blank" className="text-violet-400 underline">Terms of Service</Link> and acknowledge the <Link href="/docs/privacy-policy" target="_blank" className="text-violet-400 underline">Privacy Policy</Link>.
+          </span>
+        </label>
         <Button type="submit" variant="primary" size="sm" className="w-full rounded-lg py-2.5 text-sm mt-1" disabled={loading}>
           {loading ? 'Creating account...' : 'Create account'}
         </Button>
@@ -542,7 +583,7 @@ export function RegisterForm({
           size="sm"
           className="w-full rounded-lg py-2.5 text-sm bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300"
           onClick={handleGoogleSignup}
-          disabled={googleLoading}
+          disabled={googleLoading || !termsAccepted}
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="size-4 mr-2">
             <path

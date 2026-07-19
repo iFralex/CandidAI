@@ -1,5 +1,7 @@
 import logging
 import os
+import threading
+import time
 from flask import Flask, request, jsonify
 from server.emails_generation import service as emails_generation_service
 from server.send_emails import service as send_emails_service
@@ -102,6 +104,31 @@ def stop_campaign():
     if err:
         return err
     return send_emails_service.stop_campaign(data)
+
+
+@app.route("/delete_session", methods=["POST"])
+def delete_session():
+    data = request.json or {}
+    err = _auth_or_unauthorized(data.get("user_id"))
+    if err:
+        return err
+    return send_emails_service.delete_session(data)
+
+
+def _session_retention_worker():
+    while True:
+        try:
+            send_emails_service.session_module.purge_expired()
+        except Exception:
+            logging.getLogger(__name__).exception("Email-session retention cleanup failed")
+        time.sleep(24 * 60 * 60)
+
+
+threading.Thread(
+    target=_session_retention_worker,
+    daemon=True,
+    name="email-session-retention",
+).start()
 
 
 # ── Video Pipeline Routes ────────────────────────────────────────────────────

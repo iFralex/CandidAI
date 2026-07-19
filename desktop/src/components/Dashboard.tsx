@@ -176,7 +176,7 @@ export default function Dashboard({ user, onSignOut }: Props) {
   async function handleDisconnect() {
     const api = window.electronAPI;
     if (!api) return;
-    await api.disconnectProvider(selectedProvider);
+    await api.disconnectProvider(selectedProvider, user.uid, await user.getIdToken());
     setProviderStatuses((prev) => ({ ...prev, [selectedProvider]: 'disconnected' }));
   }
 

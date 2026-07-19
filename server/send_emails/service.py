@@ -81,3 +81,12 @@ def stop_campaign(data: dict):
     campaign_module.cancelled_campaigns.add(str(user_id))
     logger.info(f"Campagna segnata per cancellazione: user {user_id}")
     return jsonify({"status": "stopping"}), 200
+
+
+def delete_session(data: dict):
+    user_id = str(data.get("user_id", ""))
+    provider = str(data.get("provider", ""))
+    if not user_id or provider not in VALID_PROVIDERS:
+        return jsonify({"error": "user_id o provider non valido"}), 400
+    session_module.delete(user_id, provider)
+    return jsonify({"status": "deleted"}), 200

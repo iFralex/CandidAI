@@ -3,7 +3,7 @@ export const content: Record<string, string> = {
 
 Welcome to the privacy policy of CandidAI. This policy will help you understand what data we collect, why we collect it, and what your rights are in relation to it.
 
-**Latest update: May 27, 2026**
+**Latest update: July 19, 2026**
 
 ---
 
@@ -86,6 +86,8 @@ Via delle Orchidee 2
 Cisterna di Latina, LT, 04012
 Italy
 
+**VAT number:** 03293320598
+
 **Owner contact email:** hello@candidai.tech
 
 ---
@@ -109,6 +111,9 @@ Among the types of Personal Data that this Application collects, by itself or th
 - Session recordings (mouse movement, scroll, clicks; sensitive form fields are masked)
 - Customer feedback (in-app survey responses: 1-5 score and optional free-text comment)
 - Marketing attribution data (UTM parameters, HTTP referrer, landing page captured on first visit and most recent attributable visit)
+- Connected email-provider session credentials (encrypted cookies and browser fingerprint)
+- Custom-domain delivery configuration (Resend API key, sender address and sender name)
+- Email campaign instructions, recipients, message content and delivery status
 
 Complete details on each type of Personal Data collected are provided in the dedicated sections of this privacy policy or by specific explanation texts displayed prior to the Data collection.
 
@@ -308,6 +313,22 @@ Resend is the transactional and marketing email delivery service used by the Own
 
 **Service provided by:** Resend, Inc. (United States) – [Privacy Policy](https://resend.com/legal/privacy-policy)
 
+### Optional recruiter-outreach email delivery
+
+Users may optionally connect a supported email account in the CandidAI desktop software and authorise CandidAI to send an individual message or an approved campaign from that account. The currently available connected-account providers are Gmail and Outlook. Yahoo may be supported in the future but is not treated as available until it appears in the software. Users may alternatively configure a verified custom domain through their own Resend account.
+
+For Gmail and Outlook, the desktop software creates an authenticated browser session and sends the session cookies and a browser fingerprint to the Owner's server in Germany. These credentials are encrypted at rest and used only to reproduce the authorised sending session and perform essential connection checks. Although an authenticated session may technically provide broader mailbox access, the Owner does not use it to read, analyse or import the User's inbox.
+
+For custom-domain sending, the User provides a Resend API key with sending permission, sender email address and sender name. These credentials are used only to deliver campaigns authorised by the User.
+
+**Personal Data processed:** Email-provider session cookies, browser fingerprint, Resend API key and sender configuration, recipient email addresses, recruiter names, message subject and body, attachments selected by the User, campaign instructions, timestamps and delivery status.
+
+**Purpose and legal basis:** Performing the email-delivery functionality expressly requested by the User and taking steps necessary to provide the contracted Service. Anti-abuse and security checks may also be performed on the basis of the Owner's legitimate interest in protecting Users, recipients, providers and the Service.
+
+**Storage and retention:** Provider credentials are stored on encrypted infrastructure located in Germany for no more than three months from connection. They are deleted earlier when the User disconnects the provider, deletes the account or revokes access. Campaign and delivery records follow the account-retention rules described in this Policy, subject to legal obligations and the User's deletion rights.
+
+The User may stop an active campaign, but a message already submitted to the provider or sent cannot necessarily be recalled. The Owner may pause sending when technical failures, complaints, spam indicators or anomalous activity are detected.
+
 ---
 
 ## Marketing communications
@@ -365,6 +386,9 @@ Therefore:
 
 - Personal Data collected for purposes related to the performance of a contract between the Owner and the User shall be retained until such contract has been fully performed.
 - Personal Data collected for the purposes of the Owner's legitimate interests shall be retained as long as needed to fulfill such purposes. Users may find specific information regarding the legitimate interests pursued by the Owner within the relevant sections of this document or by contacting the Owner.
+- Connected email-provider cookies, browser fingerprints and custom-domain API credentials are retained for no more than three months from connection and are deleted earlier following disconnection, account deletion or revocation.
+- Payment, invoicing, contractual-acceptance, fraud-prevention and dispute records are kept only for the minimum period required by applicable law.
+- When an account is deleted, remaining account content is deleted or irreversibly anonymised. Genuinely anonymised analytics may be retained because they can no longer be linked to an identified or identifiable User.
 
 The Owner may be allowed to retain Personal Data for a longer period whenever the User has given consent to such processing, as long as such consent is not withdrawn. Furthermore, the Owner may be obliged to retain Personal Data for a longer period whenever required to fulfil a legal obligation or upon order of an authority.
 

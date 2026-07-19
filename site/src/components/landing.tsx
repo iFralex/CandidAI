@@ -1600,6 +1600,7 @@ export const Footer = () => {
                         <h3 className="text-white font-semibold mb-4">Information</h3>
                         <ul className="space-y-2 text-gray-400">
                             <li><Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+                            <li><Link href="/docs/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link></li>
                             <li><Link href="/docs/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
                             <li><Link href="/docs/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li>
                         </ul>

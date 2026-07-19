@@ -21,6 +21,8 @@ import { computePriceInCents, formatPrice, getPlanById, getDiscountCode, applyDi
 import { CREDIT_PACKAGES } from "@/config";
 import { track, refreshUserPropertiesFromFirestore, saveLastTouchToUserDoc } from "@/lib/analytics";
 
+const TERMS_VERSION = "2026-07-19";
+
 /** Discount as held by the checkout state — includes the canonical code
  *  string so we can pass it to payment endpoints for server-side re-validation. */
 interface AppliedDiscount extends ResolvedDiscount {
@@ -105,9 +107,10 @@ interface PaymentRequestButtonProps {
     itemId: string;
     discount?: AppliedDiscount | null;
     onSuccess?: (data: any) => void;
+    consentGranted: boolean;
 }
 
-function PaymentRequestButton({ email, amountCents, purchaseType, itemId, discount, onSuccess }: PaymentRequestButtonProps) {
+function PaymentRequestButton({ email, amountCents, purchaseType, itemId, discount, onSuccess, consentGranted }: PaymentRequestButtonProps) {
     const discountCode = discount?.code ?? null;
     const stripe = useStripe();
     const [paymentRequest, setPaymentRequest] = useState<any>(null);
@@ -132,7 +135,15 @@ function PaymentRequestButton({ email, amountCents, purchaseType, itemId, discou
                 const res = await fetch("/api/create-payment", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ payment_method_id: ev.paymentMethod.id, purchaseType, itemId, discountCode }),
+                    body: JSON.stringify({
+                        payment_method_id: ev.paymentMethod.id,
+                        purchaseType,
+                        itemId,
+                        discountCode,
+                        acceptedTerms: true,
+                        requestedImmediatePerformance: true,
+                        termsVersion: TERMS_VERSION,
+                    }),
                 });
                 const data = await res.json();
                 if (data.error) { ev.complete("fail"); return; }
@@ -158,7 +169,7 @@ function PaymentRequestButton({ email, amountCents, purchaseType, itemId, discou
         return () => { try { pr?.off?.("paymentmethod"); } catch { } };
     }, [stripe, amountCents, purchaseType, itemId, discountCode]);
 
-    if (!supported || !paymentRequest) return null;
+    if (!supported || !paymentRequest || !consentGranted) return null;
 
     return (
         <div className="mb-4">
@@ -181,6 +192,7 @@ function CheckoutForm({ email, purchaseType, itemId, discount, onSuccess }: Chec
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [consentGranted, setConsentGranted] = useState(false);
 
     const discountCode = discount?.code ?? null;
     const baseAmountCents = computePriceInCents(purchaseType, itemId);
@@ -190,6 +202,10 @@ function CheckoutForm({ email, purchaseType, itemId, discount, onSuccess }: Chec
 
     const handlePay = async (e?: React.FormEvent) => {
         e?.preventDefault();
+        if (!consentGranted) {
+            setError("Please accept the Terms and request immediate performance before purchasing.");
+            return;
+        }
         setLoading(true);
         setError("");
 
@@ -200,7 +216,7 @@ function CheckoutForm({ email, purchaseType, itemId, discount, onSuccess }: Chec
                 const res = await fetch("/api/create-payment", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ purchaseType, itemId, discountCode }),
+                    body: JSON.stringify({ purchaseType, itemId, discountCode, acceptedTerms: true, requestedImmediatePerformance: true, termsVersion: TERMS_VERSION }),
                 });
                 const data = await res.json();
                 if (data.error) { setError(data.error); setLoading(false); return; }
@@ -238,7 +254,7 @@ function CheckoutForm({ email, purchaseType, itemId, discount, onSuccess }: Chec
             const res = await fetch("/api/create-payment", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ payment_method_id: paymentMethod!.id, purchaseType, itemId, discountCode }),
+                body: JSON.stringify({ payment_method_id: paymentMethod!.id, purchaseType, itemId, discountCode, acceptedTerms: true, requestedImmediatePerformance: true, termsVersion: TERMS_VERSION }),
             });
 
             const data = await res.json();
@@ -294,6 +310,7 @@ function CheckoutForm({ email, purchaseType, itemId, discount, onSuccess }: Chec
                         itemId={itemId}
                         discount={discount}
                         onSuccess={onSuccess}
+                        consentGranted={consentGranted}
                     />
                     <StripeCardInputs />
                 </>
@@ -308,7 +325,22 @@ function CheckoutForm({ email, purchaseType, itemId, discount, onSuccess }: Chec
                 <div className="text-white font-bold text-lg">{formatPrice(amountCents)}</div>
             </div>
 
-            <Button className="w-full" onClick={handlePay} disabled={loading}>
+            <label className="flex items-start gap-3 text-xs leading-relaxed text-gray-300">
+                <input
+                    type="checkbox"
+                    checked={consentGranted}
+                    onChange={(event) => {
+                        setConsentGranted(event.target.checked);
+                        if (event.target.checked) setError("");
+                    }}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-violet-500"
+                />
+                <span>
+                    I accept the <a href="/docs/terms-of-service" target="_blank" className="text-violet-300 underline">Terms of Service</a> and expressly request CandidAI to start processing immediately. I understand that this may affect or end my statutory withdrawal right once the service has been fully performed, as explained in the Terms.
+                </span>
+            </label>
+
+            <Button className="w-full" onClick={handlePay} disabled={loading || !consentGranted}>
                 {loading ? (
                     <span className="flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin" /> Processing...

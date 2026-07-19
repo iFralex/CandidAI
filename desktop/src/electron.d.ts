@@ -27,7 +27,7 @@ export interface ElectronAPI {
   openExternal: (url: string) => Promise<void>;
   connectProvider: (provider: 'gmail' | 'outlook', userId: string, idToken: string) => Promise<'connected' | 'error'>;
   connectResend: (userId: string, idToken: string, apiKey: string, fromEmail: string, senderName: string) => Promise<'connected' | 'error'>;
-  disconnectProvider: (provider: string) => Promise<void>;
+  disconnectProvider: (provider: string, userId: string, idToken: string) => Promise<void>;
   getProviderStatus: (provider: string) => Promise<boolean>;
   startCampaign: (payload: CampaignPayload) => Promise<void>;
   stopCampaign: (userId: string, idToken: string) => Promise<void>;

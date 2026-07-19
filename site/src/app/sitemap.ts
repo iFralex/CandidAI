@@ -7,6 +7,7 @@ const DOC_SLUGS = [
   "video-promo-scripts",
   "privacy-policy",
   "cookie-policy",
+  "terms-of-service",
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

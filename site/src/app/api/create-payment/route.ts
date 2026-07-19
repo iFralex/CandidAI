@@ -13,10 +13,13 @@ import { recordPaymentSuccess } from "@/lib/server-track";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-16" });
 
 export async function POST(req: Request) {
-    const { payment_method_id, purchaseType, itemId, discountCode } = await req.json();
+    const { payment_method_id, purchaseType, itemId, discountCode, acceptedTerms, requestedImmediatePerformance, termsVersion } = await req.json();
 
     if (!purchaseType || !itemId) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+    if (acceptedTerms !== true || requestedImmediatePerformance !== true || termsVersion !== "2026-07-19") {
+        return NextResponse.json({ error: "Terms and immediate-performance consent are required" }, { status: 400 });
     }
 
     try {
@@ -107,6 +110,12 @@ export async function POST(req: Request) {
                     currency: "eur",
                     status: "succeeded",
                     discountCode: appliedDiscountCode,
+                    termsAcceptance: {
+                        version: termsVersion,
+                        accepted: true,
+                        immediatePerformanceRequested: true,
+                        acceptedAt: new Date(),
+                    },
                     createdAt: new Date(),
                 });
 
@@ -179,6 +188,9 @@ export async function POST(req: Request) {
                 // Persisted on the PaymentIntent so webhook/payment-confirm can
                 // re-apply the same code without re-trusting the client.
                 discountCode: appliedDiscountCode ?? "",
+                termsVersion,
+                termsAccepted: "true",
+                immediatePerformanceRequested: "true",
             },
         });
 

@@ -3,7 +3,7 @@ import { adminAuth, adminDb } from "@/lib/firebase-admin";
 
 export async function POST(req: Request) {
   try {
-    const { mode, email, password, name } = await req.json();
+    const { mode, email, password, name, acceptedTerms, termsVersion } = await req.json();
     const now = new Date().toISOString();
 
     if (!mode || !["login", "register"].includes(mode)) {
@@ -22,6 +22,12 @@ export async function POST(req: Request) {
       if (!email || !password) {
         return NextResponse.json(
           { error: "Missing email or password" },
+          { status: 400 }
+        );
+      }
+      if (acceptedTerms !== true || termsVersion !== "2026-07-19") {
+        return NextResponse.json(
+          { error: "Terms acceptance is required" },
           { status: 400 }
         );
       }
@@ -69,6 +75,10 @@ export async function POST(req: Request) {
         plan: "free_trial",
         credits: 0,
         emailVerified: false,
+        termsAcceptance: {
+          version: termsVersion,
+          acceptedAt: now,
+        },
       });
 
       fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
