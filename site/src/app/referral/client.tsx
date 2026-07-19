@@ -313,7 +313,7 @@ const KIT_PHYSICAL_ITEMS = [
     { icon: StickyNote, name: "Post-it pad", description: "Targeted messages, made to be left where no one expects them.", preview: "/images/referral/materials/post-it.svg" },
     { icon: GraduationCap, name: "10 'Ignored Applications' diplomas", description: "Rolled with ribbon, indistinguishable from the real thing.", preview: "/images/referral/materials/diploma.svg" },
     { icon: Presentation, name: "Foldable A3 poster", description: "Built for career days.", preview: "/images/referral/materials/instruction-sheet.svg" },
-    { icon: Pin, name: "Removable tape + adhesive putty", description: "Hang anything, anywhere, without leaving a trace.", preview: null },
+    { icon: Pin, name: "Removable tape + adhesive putty", description: "Hang anything, anywhere, without leaving a trace.", preview: "/images/referral/materials/removable-tape-putty.webp" },
     { icon: Sparkle, name: "1 rare holographic sticker", description: "Only for those who actually open the kit.", preview: "/images/referral/materials/sticker-holo.svg" },
 ];
 
@@ -369,7 +369,28 @@ const KitSection = () => {
                                 transition={{ duration: 0.4, delay: index * 0.05 }}
                             >
                                 <Card className="p-4 sm:p-5 h-full relative" gradient={isRare}>
-                                    {item.preview && (
+                                    {item.name === "30 rejection letters" ? (
+                                        <div className="relative mb-5 h-44 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                                            <a
+                                                href="/images/referral/materials/rejection-letter-01.svg"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="absolute inset-y-3 left-2 z-10 w-[68%] -rotate-3 overflow-hidden rounded-md border border-white/15 bg-[#f4f0e8] p-1 shadow-lg transition-transform duration-300 hover:z-30 hover:rotate-0 hover:scale-[1.03]"
+                                                aria-label="Open a full-size rejection letter"
+                                            >
+                                                <img src="/images/referral/materials/rejection-letter-01.svg" alt="Rejection letter" loading="lazy" className="h-full w-full object-contain" />
+                                            </a>
+                                            <a
+                                                href="/images/referral/materials/letter-special.svg"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="absolute inset-y-3 right-2 z-20 w-[64%] rotate-3 overflow-hidden rounded-md border border-violet-300/30 bg-[#f4f0e8] p-1 shadow-xl transition-transform duration-300 hover:rotate-0 hover:scale-[1.03]"
+                                                aria-label="Open the recruiter interview email"
+                                            >
+                                                <img src="/images/referral/materials/letter-special.svg" alt="Recruiter email inviting the candidate to an interview" loading="lazy" className="h-full w-full object-contain" />
+                                            </a>
+                                        </div>
+                                    ) : item.preview && (
                                         <a href={item.preview} target="_blank" rel="noopener noreferrer" className="group/preview mb-5 flex h-44 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-3" aria-label={`Open a full-size preview of ${item.name}`}>
                                             <img src={item.preview} alt="" loading="lazy" className="h-full w-full object-contain transition-transform duration-300 group-hover/preview:scale-[1.03]" />
                                         </a>
@@ -476,8 +497,8 @@ const PLAYBOOK = [
         icon: FileX,
         title: "The CV Funeral",
         tag: "Advanced stunt",
-        description: "A headstone, a wreath, a minute of silence for the CV sent through LinkedIn — opened by no one, remembered by no one. Print files are in the digital kit; larger stunts may qualify for pre-approved printing support.",
-        preview: "/images/referral/materials/letter-special.svg",
+        description: "A headstone, a wreath, a minute of silence for the CV sent through LinkedIn — opened by no one, remembered by no one. Build the scene with simple local props; larger stunts may qualify for pre-approved production support.",
+        preview: null,
     },
 ];
 
@@ -536,20 +557,55 @@ const PlaybookSection = () => {
                         <Card className="p-5 sm:p-8 h-full">
                             <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_minmax(180px,0.72fr)] sm:items-start">
                                 <div>
-                                    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
-                                                <ActiveIcon className="w-6 h-6 text-violet-400" />
-                                            </div>
-                                            <h3 className="text-2xl font-bold text-white">{active.title}</h3>
+                                    <Badge
+                                        variant={active.tag === "Advanced stunt" ? "destructive" : "secondary"}
+                                        className="mb-4 w-fit whitespace-nowrap"
+                                    >
+                                        {active.tag}
+                                    </Badge>
+                                    <div className="mb-6 flex min-w-0 items-start gap-3">
+                                        <div className="w-12 h-12 shrink-0 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                                            <ActiveIcon className="w-6 h-6 text-violet-400" />
                                         </div>
-                                        <Badge variant={active.tag === "Advanced stunt" ? "destructive" : "secondary"}>{active.tag}</Badge>
+                                        <h3 className="min-w-0 break-words text-2xl font-bold leading-tight text-white">{active.title}</h3>
                                     </div>
                                     <p className="text-gray-300 leading-relaxed text-lg">{active.description}</p>
                                 </div>
-                                <a href={active.preview} target="_blank" rel="noopener noreferrer" className="flex h-64 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-3" aria-label={`Open the full-size ${active.title} material`}>
-                                    <img src={active.preview} alt="" loading="lazy" className="h-full w-full object-contain transition-transform duration-300 hover:scale-[1.02]" />
-                                </a>
+                                {active.title === "The Rejection Wall" ? (
+                                    <div className="relative h-64 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                                        <a
+                                            href="/images/referral/materials/rejection-letter-02.svg"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="absolute inset-y-5 left-3 z-10 w-[68%] -rotate-3 overflow-hidden rounded-lg border border-white/15 bg-[#f4f0e8] p-1 shadow-xl transition-transform duration-300 hover:z-30 hover:rotate-0 hover:scale-[1.03]"
+                                            aria-label="Open the rejection letter"
+                                        >
+                                            <img src="/images/referral/materials/rejection-letter-02.svg" alt="Rejection letter" loading="lazy" className="h-full w-full object-contain" />
+                                        </a>
+                                        <a
+                                            href="/images/referral/materials/letter-special.svg"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="absolute inset-y-5 right-3 z-20 w-[64%] rotate-3 overflow-hidden rounded-lg border border-violet-300/30 bg-[#f4f0e8] p-1 shadow-2xl transition-transform duration-300 hover:rotate-0 hover:scale-[1.03]"
+                                            aria-label="Open the recruiter interview email"
+                                        >
+                                            <img src="/images/referral/materials/letter-special.svg" alt="Recruiter email inviting the candidate to an interview" loading="lazy" className="h-full w-full object-contain" />
+                                        </a>
+                                        <span className="absolute bottom-2 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/75 px-3 py-1 text-[11px] font-medium text-gray-300 backdrop-blur-sm">
+                                            Rejection → interview
+                                        </span>
+                                    </div>
+                                ) : active.preview ? (
+                                    <a href={active.preview} target="_blank" rel="noopener noreferrer" className="flex h-64 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-3" aria-label={`Open the full-size ${active.title} material`}>
+                                        <img src={active.preview} alt="" loading="lazy" className="h-full w-full object-contain transition-transform duration-300 hover:scale-[1.02]" />
+                                    </a>
+                                ) : (
+                                    <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-white/15 bg-white/[0.025] p-6 text-center">
+                                        <ActiveIcon className="mb-4 h-10 w-10 text-violet-400/70" />
+                                        <p className="font-medium text-white">Build it your way</p>
+                                        <p className="mt-2 max-w-48 text-sm leading-relaxed text-gray-500">An activation concept, not a pre-made print file.</p>
+                                    </div>
+                                )}
                             </div>
                         </Card>
                     </div>

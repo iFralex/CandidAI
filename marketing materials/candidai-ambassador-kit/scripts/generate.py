@@ -381,45 +381,49 @@ b.append(T(160, 280, "AMBASSADOR KIT", 130, WHITE, weight="900", spacing="2"))
 b.append(T(160, 400, "Field manual \u2014 read once, then go make noise.", 52, VTEXT))
 b.append(f'<rect x="160" y="460" width="300" height="10" fill="{VIOLET}"/>')
 
-def section(bl, y, title, lines):
+def section(bl, y, title, lines, font_size=44, line_height=66, bottom_gap=38):
     bl.append(T(160, y, title.upper(), 58, VIOLET, weight="900", spacing="3"))
     yy = y + 90
     for ln in lines:
-        bl.append(T(160, yy, ln, 46, G300))
-        yy += 72
-    return yy + 50
+        bl.append(T(160, yy, ln, font_size, G300))
+        yy += line_height
+    return yy + bottom_gap
 
 y = 620
 y = section(b, y, "1 \u2014 Your QR is your score", [
     "Every sticker, card and tab in this kit carries YOUR tracked link.",
-    "Every scan and every signup shows up in your dashboard in real time.",
-    "More signups = more rewards. Simple.",
+    "Scans, signups and qualifying purchases appear in your dashboard in real time.",
+    "Only completed qualifying purchases earn commissions and milestone rewards.",
 ])
 y = section(b, y, "2 \u2014 The actions", [
     "\u25AA Stickers \u2192 boards, study rooms, free spaces. Test all 5 designs.",
-    "\u25AA Tear-off flyer \u2192 official notice boards only.",
+    "\u25AA Tear-off flyer \u2192 approved or free-posting notice boards only.",
     "\u25AA Rejection wall \u2192 one board, 20+ letters, 1 special letter in the middle.",
-    "\u25AA Post-its \u2192 inside interview-prep books in the library.",
+    "\u25AA Post-its \u2192 interview-prep books, only where explicitly permitted.",
     "\u25AA Diplomas \u2192 graduation days, hand them out with a straight face.",
-    "\u25AA Career fair \u2192 A3 sign + cards, outside the venue, in the queue.",
-])
+    "\u25AA Career fair \u2192 A3 sign + cards in permitted areas; never block access.",
+    "\u25AA CV funeral \u2192 coordinate the venue and props; get approval first.",
+], font_size=42, line_height=61, bottom_gap=34)
 y = section(b, y, "3 \u2014 Where yes / where no", [
     "YES: student notice boards, free-posting areas, your own laptop, handing out.",
-    "NO: monuments, private property, anywhere marked 'no bills', inside stands.",
+    "NO: monuments, private property, restricted areas, or anywhere marked 'no bills'.",
     "Use the removable tape provided. Leave no damage. Irony yes, insults no.",
 ])
 y = section(b, y, "4 \u2014 The pitch (15 seconds)", [
     "\u201CLinkedIn applications get ignored \u2014 thousands of CVs per role.",
     "CandidAI finds the right recruiter at your target company and writes",
-    "a personalized email straight to them. It's how people actually get in.\u201D",
+    "a personalized email to them \u2014 a more direct way to start a conversation.\u201D",
 ])
-y = section(b, y, "5 \u2014 Rewards", [
-    "1 referral \u2192 campaign t-shirt   \u2022   3 \u2192 rare sticker pack + pin",
-    "5 \u2192 tote / mug / socks + credits   \u2022   10 \u2192 hoodie + Ultra plan for life",
-    "Top 3 of the semester \u2192 reference letter + cash commission + insider access.",
-])
+y = section(b, y, "5 \u2014 Commissions + rewards", [
+    "Progressive rates: 1\u20135: 5%   \u2022   6\u201315: 10%   \u2022   16\u201330: 15%   \u2022   31+: 20%",
+    "15 in 1 month \u2192 campaign T-shirt.",
+    "50 in 3 months \u2192 rare stickers + pin + merch choice + 25,000 credits.",
+    "200 in 1 year \u2192 hoodie + Ultra plan + founder CV/LinkedIn review.",
+    "Top 3 / semester \u2192 reference + badge + 20% commission boost + insider access.",
+], font_size=40, line_height=58, bottom_gap=20)
+b.append(T(160, 2580, "Benefits, thresholds and fulfilment are subject to current program terms.", 34, G500))
 b.append(f'<line x1="160" y1="{H-260}" x2="{W-160}" y2="{H-260}" stroke="{G500}" stroke-width="2"/>')
-b.append(T(160, H-170, "Questions? \u2192 Ambassador Discord (QR on your card sleeve)", 44, G400))
+b.append(T(160, H-170, "Questions? \u2192 Use the ambassador support channel shared after approval.", 40, G400))
 b.append(T(W-160, H-170, "candidai.tech", 52, VIOLET, weight="900", anchor="end"))
 svg("instruction-sheet", 210, 297, "".join(b))
 
