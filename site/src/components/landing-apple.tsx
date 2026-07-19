@@ -11,6 +11,7 @@ import { track } from "@/lib/analytics";
 import { emailExamples } from "@/lib/email-examples";
 import { ScrollPinSection, fadeRange } from "@/components/scroll/ScrollPinSection";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
+import { HeroVideo } from "@/components/HeroVideo";
 
 // One weight, one subset — this is the only place in the "apple" variant that
 // needs a genuinely distinctive display face rather than the site's default
@@ -235,6 +236,66 @@ function AppleHeroAnimated({ progress }: { progress: MotionValue<number> }) {
                 className="absolute bottom-16 flex flex-col items-center gap-3"
             >
                 <HeroCta />
+            </motion.div>
+        </div>
+    );
+}
+
+export function AppleCampaignVideo() {
+    return (
+        <ScrollPinSection heightVh={200} className="bg-black">
+            {(progress) => <AppleCampaignVideoScene progress={progress} />}
+        </ScrollPinSection>
+    );
+}
+
+function AppleCampaignVideoScene({ progress }: { progress: MotionValue<number> }) {
+    const prefersReducedMotion = useReducedMotion();
+    if (prefersReducedMotion) return <AppleCampaignVideoStatic />;
+    return <AppleCampaignVideoAnimated progress={progress} />;
+}
+
+/**
+ * Reduced motion: a normal, responsive, contained video card — not a frame
+ * forced into a full-bleed edge-to-edge shape. There's no scroll-driven
+ * expansion to justify full-bleed here, so `HeroVideo` renders with its
+ * default props (capped width, rounded corners, border) exactly as it does
+ * everywhere else on the site.
+ */
+function AppleCampaignVideoStatic() {
+    return (
+        <div className="flex w-full flex-col items-center justify-center gap-8 px-6 py-20">
+            <p className="text-center text-sm font-semibold uppercase tracking-[0.18em] text-violet-300">
+                Your next opportunity starts with being seen
+            </p>
+            <HeroVideo />
+        </div>
+    );
+}
+
+function AppleCampaignVideoAnimated({ progress }: { progress: MotionValue<number> }) {
+    // Width ramps from a contained card up to 100% of this section's full-bleed
+    // wrapper (the section itself has no horizontal padding — see below — so
+    // 100% here really does reach the viewport edges, unlike the old approach
+    // of animating a wrapper around a HeroVideo that still capped at max-w-5xl
+    // internally).
+    const width = useTransform(progress, (p) => `${55 + fadeRange(p, 0, 0.6) * 45}%`);
+    const radius = useTransform(progress, (p) => 24 - fadeRange(p, 0, 0.6) * 24);
+    const captionOpacity = useTransform(progress, (p) => 1 - fadeRange(p, 0, 0.3));
+
+    return (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-8">
+            <motion.p
+                style={{ opacity: captionOpacity }}
+                className="px-6 text-center text-sm font-semibold uppercase tracking-[0.18em] text-violet-300"
+            >
+                Your next opportunity starts with being seen
+            </motion.p>
+            <motion.div style={{ width, borderRadius: radius }} className="overflow-hidden">
+                {/* wrapperClassName="" removes HeroVideo's own max-w-5xl cap; bare
+                    drops its internal rounded corners/border so THIS wrapper's
+                    animated radius is the only one that applies. */}
+                <HeroVideo wrapperClassName="" bare />
             </motion.div>
         </div>
     );
