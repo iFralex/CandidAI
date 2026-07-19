@@ -75,7 +75,10 @@ export function HorizontalScrollGallery<T,>({ items, renderItem, className, test
     const containerRef = useRef<HTMLDivElement>(null);
     const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
     const [activeIndex, setActiveIndex] = useState(0);
-    const prefersReducedMotion = useReducedMotion();
+    // `useReducedMotion()` returns `boolean | null` (null before the media
+    // query resolves on first render) — normalized to a real boolean here
+    // since `renderItem`'s signature declares `prefersReducedMotion: boolean`.
+    const prefersReducedMotion = useReducedMotion() ?? false;
 
     useEffect(() => {
         const container = containerRef.current;
