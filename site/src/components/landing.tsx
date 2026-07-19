@@ -1154,28 +1154,49 @@ const EmailExamplesSection = () => {
 
     const examples = [
         {
-            company: "TechCorp",
-            role: "Senior Frontend Developer",
-            subject: "Passionate Frontend Developer - Excited About TechCorp's Innovation",
-            preview: "Hi Sarah,\n\nI came across TechCorp's recent blog post about micro-frontend architecture and was genuinely impressed by your team's innovative approach...\n\nAs a Senior Frontend Developer with 5 years of experience in React and TypeScript, I've implemented similar solutions at my current role...",
-            recruiter: "Sarah Johnson",
+            company: "Oatly",
+            candidate: "Freya Lindholm",
+            role: "Marketing · University of Gothenburg",
+            subject: "Marketing grad with food brand social growth",
+            preview: "Hi Hannah,\n\nI'm a recent marketing graduate from University of Gothenburg, and I've been following Oatly's playful social-first campaigns. During a 6-month internship at a local food brand, I grew their Instagram from 2,000 to 9,000 followers and ran a campaign that boosted online orders by 15%. I'm comfortable with Canva, Meta Ads, and content planning. I'd like to bring that scrappy growth mindset to Oatly's brand team. Could we have a 15-minute chat about junior roles on your social team?",
+            recruiter: "Hannah",
             matchScore: "92%"
         },
         {
-            company: "StartupXYZ",
-            role: "Product Manager",
-            subject: "Product Manager with B2B SaaS Experience - StartupXYZ Opportunity",
-            preview: "Hi Michael,\n\nStartupXYZ's recent Series B announcement caught my attention, particularly your expansion into the enterprise market...\n\nWith 4 years of B2B SaaS product management experience, I've successfully launched products that align perfectly with your roadmap...",
-            recruiter: "Michael Chen",
+            company: "HubSpot",
+            candidate: "Marcus Johnson",
+            role: "Sales · Arizona State University",
+            subject: "Aspiring SDR with top sales results",
+            preview: "Hi Ashley,\n\nI'm a final-year Business student at ASU with a top sales performance at an electronics retailer, where I closed $45k in a quarter as the top associate. I know you started as an SDR, which is the path I'm pursuing. My campus sales competition 2nd place showed I can learn fast. HubSpot's focus on helping small sales teams thrive resonates with me because I've seen how the right tools empower reps. Could we have a 15-minute chat about the SDR role?",
+            recruiter: "Ashley",
             matchScore: "89%"
         },
         {
-            company: "FinanceFlow",
-            role: "Data Scientist",
-            subject: "ML Engineer Excited About FinanceFlow's AI-Driven Solutions",
-            preview: "Hi Emma,\n\nI was fascinated by FinanceFlow's recent presentation at FinTech Summit about using ML for fraud detection...\n\nAs a Data Scientist with expertise in anomaly detection and financial modeling, I've developed similar systems...",
-            recruiter: "Emma Rodriguez",
+            company: "N26",
+            candidate: "Lucía Morales",
+            role: "Finance · Valencia",
+            subject: "FP&A Junior Candidate — Lucia Morales",
+            preview: "Hi Julia,\n\nI noticed N26's recent push toward disciplined unit economics and path to profitability, which aligns with my background in financial modeling and efficiency. During my internship at a small advisory firm, I built an Excel model that cut monthly management reporting from two days to three hours. My thesis valued a listed company, strengthening my financial analysis skills. I believe my experience could contribute to N26's FP&A team as you drive disciplined financial planning. Could we schedule a 15-minute conversation to explore junior FP&A analyst opportunities?",
+            recruiter: "Julia",
             matchScore: "94%"
+        },
+        {
+            company: "Razorpay",
+            candidate: "Rohan Mehta",
+            role: "Computer Science · VIT Vellore",
+            subject: "Rohan Mehta, built app used by 300",
+            preview: "Hi Ananya,\n\nI've been following Razorpay's product engineering expansion for merchant payments. I built a study-group scheduling app now used by about 300 classmates at VIT Vellore, working with React and Node. I also did freelance websites, giving me a feel for real-world requirements. I think my experience building a functional tool for real users aligns with the kind of scalable products Razorpay builds. Could we have a 15-minute chat about a junior full-stack role on your team?",
+            recruiter: "Ananya",
+            matchScore: "91%"
+        },
+        {
+            company: "Nubank",
+            candidate: "Camila Santos",
+            role: "Statistics · UFMG",
+            subject: "Data analyst candidate with Tableau experience",
+            preview: "Hi Bruno,\n\nAs a statistics graduate with internship experience in data analytics, I've been following Nubank's data-driven approach to credit and customer growth. In my 4-month internship at a retailer, I built a Tableau dashboard that helped reduce stockouts by about 10%. I'm currently learning Python to expand my analytics toolkit. I believe my experience using data to solve operational problems aligns with the work your analytics team does. Could we have a 15-minute chat to discuss junior analyst roles that fit my background?\n\nBest,\nCamila Santos",
+            recruiter: "Bruno",
+            matchScore: "93%"
         }
     ];
 
@@ -1205,6 +1226,7 @@ const EmailExamplesSection = () => {
                                     <h3 className="text-white font-semibold">{example.company}</h3>
                                     <Badge variant="success">{example.matchScore} AI match</Badge>
                                 </div>
+                                <p className="text-white/80 text-sm mb-1">{example.candidate}</p>
                                 <p className="text-gray-400 text-sm mb-2">{example.role}</p>
                                 <p className="text-gray-500 text-xs">To: {example.recruiter}</p>
                             </Card>
@@ -1218,7 +1240,8 @@ const EmailExamplesSection = () => {
                         <Card className="p-8">
                             <div className="mb-6">
                                 <h3 className="text-2xl font-bold text-white mb-2">{examples[selectedExample].company}</h3>
-                                <p className="text-violet-400 mb-4">{examples[selectedExample].role}</p>
+                                <p className="text-violet-400 mb-1">{examples[selectedExample].candidate}</p>
+                                <p className="text-gray-400 mb-4">{examples[selectedExample].role}</p>
                                 <div className="bg-black/30 rounded-lg p-4 mb-4">
                                     <p className="text-sm text-gray-400 mb-2">Subject:</p>
                                     <p className="text-white font-medium">{examples[selectedExample].subject}</p>
@@ -1238,11 +1261,6 @@ const EmailExamplesSection = () => {
                                     {examples[selectedExample].preview}
                                 </div>
 
-                                <div className="mt-4 pt-4 border-t border-white/10">
-                                    <p className="text-sm text-gray-500">
-                                        ... and 3 more personalized paragraphs with specific company insights and call-to-action
-                                    </p>
-                                </div>
                             </div>
                         </Card>
                     </div>

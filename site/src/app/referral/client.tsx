@@ -306,15 +306,15 @@ const DashboardPreviewSection = () => {
 };
 
 const KIT_PHYSICAL_ITEMS = [
-    { icon: Sticker, name: "50 stickers, 5 designs", description: "Bulletin-board size and laptop/bottle size, each with a tracked QR." },
-    { icon: QrCode, name: "50 personal QR cards", description: "Your link, pocket-sized. Hand them out or leave them behind." },
-    { icon: Newspaper, name: "15 fake job postings", description: "Pre-cut tear-off tabs, straight out of a '90s bulletin board." },
-    { icon: Mail, name: "30 rejection letters", description: "Fake, but painfully realistic — plus a few 'special' ones." },
-    { icon: StickyNote, name: "Post-it pad", description: "Targeted messages, made to be left where no one expects them." },
-    { icon: GraduationCap, name: "10 'Ignored Applications' diplomas", description: "Rolled with ribbon, indistinguishable from the real thing." },
-    { icon: Presentation, name: "Foldable A3 poster", description: "Built for career days." },
-    { icon: Pin, name: "Removable tape + adhesive putty", description: "Hang anything, anywhere, without leaving a trace." },
-    { icon: Sparkle, name: "1 rare holographic sticker", description: "Only for those who actually open the kit." },
+    { icon: Sticker, name: "50 stickers, 5 designs", description: "Bulletin-board size and laptop/bottle size, each with a tracked QR.", preview: "/images/referral/materials/sticker-01.svg" },
+    { icon: QrCode, name: "50 personal QR cards", description: "Your link, pocket-sized. Hand them out or leave them behind.", preview: "/images/referral/materials/card-qr-front.svg" },
+    { icon: Newspaper, name: "15 fake job postings", description: "Pre-cut tear-off tabs, straight out of a '90s bulletin board.", preview: "/images/referral/materials/flyer-tear-tabs.svg" },
+    { icon: Mail, name: "30 rejection letters", description: "Fake, but painfully realistic — plus a few 'special' ones.", preview: "/images/referral/materials/rejection-letter-01.svg" },
+    { icon: StickyNote, name: "Post-it pad", description: "Targeted messages, made to be left where no one expects them.", preview: "/images/referral/materials/post-it.svg" },
+    { icon: GraduationCap, name: "10 'Ignored Applications' diplomas", description: "Rolled with ribbon, indistinguishable from the real thing.", preview: "/images/referral/materials/diploma.svg" },
+    { icon: Presentation, name: "Foldable A3 poster", description: "Built for career days.", preview: "/images/referral/materials/instruction-sheet.svg" },
+    { icon: Pin, name: "Removable tape + adhesive putty", description: "Hang anything, anywhere, without leaving a trace.", preview: null },
+    { icon: Sparkle, name: "1 rare holographic sticker", description: "Only for those who actually open the kit.", preview: "/images/referral/materials/sticker-holo.svg" },
 ];
 
 const KIT_DIGITAL_ITEMS = [
@@ -345,13 +345,15 @@ const KitSection = () => {
                     </p>
                 </div>
 
-                <div className="grid lg:grid-cols-[1.35fr_0.65fr] gap-5 mb-10">
-                    <div className="overflow-hidden rounded-2xl border border-violet-500/20 bg-violet-500/5">
-                        <Image src="/images/referral/ambassador-kit-mockup.webp" alt="The CandidAI Ambassador Kit" width={1672} height={941} className="h-full w-full object-cover" sizes="(max-width: 1024px) 100vw, 760px" />
-                    </div>
-                    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-                        <Image src="/images/referral/campaign-materials-mockup.webp" alt="CandidAI campaign cards, stickers, rejection letter, and diploma" width={1536} height={1024} className="h-full min-h-64 w-full object-cover" sizes="(max-width: 1024px) 100vw, 380px" />
-                    </div>
+                <div className="mb-10 overflow-hidden rounded-2xl border border-violet-500/20 bg-violet-500/5 shadow-2xl shadow-violet-950/25">
+                    <Image
+                        src="/images/referral/ambassador-kit.webp"
+                        alt="The complete CandidAI Ambassador Kit with QR cards, stickers, posters, rejection letters, diploma, and campaign materials"
+                        width={1672}
+                        height={941}
+                        className="h-auto w-full object-cover"
+                        sizes="(max-width: 768px) 100vw, 1152px"
+                    />
                 </div>
 
                 <div className={`grid sm:grid-cols-2 gap-6 mb-10 ${showAllItems ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
@@ -366,7 +368,12 @@ const KitSection = () => {
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.4, delay: index * 0.05 }}
                             >
-                                <Card className="p-6 h-full relative" gradient={isRare}>
+                                <Card className="p-4 sm:p-5 h-full relative" gradient={isRare}>
+                                    {item.preview && (
+                                        <a href={item.preview} target="_blank" rel="noopener noreferrer" className="group/preview mb-5 flex h-44 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-3" aria-label={`Open a full-size preview of ${item.name}`}>
+                                            <img src={item.preview} alt="" loading="lazy" className="h-full w-full object-contain transition-transform duration-300 group-hover/preview:scale-[1.03]" />
+                                        </a>
+                                    )}
                                     <Icon className="w-7 h-7 text-violet-400 mb-3" />
                                     <h3 className="text-white font-semibold mb-1">{item.name}</h3>
                                     <p className="text-gray-400 text-sm">{item.description}</p>
@@ -428,42 +435,49 @@ const PLAYBOOK = [
         title: "Sticker Bombing",
         tag: "Reliable",
         description: "Bulletin boards, study rooms, any free surface. Five designs — find out which one converts best on your campus.",
+        preview: "/images/referral/materials/sticker-03.svg",
     },
     {
         icon: Newspaper,
         title: "The Fake Job Posting",
         tag: "Reliable",
         description: "Pin it up with tear-off tabs: \"Wanted: Junior Developer. Requirements: 5 years of experience for an entry-level role. Or just tear a tab.\" Every tab torn off is a potential signup.",
+        preview: "/images/referral/materials/flyer-tear-tabs.svg",
     },
     {
         icon: Stamp,
         title: "The Rejection Wall",
         tag: "High impact",
         description: "Cover a board with dozens of identical rejection letters. In the middle, one that's different — a recruiter who actually replies. The contrast says everything.",
+        preview: "/images/referral/materials/rejection-letter-02.svg",
     },
     {
         icon: BookOpen,
         title: "Post-its in the Right Books",
         tag: "Sneaky",
         description: "A post-it inside Cracking the Coding Interview or a finance textbook: whoever finds it is preparing for interviews that LinkedIn was never going to bring them.",
+        preview: "/images/referral/materials/post-it-02.svg",
     },
     {
         icon: GraduationCap,
         title: "The 'Ignored Applications' Diploma",
         tag: "Perfect timing",
         description: "On graduation day, hand new graduates the diploma nobody wants — but everyone photographs. Timed to the exact day job-search anxiety kicks in.",
+        preview: "/images/referral/materials/diploma.svg",
     },
     {
         icon: Megaphone,
         title: "Career Day Mission",
         tag: "Reliable",
         description: "The line to talk to the big-name booth lasts two hours. You, with a poster and a card: \"This line: 2 hours. A direct email to the right recruiter: 2 minutes.\"",
+        preview: "/images/referral/materials/instruction-sheet.svg",
     },
     {
         icon: FileX,
         title: "The CV Funeral",
         tag: "Advanced stunt",
         description: "A headstone, a wreath, a minute of silence for the CV sent through LinkedIn — opened by no one, remembered by no one. Print files are in the digital kit; larger stunts may qualify for pre-approved printing support.",
+        preview: "/images/referral/materials/letter-special.svg",
     },
 ];
 
@@ -519,17 +533,24 @@ const PlaybookSection = () => {
                     </div>
 
                     <div className="lg:col-span-2">
-                        <Card className="p-8 h-full">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
-                                        <ActiveIcon className="w-6 h-6 text-violet-400" />
+                        <Card className="p-5 sm:p-8 h-full">
+                            <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_minmax(180px,0.72fr)] sm:items-start">
+                                <div>
+                                    <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                                                <ActiveIcon className="w-6 h-6 text-violet-400" />
+                                            </div>
+                                            <h3 className="text-2xl font-bold text-white">{active.title}</h3>
+                                        </div>
+                                        <Badge variant={active.tag === "Advanced stunt" ? "destructive" : "secondary"}>{active.tag}</Badge>
                                     </div>
-                                    <h3 className="text-2xl font-bold text-white">{active.title}</h3>
+                                    <p className="text-gray-300 leading-relaxed text-lg">{active.description}</p>
                                 </div>
-                                <Badge variant={active.tag === "Advanced stunt" ? "destructive" : "secondary"}>{active.tag}</Badge>
+                                <a href={active.preview} target="_blank" rel="noopener noreferrer" className="flex h-64 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.035] p-3" aria-label={`Open the full-size ${active.title} material`}>
+                                    <img src={active.preview} alt="" loading="lazy" className="h-full w-full object-contain transition-transform duration-300 hover:scale-[1.02]" />
+                                </a>
                             </div>
-                            <p className="text-gray-300 leading-relaxed text-lg">{active.description}</p>
                         </Card>
                     </div>
                 </div>
