@@ -312,7 +312,7 @@ const KIT_PHYSICAL_ITEMS = [
     { icon: Mail, name: "30 rejection letters", description: "Fake, but painfully realistic — plus a few 'special' ones.", preview: "/images/referral/materials/rejection-letter-01.svg" },
     { icon: StickyNote, name: "Post-it pad", description: "Targeted messages, made to be left where no one expects them.", preview: "/images/referral/materials/post-it.svg" },
     { icon: GraduationCap, name: "10 'Ignored Applications' diplomas", description: "Rolled with ribbon, indistinguishable from the real thing.", preview: "/images/referral/materials/diploma.svg" },
-    { icon: Presentation, name: "Foldable A3 poster", description: "Built for career days.", preview: "/images/referral/materials/instruction-sheet.svg" },
+    { icon: Presentation, name: "Foldable A3 poster", description: "Built for career days.", preview: "/images/referral/materials/career-day-sign.svg" },
     { icon: Pin, name: "Removable tape + adhesive putty", description: "Hang anything, anywhere, without leaving a trace.", preview: "/images/referral/materials/removable-tape-putty.webp" },
     { icon: Sparkle, name: "1 rare holographic sticker", description: "Only for those who actually open the kit.", preview: "/images/referral/materials/sticker-holo.svg" },
 ];
@@ -492,7 +492,7 @@ const PLAYBOOK = [
         title: "Career Day Mission",
         tag: "Reliable",
         description: "The line to talk to the big-name booth lasts two hours. You, with a poster and a card: \"This line: 2 hours. A direct email to the right recruiter: 2 minutes.\"",
-        preview: "/images/referral/materials/instruction-sheet.svg",
+        preview: "/images/referral/materials/career-day-sign.svg",
     },
     {
         icon: FileX,

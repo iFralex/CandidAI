@@ -12,6 +12,7 @@ Keep `logo.png` (transparent background) in the same folder as the scripts.
 ```bash
 python3 generate.py    # stickers, cards, flyer, letters, post-its, diploma, instruction sheet
 python3 make_holo.py   # holographic collectible sticker
+python3 make_sign.py   # A3 career-day sign
 ```
 All files are written to `out/`.
 
@@ -27,6 +28,7 @@ All files are written to `out/`.
 | post-it.svg, post-it-02.svg | 76 x 76 mm | intentionally unbranded |
 | diploma.svg | A4 landscape | Master's in Ignored Applications |
 | instruction-sheet.svg | A4 | dark field manual |
+| career-day-sign.svg | A3 portrait | foldable career-day queue sign |
 
 ## Customizing
 - **Palette / fonts / URL**: constants at the top of each script.
