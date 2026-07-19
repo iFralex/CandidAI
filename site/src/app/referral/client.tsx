@@ -711,7 +711,7 @@ const LEADERBOARD_REWARD = {
     title: "Top 3 of the Semester",
     rewards: [
         "A signed reference letter + \"Top Campus Ambassador\" LinkedIn badge — real, verifiable experience for your CV",
-        "20% more on every commission earned in those 3 months",
+        "A 20% bonus on all validated commission earned during the 6-month semester",
         "Insider access: a direct call with the founder, a say in upcoming features, your name in the site credits",
     ],
 };
@@ -822,11 +822,11 @@ const GROUND_RULES = [
 const FAQS = [
     {
         question: "How do I actually get paid?",
-        answer: "Eligible commissions can be paid by an available payout method or converted to CandidAI credits. The applicable threshold, timing, supported methods, and rollover rules are confirmed in the program terms provided when your application is accepted.",
+        answer: "Validated balances are paid monthly by SEPA bank transfer or PayPal once they reach €50. Smaller balances roll over, or you can convert at least €10 into CandidAI credits with a 10% conversion bonus.",
     },
     {
         question: "What counts as a referral?",
-        answer: "A completed purchase made through your personal QR code or link — not a click, not a signup. Commission tiers are based on the number of purchases, applied progressively as you cross each threshold.",
+        answer: "A completed purchase attributed to your personal QR code or link that remains valid for 14 days — not a click or signup. The customer's first purchase earns the normal progressive rate; later purchases count toward your tiers and earn half the rate otherwise applicable to each purchase.",
     },
     {
         question: "When does my Ambassador Kit arrive?",
@@ -838,7 +838,7 @@ const FAQS = [
     },
     {
         question: "How does the Pro plan benefit work?",
-        answer: "It is an eligibility-based program benefit rather than a guaranteed lifetime plan. Its duration and the activity requirements are specified in the terms provided when your application is accepted.",
+        answer: "It unlocks after your first qualifying activity and includes the standard Pro plan and 1,000 credits. Keep at least one qualifying purchase every 3 months to keep the benefit active; it can be restored after new qualifying activity.",
     },
 ];
 
@@ -939,7 +939,7 @@ const ApplyCTASection = () => {
                     </Link>
 
                     <p className="text-gray-500 text-sm mt-6">
-                        Applications are reviewed manually. Benefits, rewards, commissions, and fulfilment remain subject to eligibility, availability, and the terms shared upon acceptance.
+                        Applications are reviewed manually. Benefits, rewards, commissions, and fulfilment remain subject to eligibility, availability, and the <Link href="/docs/ambassador-program-terms" className="text-violet-300 underline hover:text-violet-200">Ambassador Program Terms</Link>.
                     </p>
                 </Card>
             </div>

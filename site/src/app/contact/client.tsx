@@ -266,7 +266,7 @@ export default function ContactPage({ defaultSubject, mode = "contact" }: { defa
                                     <div className="space-y-4">
                                         <div className="flex items-start gap-3">
                                             <Checkbox id="accepts-rules" checked={referralApplication.acceptsRules} onCheckedChange={checked => { setReferralApplication(v => ({ ...v, acceptsRules: checked === true })); setErrors(v => ({ ...v, acceptsRules: "" })); }} disabled={status === "loading"} aria-invalid={Boolean(errors.acceptsRules)} />
-                                            <Label htmlFor="accepts-rules" className="font-normal leading-relaxed">I agree to follow the Ambassador Program ground rules, including no vandalism, prohibited posting, or personal attacks.</Label>
+                                            <Label htmlFor="accepts-rules" className="font-normal leading-relaxed">I agree to follow the Ambassador Program ground rules, including no vandalism, prohibited posting, or personal attacks, and acknowledge the <a href="/docs/ambassador-program-terms" target="_blank" rel="noopener noreferrer" className="text-violet-400 underline">Ambassador Program Terms</a>.</Label>
                                         </div>
                                         {errors.acceptsRules && <p className="text-red-400 text-sm ml-7">{errors.acceptsRules}</p>}
                                         <div className="flex items-start gap-3">

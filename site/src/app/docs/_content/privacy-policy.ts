@@ -114,6 +114,9 @@ Among the types of Personal Data that this Application collects, by itself or th
 - Connected email-provider session credentials (encrypted cookies and browser fingerprint)
 - Custom-domain delivery configuration (Resend API key, sender address and sender name)
 - Email campaign instructions, recipients, message content and delivery status
+- Ambassador applications (location, organisation, role, promotion channels, profile URL, audience range and campaign proposal)
+- Ambassador administration data (referral activity, commissions, rewards, payout, identity and tax information)
+- Ambassador fulfilment data (shipping address, telephone number and clothing size)
 
 Complete details on each type of Personal Data collected are provided in the dedicated sections of this privacy policy or by specific explanation texts displayed prior to the Data collection.
 
@@ -329,6 +332,16 @@ For custom-domain sending, the User provides a Resend API key with sending permi
 
 The User may stop an active campaign, but a message already submitted to the provider or sent cannot necessarily be recalled. The Owner may pause sending when technical failures, complaints, spam indicators or anomalous activity are detected.
 
+### CandidAI Ambassador Program
+
+When a person or organisation applies to or participates in the CandidAI Ambassador Program, the Owner processes the information submitted in the application, including name, email address, country and city, university or organisation, role, promotion channels, optional profile or community URL, approximate audience and campaign proposal.
+
+For approved ambassadors, the Owner also processes the personal referral identifier, clicks, signups, attributed purchases, commission, tier and reward progress, Program communications, compliance reviews and dashboard activity. Before paying commission or fulfilling a reward, the Owner may collect legal name, address, identity or authority documentation, IBAN or PayPal details, tax information, shipping address, telephone number and clothing size.
+
+**Purpose and legal basis:** Reviewing applications and taking pre-contractual steps requested by applicants; administering the Ambassador agreement, attribution, commission, payouts, benefits, kits and rewards; complying with tax and accounting duties; and protecting the Program against fraud and abuse on the basis of the Owner's legitimate interests.
+
+**Retention:** Rejected applications are normally deleted within six months. Ambassador dashboard data is deleted or irreversibly anonymised within 12 months after participation ends. Shipping contact details and clothing sizes are retained through fulfilment and for no more than 12 months afterward. Payment, tax, contractual, fraud-prevention and dispute records may be retained for the minimum period required by applicable law or for the establishment, exercise or defence of legal claims. Limited antifraud records may be retained longer where reasonably necessary and lawful.
+
 ---
 
 ## Marketing communications
@@ -389,6 +402,7 @@ Therefore:
 - Connected email-provider cookies, browser fingerprints and custom-domain API credentials are retained for no more than three months from connection and are deleted earlier following disconnection, account deletion or revocation.
 - Payment, invoicing, contractual-acceptance, fraud-prevention and dispute records are kept only for the minimum period required by applicable law.
 - When an account is deleted, remaining account content is deleted or irreversibly anonymised. Genuinely anonymised analytics may be retained because they can no longer be linked to an identified or identifiable User.
+- Rejected Ambassador Program applications are normally retained for no more than six months; Program dashboard data and fulfilment details follow the specific periods stated in the Ambassador Program section above.
 
 The Owner may be allowed to retain Personal Data for a longer period whenever the User has given consent to such processing, as long as such consent is not withdrawn. Furthermore, the Owner may be obliged to retain Personal Data for a longer period whenever required to fulfil a legal obligation or upon order of an authority.
 

@@ -8,6 +8,7 @@ const DOC_SLUGS = [
   "privacy-policy",
   "cookie-policy",
   "terms-of-service",
+  "ambassador-program-terms",
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
