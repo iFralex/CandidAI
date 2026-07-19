@@ -1571,7 +1571,7 @@ export const Footer = () => {
     return (
         <footer className="relative border-t border-white/10 py-12 px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-                <div className="grid md:grid-cols-4 gap-8 mb-8">
+                <div className="mb-8 grid gap-8 sm:grid-cols-2 md:grid-cols-4">
                     <div className="md:col-span-2">
                         <div className="flex items-center space-x-2 mb-4">
                             <div className="w-8 h-8 bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -1589,22 +1589,20 @@ export const Footer = () => {
                     <div>
                         <h3 className="text-white font-semibold mb-4">Product</h3>
                         <ul className="space-y-2 text-gray-400">
-                            <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                            <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                            <li><a href="#process" className="hover:text-white transition-colors">How it Works</a></li>
-                            <li><a href="#reviews" className="hover:text-white transition-colors">Reviews</a></li>
+                            <li><Link href="/#features" className="hover:text-white transition-colors">Features</Link></li>
+                            <li><Link href="/#process" className="hover:text-white transition-colors">How it Works</Link></li>
+                            <li><Link href="/#pricing" className="hover:text-white transition-colors">Pricing</Link></li>
+                            <li><Link href="/#reviews" className="hover:text-white transition-colors">Reviews</Link></li>
                             <li><Link href="/referral" className="hover:text-white transition-colors">Ambassador Program</Link></li>
                         </ul>
                     </div>
 
                     <div>
-                        <h3 className="text-white font-semibold mb-4">Support</h3>
+                        <h3 className="text-white font-semibold mb-4">Information</h3>
                         <ul className="space-y-2 text-gray-400">
-                            <li><a href="/help" className="hover:text-white transition-colors">Help Center</a></li>
-                            <li><a href="/contact" className="hover:text-white transition-colors">Contact Us</a></li>
+                            <li><Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
                             <li><Link href="/docs/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
                             <li><Link href="/docs/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
                         </ul>
                     </div>
                 </div>

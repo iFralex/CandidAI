@@ -38,6 +38,13 @@ const COMMISSION_TIERS = [
     { range: "Purchases 31+", rate: "20%", note: "Every later qualifying purchase while you remain eligible", icon: Crown },
 ];
 
+const REFERRAL_NAV_LINKS = [
+    { label: "Earnings", href: "#tiers" },
+    { label: "Kit", href: "#kit" },
+    { label: "Campaign Ideas", href: "#playbook" },
+    { label: "Rewards", href: "#rewards" },
+];
+
 // ---------- Sections ----------
 
 const HeroSection = () => {
@@ -116,7 +123,7 @@ const TiersSection = () => {
     };
 
     return (
-        <section id="tiers" className="relative px-4 py-14 sm:px-6 md:py-24 lg:px-8">
+        <section id="tiers" className="relative scroll-mt-20 px-4 py-14 sm:px-6 md:py-24 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 <div className="mb-10 text-center md:mb-16">
                     <h2 className="mb-4 text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent md:mb-6 md:text-5xl">
@@ -395,7 +402,7 @@ const KitSection = () => {
     const visibleItems = showAllItems ? KIT_PHYSICAL_ITEMS : KIT_PHYSICAL_ITEMS.slice(0, 4);
 
     return (
-        <section className="relative px-4 py-14 sm:px-6 md:py-24 lg:px-8">
+        <section id="kit" className="relative scroll-mt-20 px-4 py-14 sm:px-6 md:py-24 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 <div className="mb-10 text-center md:mb-16">
                     <h2 className="mb-4 text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent md:mb-6 md:text-5xl">
@@ -541,7 +548,7 @@ const PlaybookSection = () => {
     const visiblePlaybook = showAllPlaybook ? PLAYBOOK : PLAYBOOK.slice(0, 3);
 
     return (
-        <section className="relative bg-black px-4 py-14 sm:px-6 md:py-24 lg:px-8">
+        <section id="playbook" className="relative scroll-mt-20 bg-black px-4 py-14 sm:px-6 md:py-24 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 <div className="mb-10 text-center md:mb-16">
                     <p className={`${caveat.className} text-violet-400 text-2xl mb-2`}>the field manual</p>
@@ -734,7 +741,7 @@ const MilestonesSection = () => {
     };
 
     return (
-        <section className="relative px-4 py-14 sm:px-6 md:py-24 lg:px-8">
+        <section id="rewards" className="relative scroll-mt-20 px-4 py-14 sm:px-6 md:py-24 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 <div className="mb-10 grid gap-4 sm:grid-cols-2 md:mb-16 md:gap-6">
                     <Card className="p-6 flex items-center gap-4">
@@ -945,7 +952,7 @@ const ApplyCTASection = () => {
 export default function ReferralPage() {
     return (
         <div className={`min-h-screen bg-black text-white ${caveat.variable}`}>
-            <Navigation simple />
+            <Navigation simple links={REFERRAL_NAV_LINKS} />
             <HeroSection />
             <TiersSection />
             <EarningsSimulatorSection />
