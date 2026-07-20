@@ -467,12 +467,12 @@ export async function POST(req) {
                     const company = esc(data.company || 'your target company');
                     const recruiter = esc(data.recruiter || 'the selected recruiter');
                     return {
-                        subject: `${recruiter} is ready for your confirmation`,
+                        subject: `Your first application for ${company} is ready`,
                         html: wrapEmail(`
-                          ${heading(`We found the right contact, ${esc(name)}.`)}
-                          ${paragraph(`CandidAI completed the recruiter search for <strong>${company}</strong>. <strong>${recruiter}</strong> is ready for your confirmation before we write the email.`)}
-                          ${button('Review the recruiter', `${domain}/dashboard`)}
-                        `, { preheader: `Your recruiter search for ${company} is complete`, badge: "CONTACT FOUND" })
+                          ${heading(`Your first application is ready, ${esc(name)}.`)}
+                          ${paragraph(`CandidAI researched <strong>${company}</strong>, selected <strong>${recruiter}</strong>, and completed your personalized email.`)}
+                          ${button('Review my application', `${domain}/dashboard`)}
+                        `, { preheader: `Your personalized email for ${company} is ready`, badge: "APPLICATION READY" })
                     };
                 }
 

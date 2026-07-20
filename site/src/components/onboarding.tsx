@@ -2308,6 +2308,7 @@ export interface ProfileSummary {
         targetRoleSuggestions: string[];
         strengths: string[];
         emailAngles: string[];
+        selectedTargetRole?: string;
     };
 }
 
@@ -3753,6 +3754,8 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
     const [isDraftSaving, setIsDraftSaving] = useState(false)
     const [isRecalculating, setIsRecalculating] = useState(false)
     const [saved, setSaved] = useState(false)
+    const [showGuidedPromise, setShowGuidedPromise] = useState(flow === 'guided' && !initialProfile)
+    const [showProfileEditor, setShowProfileEditor] = useState(false)
 
     // Step view tracking
     useEffect(() => {
@@ -3806,7 +3809,9 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                 cvData.append("cv", cvFile.blob);
                 merged = await enrichProfileAI(pdlProfile, cvData);
             } else if (pdlProfile) {
-                merged = pdlProfile;
+                // One high-value call creates the candidate story and all
+                // onboarding insights from LinkedIn, even without a CV.
+                merged = await enrichProfileAI(pdlProfile, new FormData());
             } else {
                 throw new Error("Unable to read either profile source")
             }
@@ -3832,7 +3837,16 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                 Promise.all(merged.education.map(async (edu: any) => ({ ...edu, logo: await fetchLogo(edu.school?.website) }))),
             ]);
 
-            const profileSummary: ProfileSummary = { ...merged, experience, education };
+            const firstSuggestedRole = merged.onboardingInsights?.targetRoleSuggestions?.[0]
+            const profileSummary: ProfileSummary = {
+                ...merged,
+                experience,
+                education,
+                onboardingInsights: merged.onboardingInsights ? {
+                    ...merged.onboardingInsights,
+                    selectedTargetRole: merged.onboardingInsights.selectedTargetRole || firstSuggestedRole,
+                } : undefined,
+            };
 
             localProfile = profileSummary
             setProfileSummary(profileSummary)
@@ -3951,6 +3965,19 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
         },
     }
 
+    if (flow === 'guided' && showGuidedPromise) {
+        return <motion.div className="mx-auto max-w-4xl text-center" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
+            <Badge className="mb-5 border-violet-400/20 bg-violet-400/10 text-violet-200">Your first application starts here</Badge>
+            <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">Let’s find the right person<br className="hidden sm:block" /> to introduce you to.</h2>
+            <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-400">Share your background and one company you care about. CandidAI will research the strongest recruiter match and write your first personal email.</p>
+            <div className="mx-auto my-10 grid max-w-3xl gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
+                {[{ icon: User, label: 'Your profile' }, { icon: Search, label: 'The right contact' }, { icon: Mail, label: 'Your email' }].map((item, index) => { const Icon = item.icon; return <React.Fragment key={item.label}><div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><Icon className="mx-auto mb-3 h-6 w-6 text-violet-300" /><p className="font-medium text-white">{item.label}</p></div>{index < 2 && <ArrowRight className="mx-auto hidden h-4 w-4 text-gray-600 sm:block" />}</React.Fragment> })}
+            </div>
+            <Button size="lg" onClick={() => setShowGuidedPromise(false)} icon={<Sparkles className="h-5 w-5" />}>Create my first application</Button>
+            <p className="mt-4 text-sm text-gray-500">Free · No card required · About 2 minutes</p>
+        </motion.div>
+    }
+
     return (
         <AnimatePresence mode="wait">
             {/* STEP 1 */}
@@ -3972,7 +3999,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                         </p>
                     </div>
 
-                    <StepExplanation
+                    {flow !== 'guided' && <StepExplanation
                         title="How does your profile improve the emails?"
                         items={[
                             { icon: Brain, label: "Skill matching", description: "The AI extracts your skills from your CV and LinkedIn, then highlights the most relevant ones for each target company's domain." },
@@ -3980,12 +4007,12 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                             { icon: GraduationCap, label: "Education & projects", description: "Degrees, certifications, and notable projects are mentioned when relevant to the target company or role." },
                             { icon: User, label: "Authentic voice", description: "The richer your profile, the more specific and credible each email sounds, no generic templates." },
                         ]}
-                    />
+                    />}
 
-                    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 sm:p-8">
                         {/* LinkedIn URL */}
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-300 mb-2">LinkedIn Profile URL {flow === 'guided' && <span className="text-gray-500">(optional)</span>}</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">Start with LinkedIn {flow === 'guided' && <span className="text-gray-500">(optional)</span>}</label>
                             <div className="relative">
                                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                                     <Globe className="w-4 h-4" />
@@ -4001,8 +4028,8 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                         </div>
 
                         {/* CV Upload */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Upload Your CV {flow === 'guided' && <span className="text-gray-500">(optional if you use LinkedIn)</span>}</label>
+                        <div className="mb-6 border-t border-white/10 pt-6">
+                            <label className="block text-sm font-medium text-gray-300 mb-2">Or upload your CV {flow === 'guided' && <span className="text-gray-500">(you can also use both)</span>}</label>
 
                             <label
                                 htmlFor="cv-upload"
@@ -4070,7 +4097,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                                 size="md"
                             >
                                 <Brain className="w-5 h-5" />
-                                <span>{flow === 'guided' ? 'Build my profile' : 'Analyze My Profile'}</span>
+                                <span>{flow === 'guided' ? 'Turn this into my candidate profile' : 'Analyze My Profile'}</span>
                             </Button>
                         </div>
                     </div>
@@ -4092,10 +4119,9 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                             <div className="w-20 h-20 bg-gradient-to-r from-violet-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
                                 <Brain className="w-10 h-10 text-white" />
                             </div>
-                            <h2 className="text-2xl font-bold text-white mb-4">Analyzing Your Profile</h2>
+                            <h2 className="text-2xl font-bold text-white mb-4">Turning your background into a clear story</h2>
                             <p className="text-gray-400">
-                                Our AI is studying your background, skills, and experience to create your perfect recruiter
-                                matching strategy...
+                                CandidAI is identifying what makes you relevant before it looks for anyone to contact.
                             </p>
                         </div>
 
@@ -4111,10 +4137,10 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                             }}
                         >
                             {[
-                                "Reading profile information...",
-                                "Analyzing skills and experience...",
-                                "Identifying career patterns...",
-                                "Creating recruiter persona...",
+                                "Reading your professional journey...",
+                                "Finding evidence of your strongest skills...",
+                                "Identifying the roles that fit you now...",
+                                "Preparing how CandidAI will present you...",
                             ].map((step, index) => (
                                 <motion.div
                                     key={index}
@@ -4157,13 +4183,22 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                     </div>
 
                     <div className="grid gap-8 mb-8 w-full">
-                        <ProfileSummaryCard
+                        {flow === 'guided' ? <>
+                            <Card hover={false} className="overflow-hidden border-violet-500/20 p-0">
+                                <div className="border-b border-white/10 bg-gradient-to-r from-violet-500/10 to-transparent p-6 sm:p-8">
+                                    <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start"><div><p className="text-xs uppercase tracking-[0.18em] text-violet-300">Candidate story</p><h3 className="mt-3 text-2xl font-semibold text-white">{profileSummary?.name}</h3><p className="mt-1 text-lg text-gray-300">{profileSummary?.title}</p><p className="mt-2 text-sm text-gray-500">{profileSummary?.location?.country}</p></div><div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-300">Profile ready</div></div>
+                                </div>
+                                <div className="grid gap-8 p-6 sm:p-8 md:grid-cols-2"><div><p className="text-sm font-medium text-white">What makes you stand out</p><div className="mt-4 space-y-3">{(profileSummary?.onboardingInsights?.strengths || profileSummary?.skills?.slice(0, 4) || []).slice(0, 4).map((strength: string) => <p key={strength} className="flex gap-2 text-sm text-gray-300"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />{strength}</p>)}</div></div><div><p className="text-sm font-medium text-white">What opportunity are you pursuing now?</p><div className="mt-4 flex flex-wrap gap-2">{(profileSummary?.onboardingInsights?.targetRoleSuggestions || [profileSummary?.title]).filter(Boolean).map((role: string) => { const selected = profileSummary?.onboardingInsights?.selectedTargetRole === role; return <Button key={role} type="button" size="sm" variant={selected ? 'default' : 'secondary'} onClick={() => setProfileSummary((current: ProfileSummary) => ({ ...current, onboardingInsights: current.onboardingInsights ? { ...current.onboardingInsights, selectedTargetRole: role } : undefined }))}>{role}</Button> })}</div><p className="mt-4 text-xs leading-5 text-gray-500">This choice guides who we prioritize and what the email emphasizes.</p></div></div>
+                            </Card>
+                            <div className="text-center"><Button type="button" variant="ghost" onClick={() => setShowProfileEditor(value => !value)}>{showProfileEditor ? 'Hide profile details' : 'Edit profile details'}</Button></div>
+                            {showProfileEditor && <ProfileSummaryCard cardVariants={cardVariants} profileSummary={profileSummary} setProfileSummary={setProfileSummary} cvFile={cvFile} handleCvUpload={handleCvUpload} />}
+                        </> : <ProfileSummaryCard
                             cardVariants={cardVariants}
                             profileSummary={profileSummary}
                             setProfileSummary={setProfileSummary}
                             cvFile={cvFile}
                             handleCvUpload={handleCvUpload}
-                        />
+                        />}
 
                         {/*<motion.div
                             variants={cardVariants}
@@ -4589,7 +4624,7 @@ export function CompanyInputClient({
 
     return (
         <>
-            <StepExplanation
+            {mode !== 'single-preview' && <StepExplanation
                 title="How are target companies used in email generation?"
                 items={[
                     { icon: Search, label: "Recruiter discovery", description: "For each company, CandidAI searches LinkedIn to find relevant recruiters and hiring managers that match your profile." },
@@ -4597,23 +4632,23 @@ export function CompanyInputClient({
                     { icon: Building, label: "Domain & LinkedIn URL", description: "Add companies by website domain (e.g. google.com) or LinkedIn company URL, both methods work equally well." },
                     { icon: Target, label: "Processing order", description: "Companies will be processed in the order listed. Add the most important ones first." },
                 ]}
-            />
+            />}
             <motion.div
-                className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8 mb-8 relative z-10"
+                className={`${mode === 'single-preview' ? 'bg-transparent border-0 p-0' : 'bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8'} mb-8 relative z-10`}
                 initial="hidden"
                 animate="show"
                 variants={containerVariants}
             >
                 <motion.div className="flex items-center justify-between mb-6" variants={itemVariants}>
-                    <h3 className="text-xl font-semibold text-white">{mode === 'single-preview' ? 'Your first target company' : 'Target Companies'}</h3>
-                    <span className="bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    <h3 className="text-xl font-semibold text-white">{mode === 'single-preview' ? 'Your target' : 'Target Companies'}</h3>
+                    {mode !== 'single-preview' && <span className="bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">
                         {selectedCompanies.length} / {maxCompanies} companies
-                    </span>
+                    </span>}
                 </motion.div>
 
                 {/* Area per le aziende selezionate */}
                 <motion.div
-                    className="min-h-[60px] bg-black/20 border border-white/10 rounded-lg p-3 mb-4 flex flex-wrap gap-2"
+                    className={`${mode === 'single-preview' ? 'min-h-[132px] rounded-2xl p-5' : 'min-h-[60px] rounded-lg p-3'} bg-black/20 border border-white/10 mb-4 flex flex-wrap gap-2`}
                     variants={itemVariants}
                 >
                     <AnimatePresence mode="popLayout">
@@ -4625,7 +4660,7 @@ export function CompanyInputClient({
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                             >
-                                Search for a company to add it here
+                                {mode === 'single-preview' ? 'Search below for the company you genuinely want to reach.' : 'Search for a company to add it here'}
                             </motion.div>
                         )}
                         {selectedCompanies.map((company) => (
@@ -4636,15 +4671,15 @@ export function CompanyInputClient({
                                 initial="hidden"
                                 animate="show"
                                 exit="exit"
-                                className="bg-violet-500/50 flex items-center gap-2 pl-2 pr-1 py-1 rounded-full text-sm font-medium border border-violet-500"
+                                className={mode === 'single-preview' ? 'flex w-full items-center gap-4 rounded-xl border border-violet-500/30 bg-gradient-to-r from-violet-500/15 to-transparent p-5 text-left' : 'bg-violet-500/50 flex items-center gap-2 pl-2 pr-1 py-1 rounded-full text-sm font-medium border border-violet-500'}
                             >
                                 {company.icon ? (
-                                    <img src={company.icon} alt={company.name} className="w-5 h-5 rounded-full object-contain bg-white" />
+                                    <img src={company.icon} alt={company.name} className={`${mode === 'single-preview' ? 'h-12 w-12' : 'h-5 w-5'} rounded-lg object-contain bg-white`} />
                                 ) : company.domain.includes("linkedin.com/company") ? (
                                     <Link className="w-5 h-5 p-0.5 text-white/70" />
                                 ) : <Building className="w-5 h-5 p-0.5 text-white/70" />
                                 }
-                                <span className="truncate max-w-[200px]">{company.name}</span>
+                                <span className={mode === 'single-preview' ? 'min-w-0 flex-1' : ''}><span className="block truncate text-lg font-semibold text-white">{company.name}</span>{mode === 'single-preview' && <span className="mt-1 block text-sm font-normal text-gray-400">{company.domain} · We’ll map the recruiting team for your target role</span>}</span>
                                 <button
                                     type="button"
                                     onClick={() => handleRemoveCompany(company.domain)}
@@ -4714,10 +4749,10 @@ export function CompanyInputClient({
                         <span>Back</span>
                     </button>
                 )}
-                <button
+                <Button
                     onClick={handleContinue}
                     disabled={isPending || selectedCompanies.length === 0}
-                    className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2"
+                    size="lg"
                 >
                     {isPending ? (
                         <>
@@ -4726,11 +4761,11 @@ export function CompanyInputClient({
                         </>
                     ) : (
                         <>
-                            <span>{mode === 'single-preview' ? 'Find the best contact' : 'Continue Setup'}</span>
+                            <span>{mode === 'single-preview' ? `Build my application${selectedCompanies[0]?.name ? ` for ${selectedCompanies[0].name}` : ''}` : 'Continue Setup'}</span>
                             <ArrowRight className="w-5 h-5" />
                         </>
                     )}
-                </button>
+                </Button>
             </motion.div >
         </>
     );

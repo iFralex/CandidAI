@@ -53,6 +53,10 @@ function toClientPreview(data: FirebaseFirestore.DocumentData | undefined, fallb
             body: String(data.email.body || ""),
             keyPoints: Array.isArray(data.email.keyPoints) ? data.email.keyPoints.map(String) : [],
         } : undefined,
+        recruiterInsight: data.recruiterInsight ? {
+            reason: data.recruiterInsight.reason ? String(data.recruiterInsight.reason) : undefined,
+            points: Array.isArray(data.recruiterInsight.points) ? data.recruiterInsight.points.map(String) : [],
+        } : undefined,
         error: data.error ? {
             code: String(data.error.code || "unknown"),
             message: data.error.message ? String(data.error.message) : undefined,

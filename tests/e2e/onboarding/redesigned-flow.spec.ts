@@ -26,6 +26,8 @@ test.describe("Redesigned first candidacy", () => {
     await mockUser(page);
     await page.goto("/dashboard");
     await expect(page.getByText("Your first application").first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: /find the right person/i })).toBeVisible();
+    await page.getByRole("button", { name: "Create my first application" }).click();
     await expect(page.getByRole("heading", { name: "Let’s start with you" })).toBeVisible();
     await expect(page.getByText("Choose Your Success Plan")).toHaveCount(0);
   });
@@ -51,8 +53,8 @@ test.describe("Redesigned first candidacy", () => {
       body: JSON.stringify({ success: true, preview }),
     }));
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: /right person at Spotify/ })).toBeVisible();
-    await expect(page.getByText(/30 strategies/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /person who should meet you at Spotify/ })).toBeVisible();
+    await expect(page.getByText(/about two minutes/)).toBeVisible();
     await expect(page.getByText(/European recruiters/)).toBeVisible();
   });
 
@@ -68,8 +70,8 @@ test.describe("Redesigned first candidacy", () => {
     await page.route("**/api/protected/onboarding-preview", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, preview }) }));
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { name: "Your first application is ready" })).toBeVisible();
-    await expect(page.getByText("Giulia Rossi")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Now multiply your opportunities" })).toBeVisible();
+    await expect(page.getByText("Giulia Rossi", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "One application is ready. Now multiply your opportunities." })).toBeVisible();
     await expect(page.getByRole("button", { name: /explore the dashboard/i })).toBeVisible();
   });
 
@@ -85,8 +87,8 @@ test.describe("Redesigned first candidacy", () => {
     await mockUser(page, { onboardingStep: 4, onboardingStage: "recruiter_found", onboardingPreview: preview });
     await page.route("**/api/protected/onboarding-preview", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, preview }) }));
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: "We found the right person to contact" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your application is taking shape" })).toBeVisible();
     await expect(page.getByText("Claudia Fenaroli")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Write my email" })).toBeVisible();
+    await expect(page.getByText(/already writing the email/i)).toBeVisible();
   });
 });

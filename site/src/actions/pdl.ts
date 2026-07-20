@@ -70,8 +70,8 @@ export async function enrichProfileAI(profileSummary: ProfileSummary | null, for
     }
   }
 
-  const cv = formData.get("cv") as File;
-  const cvText = await getTextFromCV(cv);
+  const cv = formData.get("cv") as File | null;
+  const cvText = cv ? await getTextFromCV(cv) : "No CV was provided.";
 
   // Strip logos before sending to DeepSeek — they are binary metadata, not text
   const pdlForPrompt = profileSummary
