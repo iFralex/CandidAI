@@ -100,7 +100,7 @@ export async function jumpToStep(targetStep: number) {
     revalidatePath('/dashboard');
 }
 
-export async function startServer(userId = null) {
+export async function startServer(userId: string | null = null) {
     if (!userId)
         userId = await checkAuth()
 
@@ -113,6 +113,26 @@ export async function startServer(userId = null) {
     })
     if (!res.ok) {
         console.error(`Server runner failed: ${res.status}`)
+    }
+}
+
+function realtimeServerEndpoint(path: "start_onboarding_recruiter" | "start_onboarding_email") {
+    const configured = process.env.REALTIME_SERVER_URL || process.env.SERVER_RUNNER_URL || "";
+    const base = configured.replace(/\/(start_emails_generation|start_onboarding_recruiter|start_onboarding_email)\/?$/, "");
+    return `${base}/${path}`;
+}
+
+async function startRealtimeServer(path: "start_onboarding_recruiter" | "start_onboarding_email", userId: string, jobId: string) {
+    const response = await fetch(realtimeServerEndpoint(path), {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": process.env.SESSION_API_KEY ?? "",
+        },
+        body: JSON.stringify({ user_id: userId, job_id: jobId }),
+    });
+    if (!response.ok) {
+        throw new Error(`Realtime server failed: ${response.status}`);
     }
 }
 
@@ -255,6 +275,127 @@ export async function submitCompanies(companies: { name: string, domain: string 
     await batch.commit()
 
     revalidatePath('/dashboard')
+}
+
+export async function submitPreviewCompany(company: { name: string; domain: string; linkedin_url?: string }) {
+    if (!company?.name?.trim()) return { success: false as const, error: "Company name cannot be empty" };
+    if (!isValidDomain(company.domain)) return { success: false as const, error: `Invalid domain: ${company.domain}` };
+
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const accountRef = userRef.collection("data").doc("account");
+    const previewRef = userRef.collection("data").doc("onboarding_preview");
+    const [userSnap, accountSnap] = await Promise.all([userRef.get(), accountRef.get()]);
+
+    if (userSnap.data()?.freePreviewConsumedAt) {
+        return { success: false as const, error: "Your free candidacy has already been generated" };
+    }
+    if (!accountSnap.data()?.profileSummary) {
+        return { success: false as const, error: "Complete your profile before choosing a company" };
+    }
+
+    const batch = adminDb.batch();
+    batch.set(accountRef, { companies: [company] }, { merge: true });
+    batch.set(previewRef, {
+        status: "idle",
+        stage: "target_company",
+        company,
+        updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: false });
+    batch.update(userRef, {
+        onboardingStage: "target_company",
+        onboardingStep: 3,
+    });
+    await batch.commit();
+    revalidatePath("/dashboard");
+    return { success: true as const };
+}
+
+export async function startOnboardingRecruiterSearch() {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const accountRef = userRef.collection("data").doc("account");
+    const previewRef = userRef.collection("data").doc("onboarding_preview");
+    const [userSnap, accountSnap, previewSnap] = await Promise.all([
+        userRef.get(), accountRef.get(), previewRef.get(),
+    ]);
+
+    if (userSnap.data()?.freePreviewConsumedAt) throw new Error("Free candidacy already used");
+    if (!accountSnap.data()?.profileSummary || accountSnap.data()?.companies?.length !== 1) {
+        throw new Error("Profile and one target company are required");
+    }
+    const existing = previewSnap.data();
+    if (existing?.jobId && ["queued", "running", "waiting_confirmation"].includes(existing.status)) {
+        return { success: true as const, jobId: existing.jobId as string, resumed: true };
+    }
+
+    const jobId = adminDb.collection("_onboarding_jobs").doc().id;
+    const batch = adminDb.batch();
+    batch.set(previewRef, {
+        jobId,
+        status: "queued",
+        stage: "recruiter_search",
+        queuedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    batch.update(userRef, { onboardingStage: "recruiter_search", onboardingStep: 4 });
+    await batch.commit();
+
+    try {
+        await startRealtimeServer("start_onboarding_recruiter", userId, jobId);
+    } catch (error) {
+        await previewRef.set({
+            status: "failed",
+            error: { code: "queue_failed", message: String(error), recoverable: true },
+            updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        throw error;
+    }
+    revalidatePath("/dashboard");
+    return { success: true as const, jobId, resumed: false };
+}
+
+export async function confirmRecruiterAndGenerateEmail(jobId: string) {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const previewRef = userRef.collection("data").doc("onboarding_preview");
+    const previewSnap = await previewRef.get();
+    const preview = previewSnap.data();
+    if (!preview || preview.jobId !== jobId || preview.stage !== "recruiter_found") {
+        throw new Error("The recruiter is not ready for confirmation");
+    }
+
+    const batch = adminDb.batch();
+    batch.set(previewRef, {
+        status: "queued",
+        stage: "email_generation",
+        updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    batch.update(userRef, { onboardingStage: "email_generation", onboardingStep: 5 });
+    await batch.commit();
+
+    try {
+        await startRealtimeServer("start_onboarding_email", userId, jobId);
+    } catch (error) {
+        await previewRef.set({
+            status: "failed",
+            error: { code: "queue_failed", message: String(error), recoverable: true },
+            updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        throw error;
+    }
+    revalidatePath("/dashboard");
+    return { success: true as const };
+}
+
+export async function continueFreePreviewToDashboard() {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const previewSnap = await userRef.collection("data").doc("onboarding_preview").get();
+    if (previewSnap.data()?.stage !== "preview_ready") throw new Error("The first candidacy is not ready");
+    await userRef.update({ onboardingStage: "completed", onboardingStep: 50 });
+    revalidatePath("/dashboard");
+    redirect("/dashboard");
 }
 
 const ALLOWED_CV_TYPES = ["application/pdf"];

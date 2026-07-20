@@ -260,7 +260,7 @@ def get_pdl_data(params):
 
     return {}
 
-def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None, n_profiles: int = 1, api_key: Optional[str] = None) -> List[Dict]:
+def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None, n_profiles: int = 1, api_key: Optional[str] = None, priority: str = "normal") -> List[Dict]:
     """
     Trova n_profiles recruiters per un'azienda specifica eseguendo queries progressive.
     Se non trova recruiters, cerca owner/founder, poi senior, poi qualsiasi persona.
@@ -322,31 +322,11 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
     all_queries = queries + owner_queries + senior_queries + [general_query]
     
     # Esegui le query in ordine finché non raggiungi n_profiles
-    request_timestamps = deque()
-    MAX_REQUESTS = 10
-    WINDOW_SECONDS = 65  # 1 minuto
     final_query = None
 
     for query in all_queries:
         if len(found_profiles) >= n_profiles:
             break
-
-        # Rate limiting: controlla quante richieste sono state fatte nell'ultimo minuto
-        now = time.time()
-
-        # Rimuove i timestamp più vecchi di 60 secondi
-        while request_timestamps and now - request_timestamps[0] >= WINDOW_SECONDS:
-            request_timestamps.popleft()
-
-        # Se abbiamo già raggiunto il limite di 10 richieste, aspetta fino al reset
-        if len(request_timestamps) >= MAX_REQUESTS:
-            wait_time = WINDOW_SECONDS - (now - request_timestamps[0])
-            print(f"🕒 Limite di {MAX_REQUESTS} richieste al minuto raggiunto. Attendo {wait_time:.2f} secondi...")
-            time.sleep(wait_time)
-            # Dopo l'attesa, aggiorna il timestamp e ricalcola il tempo
-            now = time.time()
-            while request_timestamps and now - request_timestamps[0] >= WINDOW_SECONDS:
-                request_timestamps.popleft()
 
         # Calcola quanti profili mancano
         remaining = n_profiles - len(found_profiles)
@@ -363,11 +343,11 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
         }
 
         try:
-            # Registra il timestamp della richiesta
-            request_timestamps.append(time.time())
-
-            # Esegui la richiesta
-            response = requests.get(PDL_URL, headers=HEADERS, params=params, timeout=30).json()
+            # The shared scheduler serializes PDL calls across both pipelines.
+            # Realtime onboarding gets the next available rate-limit slot.
+            from server.request_scheduler import pdl_person_search_gate
+            with pdl_person_search_gate.slot(priority):
+                response = requests.get(PDL_URL, headers=HEADERS, params=params, timeout=30).json()
 
             # Log includes the ES query (parsed) so 404s can be debugged later.
             try:
@@ -732,7 +712,7 @@ def find_recruiter_by_linkedin_urls(linkedin_urls: List[str], api_key: Optional[
     return {}
 
 
-def find_recruiters_for_user(user_id, ids, companies, defaultQueries):
+def find_recruiters_for_user(user_id, ids, companies, defaultQueries, priority="normal", progress_callback=None):
     results = {}
     user_instructions = {}
 
@@ -760,10 +740,10 @@ def find_recruiters_for_user(user_id, ids, companies, defaultQueries):
                 query = {"id": "linkedin_override", "name": "Manually specified via LinkedIn URL", "criteria": []}
             else:
                 print(f"⚠️ Nessun profilo trovato via LinkedIn URL per {company['name']}, uso ricerca normale")
-                result_list, query = find_company_recruiters(company, queries, api_key=api_key)
+                result_list, query = find_company_recruiters(company, queries, api_key=api_key, priority=priority)
                 result = result_list[0] if result_list else {}
         else:
-            result_list, query = find_company_recruiters(company, queries, api_key=api_key)
+            result_list, query = find_company_recruiters(company, queries, api_key=api_key, priority=priority)
             result = result_list[0] if result_list else {}
 
         # Free trial: a recruiter with a verified email was found, but the address
@@ -782,6 +762,8 @@ def find_recruiters_for_user(user_id, ids, companies, defaultQueries):
             result.get("job_company_linkedin_url", None),
         )
         results[company["name"]] = result, query
+        if progress_callback:
+            progress_callback(company, result, query)
         time.sleep(2)
 
     return results, user_instructions

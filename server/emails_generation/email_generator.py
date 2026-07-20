@@ -21,7 +21,7 @@ def strip_em_dashes(text):
     text = re.sub(r',\s*,', ',', text)                            # collapse accidental double commas
     return text
 
-def generate_email(user_id, ids, companies, profile_summary, cv_url, result_blog, result_recruiters, result_company_info, user_instructions):
+def generate_email(user_id, ids, companies, profile_summary, cv_url, result_blog, result_recruiters, result_company_info, user_instructions, priority="normal"):
     def parse_company_info(record):
         def filter_by_cumulative_coverage(
             counts: Dict[str, float],
@@ -225,7 +225,7 @@ IMPORTANT: After generating the email, create a "key_points" array with 3 items 
 Generate ONLY the JSON output with no additional commentary.
 """
 
-        email = ai_chat(prompt, "json")
+        email = ai_chat(prompt, "json", priority=priority)
 
         # Post-processing safety net: strip the em-dash / en-dash AI tell that
         # the model still emits occasionally despite the prompt instruction.

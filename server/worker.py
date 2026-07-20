@@ -9,6 +9,9 @@ logger = logging.getLogger(__name__)
 _executors: dict[str, ThreadPoolExecutor] = {
     "send_emails": ThreadPoolExecutor(max_workers=1, thread_name_prefix="worker-send"),
     "emails_generation": ThreadPoolExecutor(max_workers=1, thread_name_prefix="worker-gen"),
+    # Realtime onboarding never waits behind a long multi-company campaign.
+    # Third-party calls are still serialized by server.request_scheduler.
+    "onboarding_realtime": ThreadPoolExecutor(max_workers=1, thread_name_prefix="worker-onboarding"),
 }
 
 

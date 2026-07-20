@@ -70,6 +70,30 @@ def start_emails_generation():
     return emails_generation_service.start(str(user_id))
 
 
+@app.route("/start_onboarding_recruiter", methods=["POST"])
+def start_onboarding_recruiter():
+    if not _api_key_valid():
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json or {}
+    user_id = data.get("user_id")
+    job_id = data.get("job_id")
+    if not user_id or not job_id:
+        return jsonify({"error": "user_id e job_id sono obbligatori"}), 400
+    return emails_generation_service.start_onboarding_recruiter(str(user_id), str(job_id))
+
+
+@app.route("/start_onboarding_email", methods=["POST"])
+def start_onboarding_email():
+    if not _api_key_valid():
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json or {}
+    user_id = data.get("user_id")
+    job_id = data.get("job_id")
+    if not user_id or not job_id:
+        return jsonify({"error": "user_id e job_id sono obbligatori"}), 400
+    return emails_generation_service.start_onboarding_email(str(user_id), str(job_id))
+
+
 @app.route("/save_session", methods=["POST"])
 def save_session():
     data = request.json or {}

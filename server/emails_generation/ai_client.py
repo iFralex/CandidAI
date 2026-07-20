@@ -6,6 +6,7 @@ import time
 from typing import Any, Dict, Optional, Union
 
 import requests
+from server.request_scheduler import RequestPriority, ai_request_gate
 
 logger = logging.getLogger(__name__)
 
@@ -524,21 +525,23 @@ def _call_openrouter(
 
 
 def ai_chat(prompt: str, format: str = "str", model: str = DEEPSEEK_MODEL,
-            site_url: Optional[str] = None, site_name: Optional[str] = None
+            site_url: Optional[str] = None, site_name: Optional[str] = None,
+            priority: RequestPriority = "normal",
             ) -> Optional[Union[str, Dict]]:
     want_json = (format == "json")
     provider = os.getenv("AI_PROVIDER", "deepseek").lower()
 
-    text: Optional[str] = None
-    if provider != "openrouter":
-        try:
-            text = _call_deepseek(prompt, want_json)
-        except Exception as e:  # noqa: BLE001
-            logger.warning(f"DeepSeek failed, falling back to OpenRouter: {e}")
-            text = None
-    if text is None:
-        text = _call_openrouter(prompt, want_json, model=None,
-                                site_url=site_url, site_name=site_name)
+    with ai_request_gate.slot(priority):
+        text: Optional[str] = None
+        if provider != "openrouter":
+            try:
+                text = _call_deepseek(prompt, want_json)
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"DeepSeek failed, falling back to OpenRouter: {e}")
+                text = None
+        if text is None:
+            text = _call_openrouter(prompt, want_json, model=None,
+                                    site_url=site_url, site_name=site_name)
 
     if text is None:
         return None
