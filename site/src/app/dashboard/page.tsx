@@ -6,7 +6,7 @@ export const metadata = { title: "Dashboard" };
 import { Results, ResultsSkeleton, CampaignSkeleton } from "@/components/dashboardServer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle, Crown, ExternalLink, Mail, Plus, RefreshCw, Send, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowRight, Building2, CheckCircle, Coins, Crown, ExternalLink, Mail, Plus, RefreshCw, Send, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { redirect } from "next/navigation";
@@ -16,6 +16,7 @@ import { calculateProgress } from "@/components/detailsServer";
 import Link from "next/link";
 import { TutorialTrigger } from "@/components/TutorialTrigger";
 import { AmbassadorPromo } from "@/components/AmbassadorPromo";
+import { plansData } from "@/config";
 
 const DASHBOARD_STEPS = [
     {
@@ -115,6 +116,53 @@ function Card({ children, className, hover = true, gradient = false, ...props }:
             {children}
         </div>
     )
+}
+
+function PaidCapacityBanner({ plan, maxCompanies = 0, companiesUsed = 0, credits = 0 }: { plan: string; maxCompanies?: number; companiesUsed?: number; credits?: number }) {
+    const planData = plansData[plan as keyof typeof plansData]
+    if (!planData || plan === "free_trial") return null
+
+    const companiesRemaining = Math.max(0, maxCompanies - companiesUsed)
+    const companyWarningAt = Math.max(2, Math.ceil(maxCompanies * 0.1))
+    const companiesLow = companiesRemaining <= companyWarningAt
+    const companiesEmpty = companiesRemaining === 0
+
+    const includedCredits = planData.credits || 0
+    const creditWarningAt = Math.max(100, Math.ceil(includedCredits * 0.1))
+    const creditsLow = includedCredits > 0 && credits <= creditWarningAt
+    const creditsEmpty = includedCredits > 0 && credits <= 0
+
+    if (!companiesLow && !creditsLow) return null
+
+    const bothLow = companiesLow && creditsLow
+    const exhausted = companiesEmpty || creditsEmpty
+    const title = bothLow
+        ? exhausted ? "Your campaign needs more capacity." : "Your companies and credits are running low."
+        : companiesLow
+            ? companiesEmpty ? "You’ve used every company in this plan." : "You’re approaching your company limit."
+            : creditsEmpty ? "You’ve run out of credits." : "Your credit balance is running low."
+
+    return <Card hover={false} className={`relative overflow-hidden p-6 sm:p-8 ${exhausted ? "border-rose-400/35 bg-gradient-to-br from-rose-500/15 via-orange-500/10 to-transparent" : "border-amber-400/35 bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-transparent"}`}>
+        <div className={`pointer-events-none absolute -right-12 -top-20 h-52 w-52 rounded-full blur-3xl ${exhausted ? "bg-rose-500/15" : "bg-amber-500/15"}`} />
+        <div className="relative flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex items-start gap-4 sm:gap-5">
+                <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border ${exhausted ? "border-rose-300/25 bg-rose-400/10 text-rose-300" : "border-amber-300/25 bg-amber-400/10 text-amber-300"}`}><AlertTriangle className="h-7 w-7" /></div>
+                <div>
+                    <Badge className={exhausted ? "border-rose-300/20 bg-rose-400/10 text-rose-300" : "border-amber-300/20 bg-amber-400/10 text-amber-300"}>{exhausted ? "Action needed" : "Capacity reminder"}</Badge>
+                    <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl">{title}</h2>
+                    <p className="mt-2 max-w-2xl leading-7 text-gray-300">Keep your outreach moving without interrupted recruiter searches or email generation.</p>
+                    <div className="mt-5 flex flex-wrap gap-3">
+                        {companiesLow && <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/15 px-4 py-3"><Building2 className="h-5 w-5 text-amber-300" /><div><p className="text-xs text-gray-500">Companies remaining</p><p className="font-semibold text-white">{companiesRemaining} of {maxCompanies}</p></div></div>}
+                        {creditsLow && <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/15 px-4 py-3"><Coins className="h-5 w-5 text-amber-300" /><div><p className="text-xs text-gray-500">Credits remaining</p><p className="font-semibold text-white">{Math.max(0, credits).toLocaleString()}</p></div></div>}
+                    </div>
+                </div>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-3">
+                {companiesLow && <Link href="/dashboard/plan-and-credits#plans"><Button variant="primary" icon={<Building2 className="h-4 w-4" />}>Buy another plan</Button></Link>}
+                {creditsLow && <Link href="/dashboard/plan-and-credits#credits"><Button variant={companiesLow ? "secondary" : "primary"} icon={<Coins className="h-4 w-4" />}>Top up credits</Button></Link>}
+            </div>
+        </div>
+    </Card>
 }
 
 async function ResultsWrapper({ userId, plan, maxCompanies, companiesUsed }: { userId: string; plan: string; maxCompanies?: number; companiesUsed?: number }) {
@@ -393,6 +441,8 @@ const Page = async () => {
                     </div>
                 </Card>
             )}
+
+            {!showFreePreviewUpgrade && <PaidCapacityBanner plan={user.plan} maxCompanies={user.maxCompanies} companiesUsed={user.companiesUsed} credits={user.credits ?? 0} />}
 
             <Suspense fallback={<DashboardSkeleton />}>
                 <ResultsWrapper userId={user.uid} plan={user.plan ?? "unknown"} maxCompanies={user.maxCompanies} companiesUsed={user.companiesUsed} />
