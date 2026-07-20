@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion'
-import { BriefcaseBusiness, Building2, Check, Copy, Crown, ExternalLink, GraduationCap, Linkedin, Loader2, Mail, MapPin, RotateCcw, Search, SlidersHorizontal, Sparkles, Target, UserRound, Wrench } from 'lucide-react'
-import { ProfileAnalysisClient, CompanyInputClient } from '@/components/onboarding'
+import { BriefcaseBusiness, Building2, Check, Copy, Crown, ExternalLink, GraduationCap, Linkedin, Loader2, Mail, MapPin, RotateCcw, Search, SlidersHorizontal, Sparkles, Target, UserRound, Wrench, Zap, Trash2, RefreshCw, ArrowRight } from 'lucide-react'
+import { ProfileAnalysisClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient } from '@/components/onboarding'
 import { PlanSelector, type PlanInfo } from '@/components/PlanSelector'
 import { UnifiedCheckout } from '@/components/UnifiedCheckout'
 import { ProfileAvatar } from '@/components/ProfileAvatar'
@@ -13,8 +13,9 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { continueFreePreviewToDashboard, startOnboardingRecruiterSearch } from '@/actions/onboarding-actions'
+import { choosePostPurchasePreviewAction, continueFreePreviewToDashboard, launchPostPurchaseCampaign, savePostPurchaseCompanies, savePostPurchaseFilters, savePostPurchaseInstructions, startOnboardingRecruiterSearch } from '@/actions/onboarding-actions'
 import type { OnboardingPreviewState, OnboardingStage } from '@/types/onboarding'
+import { plansData, plansInfo } from '@/config'
 
 type Props = {
   user: { uid: string; email?: string; plan?: string }
@@ -22,6 +23,9 @@ type Props = {
   profile?: any
   cvUrl?: string | null
   companies?: { name: string; domain?: string; linkedin_url?: string }[]
+  queries?: any[]
+  customizations?: { position_description?: string; instructions?: string }
+  maxCompanies?: number
   initialPreview: OnboardingPreviewState
 }
 
@@ -277,12 +281,40 @@ function ConversionResult({ preview, email, onReplay }: { preview: OnboardingPre
   </motion.div>
 }
 
+const postPurchaseStages: OnboardingStage[] = ['post_purchase', 'post_purchase_companies', 'post_purchase_filters', 'post_purchase_instructions', 'post_purchase_review']
+
+function PostPurchaseExperience({ props, preview }: { props: Props; preview: OnboardingPreviewState }) {
+  const router = useRouter()
+  const [pending, setPending] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const plan = props.user.plan || 'base'
+  const planInfo = plansInfo.find(item => item.id === plan)
+  const planData = plansData[plan as keyof typeof plansData]
+  const maxCompanies = props.maxCompanies || planData?.maxCompanies || 1
+  const run = async (key: string, action: () => Promise<unknown>) => {
+    setPending(key); setError('')
+    try { await action(); router.refresh() } catch (err) { setError(err instanceof Error ? err.message : 'Something went wrong') } finally { setPending(null) }
+  }
+  if (props.stage === 'post_purchase') return <motion.div className="mx-auto max-w-5xl space-y-9" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
+    <div className="text-center"><motion.div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-300 shadow-2xl shadow-emerald-500/20" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.15 }}><Check className="h-9 w-9" /></motion.div><Badge className="mt-6 bg-emerald-500/15 text-emerald-300">Purchase confirmed</Badge><h1 className="mt-4 text-4xl font-bold text-white sm:text-5xl">Thank you. {planInfo?.name} is now yours.</h1><p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-gray-400">Your first application proved the process. Now let&apos;s rebuild it with your paid-plan settings and turn it into a complete campaign.</p></div>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[`${planData?.maxCompanies || 0} target companies`, planData?.recruiterStrategy ? `${planData.recruiterStrategy} recruiter criteria` : 'Verified recruiter emails', planData?.credits ? `${planData.credits.toLocaleString()} credits` : 'Company-by-company outreach', planData?.deepDiveReports ? 'Detailed company intelligence' : planData?.revealRecruiterEmail ? 'Direct contact details' : 'Personalized generation'].map((item, index) => <motion.div key={item} className="rounded-2xl border border-white/10 bg-white/[0.035] p-5" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 + index * 0.1 }}><span className="text-xs text-violet-300">0{index + 1}</span><p className="mt-3 text-sm font-medium text-white">{item}</p></motion.div>)}</div>
+    <Card hover={false} className="border-violet-400/25 p-6 sm:p-8"><p className="text-xs uppercase tracking-[0.18em] text-violet-300">Decide what happens to {preview.company?.name || 'your preview company'}</p><h2 className="mt-3 text-2xl font-semibold text-white">Your preview was created before these settings existed.</h2><p className="mt-3 max-w-3xl text-sm leading-7 text-gray-400">It used the fast preview path, without deeper company research, your new recruiter criteria, custom instructions, or a verified recruiter email. The definitive campaign will start this target from scratch.</p><div className="mt-6 grid gap-4 md:grid-cols-2"><button disabled={Boolean(pending)} onClick={() => run('regenerate', () => choosePostPurchasePreviewAction('regenerate'))} className="rounded-2xl border border-violet-400/30 bg-violet-500/10 p-5 text-left transition hover:bg-violet-500/15 disabled:opacity-50"><RefreshCw className="h-5 w-5 text-violet-300" /><p className="mt-4 font-semibold text-white">Keep the company and start over</p><p className="mt-2 text-sm leading-6 text-gray-400">Save the free email as Version 1, then redo company research, recruiter selection, contact discovery, and writing with your new setup.</p></button><button disabled={Boolean(pending)} onClick={() => run('replace', () => choosePostPurchasePreviewAction('replace'))} className="rounded-2xl border border-white/10 bg-white/[0.025] p-5 text-left transition hover:border-red-400/25 hover:bg-red-500/5 disabled:opacity-50"><Trash2 className="h-5 w-5 text-gray-400" /><p className="mt-4 font-semibold text-white">Replace this company</p><p className="mt-2 text-sm leading-6 text-gray-400">Discard the preview result, free its slot, and build your campaign around a different target.</p></button></div>{pending && <p className="mt-4 flex items-center gap-2 text-sm text-violet-300"><Loader2 className="h-4 w-4 animate-spin" />Preparing your campaign...</p>}{error && <p className="mt-4 text-sm text-red-300">{error}</p>}</Card>
+  </motion.div>
+  if (props.stage === 'post_purchase_companies') return <div className="mx-auto max-w-5xl"><div className="mb-8 text-center"><Badge className="bg-violet-500/15 text-violet-300">Build your campaign</Badge><h1 className="mt-4 text-4xl font-bold text-white">Which companies should we open doors at?</h1><p className="mx-auto mt-3 max-w-2xl text-gray-400">Add your highest-priority targets first. You can use fewer than your plan allows and add the rest later.</p></div><CompanyInputClient userId={props.user.uid} maxCompanies={maxCompanies} initialCompanies={props.companies} planType={plan} isUltraPlan={plan === 'ultra'} mode="campaign-setup" onSave={savePostPurchaseCompanies} /></div>
+  if (props.stage === 'post_purchase_filters') return <div className="mx-auto max-w-5xl"><div className="mb-8 text-center"><Badge className="bg-violet-500/15 text-violet-300">Recruiter strategy</Badge><h1 className="mt-4 text-4xl font-bold text-white">Define who is worth contacting.</h1><p className="mx-auto mt-3 max-w-2xl text-gray-400">Your profile created a strong default strategy. Refine it now, or continue with the recommendations already prepared for you.</p></div><AdvancedFiltersClientWrapper userId={props.user.uid} maxStrategies={plan === 'ultra' ? 50 : 30} defaultStrategy={props.queries || []} plan={plan} onSave={async queries => { await savePostPurchaseFilters(queries); router.refresh() }} /></div>
+  if (props.stage === 'post_purchase_instructions') return <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="bg-violet-500/15 text-violet-300">Email direction</Badge><h1 className="mt-4 text-4xl font-bold text-white">Tell CandidAI what the campaign should achieve.</h1><p className="mx-auto mt-3 max-w-2xl text-gray-400">Set the role you want to pursue. {plan === 'pro' || plan === 'ultra' ? 'You can also tell the AI what to emphasize, include, or avoid.' : 'We will use it to choose the strongest angle for every company.'}</p></div><SetupCompleteClient userId={props.user.uid} defaultCustomizations={props.customizations} plan={plan} onSave={async data => { await savePostPurchaseInstructions(data); router.refresh() }} /></div>
+  return <div className="mx-auto max-w-5xl space-y-8"><div className="text-center"><Badge className="bg-emerald-500/15 text-emerald-300">Ready to launch</Badge><h1 className="mt-4 text-4xl font-bold text-white">Your campaign has a clear target.</h1><p className="mx-auto mt-3 max-w-2xl text-gray-400">Once launched, the definitive pipeline will research every company, select recruiters from scratch, find their contact details, and generate the new emails.</p></div><div className="grid gap-4 md:grid-cols-3"><Card hover={false} className="p-6"><Building2 className="h-5 w-5 text-blue-300" /><p className="mt-4 text-2xl font-bold text-white">{props.companies?.length || 0}</p><p className="mt-1 text-sm text-gray-400">target companies</p></Card><Card hover={false} className="p-6"><SlidersHorizontal className="h-5 w-5 text-violet-300" /><p className="mt-4 text-2xl font-bold text-white">{planData?.recruiterStrategy || 'Default'}</p><p className="mt-1 text-sm text-gray-400">recruiter criteria available</p></Card><Card hover={false} className="p-6"><Zap className="h-5 w-5 text-amber-300" /><p className="mt-4 text-lg font-semibold text-white">{props.customizations?.position_description}</p><p className="mt-1 text-sm text-gray-400">campaign direction</p></Card></div><Card hover={false} className="border-emerald-400/20 p-6 text-center sm:p-8"><h2 className="text-2xl font-semibold text-white">Everything is saved. Ready when you are.</h2><p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-gray-400">The free preview remains available as Version 1 only if you chose to keep its company. The new result will become the current, fully researched version.</p><Button size="lg" className="mt-6" disabled={Boolean(pending)} onClick={() => run('launch', launchPostPurchaseCampaign)} icon={pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}>{pending ? 'Launching...' : 'Launch my campaign'}</Button>{error && <p className="mt-4 text-sm text-red-300">{error}</p>}</Card></div>
+}
+
 export function OnboardingExperience(props: Props) {
   const router = useRouter()
   const [replayPhase, setReplayPhase] = useState<'idle' | 'search' | 'email' | 'reveal'>(() => props.stage === 'preview_ready' ? 'reveal' : 'idle')
   const poll = ['recruiter_search', 'recruiter_found', 'email_generation'].includes(props.stage)
   const preview = usePreview(props.initialPreview, poll)
-  const effectiveStage = (preview.stage || props.stage) as OnboardingStage
+  // The preview document intentionally remains `preview_ready` so its original
+  // result can be archived. During paid activation the user document is the
+  // source of truth for the current setup stage.
+  const effectiveStage = (postPurchaseStages.includes(props.stage) ? props.stage : (preview.stage || props.stage)) as OnboardingStage
   const previousStage = useRef<OnboardingStage>(effectiveStage)
   useEffect(() => { if (effectiveStage !== props.stage && ['target_company', 'recruiter_search'].includes(props.stage)) router.refresh() }, [effectiveStage, props.stage, router])
   useEffect(() => {
@@ -319,13 +351,15 @@ export function OnboardingExperience(props: Props) {
   }
   const displayedStage: OnboardingStage = replayPhase === 'search' ? 'recruiter_search' : replayPhase === 'email' ? 'email_generation' : effectiveStage
   const sceneKey = replayPhase === 'idle' ? effectiveStage : `replay-${replayPhase}`
-  return <LayoutGroup id="onboarding-completion"><div><JourneyHeader stage={displayedStage} />
+  const isPostPurchase = postPurchaseStages.includes(effectiveStage)
+  return <LayoutGroup id="onboarding-completion"><div>{!isPostPurchase && <JourneyHeader stage={displayedStage} />}
     <AnimatePresence mode="sync" initial={false}>
       <motion.div key={sceneKey} className="relative" initial={{ opacity: 0, y: 28, filter: 'blur(9px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -32, filter: 'blur(12px)' }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>
         {replayPhase === 'search' && <SearchExperience preview={replayPreview} replay onReplayComplete={showReplayEmail} />}
         {replayPhase === 'email' && <><Button variant="ghost" size="sm" className="absolute right-4 top-0 z-10 text-gray-500" onClick={stopReplay}>Back to result</Button><ApplicationAssembly preview={preview} /></>}
         {replayPhase === 'reveal' && <><Button variant="ghost" size="sm" className="absolute right-4 top-0 z-10 text-gray-500" onClick={stopReplay}>Skip animation</Button><EmailDeliveryReveal preview={preview} /></>}
         {replayPhase === 'idle' && <>
+          {isPostPurchase && <PostPurchaseExperience props={{ ...props, stage: effectiveStage }} preview={preview} />}
           {(effectiveStage === 'profile_source' || effectiveStage === 'profile_review') && <ProfileAnalysisClient userId={props.user.uid} plan="free_trial" initialProfile={props.profile} initialCvUrl={props.cvUrl} flow="guided" />}
           {effectiveStage === 'target_company' && <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="mb-4 border-violet-400/20 bg-violet-400/10 text-violet-200">Choose one real opportunity</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Which company would you like to join?</h2><p className="mx-auto mt-3 max-w-xl text-gray-400">One company is enough. Your profile will guide who we look for and how we approach them.</p></div><CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
           {effectiveStage === 'recruiter_search' && <SearchExperience preview={preview} />}

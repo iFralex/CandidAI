@@ -465,6 +465,9 @@ export default async function OnboardingPage({ user, currentStep }) {
                     profile={user.account?.profileSummary}
                     cvUrl={user.account?.cvUrl}
                     companies={user.account?.companies || []}
+                    queries={user.account?.queries || []}
+                    customizations={user.account?.customizations || {}}
+                    maxCompanies={user.maxCompanies || plansData[user.plan as keyof typeof plansData]?.maxCompanies || 1}
                     initialPreview={user.onboardingPreview || { status: "idle", stage }}
                 />
             </div>
@@ -493,6 +496,9 @@ export default async function OnboardingPage({ user, currentStep }) {
                 profile={account.profileSummary}
                 cvUrl={account.cvUrl}
                 companies={account.companies || []}
+                queries={account.queries || []}
+                customizations={account.customizations || {}}
+                maxCompanies={userSnap.data()?.maxCompanies || plansData[(user.plan || 'free_trial') as keyof typeof plansData]?.maxCompanies || 1}
                 initialPreview={preview}
             />
         </div>

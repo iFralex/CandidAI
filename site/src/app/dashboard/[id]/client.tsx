@@ -1366,7 +1366,7 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
                     : "bg-gray-800 text-gray-400 hover:text-white"
                 }`}
               >
-                Current
+                v{emailHistory.length + 1} · Current
               </button>
               {emailHistory.map((_, i) => (
                 <button
@@ -1378,7 +1378,7 @@ export const EmailGenerated = ({ data, defaultInstructions }: { data: any; defau
                       : "bg-gray-800 text-gray-400 hover:text-white"
                   }`}
                 >
-                  v{emailHistory.length - i}
+                  v{i + 1}{emailHistory[i]?.source === "free_preview" ? " · Free preview" : ""}
                 </button>
               ))}
             </div>

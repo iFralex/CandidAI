@@ -4327,7 +4327,8 @@ type CompanyInputClientProps = {
     initialCompanies?: { name: string; domain?: string; linkedin_url?: string }[];
     currentStep?: number;
     plan?: string;
-    mode?: 'multiple' | 'single-preview';
+    mode?: 'multiple' | 'single-preview' | 'campaign-setup';
+    onSave?: (companies: { name: string; domain?: string; linkedin_url?: string }[]) => Promise<unknown>;
 };
 
 export function CompanyAutocomplete({
@@ -4482,6 +4483,7 @@ export function CompanyInputClient({
     currentStep,
     plan,
     mode = 'multiple',
+    onSave,
 }: CompanyInputClientProps) {
     const router = useRouter();
     const initialTQueries: TQuery[] = (initialCompanies || []).map(c => ({
@@ -4582,7 +4584,10 @@ export function CompanyInputClient({
             try {
                 console.log("Submitting:", companies);
                 // La tua logica di submit
-                if (mode === 'single-preview') {
+                if (onSave) {
+                    await onSave(companies as { name: string; domain?: string; linkedin_url?: string }[])
+                    router.refresh()
+                } else if (mode === 'single-preview') {
                     const company = companies[0]
                     if (!company) throw new Error("Choose one company")
                     const result = await submitPreviewCompany(company as { name: string; domain?: string; linkedin_url?: string })
@@ -4615,7 +4620,7 @@ export function CompanyInputClient({
 
     return (
         <>
-            {mode !== 'single-preview' && <StepExplanation
+            {mode === 'multiple' && <StepExplanation
                 title="How are target companies used in email generation?"
                 items={[
                     { icon: Search, label: "Recruiter discovery", description: "For each company, CandidAI searches LinkedIn to find relevant recruiters and hiring managers that match your profile." },
@@ -4625,13 +4630,13 @@ export function CompanyInputClient({
                 ]}
             />}
             <motion.div
-                className={`${mode === 'single-preview' ? 'bg-transparent border-0 p-0' : 'bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8'} mb-8 relative z-10`}
+                className={`${mode === 'single-preview' ? 'bg-transparent border-0 p-0' : 'bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-5 sm:p-8'} mb-8 relative z-10`}
                 initial="hidden"
                 animate="show"
                 variants={containerVariants}
             >
                 <motion.div className="flex items-center justify-between mb-6" variants={itemVariants}>
-                    <h3 className="text-xl font-semibold text-white">{mode === 'single-preview' ? 'Your target' : 'Target Companies'}</h3>
+                    <h3 className="text-xl font-semibold text-white">{mode === 'single-preview' ? 'Your target' : mode === 'campaign-setup' ? 'Build your target list' : 'Target Companies'}</h3>
                     {mode !== 'single-preview' && <span className="bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">
                         {selectedCompanies.length} / {maxCompanies} companies
                     </span>}
@@ -4752,7 +4757,7 @@ export function CompanyInputClient({
                         </>
                     ) : (
                         <>
-                            <span>{mode === 'single-preview' ? `Build my application${selectedCompanies[0]?.name ? ` for ${selectedCompanies[0].name}` : ''}` : 'Continue Setup'}</span>
+                            <span>{mode === 'single-preview' ? `Build my application${selectedCompanies[0]?.name ? ` for ${selectedCompanies[0].name}` : ''}` : mode === 'campaign-setup' ? 'Save targets and continue' : 'Continue Setup'}</span>
                             <ArrowRight className="w-5 h-5" />
                         </>
                     )}
