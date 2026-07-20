@@ -484,7 +484,7 @@ export async function choosePostPurchasePreviewAction(choice: "regenerate" | "re
         status: "completed",
         updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
-    batch.update(userRef, { onboardingStage: "post_purchase_companies", onboardingStep: 7 });
+    batch.update(userRef, { onboardingStage: "post_purchase_profile", onboardingStep: 7, postPurchaseReturnToReview: false });
     await batch.commit();
     revalidatePath("/dashboard");
     return { success: true as const };
@@ -513,7 +513,8 @@ export async function savePostPurchaseCompanies(companies: { name: string; domai
     };
     const companyKeys = companies.map(identity);
     if (new Set(companyKeys).size !== companyKeys.length) throw new Error("Duplicate companies found");
-    const nextStage = plan === "pro" || plan === "ultra" ? "post_purchase_filters" : "post_purchase_instructions";
+    const returnToReview = Boolean(userSnap.data()?.postPurchaseReturnToReview);
+    const nextStage = returnToReview ? "post_purchase_review" : plan === "pro" || plan === "ultra" ? "post_purchase_filters" : "post_purchase_instructions";
     const batch = adminDb.batch();
     const preview = previewSnap.data() || {};
     const originalCompany = preview.company;
@@ -532,7 +533,7 @@ export async function savePostPurchaseCompanies(companies: { name: string; domai
         batch.set(previewRef, { postPurchaseChoice: "replace", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     }
     batch.set(accountRef, { companies }, { merge: true });
-    batch.update(userRef, { onboardingStage: nextStage, onboardingStep: 8 });
+    batch.update(userRef, { onboardingStage: nextStage, onboardingStep: 8, postPurchaseReturnToReview: false });
     await batch.commit();
     revalidatePath("/dashboard");
     return { success: true as const };
@@ -548,7 +549,11 @@ export async function savePostPurchaseFilters(queries: any[]) {
     if (!Array.isArray(queries) || queries.length > max) throw new Error(`You can save up to ${max} recruiter strategies`);
     const batch = adminDb.batch();
     batch.set(userRef.collection("data").doc("account"), { queries }, { merge: true });
-    batch.update(userRef, { onboardingStage: "post_purchase_instructions", onboardingStep: 9 });
+    batch.update(userRef, {
+        onboardingStage: userSnap.data()?.postPurchaseReturnToReview ? "post_purchase_review" : "post_purchase_instructions",
+        onboardingStep: 9,
+        postPurchaseReturnToReview: false,
+    });
     await batch.commit();
     revalidatePath("/dashboard");
     return { success: true as const };
@@ -568,8 +573,55 @@ export async function savePostPurchaseInstructions(customizations: { position_de
     batch.set(userRef.collection("data").doc("account"), { customizations: safe }, { merge: true });
     // Keep this below 10 so /dashboard continues rendering the onboarding shell
     // until the user explicitly launches the campaign.
-    batch.update(userRef, { onboardingStage: "post_purchase_review", onboardingStep: 9 });
+    batch.update(userRef, { onboardingStage: "post_purchase_review", onboardingStep: 9, postPurchaseReturnToReview: false });
     await batch.commit();
+    revalidatePath("/dashboard");
+    return { success: true as const };
+}
+
+const postPurchaseSetupStages = new Set([
+    "post_purchase",
+    "post_purchase_profile",
+    "post_purchase_companies",
+    "post_purchase_filters",
+    "post_purchase_instructions",
+    "post_purchase_review",
+]);
+
+export async function navigatePostPurchaseStage(stage: string, returnToReview = false) {
+    const userId = await checkAuth();
+    if (!postPurchaseSetupStages.has(stage)) throw new Error("Invalid campaign setup stage");
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+    if (!userSnap.data()?.plan || userSnap.data()?.plan === "free_trial") throw new Error("A paid plan is required");
+    await userRef.update({ onboardingStage: stage, onboardingStep: 9, postPurchaseReturnToReview: returnToReview });
+    revalidatePath("/dashboard");
+    return { success: true as const };
+}
+
+export async function savePostPurchaseProfile(plan: string, profileData: any, cv?: File | null) {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const accountRef = userRef.collection("data").doc("account");
+    const [userSnap, accountSnap] = await Promise.all([userRef.get(), accountRef.get()]);
+    const storedPlan = String(userSnap.data()?.plan || "free_trial");
+    if (storedPlan === "free_trial" || storedPlan !== plan) throw new Error("A paid plan is required");
+    if (!profileData?.profileSummary) throw new Error("Complete your candidate profile before continuing");
+
+    const result = await submitProfile(
+        storedPlan,
+        { ...profileData, cvUrl: accountSnap.data()?.cvUrl || undefined },
+        cv,
+        true,
+    );
+    if (result && "success" in result && !result.success) throw new Error(result.error || "Could not save the profile");
+
+    await accountRef.set({ queries: buildDefaultRecruiterStrategies(profileData.profileSummary) }, { merge: true });
+    await userRef.update({
+        onboardingStage: userSnap.data()?.postPurchaseReturnToReview ? "post_purchase_review" : "post_purchase_companies",
+        onboardingStep: 7,
+        postPurchaseReturnToReview: false,
+    });
     revalidatePath("/dashboard");
     return { success: true as const };
 }

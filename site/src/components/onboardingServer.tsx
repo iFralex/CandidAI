@@ -468,6 +468,7 @@ export default async function OnboardingPage({ user, currentStep }) {
                     queries={user.account?.queries || []}
                     customizations={user.account?.customizations || {}}
                     maxCompanies={user.maxCompanies || plansData[user.plan as keyof typeof plansData]?.maxCompanies || 1}
+                    postPurchaseReturnToReview={Boolean(user.postPurchaseReturnToReview)}
                     initialPreview={user.onboardingPreview || { status: "idle", stage }}
                 />
             </div>
@@ -499,6 +500,7 @@ export default async function OnboardingPage({ user, currentStep }) {
                 queries={account.queries || []}
                 customizations={account.customizations || {}}
                 maxCompanies={userSnap.data()?.maxCompanies || plansData[(user.plan || 'free_trial') as keyof typeof plansData]?.maxCompanies || 1}
+                postPurchaseReturnToReview={Boolean(userSnap.data()?.postPurchaseReturnToReview)}
                 initialPreview={preview}
             />
         </div>
