@@ -21,6 +21,7 @@ import { emailExamples } from '@/lib/email-examples';
 import { HeroVideo } from '@/components/HeroVideo';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { AppleHero, AppleCampaignVideo, AppleEmailGallery, AppleActTransition, AppleChapter } from '@/components/landing-apple';
+import { ResponsiveCarouselGrid } from '@/components/ResponsiveCarouselGrid';
 
 // Hero Section Component
 const HeroSection = () => {
@@ -293,21 +294,28 @@ const RedesignBenefits = () => {
         { icon: <Eye className="h-6 w-6" />, title: "Stay in control", text: "Review and edit the recruiter, subject line, and complete message before anything is sent." },
     ];
     return (
-        <section id="features" className="px-6 py-24 lg:px-8">
+        <section id="features" className="px-6 py-16 md:py-24 lg:px-8">
             <div className="mx-auto max-w-6xl">
                 <div className="max-w-2xl">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-300">Why direct outreach</p>
                     <h2 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">A focused path from profile to conversation.</h2>
                 </div>
-                <div className="mt-12 grid gap-5 md:grid-cols-3">
-                    {benefits.map((benefit) => (
-                        <div key={benefit.title} className="rounded-2xl border border-white/10 bg-white/[0.035] p-7">
+                <ResponsiveCarouselGrid
+                    items={benefits}
+                    getKey={(benefit) => benefit.title}
+                    ariaLabel="Direct outreach benefits"
+                    className="mt-10 md:mt-12"
+                    contentClassName="md:ml-0 md:grid md:grid-cols-3 md:gap-5"
+                    itemClassName="md:basis-auto md:pl-0"
+                    hint="Swipe to explore the benefits"
+                    renderItem={(benefit) => (
+                        <div className="h-full rounded-2xl border border-white/10 bg-white/[0.035] p-7">
                             <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">{benefit.icon}</div>
                             <h3 className="text-xl font-semibold text-white">{benefit.title}</h3>
                             <p className="mt-3 leading-7 text-gray-400">{benefit.text}</p>
                         </div>
-                    ))}
-                </div>
+                    )}
+                />
             </div>
         </section>
     );
@@ -320,21 +328,28 @@ const RedesignWorkflow = () => {
         { number: "03", title: "Review and reach out", text: "Edit the personalized email, then open it in your preferred email client." },
     ];
     return (
-        <section id="process" className="bg-white/[0.02] px-6 py-24 lg:px-8">
+        <section id="process" className="bg-white/[0.02] px-6 py-16 md:py-24 lg:px-8">
             <div className="mx-auto max-w-6xl">
                 <div className="text-center">
                     <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-300">How it works</p>
                     <h2 className="mt-4 text-4xl font-bold text-white md:text-5xl">Three steps. You approve the result.</h2>
                 </div>
-                <div className="mt-14 grid gap-5 md:grid-cols-3">
-                    {steps.map((step) => (
-                        <div key={step.number} className="relative rounded-2xl border border-white/10 bg-[#0d0a13] p-7">
+                <ResponsiveCarouselGrid
+                    items={steps}
+                    getKey={(step) => step.number}
+                    ariaLabel="How CandidAI works"
+                    className="mt-10 md:mt-14"
+                    contentClassName="md:ml-0 md:grid md:grid-cols-3 md:gap-5"
+                    itemClassName="md:basis-auto md:pl-0"
+                    hint="Swipe through the three steps"
+                    renderItem={(step) => (
+                        <div className="relative h-full rounded-2xl border border-white/10 bg-[#0d0a13] p-7">
                             <span className="text-sm font-bold text-violet-300">{step.number}</span>
                             <h3 className="mt-7 text-xl font-semibold text-white">{step.title}</h3>
                             <p className="mt-3 leading-7 text-gray-400">{step.text}</p>
                         </div>
-                    ))}
-                </div>
+                    )}
+                />
                 <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-gray-500">Each email is usually generated within a few minutes. During peak periods, processing may take up to 24 hours.</p>
             </div>
         </section>
@@ -375,6 +390,7 @@ const StatsSection = () => {
 
 
 const JobMarketCrisisSections = () => {
+    const [crisisExpanded, setCrisisExpanded] = useState(false);
     const crisisStats = [
         {
             icon: <TrendingDown className="w-12 h-12" />,
@@ -441,7 +457,7 @@ const JobMarketCrisisSections = () => {
     return (
         <>
             {/* Sezione 1: The Changing Job Market */}
-            <section className="relative py-24 px-6 lg:px-8 bg-gradient-to-b from-black to-red-950/20">
+            <section className="relative px-6 py-16 md:py-24 lg:px-8 bg-gradient-to-b from-black to-red-950/20">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
                         <motion.div
@@ -484,7 +500,16 @@ const JobMarketCrisisSections = () => {
                         ))}
                     </div>
 
+                    {!crisisExpanded && (
+                        <div className="text-center md:hidden">
+                            <Button variant="secondary" onClick={() => setCrisisExpanded(true)}>
+                                See full analysis
+                            </Button>
+                        </div>
+                    )}
+
                     {/* Key Points */}
+                    <div className={`${crisisExpanded ? "block" : "hidden"} md:block`}>
                     <div className="grid md:grid-cols-2 gap-8">
                         <motion.div
                             initial={{ opacity: 0, x: -30 }}
@@ -544,11 +569,12 @@ const JobMarketCrisisSections = () => {
                             </p>
                         </Card>
                     </motion.div>
+                    </div>
                 </div>
             </section>
 
             {/* Sezione 2: Why Traditional Methods Fail */}
-            <section className="relative py-24 px-6 lg:px-8 bg-black">
+            <section className="relative px-6 py-16 md:py-24 lg:px-8 bg-black">
                 <div className="max-w-7xl mx-auto">
                     <div className="text-center mb-16">
                         <motion.div
@@ -567,8 +593,15 @@ const JobMarketCrisisSections = () => {
                     </div>
 
                     {/* Failed Strategies Grid */}
-                    <div className="grid md:grid-cols-3 gap-8 mb-12">
-                        {failedStrategies.map((strategy, index) => (
+                    <ResponsiveCarouselGrid
+                        items={failedStrategies}
+                        getKey={(strategy) => strategy.title}
+                        ariaLabel="Traditional job-search strategies"
+                        className="mb-12"
+                        contentClassName="md:ml-0 md:grid md:grid-cols-3 md:gap-8"
+                        itemClassName="md:basis-auto md:pl-0"
+                        hint="Swipe to compare strategies"
+                        renderItem={(strategy, index) => (
                             <motion.div
                                 key={index}
                                 initial={{ opacity: 0, y: 30 }}
@@ -605,8 +638,8 @@ const JobMarketCrisisSections = () => {
                                     </div>
                                 </Card>
                             </motion.div>
-                        ))}
-                    </div>
+                        )}
+                    />
 
                     {/* The Real Problem */}
                     <motion.div
@@ -792,7 +825,7 @@ const FeaturesSection = () => {
     ];
 
     return (
-        <section id="features" className="relative py-24 px-6 lg:px-8">
+        <section id="features" className="relative px-6 py-16 md:py-24 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
@@ -803,17 +836,23 @@ const FeaturesSection = () => {
                     </p>
                 </div>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {features.map((feature, index) => (
-                        <Card key={index} className="p-8 group">
+                <ResponsiveCarouselGrid
+                    items={features}
+                    getKey={(feature) => feature.title}
+                    ariaLabel="CandidAI features"
+                    contentClassName="md:ml-0 md:grid md:grid-cols-2 md:gap-8 lg:grid-cols-3"
+                    itemClassName="md:basis-auto md:pl-0"
+                    hint="Swipe to explore features"
+                    renderItem={(feature) => (
+                        <Card className="h-full p-8 group">
                             <div className="mb-6 text-violet-400 group-hover:text-violet-300 transition-colors">
                                 {feature.icon}
                             </div>
                             <h3 className="text-xl font-semibold text-white mb-4">{feature.title}</h3>
                             <p className="text-gray-400 leading-relaxed">{feature.description}</p>
                         </Card>
-                    ))}
-                </div>
+                    )}
+                />
             </div>
         </section>
     );
@@ -861,7 +900,7 @@ const ProcessSection = () => {
     ];
 
     return (
-        <section id="process" className="relative py-24 px-6 lg:px-8">
+        <section id="process" className="relative px-6 py-16 md:py-24 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
@@ -872,9 +911,15 @@ const ProcessSection = () => {
                     </p>
                 </div>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {steps.map((step, index) => (
-                        <Card key={index} className="p-8 relative">
+                <ResponsiveCarouselGrid
+                    items={steps}
+                    getKey={(step) => step.step}
+                    ariaLabel="CandidAI process"
+                    contentClassName="md:ml-0 md:grid md:grid-cols-2 md:gap-8 lg:grid-cols-3"
+                    itemClassName="md:basis-auto md:pl-0"
+                    hint="Swipe through the process"
+                    renderItem={(step) => (
+                        <Card className="relative h-full p-8">
                             <div className="absolute -top-4 -left-4 w-12 h-12 bg-gradient-to-r from-violet-500 to-purple-600 rounded-full flex items-center justify-center">
                                 <span className="text-white font-bold">{step.step}</span>
                             </div>
@@ -884,8 +929,8 @@ const ProcessSection = () => {
                             <h3 className="text-xl font-semibold text-white mb-4">{step.title}</h3>
                             <p className="text-gray-400 leading-relaxed">{step.description}</p>
                         </Card>
-                    ))}
-                </div>
+                    )}
+                />
 
                 <div className="mt-16 text-center">
                     <Card className="p-8 max-w-2xl mx-auto" gradient>
@@ -908,7 +953,7 @@ const EmailExamplesSection = () => {
     const examples = emailExamples;
 
     return (
-        <section id="email-example" className="relative py-24 px-6 lg:px-8">
+        <section id="email-example" className="relative px-6 py-16 md:py-24 lg:px-8">
             <div className="max-w-6xl mx-auto">
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
@@ -919,7 +964,36 @@ const EmailExamplesSection = () => {
                     </p>
                 </div>
 
-                <div className="grid lg:grid-cols-3 gap-8">
+                <ResponsiveCarouselGrid
+                    items={examples}
+                    getKey={(example) => `${example.company}-${example.candidate}`}
+                    ariaLabel="AI-generated email examples"
+                    breakpoint="lg"
+                    mobileOnly
+                    contentClassName=""
+                    itemClassName="basis-[92%] sm:basis-[72%]"
+                    hint="Swipe to read more examples"
+                    renderItem={(example) => (
+                        <Card className="h-full p-5 sm:p-7">
+                            <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+                                <div>
+                                    <h3 className="text-xl font-bold text-white">{example.company}</h3>
+                                    <p className="mt-1 text-sm text-violet-400">{example.candidate}</p>
+                                    <p className="text-sm text-gray-400">{example.role}</p>
+                                </div>
+                                <Badge variant="success">{example.matchScore} AI match</Badge>
+                            </div>
+                            <div className="mb-4 rounded-lg bg-black/30 p-3">
+                                <p className="mb-1 text-xs text-gray-500">Subject</p>
+                                <p className="text-sm font-medium text-white">{example.subject}</p>
+                            </div>
+                            <p className="mb-3 text-xs text-gray-500">To: {example.recruiter}</p>
+                            <div className="whitespace-pre-line text-sm leading-6 text-gray-300">{example.preview}</div>
+                        </Card>
+                    )}
+                />
+
+                <div className="hidden gap-8 lg:grid lg:grid-cols-3">
                     <div className="lg:col-span-1 space-y-4">
                         {examples.map((example, index) => (
                             <Card
@@ -1096,7 +1170,7 @@ const PricingSection = () => {
 // Reviews Section Component
 const ReviewsSection = () => {
     return (
-        <section id="reviews" className="relative py-24 px-6 lg:px-8">
+        <section id="reviews" className="relative px-6 py-16 md:py-24 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
                     <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
@@ -1107,11 +1181,15 @@ const ReviewsSection = () => {
                     </p>
                 </div>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {reviews.map((review, index) => (
-                        <Review review={review} key={index} />
-                    ))}
-                </div>
+                <ResponsiveCarouselGrid
+                    items={reviews}
+                    getKey={(_, index) => index}
+                    ariaLabel="Customer success stories"
+                    contentClassName="md:ml-0 md:grid md:grid-cols-2 md:gap-8 lg:grid-cols-3"
+                    itemClassName="md:basis-auto md:pl-0"
+                    hint="Swipe through success stories"
+                    renderItem={(review) => <Review review={review} />}
+                />
 
                 <div className="mt-16 text-center">
                     <Card className="p-8 max-w-3xl mx-auto" gradient>

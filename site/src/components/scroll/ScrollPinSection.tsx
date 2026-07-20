@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { useRef, type CSSProperties, type ReactNode } from "react";
 import { useScroll, useReducedMotion, type MotionValue } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 /**
  * Linear 0..1 progress of `progress` between `start` and `end`, clamped.
@@ -16,6 +17,8 @@ export function fadeRange(progress: number, start: number, end: number): number 
 interface ScrollPinSectionProps {
     /** Total scrollable height of the wrapper, in viewport-height units. */
     heightVh?: number;
+    /** Shorter scroll sequence for narrow screens; defaults to heightVh. */
+    mobileHeightVh?: number;
     className?: string;
     /** Render-prop receiving 0..1 scroll progress across the pinned section. */
     children: (progress: MotionValue<number>) => ReactNode;
@@ -42,7 +45,7 @@ interface ScrollPinSectionProps {
  * risk overlapping content (e.g. a centered headline and a centered email
  * block occupying the same point on screen).
  */
-export function ScrollPinSection({ heightVh = 250, className, children, testId }: ScrollPinSectionProps) {
+export function ScrollPinSection({ heightVh = 250, mobileHeightVh, className, children, testId }: ScrollPinSectionProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const prefersReducedMotion = useReducedMotion();
     const { scrollYProgress } = useScroll({
@@ -60,7 +63,15 @@ export function ScrollPinSection({ heightVh = 250, className, children, testId }
     }
 
     return (
-        <div ref={containerRef} data-testid={testId} style={{ height: `${heightVh}vh` }} className={className}>
+        <div
+            ref={containerRef}
+            data-testid={testId}
+            style={{
+                "--pin-height-mobile": `${mobileHeightVh ?? heightVh}vh`,
+                "--pin-height-desktop": `${heightVh}vh`,
+            } as CSSProperties}
+            className={cn("h-[var(--pin-height-mobile)] md:h-[var(--pin-height-desktop)]", className)}
+        >
             <div className="sticky top-0 h-dvh overflow-hidden">
                 {children(scrollYProgress)}
             </div>

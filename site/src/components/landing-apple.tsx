@@ -42,7 +42,7 @@ const mobileHeroPreview = heroEmail.preview
 
 export function AppleHero() {
     return (
-        <ScrollPinSection heightVh={250} className="bg-[#080510]" testId="apple-hero">
+        <ScrollPinSection heightVh={250} mobileHeightVh={190} className="bg-[#080510]" testId="apple-hero">
             {(progress) => <AppleHeroScenes progress={progress} />}
         </ScrollPinSection>
     );
@@ -276,7 +276,7 @@ function AppleHeroAnimated({ progress }: { progress: MotionValue<number> }) {
 
 export function AppleCampaignVideo() {
     return (
-        <ScrollPinSection heightVh={200} className="bg-black">
+        <ScrollPinSection heightVh={200} mobileHeightVh={150} className="bg-black">
             {(progress) => <AppleCampaignVideoScene progress={progress} />}
         </ScrollPinSection>
     );
@@ -472,7 +472,7 @@ export function AppleChapter({ children, index }: { children: ReactNode; index: 
             >
                 <div
                     aria-hidden="true"
-                    className="relative z-20 flex h-11 items-center justify-between border-b border-white/[0.07] px-5 font-mono text-[10px] uppercase tracking-[0.22em] text-white/35 sm:px-8"
+                    className="relative z-20 flex h-8 items-center justify-between border-b border-white/[0.07] px-4 font-mono text-[9px] uppercase tracking-[0.16em] text-white/35 sm:h-11 sm:px-8 sm:text-[10px] sm:tracking-[0.22em]"
                 >
                     <span>Chapter {String(index + 1).padStart(2, "0")}</span>
                     <span className="h-1.5 w-1.5 rounded-full bg-violet-400 shadow-[0_0_14px_rgba(167,139,250,0.9)]" />
@@ -486,7 +486,7 @@ export function AppleChapter({ children, index }: { children: ReactNode; index: 
                 />
                 <motion.div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-x-[7%] top-11 z-20 h-px origin-left bg-gradient-to-r from-transparent via-violet-300/90 to-transparent"
+                    className="pointer-events-none absolute inset-x-[7%] top-8 z-20 h-px origin-left bg-gradient-to-r from-transparent via-violet-300/90 to-transparent sm:top-11"
                     style={prefersReducedMotion ? { scaleX: 1 } : { scaleX: seamScale }}
                 />
                 <div className="relative z-10">{children}</div>

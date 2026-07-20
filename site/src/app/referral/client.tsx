@@ -14,6 +14,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { ResponsiveCarouselGrid } from "@/components/ResponsiveCarouselGrid";
 import { Footer } from "@/components/landing";
 import Link from "next/link";
 import Image from "next/image";
@@ -134,21 +135,15 @@ const TiersSection = () => {
                     </p>
                 </div>
 
-                <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} className="md:hidden">
-                    <CarouselContent className="-ml-3">
-                        {COMMISSION_TIERS.map((tier, index) => (
-                            <CarouselItem key={tier.range} className="basis-[86%] pl-3 sm:basis-[48%]">
-                                {renderTier(tier, index)}
-                            </CarouselItem>
-                        ))}
-                    </CarouselContent>
-                    <p className="mt-4 text-center text-xs text-gray-600">Swipe to compare tiers</p>
-                </Carousel>
-                <div className="hidden gap-6 md:grid md:grid-cols-4">
-                    {COMMISSION_TIERS.map((tier, index) => (
-                        <div key={tier.range}>{renderTier(tier, index)}</div>
-                    ))}
-                </div>
+                <ResponsiveCarouselGrid
+                    items={COMMISSION_TIERS}
+                    getKey={(tier) => tier.range}
+                    ariaLabel="Ambassador commission tiers"
+                    contentClassName="md:ml-0 md:grid md:grid-cols-4 md:gap-6"
+                    itemClassName="sm:basis-[48%] md:basis-auto md:pl-0"
+                    hint="Swipe to compare tiers"
+                    renderItem={renderTier}
+                />
             </div>
         </section>
     );
@@ -313,28 +308,22 @@ const DashboardPreviewSection = () => {
                 </div>
                 <p className="mt-3 text-center text-xs text-gray-600 lg:hidden">Swipe horizontally to explore the dashboard.</p>
 
-                <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} className="mt-8 sm:hidden">
-                    <CarouselContent className="-ml-3">
-                        {steps.map((step) => (
-                            <CarouselItem key={step.number} className="basis-[84%] pl-3">
+                <ResponsiveCarouselGrid
+                    items={steps}
+                    getKey={(step) => step.number}
+                    ariaLabel="Ambassador workflow"
+                    breakpoint="sm"
+                    className="mt-8"
+                    contentClassName="sm:ml-0 sm:grid sm:grid-cols-2 sm:gap-4 lg:grid-cols-4"
+                    itemClassName="basis-[84%] sm:basis-auto sm:pl-0"
+                    renderItem={(step) => (
                                 <div className="h-full rounded-xl border border-white/10 bg-white/[0.03] p-5">
                                     <span className="text-xs font-bold tracking-widest text-violet-400">{step.number}</span>
                                     <h3 className="mt-3 text-lg font-semibold text-white">{step.title}</h3>
                                     <p className="mt-2 text-sm leading-relaxed text-gray-400">{step.text}</p>
                                 </div>
-                            </CarouselItem>
-                        ))}
-                    </CarouselContent>
-                </Carousel>
-                <div className="mt-12 hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-4">
-                    {steps.map((step) => (
-                        <div key={step.number} className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
-                            <span className="text-xs font-bold tracking-widest text-violet-400">{step.number}</span>
-                            <h3 className="mt-3 text-lg font-semibold text-white">{step.title}</h3>
-                            <p className="mt-2 text-sm leading-relaxed text-gray-400">{step.text}</p>
-                        </div>
-                    ))}
-                </div>
+                    )}
+                />
             </div>
         </section>
     );
@@ -773,21 +762,16 @@ const MilestonesSection = () => {
                     </p>
                 </div>
 
-                <Carousel opts={{ align: "start", containScroll: "trimSnaps" }} className="mb-8 md:hidden">
-                    <CarouselContent className="-ml-3">
-                        {MILESTONES.map((milestone) => (
-                            <CarouselItem key={milestone.level} className="basis-[88%] pl-3">
-                                {renderMilestone(milestone)}
-                            </CarouselItem>
-                        ))}
-                    </CarouselContent>
-                    <p className="mt-4 text-center text-xs text-gray-600">Swipe to compare milestones</p>
-                </Carousel>
-                <div className="mb-8 hidden gap-8 md:grid md:grid-cols-3">
-                    {MILESTONES.map((milestone) => (
-                        <div key={milestone.level}>{renderMilestone(milestone)}</div>
-                    ))}
-                </div>
+                <ResponsiveCarouselGrid
+                    items={MILESTONES}
+                    getKey={(milestone) => milestone.level}
+                    ariaLabel="Ambassador milestone rewards"
+                    className="mb-8"
+                    contentClassName="md:ml-0 md:grid md:grid-cols-3 md:gap-8"
+                    itemClassName="basis-[88%] md:basis-auto md:pl-0"
+                    hint="Swipe to compare milestones"
+                    renderItem={renderMilestone}
+                />
 
                 <Card className="p-8 md:p-10" gradient>
                     <div className="flex items-center gap-3 mb-4">
