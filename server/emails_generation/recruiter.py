@@ -656,13 +656,17 @@ def get_work_email_from_rocketreach(name: str, company_domain: str) -> str:
 
         log_rocketreach_call("person_lookup", {"name": name, "company": company_domain}, data)
 
-        # 'emails' è solitamente una lista di dizionari con tipi (work, personal, ecc.)
-        if "recommended_personal_email" in data:
-            return data["recommended_personal_email"]
-
-        # In alternativa, alcuni piani restituiscono direttamente 'email'
+        # Prefer professional addresses. Personal addresses must never be used
+        # for recruiter outreach when a work address is available.
         if "recommended_professional_email" in data:
             return data["recommended_professional_email"]
+
+        for item in data.get("emails", []) or []:
+            if isinstance(item, dict) and item.get("email") and item.get("type") in {"professional", "work"}:
+                return item["email"]
+
+        if data.get("current_work_email"):
+            return data["current_work_email"]
 
         return None  # nessuna email lavorativa trovata
 
@@ -670,6 +674,26 @@ def get_work_email_from_rocketreach(name: str, company_domain: str) -> str:
         log_rocketreach_call("person_lookup", {"name": name, "company": company_domain}, {}, error=str(e))
         print(f"⚠️ Errore nella richiesta RocketReach: {e}")
         return None
+
+
+def resolve_recruiter_work_email(recruiter: dict, company: dict) -> str:
+    """Resolve the selected recruiter's work email with one fast direct lookup.
+
+    Reuses an address already returned by PDL whenever possible; otherwise it
+    performs a single RocketReach person lookup. No AI or browser work is used.
+    """
+    recruiter = recruiter or {}
+    for key in ("work_email", "recommended_professional_email", "current_work_email"):
+        if recruiter.get(key):
+            return recruiter[key]
+    for item in recruiter.get("emails", []) or []:
+        if isinstance(item, dict) and item.get("type") in {"professional", "work"}:
+            return item.get("address") or item.get("email")
+    name = recruiter.get("full_name") or recruiter.get("name")
+    company_key = company.get("domain") or company.get("name")
+    if not name or not company_key:
+        return None
+    return get_work_email_from_rocketreach(name, company_key)
     
 def find_recruiter_by_linkedin_urls(linkedin_urls: List[str], api_key: Optional[str] = None) -> Dict:
     """

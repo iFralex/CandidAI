@@ -98,8 +98,8 @@ export async function POST(req: Request) {
             plan: itemId,
             maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
             credits: FieldValue.increment(includedCredits),
-            onboardingStep: 50,
-            ...(isOnboarding ? { onboardingStage: "completed" } : {}),
+            onboardingStep: isOnboarding ? 6 : 50,
+            ...(isOnboarding ? { onboardingStage: "post_purchase" } : {}),
           });
         }
       });
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
         source: "webhook",
       });
 
-      if (purchaseType === "plan") {
+      if (purchaseType === "plan" && !isOnboardingPurchaseRef.value) {
         try {
           await startServer(userId);
         } catch (serverErr) {

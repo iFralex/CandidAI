@@ -414,6 +414,158 @@ export async function continueFreePreviewToDashboard() {
     redirect("/dashboard");
 }
 
+export async function choosePostPurchasePreviewAction(choice: "regenerate" | "replace") {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const accountRef = userRef.collection("data").doc("account");
+    const previewRef = userRef.collection("data").doc("onboarding_preview");
+    const resultsRef = userRef.collection("data").doc("results");
+    const emailsRef = userRef.collection("data").doc("emails");
+    const [userSnap, accountSnap, previewSnap, resultsSnap] = await Promise.all([
+        userRef.get(), accountRef.get(), previewRef.get(), resultsRef.get(),
+    ]);
+    const user = userSnap.data() || {};
+    const preview = previewSnap.data() || {};
+    if (!user.plan || user.plan === "free_trial") throw new Error("A paid plan is required");
+    if (preview.stage !== "preview_ready" || !preview.resultId) throw new Error("The preview result is not available");
+
+    const resultId = String(preview.resultId);
+    const company = preview.company || accountSnap.data()?.companies?.[0];
+    if (!company?.name) throw new Error("The preview company is not available");
+    const resultData = resultsSnap.data()?.[resultId] || {};
+    const detailsRef = resultsRef.collection(resultId).doc("details");
+    const rowRef = resultsRef.collection(resultId).doc("row");
+    const historyRef = resultsRef.collection(resultId).doc("email_history");
+    const customizationsRef = resultsRef.collection(resultId).doc("customizations");
+    const unlockedRef = resultsRef.collection(resultId).doc("unlocked");
+    const detailsSnap = await detailsRef.get();
+    const previewEmail = detailsSnap.data()?.email || preview.email;
+    const batch = adminDb.batch();
+
+    if (choice === "regenerate") {
+        if (previewEmail?.body) {
+            batch.set(historyRef, {
+                versions: FieldValue.arrayUnion({
+                    ...toEmailArchive(previewEmail),
+                    source: "free_preview",
+                    label: "Free preview",
+                    included_recruiter_email: false,
+                    included_company_research: false,
+                }),
+            }, { merge: true });
+        }
+        // Keep only the company slot. The paid pipeline must redo company research,
+        // recruiter selection and email generation using the newly saved settings.
+        batch.set(resultsRef, {
+            [resultId]: {
+                company,
+                start_date: resultData.start_date || FieldValue.serverTimestamp(),
+            },
+        }, { merge: true });
+        batch.delete(detailsRef);
+        batch.delete(rowRef);
+        batch.delete(customizationsRef);
+        batch.delete(unlockedRef);
+        batch.set(emailsRef, { [resultId]: FieldValue.delete() }, { merge: true });
+        batch.set(accountRef, { companies: [company] }, { merge: true });
+    } else {
+        batch.set(resultsRef, { [resultId]: FieldValue.delete() }, { merge: true });
+        batch.delete(detailsRef);
+        batch.delete(rowRef);
+        batch.delete(historyRef);
+        batch.delete(customizationsRef);
+        batch.delete(unlockedRef);
+        batch.set(emailsRef, { [resultId]: FieldValue.delete() }, { merge: true });
+        batch.set(accountRef, { companies: [] }, { merge: true });
+        batch.delete(adminDb.collection("ids").doc(`${company.name}-${userId}`));
+    }
+    batch.set(previewRef, {
+        postPurchaseChoice: choice,
+        status: "completed",
+        updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    batch.update(userRef, { onboardingStage: "post_purchase_companies", onboardingStep: 7 });
+    await batch.commit();
+    revalidatePath("/dashboard");
+    return { success: true as const };
+}
+
+export async function savePostPurchaseCompanies(companies: { name: string; domain?: string; linkedin_url?: string }[]) {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const accountRef = userRef.collection("data").doc("account");
+    const userSnap = await userRef.get();
+    const plan = String(userSnap.data()?.plan || "free_trial");
+    const limit = Number(userSnap.data()?.maxCompanies ?? (plansData as any)[plan]?.maxCompanies ?? 1);
+    if (!companies.length) throw new Error("Choose at least one target company");
+    if (companies.length > limit) throw new Error(`Exceeds plan limit of ${limit} companies`);
+    for (const company of companies) {
+        if (!company.name?.trim()) throw new Error("Company name cannot be empty");
+        if (!company.linkedin_url && (!company.domain || !isValidDomain(company.domain))) throw new Error(`Invalid domain: ${company.domain}`);
+    }
+    const nextStage = plan === "pro" || plan === "ultra" ? "post_purchase_filters" : "post_purchase_instructions";
+    const batch = adminDb.batch();
+    batch.set(accountRef, { companies }, { merge: true });
+    batch.update(userRef, { onboardingStage: nextStage, onboardingStep: 8 });
+    await batch.commit();
+    revalidatePath("/dashboard");
+    return { success: true as const };
+}
+
+export async function savePostPurchaseFilters(queries: any[]) {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+    const plan = String(userSnap.data()?.plan || "free_trial");
+    if (plan !== "pro" && plan !== "ultra") throw new Error("Custom recruiter filters require Pro or Ultra");
+    const max = plan === "ultra" ? 50 : 30;
+    if (!Array.isArray(queries) || queries.length > max) throw new Error(`You can save up to ${max} recruiter strategies`);
+    const batch = adminDb.batch();
+    batch.set(userRef.collection("data").doc("account"), { queries }, { merge: true });
+    batch.update(userRef, { onboardingStage: "post_purchase_instructions", onboardingStep: 9 });
+    await batch.commit();
+    revalidatePath("/dashboard");
+    return { success: true as const };
+}
+
+export async function savePostPurchaseInstructions(customizations: { position_description?: string; instructions?: string }) {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+    const plan = String(userSnap.data()?.plan || "free_trial");
+    const safe = {
+        position_description: String(customizations.position_description || "").trim(),
+        instructions: plan === "pro" || plan === "ultra" ? String(customizations.instructions || "").trim() : "",
+    };
+    if (!safe.position_description) throw new Error("Describe the position you want to pursue");
+    const batch = adminDb.batch();
+    batch.set(userRef.collection("data").doc("account"), { customizations: safe }, { merge: true });
+    // Keep this below 10 so /dashboard continues rendering the onboarding shell
+    // until the user explicitly launches the campaign.
+    batch.update(userRef, { onboardingStage: "post_purchase_review", onboardingStep: 9 });
+    await batch.commit();
+    revalidatePath("/dashboard");
+    return { success: true as const };
+}
+
+export async function launchPostPurchaseCampaign() {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const [userSnap, accountSnap] = await Promise.all([userRef.get(), userRef.collection("data").doc("account").get()]);
+    const user = userSnap.data() || {};
+    const account = accountSnap.data() || {};
+    if (!user.plan || user.plan === "free_trial") throw new Error("A paid plan is required");
+    if (!account.companies?.length || !account.customizations?.position_description) throw new Error("Complete your campaign setup before launching");
+    await userRef.update({
+        onboardingStage: "completed",
+        onboardingStep: 50,
+        activated_at: user.activated_at || FieldValue.serverTimestamp(),
+    });
+    await startServer(userId);
+    revalidatePath("/dashboard");
+    redirect("/dashboard");
+}
+
 const ALLOWED_CV_TYPES = ["application/pdf"];
 const MAX_CV_SIZE = 5 * 1024 * 1024; // 5 MB
 

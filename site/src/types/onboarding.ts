@@ -7,6 +7,11 @@ export type OnboardingStage =
   | "email_generation"
   | "preview_ready"
   | "checkout"
+  | "post_purchase"
+  | "post_purchase_companies"
+  | "post_purchase_filters"
+  | "post_purchase_instructions"
+  | "post_purchase_review"
   | "completed";
 
 export type OnboardingPreviewStatus =

@@ -91,8 +91,8 @@ export async function POST(req: Request) {
                     plan: itemId,
                     maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
                     credits: FieldValue.increment(includedCredits),
-                    onboardingStep: 50,
-                    ...(isOnboarding ? { onboardingStage: "completed" } : {}),
+                    onboardingStep: isOnboarding ? 6 : 50,
+                    ...(isOnboarding ? { onboardingStage: "post_purchase" } : {}),
                 });
             }
         });
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
             source: "payment-confirm",
         });
 
-        if (purchaseType === "plan") {
+        if (purchaseType === "plan" && !isOnboardingPurchase) {
             try {
                 await startServer(userId as any);
             } catch (err) {
