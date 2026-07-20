@@ -24,6 +24,7 @@ export interface OnboardingPreviewState {
   resultId?: string;
   company?: { name: string; domain?: string; linkedin_url?: string };
   searchContext?: { targetRole?: string; queryCount?: number; narrative?: string };
+  searchProgress?: { attempt: number; total: number; strategy?: string; found?: boolean };
   recruiter?: { name: string; jobTitle: string; linkedinUrl?: string };
   matchedQuery?: { id?: string | number; name?: string; criteria?: unknown[] };
   email?: { subject: string; body: string; keyPoints: string[] };

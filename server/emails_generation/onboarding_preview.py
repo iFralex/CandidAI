@@ -122,6 +122,17 @@ def find_recruiter(user_id: str, job_id: str) -> None:
                 except Exception:  # notification must never fail the pipeline
                     logger.exception("Unable to send recruiter-ready notification for %s", user_id)
 
+        def query_progress(query, attempt, total, found):
+            update_preview(
+                user_id,
+                searchProgress={
+                    "attempt": attempt,
+                    "total": total,
+                    "strategy": query.get("name", ""),
+                    "found": found,
+                },
+            )
+
         results, _ = find_recruiters_for_user(
             user_id,
             {f'{company["name"]}-{user_id}': result_id},
@@ -129,6 +140,7 @@ def find_recruiter(user_id: str, job_id: str) -> None:
             account.get("queries") or [],
             priority="realtime",
             progress_callback=recruiter_found,
+            query_progress_callback=query_progress,
         )
         recruiter = (results.get(company["name"]) or ({}, None))[0]
         if not recruiter:

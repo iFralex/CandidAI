@@ -17,6 +17,12 @@ if (!getApps().length) {
     });
   } catch (error) {
     console.error('Error initializing Firebase Admin:', error);
+    if (process.env.NODE_ENV !== 'production' && !getApps().length) {
+      initializeApp({
+        projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || 'demo-candidai',
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      });
+    }
   }
 }
 

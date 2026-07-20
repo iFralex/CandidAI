@@ -317,38 +317,38 @@ export async function startOnboardingRecruiterSearch() {
     const userRef = adminDb.collection("users").doc(userId);
     const accountRef = userRef.collection("data").doc("account");
     const previewRef = userRef.collection("data").doc("onboarding_preview");
-    const [userSnap, accountSnap, previewSnap] = await Promise.all([
-        userRef.get(), accountRef.get(), previewRef.get(),
-    ]);
-
-    if (userSnap.data()?.freePreviewConsumedAt) throw new Error("Free candidacy already used");
-    if (!accountSnap.data()?.profileSummary || accountSnap.data()?.companies?.length !== 1) {
-        throw new Error("Profile and one target company are required");
-    }
-    const existing = previewSnap.data();
-    if (existing?.jobId && ["queued", "running", "waiting_confirmation"].includes(existing.status)) {
-        return { success: true as const, jobId: existing.jobId as string, resumed: true };
-    }
-
-    const jobId = adminDb.collection("_onboarding_jobs").doc().id;
-    const profile = accountSnap.data()?.profileSummary;
-    const queries = accountSnap.data()?.queries?.length
-        ? accountSnap.data()?.queries
-        : buildDefaultRecruiterStrategies(profile);
-    const batch = adminDb.batch();
-    batch.set(accountRef, { queries }, { merge: true });
-    batch.set(previewRef, {
-        jobId,
-        status: "queued",
-        stage: "recruiter_search",
-        queuedAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
-    batch.update(userRef, { onboardingStage: "recruiter_search", onboardingStep: 4 });
-    await batch.commit();
+    const candidateJobId = adminDb.collection("_onboarding_jobs").doc().id;
+    const job = await adminDb.runTransaction(async tx => {
+        const [userSnap, accountSnap, previewSnap] = await Promise.all([
+            tx.get(userRef), tx.get(accountRef), tx.get(previewRef),
+        ]);
+        if (userSnap.data()?.freePreviewConsumedAt) throw new Error("Free candidacy already used");
+        if (!accountSnap.data()?.profileSummary || accountSnap.data()?.companies?.length !== 1) {
+            throw new Error("Profile and one target company are required");
+        }
+        const existing = previewSnap.data();
+        if (existing?.jobId && ["queued", "running", "waiting_confirmation"].includes(existing.status)) {
+            return { jobId: existing.jobId as string, resumed: true };
+        }
+        const profile = accountSnap.data()?.profileSummary;
+        const queries = accountSnap.data()?.queries?.length
+            ? accountSnap.data()?.queries
+            : buildDefaultRecruiterStrategies(profile);
+        tx.set(accountRef, { queries }, { merge: true });
+        tx.set(previewRef, {
+            jobId: candidateJobId,
+            status: "queued",
+            stage: "recruiter_search",
+            queuedAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        tx.update(userRef, { onboardingStage: "recruiter_search", onboardingStep: 4 });
+        return { jobId: candidateJobId, resumed: false };
+    });
+    if (job.resumed) return { success: true as const, jobId: job.jobId, resumed: true };
 
     try {
-        await startRealtimeServer("start_onboarding_recruiter", userId, jobId);
+        await startRealtimeServer("start_onboarding_recruiter", userId, job.jobId);
     } catch (error) {
         await previewRef.set({
             status: "failed",
@@ -358,27 +358,28 @@ export async function startOnboardingRecruiterSearch() {
         throw error;
     }
     revalidatePath("/dashboard");
-    return { success: true as const, jobId, resumed: false };
+    return { success: true as const, jobId: job.jobId, resumed: false };
 }
 
 export async function confirmRecruiterAndGenerateEmail(jobId: string) {
     const userId = await checkAuth();
     const userRef = adminDb.collection("users").doc(userId);
     const previewRef = userRef.collection("data").doc("onboarding_preview");
-    const previewSnap = await previewRef.get();
-    const preview = previewSnap.data();
-    if (!preview || preview.jobId !== jobId || preview.stage !== "recruiter_found") {
-        throw new Error("The recruiter is not ready for confirmation");
-    }
-
-    const batch = adminDb.batch();
-    batch.set(previewRef, {
-        status: "queued",
-        stage: "email_generation",
-        updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
-    batch.update(userRef, { onboardingStage: "email_generation", onboardingStep: 5 });
-    await batch.commit();
+    const transition = await adminDb.runTransaction(async tx => {
+        const previewSnap = await tx.get(previewRef);
+        const preview = previewSnap.data();
+        if (!preview || preview.jobId !== jobId) throw new Error("Preview job does not match");
+        if (preview.stage === "email_generation" || preview.stage === "preview_ready") return { enqueue: false };
+        if (preview.stage !== "recruiter_found") throw new Error("The recruiter is not ready for confirmation");
+        tx.set(previewRef, {
+            status: "queued",
+            stage: "email_generation",
+            updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        tx.update(userRef, { onboardingStage: "email_generation", onboardingStep: 5 });
+        return { enqueue: true };
+    });
+    if (!transition.enqueue) return { success: true as const, resumed: true };
 
     try {
         await startRealtimeServer("start_onboarding_email", userId, jobId);
@@ -391,7 +392,7 @@ export async function confirmRecruiterAndGenerateEmail(jobId: string) {
         throw error;
     }
     revalidatePath("/dashboard");
-    return { success: true as const };
+    return { success: true as const, resumed: false };
 }
 
 export async function setOnboardingNotificationPreference(channel: "email" | "browser", enabled: boolean) {

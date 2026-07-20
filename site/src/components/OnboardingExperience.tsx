@@ -90,7 +90,7 @@ function SearchExperience({ preview }: { preview: OnboardingPreviewState }) {
       <Card hover={false} className="overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-white"><Loader2 className="h-5 w-5 animate-spin text-violet-400" /> Analisi del team recruiting</CardTitle>
-          <CardDescription>La ricerca si ferma appena trova un contatto verificabile e coerente con il tuo profilo.</CardDescription>
+          <CardDescription>{preview.searchProgress?.attempt ? `Strategia ${preview.searchProgress.attempt} analizzata: ${preview.searchProgress.strategy || 'ricerca progressiva'}.` : 'La ricerca si ferma appena trova un contatto verificabile e coerente con il tuo profilo.'}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5 pb-6">
           {preview.searchContext?.narrative && <div className="rounded-xl border border-violet-500/20 bg-violet-500/10 p-4 text-sm leading-6 text-violet-100">{preview.searchContext.narrative}</div>}
