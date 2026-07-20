@@ -266,7 +266,7 @@ function ConversionResult({ preview, email, onReplay }: { preview: OnboardingPre
       <div className="space-y-6 pt-4 text-center"><div><h3 className="text-3xl font-bold text-white">Choose how you want to continue.</h3><p className="mx-auto mt-3 max-w-2xl text-gray-400">Scale with Base, direct the strategy with Pro, or validate and orchestrate the complete campaign with Ultra.</p></div><PlanSelector selectedPlanId={selected?.id} onSelect={choose} onCtaClick={choose} ctaLabel="Continue with this plan" /></div>
     </section>
     <Dialog open={Boolean(selected)} onOpenChange={open => { if (!open) setSelected(null) }}>
-      <DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto p-5 sm:p-7">
+      <DialogContent className="max-h-[92vh] w-[calc(100vw-2rem)] max-w-5xl overflow-y-auto p-5 sm:max-w-5xl sm:p-7">
         <DialogHeader className="pr-8 text-left">
           <DialogTitle>{selected ? `Continue with ${selected.name}` : 'Complete your purchase'}</DialogTitle>
           <DialogDescription>Secure one-time payment. Your onboarding progress stays saved if you close this window.</DialogDescription>
