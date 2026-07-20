@@ -378,6 +378,9 @@ export function OnboardingExperience(props: Props) {
   const displayedStage: OnboardingStage = replayPhase === 'search' ? 'recruiter_search' : replayPhase === 'email' ? 'email_generation' : effectiveStage
   const sceneKey = replayPhase === 'idle' ? effectiveStage : `replay-${replayPhase}`
   const isPostPurchase = postPurchaseStages.includes(effectiveStage)
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [sceneKey])
   return <LayoutGroup id="onboarding-completion"><div>{!isPostPurchase && <JourneyHeader stage={displayedStage} />}
     <AnimatePresence mode="sync" initial={false}>
       <motion.div key={sceneKey} className="relative" initial={{ opacity: 0, y: 28, filter: 'blur(9px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -32, filter: 'blur(12px)' }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>
