@@ -72,4 +72,21 @@ test.describe("Redesigned first candidacy", () => {
     await expect(page.getByRole("heading", { name: "Now multiply your opportunities" })).toBeVisible();
     await expect(page.getByRole("button", { name: /explore the dashboard/i })).toBeVisible();
   });
+
+  test("renders a found recruiter after the realtime state refresh", async ({ page }) => {
+    const preview = {
+      status: "waiting_confirmation",
+      stage: "recruiter_found",
+      jobId: "preview-job",
+      company: { name: "NVIDIA", domain: "nvidia.com" },
+      recruiter: { name: "Claudia Fenaroli", jobTitle: "Senior HR Generalist" },
+      matchedQuery: { id: 3, name: "Seniority, skills and country", criteria: [] },
+    };
+    await mockUser(page, { onboardingStep: 4, onboardingStage: "recruiter_found", onboardingPreview: preview });
+    await page.route("**/api/protected/onboarding-preview", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, preview }) }));
+    await page.goto("/dashboard");
+    await expect(page.getByRole("heading", { name: "We found the right person to contact" })).toBeVisible();
+    await expect(page.getByText("Claudia Fenaroli")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Write my email" })).toBeVisible();
+  });
 });

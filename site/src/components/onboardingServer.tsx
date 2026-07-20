@@ -12,6 +12,55 @@ import { getPlanById } from '@/lib/utils';
 import { OnboardingExperience } from '@/components/OnboardingExperience';
 import type { OnboardingPreviewState, OnboardingStage } from '@/types/onboarding';
 
+function toClientPreview(data: FirebaseFirestore.DocumentData | undefined, fallbackStage: OnboardingStage): OnboardingPreviewState {
+    if (!data) return { status: "idle", stage: fallbackStage }
+
+    // Never pass Firestore Timestamp/FieldValue instances across the RSC boundary.
+    // Keep this projection explicit so new backend-only fields cannot break hydration.
+    return {
+        jobId: typeof data.jobId === "string" ? data.jobId : undefined,
+        status: data.status || "idle",
+        stage: data.stage || fallbackStage,
+        resultId: typeof data.resultId === "string" ? data.resultId : undefined,
+        company: data.company ? {
+            name: String(data.company.name || ""),
+            domain: data.company.domain ? String(data.company.domain) : undefined,
+            linkedin_url: data.company.linkedin_url ? String(data.company.linkedin_url) : undefined,
+        } : undefined,
+        searchContext: data.searchContext ? {
+            targetRole: data.searchContext.targetRole ? String(data.searchContext.targetRole) : undefined,
+            queryCount: Number(data.searchContext.queryCount || 0),
+            narrative: data.searchContext.narrative ? String(data.searchContext.narrative) : undefined,
+        } : undefined,
+        searchProgress: data.searchProgress ? {
+            attempt: Number(data.searchProgress.attempt || 0),
+            total: Number(data.searchProgress.total || 0),
+            strategy: data.searchProgress.strategy ? String(data.searchProgress.strategy) : undefined,
+            found: Boolean(data.searchProgress.found),
+        } : undefined,
+        recruiter: data.recruiter ? {
+            name: String(data.recruiter.name || ""),
+            jobTitle: String(data.recruiter.jobTitle || ""),
+            linkedinUrl: data.recruiter.linkedinUrl ? String(data.recruiter.linkedinUrl) : undefined,
+        } : undefined,
+        matchedQuery: data.matchedQuery ? {
+            id: data.matchedQuery.id,
+            name: data.matchedQuery.name ? String(data.matchedQuery.name) : undefined,
+            criteria: Array.isArray(data.matchedQuery.criteria) ? data.matchedQuery.criteria : [],
+        } : undefined,
+        email: data.email ? {
+            subject: String(data.email.subject || ""),
+            body: String(data.email.body || ""),
+            keyPoints: Array.isArray(data.email.keyPoints) ? data.email.keyPoints.map(String) : [],
+        } : undefined,
+        error: data.error ? {
+            code: String(data.error.code || "unknown"),
+            message: data.error.message ? String(data.error.message) : undefined,
+            recoverable: Boolean(data.error.recoverable),
+        } : undefined,
+    }
+}
+
 interface SetupCompleteServerProps {
     userId: string
     currentStep: number
@@ -367,7 +416,7 @@ export default async function OnboardingPage({ user, currentStep }) {
     const storedStage = userSnap.data()?.onboardingStage as OnboardingStage | undefined
     const fallbackStage: OnboardingStage = currentStep >= 5 ? "email_generation" : currentStep === 4 ? "recruiter_search" : currentStep === 3 ? "target_company" : "profile_source"
     const stage = storedStage || fallbackStage
-    const preview = (previewSnap.data() || { status: "idle", stage }) as OnboardingPreviewState
+    const preview = toClientPreview(previewSnap.data(), stage)
 
     return (
         <div className="container mx-auto px-4 py-8">
