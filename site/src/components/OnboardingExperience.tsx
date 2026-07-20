@@ -211,8 +211,8 @@ function ConversionResult({ preview, email, onReplay }: { preview: OnboardingPre
 
 export function OnboardingExperience(props: Props) {
   const router = useRouter()
-  const [replayingResearch, setReplayingResearch] = useState(false)
-  const poll = ['recruiter_search', 'recruiter_found', 'email_generation', 'preview_ready'].includes(props.stage)
+  const [replayPhase, setReplayPhase] = useState<'idle' | 'search' | 'email'>('idle')
+  const poll = ['recruiter_search', 'recruiter_found', 'email_generation'].includes(props.stage)
   const preview = usePreview(props.initialPreview, poll)
   const effectiveStage = (preview.stage || props.stage) as OnboardingStage
   useEffect(() => { if (effectiveStage !== props.stage && ['target_company', 'recruiter_search'].includes(props.stage)) router.refresh() }, [effectiveStage, props.stage, router])
@@ -222,7 +222,13 @@ export function OnboardingExperience(props: Props) {
       localStorage.removeItem('candidai-preview-notification')
     }
   }, [effectiveStage, preview.recruiter?.name])
-  const stopReplay = useCallback(() => setReplayingResearch(false), [])
+  const stopReplay = useCallback(() => setReplayPhase('idle'), [])
+  const showReplayEmail = useCallback(() => setReplayPhase('email'), [])
+  useEffect(() => {
+    if (replayPhase !== 'email') return
+    const timer = window.setTimeout(stopReplay, 9000)
+    return () => window.clearTimeout(timer)
+  }, [replayPhase, stopReplay])
   const replayPreview: OnboardingPreviewState = {
     ...preview,
     stage: 'recruiter_search',
@@ -233,15 +239,18 @@ export function OnboardingExperience(props: Props) {
       strategy: preview.searchProgress?.strategy || preview.matchedQuery?.name || 'Replaying the successful matching strategy',
     },
   }
-  if (replayingResearch && effectiveStage === 'preview_ready') {
-    return <div><JourneyHeader stage="recruiter_search" /><SearchExperience preview={replayPreview} replay onReplayComplete={stopReplay} /></div>
+  if (replayPhase === 'search' && effectiveStage === 'preview_ready') {
+    return <div><JourneyHeader stage="recruiter_search" /><SearchExperience preview={replayPreview} replay onReplayComplete={showReplayEmail} /></div>
+  }
+  if (replayPhase === 'email' && effectiveStage === 'preview_ready') {
+    return <div><JourneyHeader stage="email_generation" /><div className="relative"><Button variant="ghost" size="sm" className="absolute right-4 top-0 z-10 text-gray-500" onClick={stopReplay}>Back to result</Button><ApplicationAssembly preview={preview} /></div></div>
   }
   return <div><JourneyHeader stage={effectiveStage} />
     {(effectiveStage === 'profile_source' || effectiveStage === 'profile_review') && <ProfileAnalysisClient userId={props.user.uid} plan="free_trial" initialProfile={props.profile} initialCvUrl={props.cvUrl} flow="guided" />}
     {effectiveStage === 'target_company' && <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="mb-4 border-violet-400/20 bg-violet-400/10 text-violet-200">Choose one real opportunity</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Which company would you like to join?</h2><p className="mx-auto mt-3 max-w-xl text-gray-400">One company is enough. Your profile will guide who we look for and how we approach them.</p></div><CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
     {effectiveStage === 'recruiter_search' && <SearchExperience preview={preview} />}
     {(effectiveStage === 'recruiter_found' || effectiveStage === 'email_generation') && <ApplicationAssembly preview={preview} />}
-    {effectiveStage === 'preview_ready' && <ConversionResult preview={preview} email={props.user.email} onReplay={() => setReplayingResearch(true)} />}
+    {effectiveStage === 'preview_ready' && <ConversionResult preview={preview} email={props.user.email} onReplay={() => setReplayPhase('search')} />}
     {preview.status === 'failed' && <Card hover={false} className="mx-auto mt-6 max-w-xl p-6 text-center"><p className="font-semibold text-white">The research was interrupted</p><p className="mt-2 text-sm text-gray-400">{preview.error?.message || 'You can try again without losing your profile or company.'}</p><Button className="mt-5" onClick={() => startOnboardingRecruiterSearch().then(() => router.refresh())}>Try again</Button></Card>}
   </div>
 }

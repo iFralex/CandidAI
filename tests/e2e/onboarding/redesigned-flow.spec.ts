@@ -68,7 +68,7 @@ test.describe("Redesigned first candidacy", () => {
       company: { name: "Spotify", domain: "spotify.com" },
       recruiter: { name: "Giulia Rossi", jobTitle: "Senior Talent Partner" },
       recruiterProfile: { location: "Stockholm, Sweden", skills: ["Talent acquisition"], experience: [{ title: "Senior Talent Partner", company: "Spotify" }], education: [] },
-      replayStrategies: ["Product recruiting in Sweden", "Product recruiting in Europe"],
+      replayStrategies: ["Product recruiting in Sweden"],
       email: { subject: "Product design fit at Spotify", body: "Hi Giulia,\n\nA personalized introduction.", keyPoints: ["Specific role fit"] },
     };
     await mockUser(page, { onboardingStep: 5, onboardingStage: "preview_ready", onboardingPreview: preview });
@@ -79,9 +79,12 @@ test.describe("Redesigned first candidacy", () => {
     await expect(page.getByRole("heading", { name: "This wasn’t a template. It was a complete research process." })).toBeVisible();
     await expect(page.getByRole("button", { name: "Copy email" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Open in my email app" })).toBeVisible();
+    await page.evaluate(() => { Math.random = () => 0 });
     await page.getByRole("button", { name: "Replay the research" }).click();
     await expect(page.getByRole("heading", { name: "We know what to look for." })).toBeVisible();
     await expect(page.getByText("Product recruiting in Sweden", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your application is taking shape" })).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByText("Writing a personal introduction to Giulia")).toBeVisible();
     await page.getByRole("button", { name: "Back to result" }).click();
     await expect(page.getByRole("heading", { name: "Your first application is ready" })).toBeVisible();
     await page.getByRole("button", { name: "View full recruiter profile" }).click();
