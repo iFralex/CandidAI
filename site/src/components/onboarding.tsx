@@ -30,6 +30,7 @@ interface SetupCompleteClientProps {
     onSave?: (data: Customizations) => Promise<void>
     currentStep?: number
     plan?: string
+    flow?: 'legacy' | 'activation'
 }
 
 interface Customizations {
@@ -51,7 +52,7 @@ const lengthOptions = [
 ]
 
 
-export function SetupCompleteClient({ userId, defaultCustomizations, onSave, currentStep, plan }: SetupCompleteClientProps) {
+export function SetupCompleteClient({ userId, defaultCustomizations, onSave, currentStep, plan, flow = 'legacy' }: SetupCompleteClientProps) {
     const [customizations, setCustomizations] = useState<Customizations>({
         position_description: defaultCustomizations?.position_description || '',
         instructions: defaultCustomizations?.instructions || ''
@@ -130,7 +131,7 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
 
     return (
         <>
-            <StepExplanation
+            {flow === 'legacy' && <StepExplanation
                 title="How do these instructions shape the emails?"
                 items={[
                     { icon: Target, label: "Target position", description: "Describe the role you're looking for. This tells the AI what to pitch and which of your skills to emphasize in each email." },
@@ -138,7 +139,7 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
                     { icon: Clock, label: "Processing time", description: "Once submitted, your order enters the generation queue. Processing typically takes between 24 hours and 7 days." },
                     { icon: Mail, label: "Email updates", description: "You'll receive email notifications as batches of recruiter emails become ready in your dashboard." },
                 ]}
-            />
+            />}
             <motion.div
                 className="space-y-8 mb-8"
                 variants={containerVariants}
@@ -198,14 +199,16 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
                     variants={itemVariants}
                     className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6"
                 >
-                    <h3 className="text-xl font-semibold text-white mb-4">Target Position Description</h3>
-                    <Textarea value={customizations.position_description} onChange={v => setCustomizations(prev => ({ ...prev, position_description: v.target.value }))} placeholder='I want to be...' rows={4} />
+                    <h3 className="text-xl font-semibold text-white mb-2">{flow === 'activation' ? "The role you're moving toward" : 'Target Position Description'}</h3>
+                    {flow === 'activation' && <p className="mb-4 text-sm leading-6 text-gray-400">This becomes the strategic anchor used to connect your background with every company and recruiter.</p>}
+                    <Textarea value={customizations.position_description} onChange={v => setCustomizations(prev => ({ ...prev, position_description: v.target.value }))} placeholder={flow === 'activation' ? 'e.g. Senior product design roles where I can lead complex B2B products...' : 'I want to be...'} rows={4} />
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
                     <div className={`bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 ${!isProOrUltra ? 'opacity-50 pointer-events-none select-none' : ''}`}>
-                        <h3 className="text-xl font-semibold text-white mb-4">Custom Instructions</h3>
-                        <Textarea value={customizations.instructions} onChange={v => setCustomizations(prev => ({ ...prev, instructions: v.target.value }))} placeholder='Anything you want to specify; your instructions will be added in the mail generation prompt.' rows={4} disabled={!isProOrUltra} />
+                        <h3 className="text-xl font-semibold text-white mb-2">{flow === 'activation' ? 'Your editorial direction' : 'Custom Instructions'}</h3>
+                        {flow === 'activation' && <p className="mb-4 text-sm leading-6 text-gray-400">Choose what every email should emphasize, mention, or deliberately avoid. You can still refine individual emails later.</p>}
+                        <Textarea value={customizations.instructions} onChange={v => setCustomizations(prev => ({ ...prev, instructions: v.target.value }))} placeholder={flow === 'activation' ? 'e.g. Lead with my marketplace experience. Keep the tone direct. Avoid mentioning relocation...' : 'Anything you want to specify; your instructions will be added in the mail generation prompt.'} rows={4} disabled={!isProOrUltra} />
                     </div>
                     {!isProOrUltra && <UpgradeBanner onChangePlan={handleChangePlan} isPending={isChangePlanPending} position="bottom" />}
                 </motion.div>
@@ -241,26 +244,12 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
                     ) : (
                         <>
                             {onSave ? <Check className="w-5 h-5" /> : <Rocket className="w-5 h-5" />}
-                            <span>{onSave ? "Save Changes" : "Start Email Generation"}</span>
+                            <span>{onSave ? (flow === 'activation' ? "Shape my campaign" : "Save Changes") : "Start Email Generation"}</span>
                         </>
                     )}
                 </button>
                 {saved && <span className="text-green-400 text-sm">Saved successfully.</span>}
 
-                <div className="mt-6 grid md:grid-cols-3 gap-4 text-sm text-gray-400">
-                    <div className="flex items-center justify-center space-x-2">
-                        <Clock className="w-4 h-4 text-blue-400" />
-                        <span>Processing: 24hrs - 7 days</span>
-                    </div>
-                    <div className="flex items-center justify-center space-x-2">
-                        <Mail className="w-4 h-4 text-green-400" />
-                        <span>Email updates included</span>
-                    </div>
-                    <div className="flex items-center justify-center space-x-2">
-                        <Shield className="w-4 h-4 text-purple-400" />
-                        <span>Premium queue priority</span>
-                    </div>
-                </div>
             </motion.div>
         </>
     )
