@@ -3756,6 +3756,13 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
     const [saved, setSaved] = useState(false)
     const [showGuidedPromise, setShowGuidedPromise] = useState(flow === 'guided' && !initialProfile)
     const [showProfileEditor, setShowProfileEditor] = useState(false)
+    const [analysisMessageIndex, setAnalysisMessageIndex] = useState(0)
+
+    useEffect(() => {
+        if (!analyzing) { setAnalysisMessageIndex(0); return }
+        const timer = window.setInterval(() => setAnalysisMessageIndex(index => (index + 1) % 5), 5000)
+        return () => window.clearInterval(timer)
+    }, [analyzing])
 
     // Step view tracking
     useEffect(() => {
@@ -4125,36 +4132,20 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                             </p>
                         </div>
 
-                        <motion.div
-                            className="space-y-4 text-left max-w-md mx-auto"
-                            initial="hidden"
-                            animate="show"
-                            variants={{
-                                hidden: {},
-                                show: {
-                                    transition: { staggerChildren: 2.2, delayChildren: 0.4 },
-                                },
-                            }}
-                        >
-                            {[
-                                "Reading your professional journey...",
-                                "Finding evidence of your strongest skills...",
-                                "Identifying the roles that fit you now...",
-                                "Preparing how CandidAI will present you...",
-                            ].map((step, index) => (
-                                <motion.div
-                                    key={index}
-                                    className="flex items-center space-x-3 text-gray-300"
-                                    variants={{
-                                        hidden: { opacity: 0, x: -16 },
-                                        show: { opacity: 1, x: 0, transition: { duration: 0.7, ease: "easeOut" } },
-                                    }}
-                                >
-                                    <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
-                                    <span className="text-sm">{step}</span>
+                        <div className="mx-auto flex min-h-16 max-w-md items-center justify-center">
+                            <AnimatePresence mode="wait">
+                                <motion.div key={analysisMessageIndex} className="flex items-center space-x-3 text-gray-300" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.5 }}>
+                                    <div className="h-2 w-2 rounded-full bg-violet-400 animate-pulse" />
+                                    <span className="text-sm">{[
+                                        "Reading your professional journey...",
+                                        "Finding evidence of your strongest skills...",
+                                        "Identifying the roles that fit you now...",
+                                        "Preparing how CandidAI will present you...",
+                                        "Refining your candidate story...",
+                                    ][analysisMessageIndex]}</span>
                                 </motion.div>
-                            ))}
-                        </motion.div>
+                            </AnimatePresence>
+                        </div>
                     </div>
                 </motion.div>
             )}
@@ -4188,7 +4179,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                                 <div className="border-b border-white/10 bg-gradient-to-r from-violet-500/10 to-transparent p-6 sm:p-8">
                                     <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start"><div><p className="text-xs uppercase tracking-[0.18em] text-violet-300">Candidate story</p><h3 className="mt-3 text-2xl font-semibold text-white">{profileSummary?.name}</h3><p className="mt-1 text-lg text-gray-300">{profileSummary?.title}</p><p className="mt-2 text-sm text-gray-500">{profileSummary?.location?.country}</p></div><div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-300">Profile ready</div></div>
                                 </div>
-                                <div className="grid gap-8 p-6 sm:p-8 md:grid-cols-2"><div><p className="text-sm font-medium text-white">What makes you stand out</p><div className="mt-4 space-y-3">{(profileSummary?.onboardingInsights?.strengths || profileSummary?.skills?.slice(0, 4) || []).slice(0, 4).map((strength: string) => <p key={strength} className="flex gap-2 text-sm text-gray-300"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />{strength}</p>)}</div></div><div><p className="text-sm font-medium text-white">What opportunity are you pursuing now?</p><div className="mt-4 flex flex-wrap gap-2">{(profileSummary?.onboardingInsights?.targetRoleSuggestions || [profileSummary?.title]).filter(Boolean).map((role: string) => { const selected = profileSummary?.onboardingInsights?.selectedTargetRole === role; return <Button key={role} type="button" size="sm" variant={selected ? 'default' : 'secondary'} onClick={() => setProfileSummary((current: ProfileSummary) => ({ ...current, onboardingInsights: current.onboardingInsights ? { ...current.onboardingInsights, selectedTargetRole: role } : undefined }))}>{role}</Button> })}</div><p className="mt-4 text-xs leading-5 text-gray-500">This choice guides who we prioritize and what the email emphasizes.</p></div></div>
+                                <div className="grid gap-8 p-6 sm:p-8 md:grid-cols-2"><div><p className="text-sm font-medium text-white">What makes you stand out</p><div className="mt-4 space-y-3">{(profileSummary?.onboardingInsights?.strengths || profileSummary?.skills?.slice(0, 4) || []).slice(0, 4).map((strength: string) => <p key={strength} className="flex gap-2 text-sm text-gray-300"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />{strength}</p>)}</div></div><div><p className="text-sm font-medium text-white">What opportunity are you pursuing now?</p><div className="mt-4 flex flex-wrap gap-2">{(profileSummary?.onboardingInsights?.targetRoleSuggestions || [profileSummary?.title]).filter(Boolean).map((role: string) => { const selected = profileSummary?.onboardingInsights?.selectedTargetRole === role; return <Button key={role} type="button" size="sm" variant="ghost" className={selected ? 'border border-violet-300/60 bg-violet-500 text-white shadow-lg shadow-violet-500/20 ring-1 ring-violet-300/30 hover:bg-violet-400' : 'border border-white/10 bg-black/20 text-gray-400 hover:border-violet-400/40 hover:bg-violet-500/10 hover:text-white'} onClick={() => setProfileSummary((current: ProfileSummary) => ({ ...current, onboardingInsights: current.onboardingInsights ? { ...current.onboardingInsights, selectedTargetRole: role } : undefined }))}>{selected && <Check className="h-4 w-4" />}{role}</Button> })}</div><p className="mt-4 text-xs leading-5 text-gray-500">This choice guides who we prioritize and what the email emphasizes.</p></div></div>
                             </Card>
                             <div className="text-center"><Button type="button" variant="ghost" onClick={() => setShowProfileEditor(value => !value)}>{showProfileEditor ? 'Hide profile details' : 'Edit profile details'}</Button></div>
                             {showProfileEditor && <ProfileSummaryCard cardVariants={cardVariants} profileSummary={profileSummary} setProfileSummary={setProfileSummary} cvFile={cvFile} handleCvUpload={handleCvUpload} />}

@@ -40,7 +40,10 @@ test.describe("Redesigned first candidacy", () => {
       searchContext: {
         queryCount: 30,
         narrative: "We’re prioritizing European recruiters hiring for Product and Design roles.",
+        targetRole: "Senior Product Designer",
+        strengths: ["Product design", "SaaS experience"],
       },
+      searchProgress: { attempt: 2, total: 91, strategy: "Skills, history and country", found: false },
     };
     await mockUser(page, {
       onboardingStep: 4,
@@ -53,9 +56,9 @@ test.describe("Redesigned first candidacy", () => {
       body: JSON.stringify({ success: true, preview }),
     }));
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: /person who should meet you at Spotify/ })).toBeVisible();
-    await expect(page.getByText(/about two minutes/)).toBeVisible();
-    await expect(page.getByText(/European recruiters/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "We know what to look for." })).toBeVisible();
+    await expect(page.getByText(/Senior Product Designer/)).toBeVisible();
+    await expect(page.getByText("Skills, history and country")).toBeVisible();
   });
 
   test("puts paid conversion on the completed candidacy page", async ({ page }) => {
@@ -64,6 +67,7 @@ test.describe("Redesigned first candidacy", () => {
       stage: "preview_ready",
       company: { name: "Spotify", domain: "spotify.com" },
       recruiter: { name: "Giulia Rossi", jobTitle: "Senior Talent Partner" },
+      recruiterProfile: { location: "Stockholm, Sweden", skills: ["Talent acquisition"], experience: [{ title: "Senior Talent Partner", company: "Spotify" }], education: [] },
       email: { subject: "Product design fit at Spotify", body: "Hi Giulia,\n\nA personalized introduction.", keyPoints: ["Specific role fit"] },
     };
     await mockUser(page, { onboardingStep: 5, onboardingStage: "preview_ready", onboardingPreview: preview });
@@ -71,7 +75,12 @@ test.describe("Redesigned first candidacy", () => {
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { name: "Your first application is ready" })).toBeVisible();
     await expect(page.getByText("Giulia Rossi", { exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "One application is ready. Now multiply your opportunities." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "This wasn’t a template. It was a complete research process." })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Copy email" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Open in my email app" })).toBeVisible();
+    await page.getByRole("button", { name: "View full recruiter profile" }).click();
+    await expect(page.getByText("Talent acquisition")).toBeVisible();
+    await page.getByRole("button", { name: "Close" }).click();
     await expect(page.getByRole("button", { name: /explore the dashboard/i })).toBeVisible();
   });
 
