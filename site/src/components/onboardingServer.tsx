@@ -95,6 +95,35 @@ function buildReplayStrategies(queries: unknown, matchedName?: string): string[]
     return winningIndex >= 0 ? strategies.slice(0, winningIndex + 1) : [...strategies, matchedName]
 }
 
+function buildStrategyDetails(queries: unknown): Record<string, { label: string; values: string[] }[]> {
+    if (!Array.isArray(queries)) return {}
+    const labels: Record<string, string> = {
+        job_title_levels: "Seniority",
+        skills: "Relevant skills",
+        company_name: "Previous companies",
+        school_name: "Education",
+        location_country: "Country",
+        location_continent: "Continent",
+    }
+    const details: Record<string, { label: string; values: string[] }[]> = {}
+    for (const query of queries) {
+        const name = String(query?.name || "")
+        if (!name) continue
+        const criteria = Array.isArray(query?.criteria)
+            ? query.criteria.flatMap((criterion: any) => {
+                const label = labels[String(criterion?.key || "")]
+                const values = Array.isArray(criterion?.value) ? criterion.value.map(String).filter(Boolean).slice(0, 3) : []
+                return label && values.length ? [{ label, values }] : []
+            })
+            : []
+        details[name] = criteria
+        details[`${name} (Owner/Founder)`] = [{ label: "Contact type", values: ["Owners and founders"] }, ...criteria]
+        details[`${name} (Senior)`] = [{ label: "Contact type", values: ["Senior company leaders"] }, ...criteria]
+    }
+    details["General Employee"] = [{ label: "Search scope", values: ["Any relevant employee at the company"] }]
+    return details
+}
+
 interface SetupCompleteServerProps {
     userId: string
     currentStep: number
@@ -452,6 +481,7 @@ export default async function OnboardingPage({ user, currentStep }) {
     const stage = storedStage || fallbackStage
     const preview = toClientPreview(previewSnap.data(), stage)
     preview.replayStrategies = buildReplayStrategies(account.queries, preview.matchedQuery?.name)
+    preview.strategyDetails = buildStrategyDetails(account.queries)
 
     return (
         <div className="container mx-auto px-4 py-8">

@@ -35,6 +35,7 @@ export interface OnboardingPreviewState {
   };
   matchedQuery?: { id?: string | number; name?: string; criteria?: unknown[] };
   replayStrategies?: string[];
+  strategyDetails?: Record<string, { label: string; values: string[] }[]>;
   email?: { subject: string; body: string; keyPoints: string[] };
   recruiterInsight?: { reason?: string; points: string[] };
   error?: { code: string; message?: string; recoverable: boolean };
