@@ -34,6 +34,7 @@ export interface OnboardingPreviewState {
     education: { school?: string; degree?: string }[];
   };
   matchedQuery?: { id?: string | number; name?: string; criteria?: unknown[] };
+  replayStrategies?: string[];
   email?: { subject: string; body: string; keyPoints: string[] };
   recruiterInsight?: { reason?: string; points: string[] };
   error?: { code: string; message?: string; recoverable: boolean };

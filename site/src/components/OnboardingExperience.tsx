@@ -79,18 +79,41 @@ function SearchExperience({ preview, replay = false, onReplayComplete }: { previ
   const minimumReadingTime = 6500
 
   useEffect(() => {
-    const timer = window.setInterval(() => setScene(value => {
-      if (replay && value === 4) {
-        window.clearInterval(timer)
-        onReplayComplete?.()
-        return value
-      }
-      return (value + 1) % 5
-    }), 7000)
+    const timer = window.setInterval(() => setScene(value => (value + 1) % 5), 7000)
     return () => window.clearInterval(timer)
-  }, [onReplayComplete, replay])
+  }, [])
 
   useEffect(() => {
+    if (!replay) return
+    const strategies = preview.replayStrategies?.length
+      ? preview.replayStrategies
+      : [preview.matchedQuery?.name || preview.searchProgress?.strategy || 'Replaying the successful matching strategy']
+    let index = 0
+    let cancelled = false
+    let timer: number | undefined
+    setVisibleStrategy(strategies[0])
+    const scheduleNext = () => {
+      const readingTime = 4000 + Math.floor(Math.random() * 8001)
+      timer = window.setTimeout(() => {
+        if (cancelled) return
+        if (index === strategies.length - 1) {
+          onReplayComplete?.()
+          return
+        }
+        index += 1
+        setVisibleStrategy(strategies[index])
+        scheduleNext()
+      }, readingTime)
+    }
+    scheduleNext()
+    return () => {
+      cancelled = true
+      if (timer) window.clearTimeout(timer)
+    }
+  }, [onReplayComplete, preview.matchedQuery?.name, preview.replayStrategies, preview.searchProgress?.strategy, replay])
+
+  useEffect(() => {
+    if (replay) return
     latestStrategy.current = preview.searchProgress?.strategy || ''
     if (!latestStrategy.current || latestStrategy.current === visibleStrategy) return
     const remaining = minimumReadingTime - (Date.now() - lastStrategyChange.current)
@@ -103,7 +126,7 @@ function SearchExperience({ preview, replay = false, onReplayComplete }: { previ
       const timer = window.setTimeout(update, remaining)
       return () => window.clearTimeout(timer)
     }
-  }, [preview.searchProgress?.strategy, visibleStrategy])
+  }, [preview.searchProgress?.strategy, replay, visibleStrategy])
 
   const targetRole = preview.searchContext?.targetRole || 'your target role'
   const strengths = preview.searchContext?.strengths || []

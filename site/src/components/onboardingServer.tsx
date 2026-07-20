@@ -81,6 +81,20 @@ function toClientPreview(data: FirebaseFirestore.DocumentData | undefined, fallb
     }
 }
 
+function buildReplayStrategies(queries: unknown, matchedName?: string): string[] {
+    if (!Array.isArray(queries)) return matchedName ? [matchedName] : []
+    const baseNames = queries.map(query => String(query?.name || "")).filter(Boolean)
+    const strategies = [
+        ...baseNames,
+        ...baseNames.map(name => `${name} (Owner/Founder)`),
+        ...baseNames.map(name => `${name} (Senior)`),
+        "General Employee",
+    ]
+    if (!matchedName) return strategies
+    const winningIndex = strategies.indexOf(matchedName)
+    return winningIndex >= 0 ? strategies.slice(0, winningIndex + 1) : [...strategies, matchedName]
+}
+
 interface SetupCompleteServerProps {
     userId: string
     currentStep: number
@@ -437,6 +451,7 @@ export default async function OnboardingPage({ user, currentStep }) {
     const fallbackStage: OnboardingStage = currentStep >= 5 ? "email_generation" : currentStep === 4 ? "recruiter_search" : currentStep === 3 ? "target_company" : "profile_source"
     const stage = storedStage || fallbackStage
     const preview = toClientPreview(previewSnap.data(), stage)
+    preview.replayStrategies = buildReplayStrategies(account.queries, preview.matchedQuery?.name)
 
     return (
         <div className="container mx-auto px-4 py-8">
