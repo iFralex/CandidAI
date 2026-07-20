@@ -20,6 +20,7 @@ import { AmbassadorPromo } from '@/components/AmbassadorPromo';
 import { emailExamples } from '@/lib/email-examples';
 import { HeroVideo } from '@/components/HeroVideo';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
+import { AppleHero, AppleCampaignVideo, AppleEmailGallery } from '@/components/landing-apple';
 
 // Hero Section Component
 const HeroSection = () => {
@@ -1354,6 +1355,28 @@ const LandingPage = ({ experiments = {} }: { experiments?: ExperimentAssignments
                 <RedesignCampaignVideo />
                 <RedesignBenefits />
                 <EmailExamplesSection />
+                <RedesignWorkflow />
+                <ReviewsSection />
+                <AmbassadorSection />
+                <PricingSection />
+                <FAQSection />
+                <CTASection />
+                <Footer />
+            </div>
+        );
+    }
+    if (landingVariant === "apple") {
+        return (
+            <div
+                className="min-h-screen bg-black text-white"
+                data-experiment="landing_redesign_v1"
+                data-variant="apple"
+            >
+                <AppleHero />
+                <RedesignTrustStrip />
+                <AppleCampaignVideo />
+                <AppleEmailGallery />
+                <RedesignBenefits />
                 <RedesignWorkflow />
                 <ReviewsSection />
                 <AmbassadorSection />
