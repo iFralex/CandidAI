@@ -68,19 +68,12 @@ async function PlanAndCreditsContent() {
     const user = data.user;
     if (!user) return redirect("/login");
 
-    return <PlanAndCreditsClient email={user.email || ""} />;
+    return <PlanAndCreditsClient email={user.email || ""} plan={user.plan} credits={user.credits ?? 0} maxCompanies={user.maxCompanies ?? 0} companiesUsed={user.companiesUsed ?? 0} />;
 }
 
 export default function PlanAndCreditsPage() {
     return (
-        <div className="space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold text-white mb-2">Plan & Credits</h1>
-                <p className="text-gray-400">
-                    Upgrade your plan or top up your credits to keep generating personalised outreach emails.
-                </p>
-            </div>
-
+        <div>
             <Suspense fallback={<PlanAndCreditsSkeleton />}>
                 <PlanAndCreditsContent />
             </Suspense>
