@@ -599,7 +599,7 @@ export async function navigatePostPurchaseStage(stage: string, returnToReview = 
     return { success: true as const };
 }
 
-export async function savePostPurchaseProfile(plan: string, profileData: any, cv?: File | null) {
+export async function savePostPurchaseProfile(plan: string, profileData: any, cv?: File | null, rebuildStrategies = true) {
     const userId = await checkAuth();
     const userRef = adminDb.collection("users").doc(userId);
     const accountRef = userRef.collection("data").doc("account");
@@ -616,7 +616,9 @@ export async function savePostPurchaseProfile(plan: string, profileData: any, cv
     );
     if (result && "success" in result && !result.success) throw new Error(result.error || "Could not save the profile");
 
-    await accountRef.set({ queries: buildDefaultRecruiterStrategies(profileData.profileSummary) }, { merge: true });
+    if (rebuildStrategies) {
+        await accountRef.set({ queries: buildDefaultRecruiterStrategies(profileData.profileSummary) }, { merge: true });
+    }
     await userRef.update({
         onboardingStage: userSnap.data()?.postPurchaseReturnToReview ? "post_purchase_review" : "post_purchase_companies",
         onboardingStep: 7,

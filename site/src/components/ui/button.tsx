@@ -17,6 +17,8 @@ const buttonVariants = cva(
           "bg-white/0 hover:bg-white/10 text-red border border-violet-500 border-lg",
         ghost:
           "text-gray-300 hover:text-white hover:bg-white/5",
+        destructive:
+          "bg-red-600 hover:bg-red-500 text-white shadow-lg hover:shadow-red-500/20 focus:ring-red-500",
       },
       size: {
         sm: "px-4 py-2 text-sm rounded-lg",

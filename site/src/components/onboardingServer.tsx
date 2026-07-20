@@ -11,6 +11,7 @@ import { redirect } from 'next/navigation';
 import { getPlanById } from '@/lib/utils';
 import { OnboardingExperience } from '@/components/OnboardingExperience';
 import type { OnboardingPreviewState, OnboardingStage } from '@/types/onboarding';
+import { buildDefaultRecruiterStrategies } from '@/lib/recruiter-strategies';
 
 function toClientPreview(data: FirebaseFirestore.DocumentData | undefined, fallbackStage: OnboardingStage): OnboardingPreviewState {
     if (!data) return { status: "idle", stage: fallbackStage }
@@ -469,6 +470,7 @@ export default async function OnboardingPage({ user, currentStep }) {
                     customizations={user.account?.customizations || {}}
                     maxCompanies={user.maxCompanies || plansData[user.plan as keyof typeof plansData]?.maxCompanies || 1}
                     postPurchaseReturnToReview={Boolean(user.postPurchaseReturnToReview)}
+                    filtersCustomized={Boolean(user.account?.queries?.length && JSON.stringify(user.account.queries) !== JSON.stringify(buildDefaultRecruiterStrategies(user.account?.profileSummary || {})))}
                     initialPreview={user.onboardingPreview || { status: "idle", stage }}
                 />
             </div>
@@ -501,6 +503,7 @@ export default async function OnboardingPage({ user, currentStep }) {
                 customizations={account.customizations || {}}
                 maxCompanies={userSnap.data()?.maxCompanies || plansData[(user.plan || 'free_trial') as keyof typeof plansData]?.maxCompanies || 1}
                 postPurchaseReturnToReview={Boolean(userSnap.data()?.postPurchaseReturnToReview)}
+                filtersCustomized={Boolean(account.queries?.length && JSON.stringify(account.queries) !== JSON.stringify(buildDefaultRecruiterStrategies(account.profileSummary || {})))}
                 initialPreview={preview}
             />
         </div>

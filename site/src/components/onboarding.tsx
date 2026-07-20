@@ -31,11 +31,13 @@ interface SetupCompleteClientProps {
     currentStep?: number
     plan?: string
     flow?: 'legacy' | 'activation'
+    onDirtyChange?: (dirty: boolean) => void
 }
 
 interface Customizations {
-    tone: string
-    length: string
+    tone?: string
+    length?: string
+    position_description: string
     instructions: string
 }
 
@@ -52,7 +54,7 @@ const lengthOptions = [
 ]
 
 
-export function SetupCompleteClient({ userId, defaultCustomizations, onSave, currentStep, plan, flow = 'legacy' }: SetupCompleteClientProps) {
+export function SetupCompleteClient({ userId, defaultCustomizations, onSave, currentStep, plan, flow = 'legacy', onDirtyChange }: SetupCompleteClientProps) {
     const [customizations, setCustomizations] = useState<Customizations>({
         position_description: defaultCustomizations?.position_description || '',
         instructions: defaultCustomizations?.instructions || ''
@@ -63,6 +65,13 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
     const [saved, setSaved] = useState(false)
 
     const isProOrUltra = plan === 'pro' || plan === 'ultra'
+
+    useEffect(() => {
+        onDirtyChange?.(JSON.stringify(customizations) !== JSON.stringify({
+            position_description: defaultCustomizations?.position_description || '',
+            instructions: defaultCustomizations?.instructions || '',
+        }))
+    }, [customizations, defaultCustomizations, onDirtyChange])
 
     const handleChangePlan = () => {
         startChangePlanTransition(() => jumpToStep(1))
@@ -234,7 +243,7 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
                 <button
                     onClick={handleStartGeneration}
                     disabled={isPending || !customizations.position_description.trim()}
-                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2 shadow-lg shadow-green-500/20"
+                    className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2 shadow-lg shadow-violet-500/30"
                 >
                     {isPending ? (
                         <>
@@ -1355,7 +1364,7 @@ export function AddStrategyButton({
     );
 }
 
-export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, userId, onSave, currentStep, plan, readOnly }: { defaultStrategy: any; maxStrategies: number; userId: string; onSave?: (strategy: any) => Promise<void>; currentStep?: number; plan?: string; readOnly?: boolean }) {
+export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, userId, onSave, currentStep, plan, readOnly, onDirtyChange }: { defaultStrategy: any; maxStrategies: number; userId: string; onSave?: (strategy: any) => Promise<void>; currentStep?: number; plan?: string; readOnly?: boolean; onDirtyChange?: (dirty: boolean) => void }) {
     const [strategy, setStrategy] = useState(defaultStrategy);
     const [isPending, startTransition] = useTransition();
     const [isBackPending, startBackTransition] = useTransition();
@@ -1369,8 +1378,10 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
     }, [])
 
     useEffect(() => {
-        setHasChanges(JSON.stringify(strategy) !== JSON.stringify(defaultStrategy))
-    }, [strategy])
+        const changed = JSON.stringify(strategy) !== JSON.stringify(defaultStrategy)
+        setHasChanges(changed)
+        onDirtyChange?.(changed)
+    }, [strategy, defaultStrategy, onDirtyChange])
 
     const resetStrategy = () => {
         setStrategy(defaultStrategy);
@@ -2310,6 +2321,8 @@ interface ProfileAnalysisClientProps {
     onSave?: (plan: string, profileData: any, cv?: File | null) => Promise<void>;
     currentStep?: number;
     flow?: 'legacy' | 'guided';
+    onDirtyChange?: (dirty: boolean) => void;
+    strategyResetControl?: { enabled: boolean; rebuild: boolean; onChange: (rebuild: boolean) => void };
 }
 
 function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
@@ -3728,7 +3741,7 @@ export function ProfileSummaryCard({
     )
 }
 
-export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvUrl, onSave, currentStep, flow = 'legacy' }: ProfileAnalysisClientProps) {
+export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvUrl, onSave, currentStep, flow = 'legacy', onDirtyChange, strategyResetControl }: ProfileAnalysisClientProps) {
     const router = useRouter()
     const [linkedinUrl, setLinkedinUrl] = useState('')
     const [analyzing, setAnalyzing] = useState(false)
@@ -3746,6 +3759,10 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
     const [showGuidedPromise, setShowGuidedPromise] = useState(flow === 'guided' && !initialProfile)
     const [showProfileEditor, setShowProfileEditor] = useState(false)
     const [analysisMessageIndex, setAnalysisMessageIndex] = useState(0)
+
+    useEffect(() => {
+        onDirtyChange?.(Boolean(cvFile) || JSON.stringify(profileSummary) !== JSON.stringify(initialProfile))
+    }, [cvFile, initialProfile, onDirtyChange, profileSummary])
 
     useEffect(() => {
         if (!analyzing) { setAnalysisMessageIndex(0); return }
@@ -4225,6 +4242,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5, duration: 0.6 }}
                     >
+                        {strategyResetControl?.enabled && <div className="mb-5 flex max-w-2xl items-start gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-4 text-left"><Checkbox checked={strategyResetControl.rebuild} onCheckedChange={checked => strategyResetControl.onChange(checked === true)} className="mt-0.5" /><div><p className="text-sm font-medium text-amber-100">Rebuild recruiter strategies from this profile</p><p className="mt-1 text-xs leading-5 text-amber-100/65">If enabled, your existing filters will be replaced with new defaults based on these changes. Disable it to keep the filters you already configured.</p></div></div>}
                         <div className="flex flex-wrap items-center justify-center gap-3">
                             {currentStep && !onSave && (
                                 <button
@@ -4318,6 +4336,7 @@ type CompanyInputClientProps = {
     plan?: string;
     mode?: 'multiple' | 'single-preview' | 'campaign-setup';
     onSave?: (companies: { name: string; domain?: string; linkedin_url?: string }[]) => Promise<unknown>;
+    onDirtyChange?: (dirty: boolean) => void;
 };
 
 export function CompanyAutocomplete({
@@ -4473,17 +4492,23 @@ export function CompanyInputClient({
     plan,
     mode = 'multiple',
     onSave,
+    onDirtyChange,
 }: CompanyInputClientProps) {
     const router = useRouter();
-    const initialTQueries: TQuery[] = (initialCompanies || []).map(c => ({
+    const initialTQueries: TQuery[] = useMemo(() => (initialCompanies || []).map(c => ({
         name: c.name || '',
         domain: c.domain || c.linkedin_url || '',
         icon: '',
-    }));
+    })), [initialCompanies]);
     const [selectedCompanies, setSelectedCompanies] = useState<TQuery[]>(initialTQueries);
     const [inputValue, setInputValue] = useState("");
     const [isPending, startTransition] = useTransition();
     const [isBackPending, startBackTransition] = useTransition();
+
+    useEffect(() => {
+        const normalize = (items: TQuery[]) => items.map(item => ({ name: item.name, domain: item.domain }))
+        onDirtyChange?.(JSON.stringify(normalize(selectedCompanies)) !== JSON.stringify(normalize(initialTQueries)))
+    }, [initialTQueries, onDirtyChange, selectedCompanies])
 
     useEffect(() => {
         track({ name: "onboarding_step_view", params: { step: currentStep ?? 2 } })
