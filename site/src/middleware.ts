@@ -62,7 +62,10 @@ export async function middleware(request: NextRequest) {
       pathname,
       cookieValue: request.cookies.get(EXPERIMENT_COOKIE)?.value,
       overrides: url.searchParams,
-      allowOverrides: process.env.NODE_ENV !== "production",
+      // Explicit experiment query parameters are a deliberate QA/manual
+      // selection and are honored in every environment, including production.
+      // Draft still prevents any assignment for ordinary traffic without one.
+      allowOverrides: true,
     });
     const serialized = serializeExperimentAssignments(resolved.assignments);
     const requestHeaders = new Headers(request.headers);
@@ -85,8 +88,8 @@ export async function middleware(request: NextRequest) {
         secure: process.env.NODE_ENV === "production",
       });
     }
-    const hasExperimentOverride = process.env.NODE_ENV !== "production"
-      && Array.from(url.searchParams.keys()).some((key) => key.startsWith("ca_exp_"));
+    const hasExperimentOverride = Array.from(url.searchParams.keys())
+      .some((key) => key.startsWith("ca_exp_"));
     if (hasExperimentOverride) {
       response.cookies.set(EXPERIMENT_QA_COOKIE, "1", {
         path: "/",

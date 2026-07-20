@@ -39,7 +39,7 @@ describe("experiments", () => {
         });
     });
 
-    it("allows a valid development override for a draft", () => {
+    it("allows an explicit override for a draft in any environment", () => {
         const overrides = new URLSearchParams("ca_exp_landing_redesign_v1=redesign");
         expect(resolveExperiments({
             pathname: "/",
