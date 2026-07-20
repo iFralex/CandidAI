@@ -51,7 +51,12 @@ export function ScrollPinSection({ heightVh = 250, className, children, testId }
     });
 
     if (prefersReducedMotion) {
-        return <div className={className} data-testid={testId}>{children(scrollYProgress)}</div>;
+        // `containerRef` must still be attached to a real DOM node even here:
+        // `useScroll({ target: containerRef })` above throws ("Target ref is
+        // defined but not hydrated") if the ref is provided but never mounts
+        // to anything. The resulting scrollYProgress value is unused by
+        // reduced-motion consumers, but the ref itself must be live.
+        return <div ref={containerRef} className={className} data-testid={testId}>{children(scrollYProgress)}</div>;
     }
 
     return (
