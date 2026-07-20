@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { PlanSelector } from "@/components/PlanSelector";
 import type { PlanInfo } from "@/components/PlanSelector";
 import { CreditSelector } from "@/components/CreditSelector";
@@ -18,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowDown, Building2, Check, Coins, Crown, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { ArrowDown, ArrowRight, Building2, Check, Crown, Database, Mail, Search, ShieldCheck, SlidersHorizontal, Sparkles, Target, Zap } from "lucide-react";
 import { track } from "@/lib/analytics";
 import { plansInfo } from "@/config";
 
@@ -67,17 +68,18 @@ export default function PlanAndCreditsClient({ email, plan = "free_trial", credi
     };
 
     return (
-        <div className="space-y-10">
-            <Card className="relative overflow-hidden border-violet-400/30 bg-gradient-to-br from-violet-500/15 via-purple-500/[0.07] to-transparent p-6 sm:p-8">
-                <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-violet-500/20 blur-3xl" />
-                <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+        <motion.div className="space-y-14" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65 }}>
+            <Card className="relative overflow-hidden border-violet-400/30 bg-gradient-to-br from-violet-500/20 via-purple-500/[0.08] to-transparent p-6 sm:p-10">
+                <div className="pointer-events-none absolute -right-20 -top-24 h-80 w-80 rounded-full bg-violet-500/25 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-32 left-1/3 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
+                <div className="relative grid gap-10 lg:grid-cols-[1fr_300px] lg:items-center">
                     <div>
-                        <Badge className="border-violet-300/20 bg-violet-400/10 text-violet-200"><Sparkles className="mr-1 h-3.5 w-3.5" />Plan & capacity</Badge>
-                        <h1 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight text-white sm:text-4xl">Give your next applications more reach.</h1>
-                        <p className="mt-3 max-w-2xl leading-7 text-gray-300">Add company capacity with a plan, or top up credits for extra research, regeneration, and personalization. Every purchase is one-time.</p>
+                        <Badge className="border-violet-300/20 bg-violet-400/10 text-violet-200"><Sparkles className="mr-1 h-3.5 w-3.5" />Your next campaign starts here</Badge>
+                        <h1 className="mt-5 max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl">Don&apos;t send more applications. Create better openings.</h1>
+                        <p className="mt-5 max-w-2xl text-lg leading-8 text-gray-300">Turn each target company into a researched recruiter, a verified way to reach them, and a message written for that exact opportunity.</p>
                         <div className="mt-6 flex flex-wrap gap-3">
-                            <a href="#plans"><Button variant="primary" icon={<Building2 className="h-4 w-4" />}>Compare plans</Button></a>
-                            <a href="#credits"><Button variant="secondary" icon={<Coins className="h-4 w-4" />}>Top up credits</Button></a>
+                            <a href="#plans"><Button variant="primary" icon={<ArrowRight className="h-4 w-4" />}>Build my campaign</Button></a>
+                            <a href="#how-it-scales"><Button variant="secondary">See what each level unlocks</Button></a>
                         </div>
                     </div>
                     <div className="grid min-w-[260px] gap-3 sm:grid-cols-3 lg:grid-cols-1">
@@ -88,9 +90,25 @@ export default function PlanAndCreditsClient({ email, plan = "free_trial", credi
                 </div>
             </Card>
 
+            <section className="space-y-7 text-center">
+                <div><p className="text-sm uppercase tracking-[0.2em] text-violet-300">One system, every company</p><h2 className="mx-auto mt-4 max-w-3xl text-3xl font-bold text-white sm:text-4xl">From a company name to a conversation worth starting.</h2><p className="mx-auto mt-4 max-w-2xl leading-7 text-gray-400">CandidAI does the work between finding an opportunity and reaching the person who can act on it.</p></div>
+                <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch">
+                    {[{ icon: Building2, number: '01', title: 'Understand the company', text: 'Build the context needed to approach the right team with a relevant angle.' }, { icon: Search, number: '02', title: 'Find the strongest recruiter', text: 'Test increasingly broad strategies until a credible match emerges.' }, { icon: Mail, number: '03', title: 'Write for that connection', text: 'Generate a personal email grounded in your profile, the company, and the recruiter.' }].map((item, index) => <div className="contents" key={item.title}><Card hover={false} className="p-6 text-left"><div className="flex items-center justify-between"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300"><item.icon className="h-5 w-5" /></div><span className="text-xs text-gray-600">{item.number}</span></div><h3 className="mt-5 text-lg font-semibold text-white">{item.title}</h3><p className="mt-2 text-sm leading-6 text-gray-400">{item.text}</p></Card>{index < 2 && <ArrowRight className="mx-auto hidden h-5 w-5 self-center text-violet-500/50 md:block" />}</div>)}
+                </div>
+            </section>
+
+            <section id="how-it-scales" className="scroll-mt-24 space-y-7">
+                <div className="text-center"><p className="text-sm uppercase tracking-[0.2em] text-violet-300">Choose your advantage</p><h2 className="mt-4 text-3xl font-bold text-white sm:text-4xl">More than volume. More control at every level.</h2><p className="mx-auto mt-3 max-w-2xl text-gray-400">Start by scaling the result, then take control of who CandidAI finds, what it writes, and how deeply it understands each company.</p></div>
+                <div className="space-y-4">
+                    <Card hover={false} className="grid gap-6 border-blue-500/20 p-6 md:grid-cols-[210px_1fr] md:p-8"><div><Target className="h-7 w-7 text-blue-400" /><p className="mt-4 text-xs uppercase tracking-[0.18em] text-blue-300">Base · Scale</p><h3 className="mt-2 text-xl font-semibold text-white">Turn one result into a campaign.</h3></div><div className="grid gap-3 sm:grid-cols-2"><p className="flex gap-2 text-sm leading-6 text-gray-300"><Check className="mt-1 h-4 w-4 shrink-0 text-blue-400" />Research a relevant recruiter for every target company.</p><p className="flex gap-2 text-sm leading-6 text-gray-300"><Check className="mt-1 h-4 w-4 shrink-0 text-blue-400" />Receive the recruiter&apos;s verified email with every result.</p></div></Card>
+                    <Card hover={false} className="grid gap-6 border-violet-500/30 bg-violet-500/[0.04] p-6 md:grid-cols-[210px_1fr] md:p-8"><div><SlidersHorizontal className="h-7 w-7 text-violet-400" /><p className="mt-4 text-xs uppercase tracking-[0.18em] text-violet-300">Pro · Direct</p><h3 className="mt-2 text-xl font-semibold text-white">Decide who we find and what we say.</h3></div><div className="grid gap-3 sm:grid-cols-2">{['Shape recruiter searches with up to 30 custom criteria.', 'Tell the AI what to emphasize, include, or avoid.', 'Automate personalized follow-up emails.', 'Use 1,000 credits for new research and regenerations.'].map(item => <p key={item} className="flex gap-2 text-sm leading-6 text-gray-300"><Check className="mt-1 h-4 w-4 shrink-0 text-violet-400" />{item}</p>)}</div></Card>
+                    <Card hover={false} className="grid gap-6 border-amber-500/20 p-6 md:grid-cols-[210px_1fr] md:p-8"><div><Database className="h-7 w-7 text-amber-400" /><p className="mt-4 text-xs uppercase tracking-[0.18em] text-amber-300">Ultra · Orchestrate</p><h3 className="mt-2 text-xl font-semibold text-white">Know the company before you spend a generation.</h3></div><div><p className="text-sm leading-7 text-gray-300">CandidAI retrieves a detailed company dossier first, lets you confirm the right company, and brings richer intelligence into every decision.</p><div className="mt-4 flex flex-wrap gap-2">{['Detailed company intelligence', 'AI company recommendations', 'Priority generation', '50 recruiter criteria'].map(item => <Badge key={item} variant="secondary" className="text-left text-gray-300"><Check className="mr-1.5 h-3.5 w-3.5 text-amber-400" />{item}</Badge>)}</div></div></Card>
+                </div>
+            </section>
+
             <section id="plans" className="scroll-mt-24 rounded-2xl border border-white/10 bg-white/[0.025] p-5 sm:p-7">
                 <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="flex items-start gap-4"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300"><Crown className="h-5 w-5" /></div><div><p className="text-xs uppercase tracking-[0.18em] text-violet-300">01 · Company capacity</p><h2 className="mt-2 text-2xl font-bold text-white sm:text-3xl">Choose the reach of your campaign.</h2><p className="mt-2 max-w-2xl text-gray-400">Each plan adds a new allocation of target companies. Any unused company capacity you already own carries over.</p></div></div>
+                    <div className="flex items-start gap-4"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300"><Crown className="h-5 w-5" /></div><div><p className="text-xs uppercase tracking-[0.18em] text-violet-300">Choose your campaign</p><h2 className="mt-2 text-2xl font-bold text-white sm:text-3xl">How far do you want to take your search?</h2><p className="mt-2 max-w-2xl text-gray-400">Choose scale, control, or complete company intelligence. Any unused company capacity you already own carries over.</p></div></div>
                     <div className="flex items-center gap-2 text-sm text-emerald-300"><Check className="h-4 w-4" />One-time payment, no subscription</div>
                 </div>
                 <PlanSelector
@@ -100,7 +118,7 @@ export default function PlanAndCreditsClient({ email, plan = "free_trial", credi
                 />
             </section>
 
-            <div className="flex items-center justify-center text-gray-600"><ArrowDown className="h-5 w-5" /></div>
+            <div className="flex items-center justify-center gap-3 text-xs uppercase tracking-[0.18em] text-gray-600"><span className="h-px w-12 bg-white/10" /><ArrowDown className="h-4 w-4" />Need more flexibility?<span className="h-px w-12 bg-white/10" /></div>
 
             <section id="credits" className="scroll-mt-24 rounded-2xl border border-white/10 bg-white/[0.025] p-5 sm:p-7">
                 <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
@@ -133,6 +151,6 @@ export default function PlanAndCreditsClient({ email, plan = "free_trial", credi
                     )}
                 </DialogContent>
             </Dialog>
-        </div>
+        </motion.div>
     );
 }
