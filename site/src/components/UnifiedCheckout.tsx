@@ -115,6 +115,7 @@ function PaymentRequestButton({ email, amountCents, purchaseType, itemId, discou
     const stripe = useStripe();
     const [paymentRequest, setPaymentRequest] = useState<any>(null);
     const [supported, setSupported] = useState(false);
+    const [walletLabel, setWalletLabel] = useState("Express checkout");
 
     useEffect(() => {
         if (!stripe) return;
@@ -127,7 +128,10 @@ function PaymentRequestButton({ email, amountCents, purchaseType, itemId, discou
         });
 
         pr.canMakePayment().then((res) => {
-            if (res) setSupported(true);
+            if (res) {
+                setSupported(true);
+                setWalletLabel(res.applePay ? "Apple Pay" : res.googlePay ? "Google Pay" : "Express checkout");
+            }
         });
 
         pr.on("paymentmethod", async (ev) => {
@@ -169,7 +173,19 @@ function PaymentRequestButton({ email, amountCents, purchaseType, itemId, discou
         return () => { try { pr?.off?.("paymentmethod"); } catch { } };
     }, [stripe, amountCents, purchaseType, itemId, discountCode]);
 
-    if (!supported || !paymentRequest || !consentGranted) return null;
+    if (!supported || !paymentRequest) return null;
+
+    if (!consentGranted) {
+        return (
+            <div className="mb-4 space-y-2">
+                <div aria-disabled="true" className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-white text-sm font-semibold text-black opacity-60">
+                    <Lock className="h-3.5 w-3.5" />
+                    {walletLabel} available
+                </div>
+                <p className="text-center text-xs text-gray-500">Accept the terms below to unlock {walletLabel}.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="mb-4">
