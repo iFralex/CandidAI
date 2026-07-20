@@ -129,8 +129,10 @@ function buildFeatures(data) {
   if (data.companyConfirmationCalls)
     features.push("Company confirmation calls");
 
-  if (data.deepDiveReports)
+  if (data.deepDiveReports) {
     features.push("Company information deep-dive reports");
+    features.push("Per-company recruiter strategies and custom instructions");
+  }
 
   if (data.aiRecommendations)
     features.push("AI company recommendations");
