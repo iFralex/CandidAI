@@ -12,6 +12,8 @@ import { emailExamples } from "@/lib/email-examples";
 import { ScrollPinSection, fadeRange } from "@/components/scroll/ScrollPinSection";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { HeroVideo } from "@/components/HeroVideo";
+import { HorizontalScrollGallery, scaleForOffset, opacityForOffset } from "@/components/scroll/HorizontalScrollGallery";
+import type { EmailExample } from "@/lib/email-examples";
 
 // One weight, one subset — this is the only place in the "apple" variant that
 // needs a genuinely distinctive display face rather than the site's default
@@ -297,6 +299,96 @@ function AppleCampaignVideoAnimated({ progress }: { progress: MotionValue<number
                     animated radius is the only one that applies. */}
                 <HeroVideo wrapperClassName="" bare />
             </motion.div>
+        </div>
+    );
+}
+
+export function AppleEmailGallery() {
+    return (
+        <section className="bg-black px-6 py-24 lg:px-8">
+            <div className="mx-auto mb-12 max-w-3xl text-center">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-300">
+                    Personalized for the person, company and role
+                </p>
+                <h2 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
+                    See AI-generated emails in action
+                </h2>
+            </div>
+            <HorizontalScrollGallery
+                items={emailExamples}
+                className="gap-6 px-[10vw] pb-6"
+                testId="apple-email-gallery"
+                ariaLabel="Email examples"
+                renderItem={(example, index, offsetFromActive, prefersReducedMotion) => (
+                    <EmailLetterCard
+                        example={example}
+                        offsetFromActive={offsetFromActive}
+                        prefersReducedMotion={prefersReducedMotion}
+                        key={example.company}
+                    />
+                )}
+            />
+            <p className="mx-auto mt-2 max-w-3xl px-[10vw] text-sm italic leading-relaxed text-gray-400">
+                * Some names and personal details have been adjusted to protect privacy and ensure compliance.
+            </p>
+        </section>
+    );
+}
+
+function EmailLetterCard({
+    example,
+    offsetFromActive,
+    prefersReducedMotion,
+}: {
+    example: EmailExample;
+    offsetFromActive: number;
+    prefersReducedMotion: boolean;
+}) {
+    // `offsetFromActive` is always the real, tracked value (see
+    // HorizontalScrollGallery) — `aria-current` below reflects reality even
+    // under reduced motion. Only the visual falloff is neutralized here.
+    const visualOffset = prefersReducedMotion ? 0 : offsetFromActive;
+    const scale = scaleForOffset(visualOffset);
+    const opacity = opacityForOffset(visualOffset);
+    return (
+        <div
+            aria-current={offsetFromActive === 0 ? "true" : undefined}
+            className="w-[85vw] max-w-[520px] transition-all duration-300"
+            style={{ opacity, transform: `scale(${scale})` }}
+        >
+            {/* Decorative envelope flap: a fixed-height (h-10) strip with its
+                own V-notch clip-path. Kept separate from the card body below
+                so the notch depth never changes with (and can never clip into)
+                the actual content — unlike clipping the whole variable-height
+                card, which scales the notch with content length. */}
+            <div
+                aria-hidden="true"
+                className="h-10 w-full rounded-t-2xl bg-[#1B1330]"
+                style={{ clipPath: "polygon(0 0, 50% 55%, 100% 0, 100% 100%, 0 100%)" }}
+            />
+            <div className="rounded-b-2xl border border-white/10 bg-[#1B1330] p-6 pt-2">
+                <div className="mb-4 flex items-center justify-between">
+                    <span className="font-mono text-xs uppercase tracking-[0.15em] text-violet-300">
+                        To: {example.recruiter}
+                    </span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-fuchsia-400 text-[10px] font-bold text-black">
+                        {example.matchScore}
+                    </span>
+                </div>
+                <h3 className="text-lg font-semibold text-white">{example.company}</h3>
+                {/* Candidate + role/education: present in the list+detail
+                    layout this replaces (EmailExamplesSection) and dropped by
+                    mistake in an earlier draft of this card — they're what
+                    makes the personalization concrete, not decorative. */}
+                <p className="mt-1 text-sm text-white/80">{example.candidate}</p>
+                <p className="text-xs text-gray-400">{example.role}</p>
+                <p className="mt-2 font-mono text-xs uppercase tracking-wider text-gray-500">
+                    Subject: {example.subject}
+                </p>
+                <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-gray-300">
+                    {example.preview}
+                </p>
+            </div>
         </div>
     );
 }
