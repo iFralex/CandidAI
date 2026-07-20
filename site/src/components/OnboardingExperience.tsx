@@ -31,6 +31,10 @@ const journey = [
   { key: 'email', label: 'Email', icon: Mail },
 ]
 
+// Short statements move quickly; information-dense cards remain long enough
+// to be read without rushing.
+const searchSceneDurations = [5200, 9000, 6200, 10500, 7600]
+
 function JourneyHeader({ stage }: { stage: OnboardingStage }) {
   const active = stage === 'profile_source' || stage === 'profile_review' ? 0
     : stage === 'target_company' ? 1
@@ -81,11 +85,10 @@ function SearchExperience({ preview, replay = false, onReplayComplete }: { previ
   const latestStrategy = useRef(preview.searchProgress?.strategy || '')
   const lastStrategyChange = useRef(Date.now())
   const minimumReadingTime = 6500
-
   useEffect(() => {
-    const timer = window.setInterval(() => setScene(value => (value + 1) % 5), 7000)
-    return () => window.clearInterval(timer)
-  }, [])
+    const timer = window.setTimeout(() => setScene(value => (value + 1) % searchSceneDurations.length), searchSceneDurations[scene])
+    return () => window.clearTimeout(timer)
+  }, [scene])
 
   useEffect(() => {
     if (!replay) return
