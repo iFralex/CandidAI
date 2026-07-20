@@ -111,6 +111,7 @@ RULES — follow strictly:
   Do NOT merge these two entries. Do NOT attach the Master's entry to any existing Bachelor's entry at Politecnico di Milano.
 - NEW ENTRIES: Add entries found in the CV that have no equivalent in PDL (applying canonical names and websites where the institution or company is already known from PDL).
 - SKILLS: Combine from both sources, deduplicate, translate all to English.
+- OUTPUT LANGUAGE: Write every generated textual field in English, including descriptions and all onboardingInsights values. Preserve proper nouns in their official form.
 - PROJECTS & CERTIFICATIONS: Extract from CV text.
 - LOCATION: Prefer PDL location.
 - NAME & TITLE: Prefer PDL values when available.

@@ -106,10 +106,10 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
                                     </Link>
                                 )}
                                 <div>
-                                    <h1 className="text-2xl font-bold text-white">{onboarded ? "Dashboard" : "La tua prima candidatura"}</h1>
+                                    <h1 className="text-2xl font-bold text-white">{onboarded ? "Dashboard" : "Your first application"}</h1>
                                     {!onboarded && (
                                         <p className="text-sm text-gray-400">
-                                            Profilo, contatto ed email in un unico percorso
+                                            Profile, contact, and email in one guided flow
                                         </p>
                                     )}
                                 </div>

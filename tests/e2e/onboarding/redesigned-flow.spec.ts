@@ -25,8 +25,8 @@ test.describe("Redesigned first candidacy", () => {
   test("starts from CV or LinkedIn instead of plan selection", async ({ page }) => {
     await mockUser(page);
     await page.goto("/dashboard");
-    await expect(page.getByText("La tua prima candidatura").first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Partiamo da te" })).toBeVisible();
+    await expect(page.getByText("Your first application").first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Let’s start with you" })).toBeVisible();
     await expect(page.getByText("Choose Your Success Plan")).toHaveCount(0);
   });
 
@@ -37,7 +37,7 @@ test.describe("Redesigned first candidacy", () => {
       company: { name: "Spotify", domain: "spotify.com" },
       searchContext: {
         queryCount: 30,
-        narrative: "Stiamo privilegiando recruiter europei che seguono ruoli Product e Design.",
+        narrative: "We’re prioritizing European recruiters hiring for Product and Design roles.",
       },
     };
     await mockUser(page, {
@@ -51,9 +51,9 @@ test.describe("Redesigned first candidacy", () => {
       body: JSON.stringify({ success: true, preview }),
     }));
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: /persona giusta dentro Spotify/ })).toBeVisible();
-    await expect(page.getByText(/30 strategie/)).toBeVisible();
-    await expect(page.getByText(/recruiter europei/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /right person at Spotify/ })).toBeVisible();
+    await expect(page.getByText(/30 strategies/)).toBeVisible();
+    await expect(page.getByText(/European recruiters/)).toBeVisible();
   });
 
   test("puts paid conversion on the completed candidacy page", async ({ page }) => {
@@ -67,9 +67,9 @@ test.describe("Redesigned first candidacy", () => {
     await mockUser(page, { onboardingStep: 5, onboardingStage: "preview_ready", onboardingPreview: preview });
     await page.route("**/api/protected/onboarding-preview", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, preview }) }));
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: "La tua prima candidatura è pronta" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your first application is ready" })).toBeVisible();
     await expect(page.getByText("Giulia Rossi")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Ora moltiplica le opportunità" })).toBeVisible();
-    await expect(page.getByRole("button", { name: /esplora la dashboard/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Now multiply your opportunities" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /explore the dashboard/i })).toBeVisible();
   });
 });

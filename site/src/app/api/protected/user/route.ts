@@ -127,7 +127,7 @@ export async function PUT(request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Profilo aggiornato con successo'
+      message: 'Profile updated successfully'
     });
 
   } catch (error) {

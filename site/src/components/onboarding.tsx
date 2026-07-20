@@ -389,10 +389,10 @@ import { useMemo } from 'react';
 // Basati sulle interfacce fornite
 /*const aavailableCriteria = {
   industry: {
-    label: 'Settore Industriale',
+    label: 'Industry',
     icon: Building2,
     color: 'cyan',
-    description: 'Il settore più rilevante della persona',
+    description: 'The person’s most relevant industry',
     inputType: 'select',
     options: [
       "accounting",
@@ -712,10 +712,10 @@ import { useMemo } from 'react';
     options: CONTINENTS
   },
   skills: {
-    label: 'Competenze (Skills)',
+    label: 'Skills',
     icon: Code,
     color: 'purple',
-    description: 'Competenza specifica (es. Python, React)',
+    description: 'Specific skill (e.g. Python, React)',
     inputType: 'text',
   },
   job_title: {
@@ -726,84 +726,84 @@ import { useMemo } from 'react';
     inputType: 'text',
   },
   company_name: {
-    label: 'Azienda attuale o Precedente',
+    label: 'Current or Previous Company',
     icon: Briefcase,
     color: 'blue',
-    description: 'Nome dell\'azienda in cui ha lavorato in passato',
+    description: 'Name of a company where the person previously worked',
     inputType: 'text',
   },
   company_location_country: {
-    label: 'Paese Azienda attuale o precedente',
+    label: 'Current or Previous Company Country',
     icon: MapPin,
     color: 'rose',
-    description: 'Il paese dell\'Azienda attuale o precedente',
+    description: 'The country of the current or previous company',
     inputType: 'select',
     options: COUNTRIES
   },
   company_location_continent: {
-    label: 'Continente Azienda attuale o precedente',
+    label: 'Current or Previous Company Continent',
     icon: Globe,
     color: 'sky',
-    description: 'Il continente dell\'Azienda attuale o precedente',
+    description: 'The continent of the current or previous company',
     inputType: 'select',
     options: CONTINENTS
   },
   company_linkedin_url: {
-    label: 'Profilo Linkedin dell\'Azienda attuale o precedente',
+    label: 'Current or Previous Company LinkedIn Profile',
     icon: GraduationCap,
     color: 'indigo',
-    description: 'Profilo Linkedin dell\'Azienda attuale o precedente',
+    description: 'The LinkedIn profile of the current or previous company',
     inputType: 'text',
   },
   company_domain: {
-    label: 'Dominio dell\'Azienda attuale o precedente',
+    label: 'Current or Previous Company Domain',
     icon: GraduationCap,
     color: 'indigo',
-    description: 'Il dominio dell\'Azienda attuale o precedente',
+    description: 'The domain of the current or previous company',
     inputType: 'text',
   },
   school_name: {
-    label: 'Università',
+    label: 'University',
     icon: GraduationCap,
     color: 'indigo',
-    description: 'Nome dell\'università frequentata',
+    description: 'Name of the university attended',
     inputType: 'text',
   },
   school_location_country: {
-    label: 'Paese Università',
+    label: 'University Country',
     icon: MapPin,
     color: 'rose',
-    description: 'Il paese dell\'università frequentata',
+    description: 'The country of the university attended',
     inputType: 'select',
     options: COUNTRIES
   },
   school_location_continent: {
-    label: 'Continente Università',
+    label: 'University Continent',
     icon: Globe,
     color: 'sky',
-    description: 'Il continente dell\'università frequentata',
+    description: 'The continent of the university attended',
     inputType: 'select',
     options: CONTINENTS
   },
   school_linkedin_url: {
-    label: 'Profilo Linkedin dell\'Università',
+    label: 'University LinkedIn Profile',
     icon: GraduationCap,
     color: 'indigo',
-    description: 'Profilo Linkedin dell\'università frequentata',
+    description: 'The LinkedIn profile of the university attended',
     inputType: 'text',
   },
   school_domain: {
-    label: 'Dominio dell\'Università',
+    label: 'University Domain',
     icon: GraduationCap,
     color: 'indigo',
-    description: 'Il dominio dell\'università frequentata',
+    description: 'The domain of the university attended',
     inputType: 'text',
   },
   school_majors: {
-    label: 'Facoltà dell\'Università',
+    label: 'University Faculty',
     icon: Globe,
     color: 'sky',
-    description: 'La facoltà dell\'università frequentata',
+    description: 'The faculty of the university attended',
     inputType: 'select',
     options: MAJORS
   },
@@ -3964,10 +3964,10 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                     variants={containerVariants}
                 >
                     <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-white mb-4">{flow === 'guided' ? 'Partiamo da te' : 'Connect Your LinkedIn Profile'}</h2>
+                        <h2 className="text-3xl font-bold text-white mb-4">{flow === 'guided' ? 'Let’s start with you' : 'Connect Your LinkedIn Profile'}</h2>
                         <p className="text-lg text-gray-400">
                             {flow === 'guided'
-                                ? 'Carica il CV, incolla LinkedIn oppure usa entrambi. Ricostruiremo il profilo che useremo per presentarti.'
+                                ? 'Upload your CV, paste your LinkedIn URL, or use both. We’ll build the profile used to present you.'
                                 : 'Our AI will analyze your profile to understand your background and create the perfect recruiter matching strategy.'}
                         </p>
                     </div>
@@ -3985,7 +3985,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8">
                         {/* LinkedIn URL */}
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-300 mb-2">LinkedIn Profile URL {flow === 'guided' && <span className="text-gray-500">(facoltativo)</span>}</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">LinkedIn Profile URL {flow === 'guided' && <span className="text-gray-500">(optional)</span>}</label>
                             <div className="relative">
                                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                                     <Globe className="w-4 h-4" />
@@ -4002,7 +4002,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
 
                         {/* CV Upload */}
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Upload Your CV {flow === 'guided' && <span className="text-gray-500">(facoltativo se usi LinkedIn)</span>}</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">Upload Your CV {flow === 'guided' && <span className="text-gray-500">(optional if you use LinkedIn)</span>}</label>
 
                             <label
                                 htmlFor="cv-upload"
@@ -4070,7 +4070,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                                 size="md"
                             >
                                 <Brain className="w-5 h-5" />
-                                <span>{flow === 'guided' ? 'Ricostruisci il mio profilo' : 'Analyze My Profile'}</span>
+                                <span>{flow === 'guided' ? 'Build my profile' : 'Analyze My Profile'}</span>
                             </Button>
                         </div>
                     </div>
@@ -4144,9 +4144,9 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                     variants={containerVariants}
                 >
                     <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-white mb-4">{flow === 'guided' ? 'Ecco come ti presenterebbe CandidAI' : 'Profile Analysis Complete'}</h2>
+                        <h2 className="text-3xl font-bold text-white mb-4">{flow === 'guided' ? 'Here’s how CandidAI would present you' : 'Profile Analysis Complete'}</h2>
                         <p className="text-lg text-gray-400">
-                            {flow === 'guided' ? 'Controlla ciò che abbiamo capito. Puoi correggere ogni dettaglio prima di scegliere l’azienda.' : 'Review your profile summary and ideal recruiter persona. You can edit anything before proceeding.'}
+                            {flow === 'guided' ? 'Review what we understood. You can correct every detail before choosing a company.' : 'Review your profile summary and ideal recruiter persona. You can edit anything before proceeding.'}
                         </p>
                         {isDraftSaving && (
                             <p className="text-sm text-violet-400 mt-2 flex items-center justify-center gap-1">
@@ -4243,7 +4243,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                                     </>
                                 ) : (
                                     <>
-                                        <span>{onSave ? "Save Changes" : flow === 'guided' ? "Sì, mi rappresenta" : "Continue Setup"}</span>
+                                        <span>{onSave ? "Save Changes" : flow === 'guided' ? "Yes, this represents me" : "Continue Setup"}</span>
                                         {!onSave && <ArrowRight className="w-5 h-5" />}
                                     </>
                                 )}
@@ -4605,7 +4605,7 @@ export function CompanyInputClient({
                 variants={containerVariants}
             >
                 <motion.div className="flex items-center justify-between mb-6" variants={itemVariants}>
-                    <h3 className="text-xl font-semibold text-white">{mode === 'single-preview' ? 'La tua prima azienda target' : 'Target Companies'}</h3>
+                    <h3 className="text-xl font-semibold text-white">{mode === 'single-preview' ? 'Your first target company' : 'Target Companies'}</h3>
                     <span className="bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">
                         {selectedCompanies.length} / {maxCompanies} companies
                     </span>
@@ -4726,7 +4726,7 @@ export function CompanyInputClient({
                         </>
                     ) : (
                         <>
-                            <span>{mode === 'single-preview' ? 'Trova il contatto migliore' : 'Continue Setup'}</span>
+                            <span>{mode === 'single-preview' ? 'Find the best contact' : 'Continue Setup'}</span>
                             <ArrowRight className="w-5 h-5" />
                         </>
                     )}
