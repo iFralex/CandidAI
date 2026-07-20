@@ -24,18 +24,18 @@ describe("scaleForOffset", () => {
     });
 
     it("shrinks neighboring cards progressively", () => {
-        expect(scaleForOffset(1)).toBe(0.92);
-        expect(scaleForOffset(-1)).toBe(0.92);
-        expect(scaleForOffset(2)).toBe(0.85);
-        expect(scaleForOffset(-3)).toBe(0.85);
+        expect(scaleForOffset(1)).toBe(0.96);
+        expect(scaleForOffset(-1)).toBe(0.96);
+        expect(scaleForOffset(2)).toBe(0.91);
+        expect(scaleForOffset(-3)).toBe(0.91);
     });
 });
 
 describe("opacityForOffset", () => {
     it("keeps the active card fully opaque and fades the rest", () => {
         expect(opacityForOffset(0)).toBe(1);
-        expect(opacityForOffset(1)).toBe(0.6);
-        expect(opacityForOffset(2)).toBe(0.35);
+        expect(opacityForOffset(1)).toBe(0.78);
+        expect(opacityForOffset(2)).toBe(0.52);
     });
 });
 

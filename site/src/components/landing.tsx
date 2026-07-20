@@ -20,7 +20,7 @@ import { AmbassadorPromo } from '@/components/AmbassadorPromo';
 import { emailExamples } from '@/lib/email-examples';
 import { HeroVideo } from '@/components/HeroVideo';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
-import { AppleHero, AppleCampaignVideo, AppleEmailGallery } from '@/components/landing-apple';
+import { AppleHero, AppleCampaignVideo, AppleEmailGallery, AppleActTransition, AppleChapter } from '@/components/landing-apple';
 
 // Hero Section Component
 const HeroSection = () => {
@@ -1376,13 +1376,14 @@ const LandingPage = ({ experiments = {} }: { experiments?: ExperimentAssignments
                 <RedesignTrustStrip />
                 <AppleCampaignVideo />
                 <AppleEmailGallery />
-                <RedesignBenefits />
-                <RedesignWorkflow />
-                <ReviewsSection />
-                <AmbassadorSection />
-                <PricingSection />
-                <FAQSection />
-                <CTASection />
+                <AppleActTransition />
+                <AppleChapter index={0}><RedesignBenefits /></AppleChapter>
+                <AppleChapter index={1}><RedesignWorkflow /></AppleChapter>
+                <AppleChapter index={2}><ReviewsSection /></AppleChapter>
+                <AppleChapter index={3}><AmbassadorSection /></AppleChapter>
+                <AppleChapter index={4}><PricingSection /></AppleChapter>
+                <AppleChapter index={5}><FAQSection /></AppleChapter>
+                <AppleChapter index={6}><CTASection /></AppleChapter>
                 <Footer />
             </div>
         );

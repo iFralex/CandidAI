@@ -1,12 +1,22 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type MouseEvent as ReactMouseEvent } from "react";
 import { Play, Pause, Maximize } from "lucide-react";
 import Player from "@vimeo/player";
 import Image from "next/image";
 import { track } from "@/lib/analytics";
 
-const videos = [
+type VideoConfig = {
+    vimeoId: string;
+    aspect: string;
+};
+
+type LegacyFullscreenElement = HTMLDivElement & {
+    webkitRequestFullscreen?: () => Promise<void> | void;
+    msRequestFullscreen?: () => Promise<void> | void;
+};
+
+const videos: VideoConfig[] = [
     {
         vimeoId: "1171533200",
         aspect: "aspect-[9/16]"
@@ -25,11 +35,11 @@ interface HeroVideoProps {
 }
 
 export function HeroVideo({ wrapperClassName = "max-w-5xl mx-auto", bare = false }: HeroVideoProps = {}) {
-    const [video, setVideo] = useState({});
-    const containerRef = useRef(null);
-    const playerRef = useRef(null);
-    const iframeRef = useRef(null);
-    const idleTimeoutRef = useRef(null);
+    const [video, setVideo] = useState<VideoConfig>(videos[0]);
+    const containerRef = useRef<LegacyFullscreenElement>(null);
+    const playerRef = useRef<Player | null>(null);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const idleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [playing, setPlaying] = useState(false);
     const [showControls, setShowControls] = useState(false);
@@ -37,28 +47,39 @@ export function HeroVideo({ wrapperClassName = "max-w-5xl mx-auto", bare = false
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
-    const initPlayer = (e) => {
+    const initPlayer = (e?: ReactMouseEvent) => {
         e?.stopPropagation();
         setInitialized(true);
-        track({ name: "landing_video_play", params: { video_id: (video as any).vimeoId ?? "unknown" } });
+        track({ name: "landing_video_play", params: { video_id: video.vimeoId } });
     };
 
     useEffect(() => {
         if (initialized && iframeRef.current && !playerRef.current) {
-            playerRef.current = new Player(iframeRef.current);
-            playerRef.current.on("play", () => setPlaying(true));
-            playerRef.current.on("pause", () => {
+            const player = new Player(iframeRef.current);
+            const videoId = video.vimeoId;
+            playerRef.current = player;
+            player.on("play", () => setPlaying(true));
+            player.on("pause", () => {
                 setPlaying(false);
-                track({ name: "landing_video_pause", params: { video_id: (video as any).vimeoId ?? "unknown", watch_time_s: 0 } });
+                track({ name: "landing_video_pause", params: { video_id: videoId, watch_time_s: 0 } });
             });
-            playerRef.current.on("ended", () => {
-                track({ name: "landing_video_end", params: { video_id: (video as any).vimeoId ?? "unknown" } });
+            player.on("ended", () => {
+                track({ name: "landing_video_end", params: { video_id: videoId } });
             });
-            playerRef.current.play().catch((e) => console.log("Errore play:", e));
+            player.play().catch((error: unknown) => console.log("Errore play:", error));
+
+            return () => {
+                playerRef.current = null;
+                void player.destroy();
+            };
         }
+        return undefined;
+        // The selected responsive asset is already known when initialization is
+        // requested; changing it later should not recreate a playing iframe.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialized]);
 
-    const toggleVideo = (e) => {
+    const toggleVideo = (e?: ReactMouseEvent) => {
         e?.stopPropagation();
         if (!playerRef.current) return;
         if (playing) {
@@ -69,15 +90,16 @@ export function HeroVideo({ wrapperClassName = "max-w-5xl mx-auto", bare = false
         }
     };
 
-    const enterFullscreen = (e) => {
+    const enterFullscreen = (e: ReactMouseEvent<HTMLButtonElement>) => {
         e?.stopPropagation();
         if (!containerRef.current) return;
-        if (containerRef.current.requestFullscreen) {
-            containerRef.current.requestFullscreen();
-        } else if (containerRef.current.webkitRequestFullscreen) {
-            containerRef.current.webkitRequestFullscreen();
-        } else if (containerRef.current.msRequestFullscreen) {
-            containerRef.current.msRequestFullscreen();
+        const container = containerRef.current;
+        if (container.requestFullscreen) {
+            void container.requestFullscreen();
+        } else if (container.webkitRequestFullscreen) {
+            void container.webkitRequestFullscreen();
+        } else if (container.msRequestFullscreen) {
+            void container.msRequestFullscreen();
         }
     };
 
@@ -105,6 +127,10 @@ export function HeroVideo({ wrapperClassName = "max-w-5xl mx-auto", bare = false
             window.removeEventListener("resize", checkLayout);
             document.removeEventListener("fullscreenchange", handler);
         };
+    }, []);
+
+    useEffect(() => () => {
+        if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
     }, []);
 
     const wakeControls = () => {
@@ -147,7 +173,7 @@ export function HeroVideo({ wrapperClassName = "max-w-5xl mx-auto", bare = false
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [playing, initialized]);
 
-    const handleContainerClick = (e) => {
+    const handleContainerClick = (e: ReactMouseEvent<HTMLDivElement>) => {
         if (!initialized) return;
 
         if (isMobile && !showControls && playing) {

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useReducedMotion } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 /** Index of the item whose center is closest to `viewportCenter`. */
 export function closestIndexToCenter(itemCenters: number[], viewportCenter: number): number {
@@ -21,16 +22,16 @@ export function closestIndexToCenter(itemCenters: number[], viewportCenter: numb
 export function scaleForOffset(offsetFromActive: number): number {
     const distance = Math.abs(offsetFromActive);
     if (distance === 0) return 1;
-    if (distance === 1) return 0.92;
-    return 0.85;
+    if (distance === 1) return 0.96;
+    return 0.91;
 }
 
 /** Visual opacity for a card `offsetFromActive` positions away from the focused card. */
 export function opacityForOffset(offsetFromActive: number): number {
     const distance = Math.abs(offsetFromActive);
     if (distance === 0) return 1;
-    if (distance === 1) return 0.6;
-    return 0.35;
+    if (distance === 1) return 0.78;
+    return 0.52;
 }
 
 /**
@@ -59,6 +60,20 @@ interface HorizontalScrollGalleryProps<T> {
     testId?: string;
     /** Accessible name for the scroll region (e.g. "Email examples"). */
     ariaLabel: string;
+    /**
+     * Optional larger area whose vertical wheel gestures should drive the
+     * gallery. Useful when a section title and controls sit outside the actual
+     * overflow container but should still participate in the interaction.
+     */
+    wheelCaptureRef?: RefObject<HTMLElement | null>;
+    /** Exposes the native scroller to a parent that drives it from page scroll. */
+    scrollContainerRef?: RefObject<HTMLDivElement | null>;
+    /** Disable when a pinned parent maps page-scroll progress to scrollLeft. */
+    mapWheelToHorizontal?: boolean;
+    /** Removes native snapping/smoothing when scrollLeft is driven every frame. */
+    scrollDriven?: boolean;
+    /** Lets a pinned parent translate arrow/dot navigation back into page scroll. */
+    onNavigateIndex?: (index: number) => void;
 }
 
 /**
@@ -71,8 +86,20 @@ interface HorizontalScrollGalleryProps<T> {
  * focus the region and press ArrowLeft/ArrowRight to move the scroll position
  * card-by-card (this moves scroll, not DOM focus — see `handleKeyDown`).
  */
-export function HorizontalScrollGallery<T,>({ items, renderItem, className, testId, ariaLabel }: HorizontalScrollGalleryProps<T>) {
-    const containerRef = useRef<HTMLDivElement>(null);
+export function HorizontalScrollGallery<T,>({
+    items,
+    renderItem,
+    className,
+    testId,
+    ariaLabel,
+    wheelCaptureRef,
+    scrollContainerRef,
+    mapWheelToHorizontal = true,
+    scrollDriven = false,
+    onNavigateIndex,
+}: HorizontalScrollGalleryProps<T>) {
+    const internalContainerRef = useRef<HTMLDivElement>(null);
+    const containerRef = scrollContainerRef ?? internalContainerRef;
     const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
     const [activeIndex, setActiveIndex] = useState(0);
     // `useReducedMotion()` returns `boolean | null` (null before the media
@@ -83,7 +110,6 @@ export function HorizontalScrollGallery<T,>({ items, renderItem, className, test
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
-
         // This tracking effect is NOT gated on `prefersReducedMotion`: which
         // card is active isn't itself an animation, it's the actual scroll
         // state — keyboard ArrowRight/ArrowLeft (and `aria-current`) depend on
@@ -127,7 +153,8 @@ export function HorizontalScrollGallery<T,>({ items, renderItem, className, test
 
     useEffect(() => {
         const container = containerRef.current;
-        if (!container) return;
+        if (!container || !mapWheelToHorizontal) return;
+        const wheelTarget = wheelCaptureRef?.current ?? container;
 
         // No device-capability gate here (no `ontouchstart`/`maxTouchPoints`
         // check): a `wheel` event is only ever dispatched by a mouse wheel or
@@ -152,15 +179,23 @@ export function HorizontalScrollGallery<T,>({ items, renderItem, className, test
             event.preventDefault();
             container.scrollLeft = Math.max(0, Math.min(maxScrollLeft, target));
         };
-        container.addEventListener("wheel", handleWheel, { passive: false });
-        return () => container.removeEventListener("wheel", handleWheel);
-    }, []);
+        wheelTarget.addEventListener("wheel", handleWheel, { passive: false });
+        return () => wheelTarget.removeEventListener("wheel", handleWheel);
+    }, [containerRef, mapWheelToHorizontal, wheelCaptureRef]);
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
         if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
         const targetIndex = event.key === "ArrowRight"
             ? Math.min(activeIndex + 1, items.length - 1)
             : Math.max(activeIndex - 1, 0);
+        scrollToIndex(targetIndex);
+    };
+
+    const scrollToIndex = (targetIndex: number) => {
+        if (onNavigateIndex) {
+            onNavigateIndex(targetIndex);
+            return;
+        }
         itemRefs.current[targetIndex]?.scrollIntoView({
             behavior: prefersReducedMotion ? "auto" : "smooth",
             inline: "center",
@@ -169,27 +204,60 @@ export function HorizontalScrollGallery<T,>({ items, renderItem, className, test
     };
 
     return (
-        <div
-            ref={containerRef}
-            data-testid={testId}
-            role="region"
-            aria-label={ariaLabel}
-            tabIndex={0}
-            onKeyDown={handleKeyDown}
-            className={`flex snap-x snap-mandatory overflow-x-auto scroll-smooth focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-400 ${className ?? ""}`}
-        >
-            {items.map((item, index) => (
-                <div
-                    key={index}
-                    ref={(el) => { itemRefs.current[index] = el; }}
-                    className="snap-center shrink-0"
+        <div className="relative">
+            <div className="mb-5 flex items-center justify-center gap-4" aria-label={`${ariaLabel} controls`}>
+                <button
+                    type="button"
+                    aria-label={`Previous ${ariaLabel.toLowerCase()}`}
+                    disabled={activeIndex === 0}
+                    onClick={() => scrollToIndex(Math.max(0, activeIndex - 1))}
+                    className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/[0.04] text-white transition hover:border-violet-400/50 hover:bg-violet-500/10 disabled:cursor-default disabled:opacity-30"
                 >
-                    {/* offsetFromActive is always real (see the tracking effect above);
-                        prefersReducedMotion is passed through so the caller can decide
-                        what to neutralize visually without losing the real active index. */}
-                    {renderItem(item, index, index - activeIndex, prefersReducedMotion)}
+                    <ChevronLeft className="h-4 w-4" />
+                </button>
+                <div className="flex items-center gap-2" aria-hidden="true">
+                    {items.map((_, index) => (
+                        <span
+                            key={index}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${index === activeIndex ? "w-6 bg-violet-400" : "w-1.5 bg-white/25"}`}
+                        />
+                    ))}
                 </div>
-            ))}
+                <span className="min-w-10 font-mono text-xs text-white/50" aria-live="polite">
+                    {activeIndex + 1} / {items.length}
+                </span>
+                <button
+                    type="button"
+                    aria-label={`Next ${ariaLabel.toLowerCase()}`}
+                    disabled={activeIndex === items.length - 1}
+                    onClick={() => scrollToIndex(Math.min(items.length - 1, activeIndex + 1))}
+                    className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/[0.04] text-white transition hover:border-violet-400/50 hover:bg-violet-500/10 disabled:cursor-default disabled:opacity-30"
+                >
+                    <ChevronRight className="h-4 w-4" />
+                </button>
+            </div>
+            <div
+                ref={containerRef}
+                data-testid={testId}
+                role="region"
+                aria-label={ariaLabel}
+                tabIndex={0}
+                onKeyDown={handleKeyDown}
+                className={`flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-400 ${
+                    scrollDriven ? "overflow-x-hidden" : "snap-x snap-mandatory overflow-x-auto scroll-smooth"
+                } ${className ?? ""}`}
+            >
+                {items.map((item, index) => (
+                    <div
+                        key={index}
+                        ref={(el) => { itemRefs.current[index] = el; }}
+                        className={`${scrollDriven ? "" : "snap-center"} shrink-0`}
+                    >
+                        {renderItem(item, index, index - activeIndex, prefersReducedMotion)}
+                    </div>
+                ))}
+            </div>
+
         </div>
     );
 }

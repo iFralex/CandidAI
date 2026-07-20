@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { motion, useTransform, useMotionValueEvent, useReducedMotion, type MotionValue } from "framer-motion";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { motion, useScroll, useTransform, useMotionValueEvent, useReducedMotion, type MotionValue } from "framer-motion";
 import { Syne } from "next/font/google";
 import { ArrowRight, Check, ChevronDown } from "lucide-react";
 import Link from "next/link";
@@ -35,6 +35,10 @@ export function charactersToReveal(progress: number, totalLength: number, reveal
 }
 
 const heroEmail = emailExamples[0];
+const mobileHeroPreview = heroEmail.preview
+    .split(/(?<=[.!?])\s+/)
+    .slice(0, 2)
+    .join(" ");
 
 export function AppleHero() {
     return (
@@ -89,7 +93,7 @@ function AppleHeroStatic() {
                 here (unlike the animated version below): everything, CTA
                 included, is already visible at once in this static layout. */}
             <div className="relative z-10 flex flex-col items-center gap-10 text-center">
-                <h1 className={`${syne.className} font-black leading-[0.9] tracking-tight text-[clamp(4rem,10vw,9rem)]`}>
+                <h1 className={`${syne.className} font-black leading-[0.9] tracking-tight text-[clamp(2.75rem,12.5vw,3.5rem)] sm:text-[clamp(4rem,10vw,9rem)]`}>
                     <span className="block text-[#F5F3FF]">Land Your</span>
                     <span className="block bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
                         Dream Job
@@ -143,24 +147,29 @@ function AppleHeroAnimated({ progress }: { progress: MotionValue<number> }) {
         fadeRange(p, 0.78, 1) > 0 ? ("visible" as const) : ("hidden" as const)
     );
 
-    const [revealCount, setRevealCount] = useState(0);
+    const [revealCount, setRevealCount] = useState({ desktop: 0, mobile: 0 });
     useMotionValueEvent(progress, "change", (p) => {
-        const next = charactersToReveal(p, heroEmail.preview.length, 0.3, 0.75);
+        const next = {
+            desktop: charactersToReveal(p, heroEmail.preview.length, 0.3, 0.75),
+            mobile: charactersToReveal(p, mobileHeroPreview.length, 0.3, 0.75),
+        };
         // Only trigger a re-render when the revealed character count actually
         // changes — `progress` ticks far more often (every scroll-linked
         // frame) than the rounded character count does, especially outside
         // the 0.3-0.75 reveal window where `next` stays pinned at 0 or the
         // full length.
-        setRevealCount((current) => (current === next ? current : next));
+        setRevealCount((current) => (
+            current.desktop === next.desktop && current.mobile === next.mobile ? current : next
+        ));
     });
 
     return (
         <div className="relative h-full w-full">
             <AnimatedBackground />
-            <div className="relative z-10 flex h-full w-full flex-col items-center justify-center px-6 text-center">
+            <div className="relative z-10 flex h-full w-full -translate-y-8 flex-col items-center justify-center px-6 text-center sm:translate-y-0">
                 <motion.h1
                     style={{ opacity: headlineOpacity, scale: headlineScale }}
-                    className={`${syne.className} font-black leading-[0.9] tracking-tight text-[clamp(4rem,10vw,9rem)]`}
+                    className={`${syne.className} font-black leading-[0.9] tracking-tight text-[clamp(2.75rem,12.5vw,3.5rem)] sm:text-[clamp(4rem,10vw,9rem)]`}
                 >
                     <span className="block text-[#F5F3FF]">Land Your</span>
                     <span className="block bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
@@ -177,7 +186,7 @@ function AppleHeroAnimated({ progress }: { progress: MotionValue<number> }) {
                 </motion.p>
                 <motion.div
                     style={{ opacity: headlineOpacity }}
-                    className="mt-8 flex flex-col items-center gap-2 text-xs uppercase tracking-[0.15em] text-gray-500"
+                    className="mt-8 hidden flex-col items-center gap-2 text-xs uppercase tracking-[0.15em] text-gray-500 sm:flex"
                 >
                     <span>Scroll to see your email take shape</span>
                     <ChevronDown className="h-4 w-4 animate-bounce" />
@@ -188,9 +197,23 @@ function AppleHeroAnimated({ progress }: { progress: MotionValue<number> }) {
                     like the gold "Ready to review" moment below, so it doesn't
                     compete with or preempt that payoff. */}
                 <motion.div
+                    data-testid="apple-hero-early-cta-mobile"
+                    style={{ opacity: earlyCtaOpacity, visibility: earlyCtaVisibility, pointerEvents: earlyCtaInteractive }}
+                    className="mt-6 sm:hidden"
+                >
+                    <Link
+                        href="/register"
+                        className="inline-flex rounded-full border border-violet-400/30 bg-violet-500/10 px-5 py-2.5 text-sm font-medium text-violet-200 backdrop-blur transition-colors hover:bg-violet-500/20 hover:text-white"
+                        onClick={() => track({ name: "landing_cta_click", params: { button_label: "Try one email free", section: "apple_hero_early" } })}
+                    >
+                        Try one email free →
+                    </Link>
+                </motion.div>
+
+                <motion.div
                     data-testid="apple-hero-early-cta"
                     style={{ opacity: earlyCtaOpacity, visibility: earlyCtaVisibility, pointerEvents: earlyCtaInteractive }}
-                    className="absolute bottom-10"
+                    className="absolute bottom-10 hidden sm:block"
                 >
                     <Link
                         href="/register"
@@ -210,7 +233,7 @@ function AppleHeroAnimated({ progress }: { progress: MotionValue<number> }) {
                     as a deliberate crossfade — never both at full opacity. */}
                 <motion.div
                     style={{ opacity: emailOpacity }}
-                    className="absolute left-1/2 top-[44%] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 px-6 text-left sm:top-1/2"
+                    className="absolute left-1/2 top-[30%] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 px-6 text-left sm:top-1/2"
                 >
                     <div className="mb-3 flex flex-wrap items-center gap-4 font-mono text-xs uppercase tracking-[0.2em] text-violet-300">
                         <span>To: {heroEmail.recruiter}</span>
@@ -225,8 +248,12 @@ function AppleHeroAnimated({ progress }: { progress: MotionValue<number> }) {
                         on desktop, so the full multi-line preview has less chance
                         of growing tall enough to reach the final CTA at `bottom-16`
                         on short mobile viewports. */}
-                    <p aria-hidden="true" className="whitespace-pre-line text-base leading-relaxed text-gray-300 sm:text-lg">
-                        {heroEmail.preview.slice(0, revealCount)}
+                    <p data-testid="apple-hero-email-mobile" aria-hidden="true" className="whitespace-pre-line text-sm leading-relaxed text-gray-300 sm:hidden">
+                        {mobileHeroPreview.slice(0, revealCount.mobile)}
+                        {revealCount.mobile === mobileHeroPreview.length ? "…" : ""}
+                    </p>
+                    <p aria-hidden="true" className="hidden whitespace-pre-line text-lg leading-relaxed text-gray-300 sm:block">
+                        {heroEmail.preview.slice(0, revealCount.desktop)}
                     </p>
                     <p className="sr-only">{heroEmail.preview}</p>
                 </motion.div>
@@ -238,7 +265,7 @@ function AppleHeroAnimated({ progress }: { progress: MotionValue<number> }) {
                 <motion.div
                     data-testid="apple-hero-cta"
                     style={{ opacity: ctaOpacity, visibility: ctaVisibility, pointerEvents: ctaInteractive }}
-                    className="absolute bottom-16 flex flex-col items-center gap-3"
+                    className="absolute bottom-48 flex flex-col items-center gap-3 sm:bottom-16"
                 >
                     <HeroCta />
                 </motion.div>
@@ -308,34 +335,185 @@ function AppleCampaignVideoAnimated({ progress }: { progress: MotionValue<number
 }
 
 export function AppleEmailGallery() {
+    const sectionRef = useRef<HTMLElement>(null);
+    const galleryRef = useRef<HTMLDivElement>(null);
+    const [pinned, setPinned] = useState(false);
+    const [horizontalDistance, setHorizontalDistance] = useState(0);
+    const { scrollYProgress } = useScroll({
+        target: sectionRef,
+        offset: ["start start", "end end"],
+    });
+
+    useEffect(() => {
+        const gallery = galleryRef.current;
+        if (!gallery) return;
+        const desktop = window.matchMedia("(min-width: 768px)");
+
+        const measure = () => {
+            const shouldPin = desktop.matches;
+            setPinned(shouldPin);
+            setHorizontalDistance(shouldPin ? Math.max(0, gallery.scrollWidth - gallery.clientWidth) : 0);
+        };
+
+        measure();
+        desktop.addEventListener("change", measure);
+        const observer = new ResizeObserver(measure);
+        observer.observe(gallery);
+        for (const child of Array.from(gallery.children)) observer.observe(child);
+
+        return () => {
+            desktop.removeEventListener("change", measure);
+            observer.disconnect();
+        };
+    }, []);
+
+    useMotionValueEvent(scrollYProgress, "change", (progress) => {
+        const gallery = galleryRef.current;
+        if (!gallery || !pinned) return;
+        const maxScrollLeft = Math.max(0, gallery.scrollWidth - gallery.clientWidth);
+        gallery.scrollLeft = progress * maxScrollLeft;
+    });
+
+    const navigateToEmail = (index: number) => {
+        const section = sectionRef.current;
+        if (!section || !pinned || emailExamples.length < 2) return;
+        const sectionTop = section.getBoundingClientRect().top + window.scrollY;
+        const verticalTravel = Math.max(0, section.clientHeight - window.innerHeight);
+        window.scrollTo({
+            top: sectionTop + verticalTravel * (index / (emailExamples.length - 1)),
+            behavior: "smooth",
+        });
+    };
+
     return (
-        <section className="bg-black px-6 py-24 lg:px-8">
-            <div className="mx-auto mb-12 max-w-3xl text-center">
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-300">
-                    Personalized for the person, company and role
+        <section
+            ref={sectionRef}
+            className="relative bg-black"
+            style={pinned ? { height: `calc(100dvh + ${horizontalDistance}px)` } : undefined}
+        >
+            <div className={pinned ? "sticky top-16 h-[calc(100dvh-4rem)] overflow-hidden px-6 py-8 lg:px-8" : "px-6 py-24 lg:px-8"}>
+                <div className="mx-auto mb-8 max-w-3xl text-center md:mb-6">
+                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-violet-300">
+                        Personalized for the person, company and role
+                    </p>
+                    <h2 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
+                        See AI-generated emails in action
+                    </h2>
+                    <p className="mt-4 text-sm text-white/45 md:hidden">Swipe to explore</p>
+                </div>
+                <HorizontalScrollGallery
+                    items={emailExamples}
+                    className="gap-6 px-[10vw] pb-4"
+                    testId="apple-email-gallery"
+                    ariaLabel="Email examples"
+                    scrollContainerRef={galleryRef}
+                    mapWheelToHorizontal={!pinned}
+                    scrollDriven={pinned}
+                    onNavigateIndex={pinned ? navigateToEmail : undefined}
+                    renderItem={(example, index, offsetFromActive, prefersReducedMotion) => (
+                        <EmailLetterCard
+                            example={example}
+                            offsetFromActive={offsetFromActive}
+                            prefersReducedMotion={prefersReducedMotion}
+                            key={example.company}
+                        />
+                    )}
+                />
+                <p className="mx-auto mt-2 max-w-3xl px-[10vw] text-sm italic leading-relaxed text-gray-400">
+                    * Some names and personal details have been adjusted to protect privacy and ensure compliance.
                 </p>
-                <h2 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
-                    See AI-generated emails in action
-                </h2>
             </div>
-            <HorizontalScrollGallery
-                items={emailExamples}
-                className="gap-6 px-[10vw] pb-6"
-                testId="apple-email-gallery"
-                ariaLabel="Email examples"
-                renderItem={(example, index, offsetFromActive, prefersReducedMotion) => (
-                    <EmailLetterCard
-                        example={example}
-                        offsetFromActive={offsetFromActive}
-                        prefersReducedMotion={prefersReducedMotion}
-                        key={example.company}
-                    />
-                )}
-            />
-            <p className="mx-auto mt-2 max-w-3xl px-[10vw] text-sm italic leading-relaxed text-gray-400">
-                * Some names and personal details have been adjusted to protect privacy and ensure compliance.
-            </p>
         </section>
+    );
+}
+
+/**
+ * Carries the cinematic language into the information-dense half of the page
+ * without changing any of its copy or internal component behavior. Each full
+ * section arrives as a chapter through a soft depth/blur reveal and a single
+ * moving light seam; the effect runs once and collapses to plain content for
+ * reduced-motion users.
+ */
+export function AppleChapter({ children, index }: { children: ReactNode; index: number }) {
+    const chapterRef = useRef<HTMLDivElement>(null);
+    const prefersReducedMotion = useReducedMotion();
+    const fromLeft = index % 2 === 0;
+    const { scrollYProgress } = useScroll({
+        target: chapterRef,
+        offset: ["start 98%", "start 18%"],
+    });
+    const opacity = useTransform(scrollYProgress, [0, 0.62, 1], [0.04, 0.78, 1]);
+    const y = useTransform(scrollYProgress, [0, 1], [210, 0]);
+    const x = useTransform(scrollYProgress, [0, 1], [fromLeft ? -92 : 92, 0]);
+    const scale = useTransform(scrollYProgress, [0, 1], [0.84, 1]);
+    const rotateX = useTransform(scrollYProgress, [0, 1], [10, 0]);
+    const rotateY = useTransform(scrollYProgress, [0, 1], [fromLeft ? -6 : 6, 0]);
+    const rotateZ = useTransform(scrollYProgress, [0, 1], [fromLeft ? -1.2 : 1.2, 0]);
+    const blur = useTransform(scrollYProgress, [0, 0.8, 1], ["blur(16px)", "blur(2px)", "blur(0px)"]);
+    const radius = useTransform(scrollYProgress, [0, 1], [64, 28]);
+    const seamScale = useTransform(scrollYProgress, [0.05, 0.72], [0, 1]);
+    const glowX = useTransform(
+        scrollYProgress,
+        [0, 1],
+        fromLeft ? ["-32%", "8%"] : ["32%", "-8%"]
+    );
+
+    return (
+        <div
+            ref={chapterRef}
+            data-apple-chapter={index}
+            className="relative overflow-hidden bg-black px-2 pb-6 [perspective:1100px] sm:px-5 lg:px-8"
+        >
+            <motion.div
+                className="relative isolate overflow-hidden border border-white/10 bg-[#0b0712] shadow-[0_30px_100px_rgba(76,29,149,0.14)]"
+                style={prefersReducedMotion
+                    ? { borderRadius: 28 }
+                    : { opacity, x, y, scale, rotateX, rotateY, rotateZ, filter: blur, borderRadius: radius }}
+            >
+                <div
+                    aria-hidden="true"
+                    className="relative z-20 flex h-11 items-center justify-between border-b border-white/[0.07] px-5 font-mono text-[10px] uppercase tracking-[0.22em] text-white/35 sm:px-8"
+                >
+                    <span>Chapter {String(index + 1).padStart(2, "0")}</span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-violet-400 shadow-[0_0_14px_rgba(167,139,250,0.9)]" />
+                </div>
+                <motion.div
+                    aria-hidden="true"
+                    className={`pointer-events-none absolute -top-28 z-0 h-96 w-96 rounded-full blur-[90px] ${
+                        fromLeft ? "-left-24 bg-violet-600/20" : "-right-24 bg-fuchsia-600/16"
+                    }`}
+                    style={prefersReducedMotion ? undefined : { x: glowX }}
+                />
+                <motion.div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-[7%] top-11 z-20 h-px origin-left bg-gradient-to-r from-transparent via-violet-300/90 to-transparent"
+                    style={prefersReducedMotion ? { scaleX: 1 } : { scaleX: seamScale }}
+                />
+                <div className="relative z-10">{children}</div>
+            </motion.div>
+        </div>
+    );
+}
+
+export function AppleActTransition() {
+    const prefersReducedMotion = useReducedMotion();
+    return (
+        <div aria-hidden="true" className="relative h-16 overflow-hidden bg-black sm:h-24">
+            <motion.div
+                className="absolute left-1/2 top-1/2 h-px w-[70%] -translate-x-1/2 bg-gradient-to-r from-transparent via-violet-400/80 to-transparent"
+                initial={prefersReducedMotion ? false : { scaleX: 0, opacity: 0 }}
+                whileInView={{ scaleX: 1, opacity: 1 }}
+                viewport={{ once: true, amount: 0.7 }}
+                transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+            />
+            <motion.div
+                className="absolute left-1/2 top-1/2 h-20 w-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-600/10 blur-3xl"
+                initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.5 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true, amount: 0.7 }}
+                transition={{ duration: 1.4 }}
+            />
+        </div>
     );
 }
 

@@ -53,6 +53,23 @@ test.describe("Landing – apple-style experiment variant", () => {
         expect(hasHorizontalOverflow).toBe(false);
     });
 
+    test("mobile hero email and final CTA do not overlap", async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 667 });
+        await page.goto("/?ca_exp_landing_redesign_v1=apple");
+
+        const hero = page.locator('[data-testid="apple-hero"]');
+        await hero.evaluate((element) => {
+            window.scrollTo(0, element.offsetTop + element.clientHeight - window.innerHeight);
+        });
+        await page.waitForTimeout(300);
+
+        const emailBox = await page.locator('[data-testid="apple-hero-email-mobile"]').boundingBox();
+        const ctaBox = await page.locator('[data-testid="apple-hero-cta"]').boundingBox();
+        expect(emailBox).not.toBeNull();
+        expect(ctaBox).not.toBeNull();
+        expect(emailBox!.y + emailBox!.height).toBeLessThanOrEqual(ctaBox!.y - 12);
+    });
+
     test("the quiet early CTA is reachable without scrolling at all", async ({ page }) => {
         await page.goto("/?ca_exp_landing_redesign_v1=apple");
 
