@@ -494,7 +494,9 @@ export async function savePostPurchaseCompanies(companies: { name: string; domai
     const userId = await checkAuth();
     const userRef = adminDb.collection("users").doc(userId);
     const accountRef = userRef.collection("data").doc("account");
-    const userSnap = await userRef.get();
+    const previewRef = userRef.collection("data").doc("onboarding_preview");
+    const resultsRef = userRef.collection("data").doc("results");
+    const [userSnap, previewSnap] = await Promise.all([userRef.get(), previewRef.get()]);
     const plan = String(userSnap.data()?.plan || "free_trial");
     const limit = Number(userSnap.data()?.maxCompanies ?? (plansData as any)[plan]?.maxCompanies ?? 1);
     if (!companies.length) throw new Error("Choose at least one target company");
@@ -503,8 +505,32 @@ export async function savePostPurchaseCompanies(companies: { name: string; domai
         if (!company.name?.trim()) throw new Error("Company name cannot be empty");
         if (!company.linkedin_url && (!company.domain || !isValidDomain(company.domain))) throw new Error(`Invalid domain: ${company.domain}`);
     }
+    const identity = (company: any) => {
+        const linkedin = String(company?.linkedin_url || company?.domain || "").match(/linkedin\.com\/company\/([^/?#]+)/i)?.[1];
+        if (linkedin) return `linkedin:${linkedin.toLowerCase()}`;
+        const domain = String(company?.domain || "").toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/?#]/)[0];
+        return domain ? `domain:${domain}` : `name:${String(company?.name || "").trim().toLowerCase()}`;
+    };
+    const companyKeys = companies.map(identity);
+    if (new Set(companyKeys).size !== companyKeys.length) throw new Error("Duplicate companies found");
     const nextStage = plan === "pro" || plan === "ultra" ? "post_purchase_filters" : "post_purchase_instructions";
     const batch = adminDb.batch();
+    const preview = previewSnap.data() || {};
+    const originalCompany = preview.company;
+    const resultId = preview.resultId ? String(preview.resultId) : "";
+    // Removing the company that was preserved on the previous screen is an
+    // explicit change of mind: clean its result and archived preview too.
+    if (preview.postPurchaseChoice === "regenerate" && resultId && originalCompany && !companyKeys.includes(identity(originalCompany))) {
+        batch.set(resultsRef, { [resultId]: FieldValue.delete() }, { merge: true });
+        batch.delete(resultsRef.collection(resultId).doc("details"));
+        batch.delete(resultsRef.collection(resultId).doc("row"));
+        batch.delete(resultsRef.collection(resultId).doc("email_history"));
+        batch.delete(resultsRef.collection(resultId).doc("customizations"));
+        batch.delete(resultsRef.collection(resultId).doc("unlocked"));
+        batch.set(userRef.collection("data").doc("emails"), { [resultId]: FieldValue.delete() }, { merge: true });
+        batch.delete(adminDb.collection("ids").doc(`${originalCompany.name}-${userId}`));
+        batch.set(previewRef, { postPurchaseChoice: "replace", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    }
     batch.set(accountRef, { companies }, { merge: true });
     batch.update(userRef, { onboardingStage: nextStage, onboardingStep: 8 });
     await batch.commit();
