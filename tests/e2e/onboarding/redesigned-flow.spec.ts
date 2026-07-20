@@ -75,6 +75,9 @@ test.describe("Redesigned first candidacy", () => {
     await mockUser(page, { onboardingStep: 5, onboardingStage: "preview_ready", onboardingPreview: preview });
     await page.route("**/api/protected/onboarding-preview", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, preview }) }));
     await page.goto("/dashboard");
+    await expect(page.getByRole("heading", { name: "Your introduction is ready." })).toBeVisible();
+    await expect(page.getByText("Product design fit at Spotify")).toBeVisible();
+    await page.getByRole("button", { name: "Skip animation" }).click();
     await expect(page.getByRole("heading", { name: "Your first application is ready" })).toBeVisible();
     await expect(page.getByText("Giulia Rossi", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "This wasn’t a template. It was a complete research process." })).toBeVisible();

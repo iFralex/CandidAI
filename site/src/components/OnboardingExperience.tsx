@@ -181,6 +181,54 @@ function ApplicationAssembly({ preview }: { preview: OnboardingPreviewState }) {
   </motion.div>
 }
 
+function EmailDeliveryReveal({ preview }: { preview: OnboardingPreviewState }) {
+  const [emailVisible, setEmailVisible] = useState(false)
+  const [ready, setReady] = useState(false)
+  const initials = (preview.recruiter?.name || '?').split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
+  const paragraphs = (preview.email?.body || '').split(/\n\s*\n/).filter(Boolean).slice(0, 3)
+
+  useEffect(() => {
+    const readyTimer = window.setTimeout(() => setReady(true), 650)
+    const emailTimer = window.setTimeout(() => setEmailVisible(true), 1450)
+    return () => {
+      window.clearTimeout(readyTimer)
+      window.clearTimeout(emailTimer)
+    }
+  }, [])
+
+  return <motion.div className="mx-auto flex min-h-[650px] max-w-5xl flex-col justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -30, filter: 'blur(10px)' }}>
+    <div className="mb-9 text-center">
+      <AnimatePresence mode="wait">
+        {!ready ? <motion.div key="finishing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.94 }} className="flex items-center justify-center gap-2 text-sm text-gray-500"><Loader2 className="h-4 w-4 animate-spin text-violet-400" />Finishing your introduction…</motion.div> : <motion.div key="ready" initial={{ opacity: 0, y: 12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.55 }}><div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300"><Check className="h-5 w-5" /></div><h2 className="mt-4 text-3xl font-bold text-white sm:text-4xl">Your introduction is ready.</h2></motion.div>}
+      </AnimatePresence>
+    </div>
+
+    <motion.div layout className={emailVisible ? 'grid items-stretch gap-5 lg:grid-cols-[280px_1fr]' : 'flex justify-center'} transition={{ layout: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }}>
+      <motion.div layout className="w-full max-w-[360px]" transition={{ layout: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }}>
+        <Card hover={false} className="flex h-full flex-col items-center justify-center border-emerald-400/20 p-6 text-center">
+          <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-violet-400/30 bg-violet-500/15 font-semibold text-violet-200"><span>{initials}</span>{preview.recruiterProfile?.avatarUrl && <img src={preview.recruiterProfile.avatarUrl} alt="" className="absolute h-16 w-16 rounded-full object-cover" onError={event => { event.currentTarget.style.display = 'none' }} />}</div>
+          <p className="mt-4 text-lg font-semibold text-white">{preview.recruiter?.name}</p>
+          <p className="mt-1 text-sm text-violet-300">{preview.recruiter?.jobTitle}</p>
+          <motion.div initial={{ scaleY: 0 }} animate={emailVisible ? { scaleY: 1 } : { scaleY: 0 }} className="mt-5 h-10 w-px origin-top bg-gradient-to-b from-violet-400/70 to-transparent lg:hidden" />
+        </Card>
+      </motion.div>
+
+      <AnimatePresence>
+        {emailVisible && <motion.div initial={{ opacity: 0, x: 38, rotateY: -4, filter: 'blur(8px)' }} animate={{ opacity: 1, x: 0, rotateY: 0, filter: 'blur(0px)' }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }} className="relative">
+          <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.15, duration: 0.65 }} className="absolute -left-5 top-1/2 hidden h-px w-5 origin-left bg-gradient-to-r from-violet-500 to-violet-300 lg:block" />
+          <Card hover={false} className="relative h-full overflow-hidden border-violet-400/25 p-6 text-left sm:p-8">
+            <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.9 }} className="absolute inset-x-0 top-0 h-px origin-left bg-gradient-to-r from-violet-500 via-fuchsia-300 to-transparent" />
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}><p className="text-xs uppercase tracking-[0.16em] text-gray-500">Subject</p><p className="mt-2 font-semibold text-white">{preview.email?.subject}</p></motion.div>
+            <Separator className="my-5" />
+            <div className="space-y-3 text-sm leading-6 text-gray-300">{paragraphs.map((paragraph, index) => <motion.p key={`${index}-${paragraph.slice(0, 20)}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 + index * 0.3, duration: 0.45 }} className={index === paragraphs.length - 1 ? 'line-clamp-2' : ''}>{paragraph}</motion.p>)}</div>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 + paragraphs.length * 0.3 }} className="mt-6 flex gap-2"><span className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300">Copy email</span><span className="rounded-lg bg-violet-500 px-3 py-2 text-xs text-white">Open in email app</span></motion.div>
+          </Card>
+        </motion.div>}
+      </AnimatePresence>
+    </motion.div>
+  </motion.div>
+}
+
 function ConversionResult({ preview, email, onReplay }: { preview: OnboardingPreviewState; email?: string; onReplay: () => void }) {
   const [selected, setSelected] = useState<PlanInfo | null>(null)
   const [copied, setCopied] = useState(false)
@@ -232,11 +280,16 @@ function ConversionResult({ preview, email, onReplay }: { preview: OnboardingPre
 
 export function OnboardingExperience(props: Props) {
   const router = useRouter()
-  const [replayPhase, setReplayPhase] = useState<'idle' | 'search' | 'email'>('idle')
+  const [replayPhase, setReplayPhase] = useState<'idle' | 'search' | 'email' | 'reveal'>(() => props.stage === 'preview_ready' ? 'reveal' : 'idle')
   const poll = ['recruiter_search', 'recruiter_found', 'email_generation'].includes(props.stage)
   const preview = usePreview(props.initialPreview, poll)
   const effectiveStage = (preview.stage || props.stage) as OnboardingStage
+  const previousStage = useRef<OnboardingStage>(effectiveStage)
   useEffect(() => { if (effectiveStage !== props.stage && ['target_company', 'recruiter_search'].includes(props.stage)) router.refresh() }, [effectiveStage, props.stage, router])
+  useEffect(() => {
+    if (effectiveStage === 'preview_ready' && previousStage.current !== 'preview_ready' && replayPhase === 'idle') setReplayPhase('reveal')
+    previousStage.current = effectiveStage
+  }, [effectiveStage, replayPhase])
   useEffect(() => {
     if (effectiveStage === 'preview_ready' && typeof window !== 'undefined' && localStorage.getItem('candidai-preview-notification') === '1' && 'Notification' in window && Notification.permission === 'granted') {
       new Notification('Your first application is ready', { body: `Your email to ${preview.recruiter?.name || 'the selected recruiter'} is ready to review.` })
@@ -247,7 +300,12 @@ export function OnboardingExperience(props: Props) {
   const showReplayEmail = useCallback(() => setReplayPhase('email'), [])
   useEffect(() => {
     if (replayPhase !== 'email') return
-    const timer = window.setTimeout(stopReplay, 9000)
+    const timer = window.setTimeout(() => setReplayPhase('reveal'), 9000)
+    return () => window.clearTimeout(timer)
+  }, [replayPhase])
+  useEffect(() => {
+    if (replayPhase !== 'reveal') return
+    const timer = window.setTimeout(stopReplay, 6500)
     return () => window.clearTimeout(timer)
   }, [replayPhase, stopReplay])
   const replayPreview: OnboardingPreviewState = {
@@ -267,6 +325,7 @@ export function OnboardingExperience(props: Props) {
       <motion.div key={sceneKey} className="relative" initial={{ opacity: 0, y: 28, filter: 'blur(9px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -32, filter: 'blur(12px)' }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>
         {replayPhase === 'search' && <SearchExperience preview={replayPreview} replay onReplayComplete={showReplayEmail} />}
         {replayPhase === 'email' && <><Button variant="ghost" size="sm" className="absolute right-4 top-0 z-10 text-gray-500" onClick={stopReplay}>Back to result</Button><ApplicationAssembly preview={preview} /></>}
+        {replayPhase === 'reveal' && <><Button variant="ghost" size="sm" className="absolute right-4 top-0 z-10 text-gray-500" onClick={stopReplay}>Skip animation</Button><EmailDeliveryReveal preview={preview} /></>}
         {replayPhase === 'idle' && <>
           {(effectiveStage === 'profile_source' || effectiveStage === 'profile_review') && <ProfileAnalysisClient userId={props.user.uid} plan="free_trial" initialProfile={props.profile} initialCvUrl={props.cvUrl} flow="guided" />}
           {effectiveStage === 'target_company' && <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="mb-4 border-violet-400/20 bg-violet-400/10 text-violet-200">Choose one real opportunity</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Which company would you like to join?</h2><p className="mx-auto mt-3 max-w-xl text-gray-400">One company is enough. Your profile will guide who we look for and how we approach them.</p></div><CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
