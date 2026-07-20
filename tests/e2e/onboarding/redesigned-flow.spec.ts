@@ -81,6 +81,10 @@ test.describe("Redesigned first candidacy", () => {
     await page.getByRole("button", { name: "View full recruiter profile" }).click();
     await expect(page.getByText("Talent acquisition")).toBeVisible();
     await page.getByRole("button", { name: "Close" }).click();
+    await page.getByRole("button", { name: "Continue with this plan" }).first().click();
+    await expect(page.getByRole("heading", { name: "Continue with Base" })).toBeVisible();
+    await expect(page.getByText("Secure one-time payment.")).toBeVisible();
+    await page.getByRole("button", { name: "Close" }).click();
     await expect(page.getByRole("button", { name: /explore the dashboard/i })).toBeVisible();
   });
 

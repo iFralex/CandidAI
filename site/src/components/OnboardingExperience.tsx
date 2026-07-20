@@ -133,8 +133,7 @@ function ApplicationAssembly({ preview }: { preview: OnboardingPreviewState }) {
 function ConversionResult({ preview, email }: { preview: OnboardingPreviewState; email?: string }) {
   const [selected, setSelected] = useState<PlanInfo | null>(null)
   const [copied, setCopied] = useState(false)
-  const checkoutRef = useRef<HTMLDivElement>(null)
-  const choose = useCallback((plan: PlanInfo) => { setSelected(plan); window.setTimeout(() => checkoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50) }, [])
+  const choose = useCallback((plan: PlanInfo) => setSelected(plan), [])
   const recruiter = preview.recruiter
   const profile = preview.recruiterProfile
   const linkedinUrl = recruiter?.linkedinUrl ? (recruiter.linkedinUrl.startsWith('http') ? recruiter.linkedinUrl : `https://${recruiter.linkedinUrl}`) : undefined
@@ -166,7 +165,15 @@ function ConversionResult({ preview, email }: { preview: OnboardingPreviewState;
 
       <div className="space-y-6 pt-4 text-center"><div><h3 className="text-3xl font-bold text-white">Choose how you want to continue.</h3><p className="mx-auto mt-3 max-w-2xl text-gray-400">Scale with Base, direct the strategy with Pro, or validate and orchestrate the complete campaign with Ultra.</p></div><PlanSelector selectedPlanId={selected?.id} onSelect={choose} onCtaClick={choose} ctaLabel="Continue with this plan" /></div>
     </section>
-    {selected && <div ref={checkoutRef} className="scroll-mt-8"><Card hover={false} className="mx-auto max-w-3xl border-violet-500/30 p-6"><UnifiedCheckout purchaseType="plan" itemId={selected.id} email={email || ''} /></Card></div>}
+    <Dialog open={Boolean(selected)} onOpenChange={open => { if (!open) setSelected(null) }}>
+      <DialogContent className="max-h-[92vh] max-w-5xl overflow-y-auto p-5 sm:p-7">
+        <DialogHeader className="pr-8 text-left">
+          <DialogTitle>{selected ? `Continue with ${selected.name}` : 'Complete your purchase'}</DialogTitle>
+          <DialogDescription>Secure one-time payment. Your onboarding progress stays saved if you close this window.</DialogDescription>
+        </DialogHeader>
+        {selected && <div className="pt-2"><UnifiedCheckout purchaseType="plan" itemId={selected.id} email={email || ''} /></div>}
+      </DialogContent>
+    </Dialog>
     <div className="pt-4 text-center"><form action={continueFreePreviewToDashboard}><Button variant="ghost" type="submit" className="text-sm text-gray-500 hover:text-gray-300">Explore the dashboard for now</Button></form></div>
   </div>
 }

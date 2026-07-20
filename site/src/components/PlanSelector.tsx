@@ -151,7 +151,7 @@ export function PlanSelector({
                                                 <X className="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-600 opacity-30" />
                                             )}
                                             <span
-                                                className={`text-sm ${
+                                                className={`w-full text-left text-sm ${
                                                     included
                                                         ? "text-gray-300"
                                                         : "text-gray-600 line-through opacity-60"
