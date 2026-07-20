@@ -84,6 +84,7 @@ export async function GET(request) {
         lastLogin: userData.lastLogin,
         emailVerified: decodedToken.email_verified,
         onboardingStep: userData.onboardingStep,
+        onboardingStage: userData.onboardingStage,
         plan: userData.plan,
         billingType: userData.billingType,
         credits: userData.credits,

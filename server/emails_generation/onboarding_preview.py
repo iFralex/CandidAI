@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
+import requests
 
 from firebase_admin import firestore
 
@@ -91,6 +93,7 @@ def find_recruiter(user_id: str, job_id: str) -> None:
             searchContext={
                 "targetRole": account.get("customizations", {}).get("position_description", ""),
                 "queryCount": len(account.get("queries") or []),
+                "narrative": account.get("profileSummary", {}).get("onboardingInsights", {}).get("searchNarrative", ""),
             },
         )
 
@@ -107,6 +110,17 @@ def find_recruiter(user_id: str, job_id: str) -> None:
                 matchedQuery=query or {},
                 recruiterFoundAt=firestore.SERVER_TIMESTAMP,
             )
+            preferences = (_preview_ref(user_id).get().to_dict() or {}).get("notifications", {})
+            if preferences.get("email"):
+                try:
+                    requests.post(
+                        f'{os.environ.get("NEXT_PUBLIC_DOMAIN", "").rstrip("/")}/api/send-email',
+                        json={"userId": user_id, "type": "onboarding-recruiter-ready", "data": {"company": company.get("name", ""), "recruiter": recruiter.get("full_name", "")}},
+                        headers={"X-Internal-Key": os.environ.get("SESSION_API_KEY", "")},
+                        timeout=20,
+                    ).raise_for_status()
+                except Exception:  # notification must never fail the pipeline
+                    logger.exception("Unable to send recruiter-ready notification for %s", user_id)
 
         results, _ = find_recruiters_for_user(
             user_id,
@@ -181,4 +195,3 @@ def create_email(user_id: str, job_id: str) -> None:
         batch.commit()
     except Exception as exc:  # noqa: BLE001
         _fail(user_id, "email_generation", exc)
-

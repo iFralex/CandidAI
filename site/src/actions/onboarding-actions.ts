@@ -9,6 +9,7 @@ import { clientConfig, creditsInfo, plansData, plansInfo, serverConfig } from '@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { Resend } from 'resend'
 import { getTestMock } from '@/app/api/test/set-mock/route'
+import { buildDefaultRecruiterStrategies } from '@/lib/recruiter-strategies'
 
 // Prepara un'email per l'archivio: rimuove campi privati/transitori e aggiunge archived_at
 function toEmailArchive(email: Record<string, any>) {
@@ -277,9 +278,9 @@ export async function submitCompanies(companies: { name: string, domain: string 
     revalidatePath('/dashboard')
 }
 
-export async function submitPreviewCompany(company: { name: string; domain: string; linkedin_url?: string }) {
+export async function submitPreviewCompany(company: { name: string; domain?: string; linkedin_url?: string }) {
     if (!company?.name?.trim()) return { success: false as const, error: "Company name cannot be empty" };
-    if (!isValidDomain(company.domain)) return { success: false as const, error: `Invalid domain: ${company.domain}` };
+    if (!company.linkedin_url && (!company.domain || !isValidDomain(company.domain))) return { success: false as const, error: `Invalid domain: ${company.domain}` };
 
     const userId = await checkAuth();
     const userRef = adminDb.collection("users").doc(userId);
@@ -330,7 +331,12 @@ export async function startOnboardingRecruiterSearch() {
     }
 
     const jobId = adminDb.collection("_onboarding_jobs").doc().id;
+    const profile = accountSnap.data()?.profileSummary;
+    const queries = accountSnap.data()?.queries?.length
+        ? accountSnap.data()?.queries
+        : buildDefaultRecruiterStrategies(profile);
     const batch = adminDb.batch();
+    batch.set(accountRef, { queries }, { merge: true });
     batch.set(previewRef, {
         jobId,
         status: "queued",
@@ -388,6 +394,15 @@ export async function confirmRecruiterAndGenerateEmail(jobId: string) {
     return { success: true as const };
 }
 
+export async function setOnboardingNotificationPreference(channel: "email" | "browser", enabled: boolean) {
+    const userId = await checkAuth();
+    await adminDb.collection("users").doc(userId).collection("data").doc("onboarding_preview").set({
+        notifications: { [channel]: enabled },
+        updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    return { success: true as const };
+}
+
 export async function continueFreePreviewToDashboard() {
     const userId = await checkAuth();
     const userRef = adminDb.collection("users").doc(userId);
@@ -405,7 +420,8 @@ export async function submitProfile(
     plan: string,
     profileData: any,
     cv?: File | null,
-    skipOnboardingStep?: boolean
+    skipOnboardingStep?: boolean,
+    flow: "legacy" | "guided" = "legacy"
 ) {
     // Test bypass for non-production environments
     if (process.env.NODE_ENV !== 'production') {
@@ -415,7 +431,8 @@ export async function submitProfile(
             if (!skipOnboardingStep) {
                 try {
                     const userData = JSON.parse(Buffer.from(testCookie, 'base64').toString('utf-8'));
-                    userData.onboardingStep = 4;
+                    userData.onboardingStep = flow === "guided" ? 3 : 4;
+                    if (flow === "guided") userData.onboardingStage = "target_company";
                     cookieStore.set('__playwright_user__', Buffer.from(JSON.stringify(userData)).toString('base64'), { path: '/' });
                 } catch (e) { /* fall through */ }
             }
@@ -439,7 +456,7 @@ export async function submitProfile(
 
     // For initial onboarding (not profile updates): CV or existing cvUrl is required
     if (!skipOnboardingStep) {
-        if (!cv && !profileData?.cvUrl) {
+        if (flow === "legacy" && !cv && !profileData?.cvUrl) {
             return { success: false, error: "CV is required" };
         }
         if (
@@ -502,7 +519,7 @@ export async function submitProfile(
         const existingMax: number = userSnap.data()?.maxOnboardingStep || 4;
         const existingProfile = accountSnap.data()?.profileSummary;
         const profileChanged = !!cv || JSON.stringify(profileData?.profileSummary) !== JSON.stringify(existingProfile);
-        const nextStepBase = 4;
+        const nextStepBase = flow === "guided" ? 3 : 4;
 
         const accountData: Record<string, any> = { ...updatedProfile };
         if (profileChanged) {
@@ -513,6 +530,7 @@ export async function submitProfile(
         batch.update(userRef, {
             onboardingStep: nextStepBase,
             maxOnboardingStep: Math.max(nextStepBase, existingMax),
+            ...(flow === "guided" ? { onboardingStage: "target_company" } : {}),
         });
     } else {
         batch.update(accountRef, updatedProfile);

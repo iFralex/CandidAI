@@ -91,7 +91,8 @@ export async function POST(req: Request) {
                     plan: itemId,
                     maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
                     credits: FieldValue.increment(includedCredits),
-                    onboardingStep: isOnboarding ? 7 : 50,
+                    onboardingStep: 50,
+                    ...(isOnboarding ? { onboardingStage: "completed" } : {}),
                 });
             }
         });

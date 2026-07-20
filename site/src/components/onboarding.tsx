@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { track, refreshUserPropertiesFromFirestore } from "@/lib/analytics"
 import { motion, AnimatePresence } from "framer-motion"
-import { resendEmailVerification, selectPlan, goBackStep, deleteProfile, jumpToStep } from '@/actions/onboarding-actions'
+import { resendEmailVerification, selectPlan, goBackStep, deleteProfile, jumpToStep, submitPreviewCompany, startOnboardingRecruiterSearch } from '@/actions/onboarding-actions'
 import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, ArrowLeft, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark, Lock } from 'lucide-react'
 import { submitCompanies } from '@/actions/onboarding-actions'
 import { Building, Plus, X, Wand2 } from 'lucide-react'
@@ -2303,6 +2303,12 @@ export interface ProfileSummary {
     education: Education[];
     projects: Project[];
     certifications: Certification[];
+    onboardingInsights?: {
+        searchNarrative: string;
+        targetRoleSuggestions: string[];
+        strengths: string[];
+        emailAngles: string[];
+    };
 }
 
 // Props del componente
@@ -2313,6 +2319,7 @@ interface ProfileAnalysisClientProps {
     initialCvUrl?: string | null;
     onSave?: (plan: string, profileData: any, cv?: File | null) => Promise<void>;
     currentStep?: number;
+    flow?: 'legacy' | 'guided';
 }
 
 function ProfileNameTitle({ profileSummary, setProfileSummary }: any) {
@@ -3731,7 +3738,7 @@ export function ProfileSummaryCard({
     )
 }
 
-export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvUrl, onSave, currentStep }: ProfileAnalysisClientProps) {
+export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvUrl, onSave, currentStep, flow = 'legacy' }: ProfileAnalysisClientProps) {
     const router = useRouter()
     const [linkedinUrl, setLinkedinUrl] = useState('')
     const [analyzing, setAnalyzing] = useState(false)
@@ -3764,7 +3771,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
     }, [initialProfile, initialCvUrl])
 
     const analyzeProfile = async () => {
-        if (!cvFile) return;
+        if (!cvFile && !linkedinUrl.trim()) return;
         let localProfile: ProfileSummary | null = null
         try {
             setAnalyzing(true)
@@ -3773,6 +3780,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
             // logos are fetched after the Gemini merge, using the websites the server preserves.
             let pdlProfile: ProfileSummary | null = null;
             try {
+                if (!linkedinUrl.trim()) throw new Error("LinkedIn not provided")
                 const record = await enrichProfilePDL(linkedinUrl);
                 if (record) {
                     pdlProfile = {
@@ -3792,9 +3800,16 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
 
             // AI enrichment - always runs, with or without PDL data.
             // The server merges PDL + CV and guarantees all known websites are preserved.
-            const cvData = new FormData();
-            cvData.append("cv", cvFile.blob);
-            const merged = await enrichProfileAI(pdlProfile, cvData);
+            let merged: ProfileSummary;
+            if (cvFile) {
+                const cvData = new FormData();
+                cvData.append("cv", cvFile.blob);
+                merged = await enrichProfileAI(pdlProfile, cvData);
+            } else if (pdlProfile) {
+                merged = pdlProfile;
+            } else {
+                throw new Error("Unable to read either profile source")
+            }
 
             // Fetch logos client-side from the websites the server returned
             const fetchLogo = async (website?: string): Promise<string | null> => {
@@ -3875,7 +3890,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
     const effectiveCvUrl = localCvUrl || initialCvUrl
 
     const handleContinue = () => {
-        if (!onSave && !cvFile && !effectiveCvUrl) return alert("Please upload your CV before continuing.")
+        if (flow === 'legacy' && !onSave && !cvFile && !effectiveCvUrl) return alert("Please upload your CV before continuing.")
         track({ name: "onboarding_step_complete", params: { step: currentStep ?? 3 } })
         startTransition(async () => {
             if (onSave) {
@@ -3884,7 +3899,8 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                 setTimeout(() => setSaved(false), 3000)
             } else {
                 // If no new CV, pass the already-saved cvUrl (from draft save or initial load)
-                await submitProfile(plan, { linkedinUrl, profileSummary, cvUrl: cvFile ? undefined : effectiveCvUrl }, cvFile?.blob)
+                await submitProfile(plan, { linkedinUrl, profileSummary, cvUrl: cvFile ? undefined : effectiveCvUrl }, cvFile?.blob, false, flow)
+                if (flow === 'guided') router.refresh()
             }
         })
     }
@@ -3948,9 +3964,11 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                     variants={containerVariants}
                 >
                     <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-white mb-4">Connect Your LinkedIn Profile</h2>
+                        <h2 className="text-3xl font-bold text-white mb-4">{flow === 'guided' ? 'Partiamo da te' : 'Connect Your LinkedIn Profile'}</h2>
                         <p className="text-lg text-gray-400">
-                            Our AI will analyze your profile to understand your background and create the perfect recruiter matching strategy.
+                            {flow === 'guided'
+                                ? 'Carica il CV, incolla LinkedIn oppure usa entrambi. Ricostruiremo il profilo che useremo per presentarti.'
+                                : 'Our AI will analyze your profile to understand your background and create the perfect recruiter matching strategy.'}
                         </p>
                     </div>
 
@@ -3967,7 +3985,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8">
                         {/* LinkedIn URL */}
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-300 mb-2">LinkedIn Profile URL</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">LinkedIn Profile URL {flow === 'guided' && <span className="text-gray-500">(facoltativo)</span>}</label>
                             <div className="relative">
                                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                                     <Globe className="w-4 h-4" />
@@ -3984,7 +4002,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
 
                         {/* CV Upload */}
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Upload Your CV</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">Upload Your CV {flow === 'guided' && <span className="text-gray-500">(facoltativo se usi LinkedIn)</span>}</label>
 
                             <label
                                 htmlFor="cv-upload"
@@ -4044,14 +4062,16 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                                     <span>Back</span>
                                 </button>
                             )}
-                            <button
+                            <Button
                                 onClick={analyzeProfile}
-                                disabled={!linkedinUrl.trim() || (!linkedinUrl.startsWith("https://linkedin.com/in/") && !linkedinUrl.startsWith("https://www.linkedin.com/in/")) || !cvFile}
-                                className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2"
+                                disabled={flow === 'guided'
+                                    ? (!cvFile && !linkedinUrl.trim()) || (!!linkedinUrl.trim() && !linkedinUrl.includes("linkedin.com/in/"))
+                                    : !linkedinUrl.trim() || (!linkedinUrl.startsWith("https://linkedin.com/in/") && !linkedinUrl.startsWith("https://www.linkedin.com/in/")) || !cvFile}
+                                size="md"
                             >
                                 <Brain className="w-5 h-5" />
-                                <span>Analyze My Profile</span>
-                            </button>
+                                <span>{flow === 'guided' ? 'Ricostruisci il mio profilo' : 'Analyze My Profile'}</span>
+                            </Button>
                         </div>
                     </div>
                 </motion.div>
@@ -4124,9 +4144,9 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                     variants={containerVariants}
                 >
                     <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-white mb-4">Profile Analysis Complete</h2>
+                        <h2 className="text-3xl font-bold text-white mb-4">{flow === 'guided' ? 'Ecco come ti presenterebbe CandidAI' : 'Profile Analysis Complete'}</h2>
                         <p className="text-lg text-gray-400">
-                            Review your profile summary and ideal recruiter persona. You can edit anything before proceeding.
+                            {flow === 'guided' ? 'Controlla ciò che abbiamo capito. Puoi correggere ogni dettaglio prima di scegliere l’azienda.' : 'Review your profile summary and ideal recruiter persona. You can edit anything before proceeding.'}
                         </p>
                         {isDraftSaving && (
                             <p className="text-sm text-violet-400 mt-2 flex items-center justify-center gap-1">
@@ -4223,7 +4243,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                                     </>
                                 ) : (
                                     <>
-                                        <span>{onSave ? "Save Changes" : "Continue Setup"}</span>
+                                        <span>{onSave ? "Save Changes" : flow === 'guided' ? "Sì, mi rappresenta" : "Continue Setup"}</span>
                                         {!onSave && <ArrowRight className="w-5 h-5" />}
                                     </>
                                 )}
@@ -4281,6 +4301,7 @@ type CompanyInputClientProps = {
     initialCompanies?: { name: string; domain?: string; linkedin_url?: string }[];
     currentStep?: number;
     plan?: string;
+    mode?: 'multiple' | 'single-preview';
 };
 
 export function CompanyAutocomplete({
@@ -4434,7 +4455,9 @@ export function CompanyInputClient({
     initialCompanies,
     currentStep,
     plan,
+    mode = 'multiple',
 }: CompanyInputClientProps) {
+    const router = useRouter();
     const initialTQueries: TQuery[] = (initialCompanies || []).map(c => ({
         name: c.name || '',
         domain: c.domain || c.linkedin_url || '',
@@ -4533,7 +4556,16 @@ export function CompanyInputClient({
             try {
                 console.log("Submitting:", companies);
                 // La tua logica di submit
-                await submitCompanies(companies);
+                if (mode === 'single-preview') {
+                    const company = companies[0]
+                    if (!company) throw new Error("Choose one company")
+                    const result = await submitPreviewCompany(company as { name: string; domain?: string; linkedin_url?: string })
+                    if (!result.success) throw new Error(result.error)
+                    await startOnboardingRecruiterSearch()
+                    router.refresh()
+                } else {
+                    await submitCompanies(companies as { name: string; domain: string }[]);
+                }
                 track({ name: "onboarding_step_complete", params: { step: currentStep ?? 2 } })
             } catch (err) {
                 console.error("Errore in submitCompanies", err);
@@ -4573,7 +4605,7 @@ export function CompanyInputClient({
                 variants={containerVariants}
             >
                 <motion.div className="flex items-center justify-between mb-6" variants={itemVariants}>
-                    <h3 className="text-xl font-semibold text-white">Target Companies</h3>
+                    <h3 className="text-xl font-semibold text-white">{mode === 'single-preview' ? 'La tua prima azienda target' : 'Target Companies'}</h3>
                     <span className="bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">
                         {selectedCompanies.length} / {maxCompanies} companies
                     </span>
@@ -4684,7 +4716,7 @@ export function CompanyInputClient({
                 )}
                 <button
                     onClick={handleContinue}
-                    disabled={isPending}
+                    disabled={isPending || selectedCompanies.length === 0}
                     className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2"
                 >
                     {isPending ? (
@@ -4694,7 +4726,7 @@ export function CompanyInputClient({
                         </>
                     ) : (
                         <>
-                            <span>Continue Setup</span>
+                            <span>{mode === 'single-preview' ? 'Trova il contatto migliore' : 'Continue Setup'}</span>
                             <ArrowRight className="w-5 h-5" />
                         </>
                     )}

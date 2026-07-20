@@ -7,7 +7,6 @@ import { SidebarClientWrapper } from '@/components/SidebarClientWrapper';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
-import { ProgressBar } from '@/components/ui/progress-bar';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -80,18 +79,6 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
         redirect('/login')
 
     const onboarded = (user.onboardingStep || 1) > 10
-    const rawStep: number = user.onboardingStep || 1
-    const plan: string = user.plan || 'free_trial'
-
-    // Map raw onboardingStep → visual step position depending on plan
-    // free_trial: steps 1,2,3,5        (no step4, no payment)  → 4 total
-    // base:       steps 1,2,3,5,6      (no step4, has payment) → 5 total
-    // pro/ultra:  steps 1,2,3,4,5,6   (all steps)             → 6 total
-    const isProOrUltra = plan === 'pro' || plan === 'ultra'
-    const isFree = plan === 'free_trial'
-    const stepSequence = isProOrUltra ? [1,2,3,4,5,6] : isFree ? [1,2,3,5] : [1,2,3,5,6]
-    const totalSteps = stepSequence.length
-    const visualStep = stepSequence.indexOf(rawStep) + 1  // 1-based; -1+1=0 if not found
     const credits = user.credits
     const maxCompanies: number | undefined = user.maxCompanies
     const companiesUsed: number | undefined = user.companiesUsed
@@ -119,25 +106,15 @@ export default async function DashboardLayout({ children }: Readonly<{ children:
                                     </Link>
                                 )}
                                 <div>
-                                    <h1 className="text-2xl font-bold text-white">{onboarded ? "Dashboard" : "Onboarding"}</h1>
-                                    {!onboarded && visualStep > 0 && (
+                                    <h1 className="text-2xl font-bold text-white">{onboarded ? "Dashboard" : "La tua prima candidatura"}</h1>
+                                    {!onboarded && (
                                         <p className="text-sm text-gray-400">
-                                            Setup Progress: Step {visualStep} of {totalSteps}
+                                            Profilo, contatto ed email in un unico percorso
                                         </p>
                                     )}
                                 </div>
                             </div>
 
-                            {!onboarded && visualStep > 0 && (
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-48">
-                                        <ProgressBar progress={(visualStep / totalSteps) * 100} />
-                                    </div>
-                                    <span className="text-sm text-gray-400">
-                                        {Math.round((visualStep / totalSteps) * 100)}%
-                                    </span>
-                                </div>
-                            )}
                             {onboarded && (
                                 <div className="flex items-center gap-2">
                                     {typeof maxCompanies === 'number' && (

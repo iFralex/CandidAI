@@ -9,6 +9,8 @@ import { setTestMock } from '@/app/api/test/set-mock/route';
 import { adminDb } from '@/lib/firebase-admin';
 import { redirect } from 'next/navigation';
 import { getPlanById } from '@/lib/utils';
+import { OnboardingExperience } from '@/components/OnboardingExperience';
+import type { OnboardingPreviewState, OnboardingStage } from '@/types/onboarding';
 
 interface SetupCompleteServerProps {
     userId: string
@@ -336,44 +338,29 @@ export function PlanSelectionServer({ userId, currentPlan }: PlanSelectionServer
 }
 
 export default async function OnboardingPage({ user, currentStep }) {
+    const userRef = adminDb.collection("users").doc(user.uid)
+    const [userSnap, accountSnap, previewSnap] = await Promise.all([
+        userRef.get(),
+        userRef.collection("data").doc("account").get(),
+        userRef.collection("data").doc("onboarding_preview").get(),
+    ])
+    const account = accountSnap.data() || {}
+    const storedStage = userSnap.data()?.onboardingStage as OnboardingStage | undefined
+    const fallbackStage: OnboardingStage = currentStep >= 5 ? "email_generation" : currentStep === 4 ? "recruiter_search" : currentStep === 3 ? "target_company" : "profile_source"
+    const stage = storedStage || fallbackStage
+    const preview = (previewSnap.data() || { status: "idle", stage }) as OnboardingPreviewState
+
     return (
         <div className="container mx-auto px-4 py-8">
             <ScrollToTop step={currentStep} />
-            {currentStep === 1 && (
-                <PlanSelectionServer userId={user.uid} currentPlan={user.plan} />
-            )}
-
-            {currentStep === 2 && (
-                <CompanyInputServer
-                    userId={user.uid}
-                    plan={user.plan}
-                    currentStep={currentStep}
-                />
-            )}
-
-            {currentStep === 3 && (
-                <ProfileAnalysisServer userId={user.uid} plan={user.plan} currentStep={currentStep} />
-            )}
-
-            {currentStep === 4 && (
-                <AdvancedFiltersServer
-                    userId={user.uid}
-                    plan={user.plan}
-                    currentStep={currentStep}
-                />
-            )}
-
-            {currentStep === 5 && (
-                <SetupCompleteServer userId={user.uid} currentStep={currentStep} plan={user.plan} />
-            )}
-
-            {currentStep === 6 && (
-                <PaymentStripeServer userId={user.uid} plan={user.plan} email={user.email} />
-            )}
-
-            {currentStep === 7 && (
-                <OnboardingCompleteServer userId={user.uid} />
-            )}
+            <OnboardingExperience
+                user={user}
+                stage={stage}
+                profile={account.profileSummary}
+                cvUrl={account.cvUrl}
+                companies={account.companies || []}
+                initialPreview={preview}
+            />
         </div>
     )
 }

@@ -154,6 +154,12 @@ interface ProfileSummary {
   education: Education[];
   projects: Project[];
   certifications: Certification[];
+  onboardingInsights: {
+    searchNarrative: string; // one personalized sentence explaining who we will prioritize and why
+    targetRoleSuggestions: string[]; // maximum 3 concise roles
+    strengths: string[]; // maximum 5 candidate differentiators
+    emailAngles: string[]; // maximum 4 evidence-based hooks for outreach
+  };
 }`;
 
   const res = await fetch("https://api.deepseek.com/chat/completions", {

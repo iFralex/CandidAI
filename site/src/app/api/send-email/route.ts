@@ -29,8 +29,8 @@ export async function POST(req) {
     try {
         const { userId, type, data = {} } = await req.json();
 
-        const VALID_TYPES = ["welcome", "password-reset", "new_emails_generated", "first_email_generated", "purchase-confirmation", "contact-confirmation", "onboarding-complete"];
-        const TYPES_REQUIRING_USER_ID = ["welcome", "new_emails_generated", "first_email_generated", "purchase-confirmation", "onboarding-complete"];
+        const VALID_TYPES = ["welcome", "password-reset", "new_emails_generated", "first_email_generated", "purchase-confirmation", "contact-confirmation", "onboarding-complete", "onboarding-recruiter-ready"];
+        const TYPES_REQUIRING_USER_ID = ["welcome", "new_emails_generated", "first_email_generated", "purchase-confirmation", "onboarding-complete", "onboarding-recruiter-ready"];
 
         if (!type || !VALID_TYPES.includes(type)) {
             return NextResponse.json(
@@ -460,6 +460,20 @@ export async function POST(req) {
       `, { preheader: content.preheader, badge: content.badge });
 
                     return { subject: content.subject, html: onboardingHtml };
+                }
+
+                case "onboarding-recruiter-ready": {
+                    const name = userRecord.displayName || 'there';
+                    const company = esc(data.company || 'your target company');
+                    const recruiter = esc(data.recruiter || 'the selected recruiter');
+                    return {
+                        subject: `${recruiter} is ready for your confirmation`,
+                        html: wrapEmail(`
+                          ${heading(`We found the right contact, ${esc(name)}.`)}
+                          ${paragraph(`CandidAI completed the recruiter search for <strong>${company}</strong>. <strong>${recruiter}</strong> is ready for your confirmation before we write the email.`)}
+                          ${button('Review the recruiter', `${domain}/dashboard`)}
+                        `, { preheader: `Your recruiter search for ${company} is complete`, badge: "CONTACT FOUND" })
+                    };
                 }
 
                 default:
