@@ -157,7 +157,7 @@ def get_pdl_data(params):
     
     store = load_store()
     data, usage = store["data"], store["usage"]
-    print(data, usage)
+    # Never log the credential/proxy store: it contains live secrets.
     # Filtra le chiavi disponibili
     valid_keys = [k for k in data if is_key_available(k, data, usage)]
     
@@ -260,7 +260,7 @@ def get_pdl_data(params):
 
     return {}
 
-def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None, n_profiles: int = 1, api_key: Optional[str] = None, priority: str = "normal", query_progress_callback=None) -> List[Dict]:
+def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None, n_profiles: int = 1, api_key: Optional[str] = None, priority: str = "normal", query_progress_callback=None, expand_fallbacks: bool = True) -> List[Dict]:
     """
     Trova n_profiles recruiters per un'azienda specifica eseguendo queries progressive.
     Se non trova recruiters, cerca owner/founder, poi senior, poi qualsiasi persona.
@@ -319,7 +319,7 @@ def find_company_recruiters(company: Dict, queries: Optional[List[Dict]] = None,
     }
     
     # Combina tutte le query: prima recruiters, poi owner/founder, poi senior, poi generale
-    all_queries = queries + owner_queries + senior_queries + [general_query]
+    all_queries = queries + owner_queries + senior_queries + [general_query] if expand_fallbacks else queries
     
     # Esegui le query in ordine finché non raggiungi n_profiles
     final_query = None
@@ -715,7 +715,7 @@ def find_recruiter_by_linkedin_urls(linkedin_urls: List[str], api_key: Optional[
     return {}
 
 
-def find_recruiters_for_user(user_id, ids, companies, defaultQueries, priority="normal", progress_callback=None, query_progress_callback=None):
+def find_recruiters_for_user(user_id, ids, companies, defaultQueries, priority="normal", progress_callback=None, query_progress_callback=None, expand_fallbacks=True):
     results = {}
     user_instructions = {}
 
@@ -743,10 +743,10 @@ def find_recruiters_for_user(user_id, ids, companies, defaultQueries, priority="
                 query = {"id": "linkedin_override", "name": "Manually specified via LinkedIn URL", "criteria": []}
             else:
                 print(f"⚠️ Nessun profilo trovato via LinkedIn URL per {company['name']}, uso ricerca normale")
-                result_list, query = find_company_recruiters(company, queries, api_key=api_key, priority=priority, query_progress_callback=query_progress_callback)
+                result_list, query = find_company_recruiters(company, queries, api_key=api_key, priority=priority, query_progress_callback=query_progress_callback, expand_fallbacks=expand_fallbacks)
                 result = result_list[0] if result_list else {}
         else:
-            result_list, query = find_company_recruiters(company, queries, api_key=api_key, priority=priority, query_progress_callback=query_progress_callback)
+            result_list, query = find_company_recruiters(company, queries, api_key=api_key, priority=priority, query_progress_callback=query_progress_callback, expand_fallbacks=expand_fallbacks)
             result = result_list[0] if result_list else {}
 
         # Free trial: a recruiter with a verified email was found, but the address

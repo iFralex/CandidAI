@@ -75,7 +75,7 @@ def _load_context(user_id: str) -> tuple[dict, dict, str]:
 
 
 def find_recruiter(user_id: str, job_id: str) -> None:
-    """Find and persist the recruiter, then wait for explicit user confirmation."""
+    """Find the recruiter and immediately turn the match into the first email."""
     try:
         update_preview(
             user_id,
@@ -91,7 +91,8 @@ def find_recruiter(user_id: str, job_id: str) -> None:
             company=company,
             resultId=result_id,
             searchContext={
-                "targetRole": account.get("customizations", {}).get("position_description", ""),
+                "targetRole": account.get("customizations", {}).get("position_description", "")
+                or account.get("profileSummary", {}).get("onboardingInsights", {}).get("selectedTargetRole", ""),
                 "queryCount": len(account.get("queries") or []),
                 "narrative": account.get("profileSummary", {}).get("onboardingInsights", {}).get("searchNarrative", ""),
             },
@@ -100,7 +101,7 @@ def find_recruiter(user_id: str, job_id: str) -> None:
         def recruiter_found(_company, recruiter, query):
             update_preview(
                 user_id,
-                status="waiting_confirmation",
+                status="running",
                 stage="recruiter_found",
                 recruiter={
                     "name": recruiter.get("full_name", ""),
@@ -110,17 +111,6 @@ def find_recruiter(user_id: str, job_id: str) -> None:
                 matchedQuery=query or {},
                 recruiterFoundAt=firestore.SERVER_TIMESTAMP,
             )
-            preferences = (_preview_ref(user_id).get().to_dict() or {}).get("notifications", {})
-            if preferences.get("email"):
-                try:
-                    requests.post(
-                        f'{os.environ.get("NEXT_PUBLIC_DOMAIN", "").rstrip("/")}/api/send-email',
-                        json={"userId": user_id, "type": "onboarding-recruiter-ready", "data": {"company": company.get("name", ""), "recruiter": recruiter.get("full_name", "")}},
-                        headers={"X-Internal-Key": os.environ.get("SESSION_API_KEY", "")},
-                        timeout=20,
-                    ).raise_for_status()
-                except Exception:  # notification must never fail the pipeline
-                    logger.exception("Unable to send recruiter-ready notification for %s", user_id)
 
         def query_progress(query, attempt, total, found):
             update_preview(
@@ -141,24 +131,31 @@ def find_recruiter(user_id: str, job_id: str) -> None:
             priority="realtime",
             progress_callback=recruiter_found,
             query_progress_callback=query_progress,
+            expand_fallbacks=False,
         )
         recruiter = (results.get(company["name"]) or ({}, None))[0]
         if not recruiter:
             raise RuntimeError("No suitable recruiter was found")
+        # The user cannot alter the match at this point. Starting in the same
+        # priority job removes the extra browser round-trip and preserves order.
+        create_email(user_id, job_id)
     except Exception as exc:  # noqa: BLE001
         _fail(user_id, "recruiter_search", exc)
 
 
 def create_email(user_id: str, job_id: str) -> None:
-    """Generate the email after recruiter confirmation, without browser research."""
+    """Generate the email immediately after matching, without browser research."""
     try:
         preview = _preview_ref(user_id).get().to_dict() or {}
         if preview.get("jobId") != job_id:
             raise ValueError("Preview job does not match")
         if preview.get("stage") not in {"recruiter_found", "email_generation"}:
-            raise ValueError("A recruiter must be confirmed before email generation")
+            raise ValueError("A recruiter must be available before email generation")
 
         update_preview(user_id, status="running", stage="email_generation")
+        db.collection("users").document(user_id).set(
+            {"onboardingStage": "email_generation", "onboardingStep": 5}, merge=True
+        )
         account, company, result_id = _load_context(user_id)
         row = get_results_row(user_id, result_id)
         recruiter = row.get("recruiter") or {}
@@ -192,6 +189,10 @@ def create_email(user_id: str, job_id: str) -> None:
                     "body": email.get("body", ""),
                     "keyPoints": email.get("key_points", []),
                 },
+                "recruiterInsight": {
+                    "reason": email.get("recruiter_match_reason", ""),
+                    "points": email.get("recruiter_match_points", []),
+                },
                 "completedAt": firestore.SERVER_TIMESTAMP,
                 "updatedAt": firestore.SERVER_TIMESTAMP,
             },
@@ -205,5 +206,16 @@ def create_email(user_id: str, job_id: str) -> None:
             },
         )
         batch.commit()
+        preferences = (_preview_ref(user_id).get().to_dict() or {}).get("notifications", {})
+        if preferences.get("email"):
+            try:
+                requests.post(
+                    f'{os.environ.get("NEXT_PUBLIC_DOMAIN", "").rstrip("/")}/api/send-email',
+                    json={"userId": user_id, "type": "onboarding-recruiter-ready", "data": {"company": company.get("name", ""), "recruiter": recruiter.get("full_name", "")}},
+                    headers={"X-Internal-Key": os.environ.get("SESSION_API_KEY", "")},
+                    timeout=20,
+                ).raise_for_status()
+            except Exception:  # notification must never fail the pipeline
+                logger.exception("Unable to send completed-preview notification for %s", user_id)
     except Exception as exc:  # noqa: BLE001
         _fail(user_id, "email_generation", exc)

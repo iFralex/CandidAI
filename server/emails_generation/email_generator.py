@@ -214,7 +214,12 @@ ABSOLUTE BAN — the email must contain NONE of these words: inspiring, excited,
 Only claim common ground supportable from the recruiter data.
 SUBJECT: max 8 words, concrete, names the fit. No "Let's connect", no "seeking interview", no colon-stuffed clauses.
 
-OUTPUT FORMAT: JSON with subject, body, and key_points fields
+OUTPUT FORMAT: JSON with subject, body, key_points, recruiter_match_reason, and recruiter_match_points fields.
+
+Also explain the recruiter choice using only the recruiter data and selection criteria:
+- recruiter_match_reason: one concise personalized sentence (maximum 30 words).
+- recruiter_match_points: 2-3 short evidence-based reasons this is a useful contact.
+- Never invent responsibilities, regions, or hiring ownership that the data does not support.
 
 IMPORTANT: After generating the email, create a "key_points" array with 3 items that explains why this email is perfectly tailored for the candidate's goal. Each key point must:
 - Be maximum 80 characters long.
