@@ -78,6 +78,11 @@ test.describe("Redesigned first candidacy", () => {
     await expect(page.getByRole("heading", { name: "This wasn’t a template. It was a complete research process." })).toBeVisible();
     await expect(page.getByRole("button", { name: "Copy email" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Open in my email app" })).toBeVisible();
+    await page.getByRole("button", { name: "Replay the research" }).click();
+    await expect(page.getByRole("heading", { name: "We know what to look for." })).toBeVisible();
+    await expect(page.getByText("Replaying the successful matching strategy")).toBeVisible();
+    await page.getByRole("button", { name: "Back to result" }).click();
+    await expect(page.getByRole("heading", { name: "Your first application is ready" })).toBeVisible();
     await page.getByRole("button", { name: "View full recruiter profile" }).click();
     await expect(page.getByText("Talent acquisition")).toBeVisible();
     await page.getByRole("button", { name: "Close" }).click();

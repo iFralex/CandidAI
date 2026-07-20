@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Building2, Check, Copy, Crown, ExternalLink, Linkedin, Loader2, Mail, Search, SlidersHorizontal, Sparkles, Target, UserRound } from 'lucide-react'
+import { Building2, Check, Copy, Crown, ExternalLink, Linkedin, Loader2, Mail, RotateCcw, Search, SlidersHorizontal, Sparkles, Target, UserRound } from 'lucide-react'
 import { ProfileAnalysisClient, CompanyInputClient } from '@/components/onboarding'
 import { PlanSelector, type PlanInfo } from '@/components/PlanSelector'
 import { UnifiedCheckout } from '@/components/UnifiedCheckout'
@@ -70,7 +70,7 @@ function usePreview(initial: OnboardingPreviewState, shouldPoll: boolean) {
   return preview
 }
 
-function SearchExperience({ preview }: { preview: OnboardingPreviewState }) {
+function SearchExperience({ preview, replay = false, onReplayComplete }: { preview: OnboardingPreviewState; replay?: boolean; onReplayComplete?: () => void }) {
   const company = preview.company?.name || 'your chosen company'
   const [scene, setScene] = useState(0)
   const [visibleStrategy, setVisibleStrategy] = useState(preview.searchProgress?.strategy || '')
@@ -79,9 +79,16 @@ function SearchExperience({ preview }: { preview: OnboardingPreviewState }) {
   const minimumReadingTime = 6500
 
   useEffect(() => {
-    const timer = window.setInterval(() => setScene(value => (value + 1) % 5), 7000)
+    const timer = window.setInterval(() => setScene(value => {
+      if (replay && value === 4) {
+        window.clearInterval(timer)
+        onReplayComplete?.()
+        return value
+      }
+      return (value + 1) % 5
+    }), 7000)
     return () => window.clearInterval(timer)
-  }, [])
+  }, [onReplayComplete, replay])
 
   useEffect(() => {
     latestStrategy.current = preview.searchProgress?.strategy || ''
@@ -109,6 +116,7 @@ function SearchExperience({ preview }: { preview: OnboardingPreviewState }) {
   ]
 
   return <div className="relative mx-auto flex min-h-[640px] max-w-5xl flex-col overflow-hidden">
+    {replay && <Button variant="ghost" size="sm" className="absolute right-4 top-0 z-10 text-gray-500" onClick={onReplayComplete}>Back to result</Button>}
     <div className="flex flex-1 items-center justify-center px-4 pb-40">
       <AnimatePresence mode="wait">
         <motion.div key={scene} className="w-full" initial={{ opacity: 0, y: 28, filter: 'blur(8px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -22, filter: 'blur(8px)' }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>{scenes[scene]}</motion.div>
@@ -130,7 +138,7 @@ function ApplicationAssembly({ preview }: { preview: OnboardingPreviewState }) {
   </div>
 }
 
-function ConversionResult({ preview, email }: { preview: OnboardingPreviewState; email?: string }) {
+function ConversionResult({ preview, email, onReplay }: { preview: OnboardingPreviewState; email?: string; onReplay: () => void }) {
   const [selected, setSelected] = useState<PlanInfo | null>(null)
   const [copied, setCopied] = useState(false)
   const choose = useCallback((plan: PlanInfo) => setSelected(plan), [])
@@ -146,7 +154,7 @@ function ConversionResult({ preview, email }: { preview: OnboardingPreviewState;
     window.location.href = `mailto:?subject=${encodeURIComponent(preview.email?.subject || '')}&body=${encodeURIComponent(preview.email?.body || '')}`
   }
   return <div className="mx-auto max-w-6xl space-y-12">
-    <div className="text-center"><Badge className="mb-4 bg-emerald-500/15 text-emerald-300">First application complete</Badge><h2 className="text-4xl font-bold text-white">Your first application is ready</h2><p className="mx-auto mt-3 max-w-2xl text-gray-400">CandidAI matched your profile with {preview.recruiter?.name} at {preview.company?.name} and wrote a message designed specifically for that connection.</p></div>
+    <div className="text-center"><Badge className="mb-4 bg-emerald-500/15 text-emerald-300">First application complete</Badge><h2 className="text-4xl font-bold text-white">Your first application is ready</h2><p className="mx-auto mt-3 max-w-2xl text-gray-400">CandidAI matched your profile with {preview.recruiter?.name} at {preview.company?.name} and wrote a message designed specifically for that connection.</p><Button className="mt-4 text-gray-500 hover:text-gray-200" variant="ghost" size="sm" onClick={onReplay} icon={<RotateCcw className="h-3.5 w-3.5" />}>Replay the research</Button></div>
     <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
       <Card hover={false} className="p-6"><p className="text-xs uppercase tracking-[0.18em] text-emerald-300">Selected for you</p><p className="mt-4 text-xl font-semibold text-white">{recruiter?.name}</p><p className="text-sm text-violet-300">{recruiter?.jobTitle}</p>{profile?.location && <p className="mt-1 text-sm text-gray-500">{profile.location}</p>}<Separator className="my-5" /><p className="text-sm leading-6 text-gray-300">{preview.recruiterInsight?.reason || `The strongest verified match found for your profile at ${preview.company?.name}.`}</p><div className="mt-4 space-y-3 text-sm text-gray-400">{(preview.recruiterInsight?.points || preview.email?.keyPoints || []).map(point => <p key={point} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />{point}</p>)}</div><div className="mt-6 grid gap-2">{linkedinUrl && <Button variant="secondary" onClick={() => window.open(linkedinUrl, '_blank', 'noopener,noreferrer')} icon={<Linkedin className="h-4 w-4" />}>View on LinkedIn</Button>}<Dialog><DialogTrigger asChild><Button variant="ghost" icon={<UserRound className="h-4 w-4" />}>View full recruiter profile</Button></DialogTrigger><DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto"><DialogHeader><DialogTitle>{recruiter?.name}</DialogTitle><DialogDescription>{recruiter?.jobTitle} · {preview.company?.name}</DialogDescription></DialogHeader><div className="space-y-6 pt-3">{profile?.summary && <p className="text-sm leading-7 text-gray-300">{profile.summary}</p>}{profile?.skills?.length ? <div><p className="text-sm font-medium text-white">Professional signals</p><div className="mt-3 flex flex-wrap gap-2">{profile.skills.map(skill => <Badge key={skill} variant="secondary">{skill}</Badge>)}</div></div> : null}{profile?.experience?.length ? <div><p className="text-sm font-medium text-white">Recent experience</p><div className="mt-3 space-y-3">{profile.experience.map((item, index) => <div key={`${item.company}-${index}`} className="rounded-xl border border-white/10 p-4"><p className="font-medium text-white">{item.title}</p><p className="mt-1 text-sm text-gray-400">{item.company}</p></div>)}</div></div> : null}{profile?.education?.length ? <div><p className="text-sm font-medium text-white">Education</p><div className="mt-3 space-y-2">{profile.education.map((item, index) => <p key={`${item.school}-${index}`} className="text-sm text-gray-300">{item.degree}{item.degree && item.school ? ' · ' : ''}{item.school}</p>)}</div></div> : null}<div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm leading-6 text-amber-100">Direct recruiter email addresses are not included in the free preview.</div></div></DialogContent></Dialog></div></Card>
       <Card hover={false} className="p-6 sm:p-8"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm text-gray-500">Subject</p><p className="mt-1 font-semibold text-white">{preview.email?.subject}</p></div><div className="flex flex-wrap gap-2"><Button size="sm" variant="secondary" onClick={copyEmail} icon={<Copy className="h-4 w-4" />}>{copied ? 'Copied' : 'Copy email'}</Button><Button size="sm" onClick={openEmailApp} icon={<ExternalLink className="h-4 w-4" />}>Open in my email app</Button></div></div><Separator className="my-5" /><div className="whitespace-pre-wrap text-sm leading-7 text-gray-300">{preview.email?.body}</div><div className="mt-7 rounded-xl border border-blue-400/20 bg-blue-400/5 p-4 text-sm leading-6 text-blue-100"><strong>Free preview:</strong> the recruiter’s direct email address is not included. You can connect on LinkedIn or open this draft in your email app and add a contact you already have.</div></Card>
@@ -180,6 +188,7 @@ function ConversionResult({ preview, email }: { preview: OnboardingPreviewState;
 
 export function OnboardingExperience(props: Props) {
   const router = useRouter()
+  const [replayingResearch, setReplayingResearch] = useState(false)
   const poll = ['recruiter_search', 'recruiter_found', 'email_generation', 'preview_ready'].includes(props.stage)
   const preview = usePreview(props.initialPreview, poll)
   const effectiveStage = (preview.stage || props.stage) as OnboardingStage
@@ -190,12 +199,26 @@ export function OnboardingExperience(props: Props) {
       localStorage.removeItem('candidai-preview-notification')
     }
   }, [effectiveStage, preview.recruiter?.name])
+  const stopReplay = useCallback(() => setReplayingResearch(false), [])
+  const replayPreview: OnboardingPreviewState = {
+    ...preview,
+    stage: 'recruiter_search',
+    status: 'running',
+    searchProgress: {
+      attempt: preview.searchProgress?.attempt || 1,
+      total: preview.searchProgress?.total || 1,
+      strategy: preview.searchProgress?.strategy || preview.matchedQuery?.name || 'Replaying the successful matching strategy',
+    },
+  }
+  if (replayingResearch && effectiveStage === 'preview_ready') {
+    return <div><JourneyHeader stage="recruiter_search" /><SearchExperience preview={replayPreview} replay onReplayComplete={stopReplay} /></div>
+  }
   return <div><JourneyHeader stage={effectiveStage} />
     {(effectiveStage === 'profile_source' || effectiveStage === 'profile_review') && <ProfileAnalysisClient userId={props.user.uid} plan="free_trial" initialProfile={props.profile} initialCvUrl={props.cvUrl} flow="guided" />}
     {effectiveStage === 'target_company' && <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="mb-4 border-violet-400/20 bg-violet-400/10 text-violet-200">Choose one real opportunity</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Which company would you like to join?</h2><p className="mx-auto mt-3 max-w-xl text-gray-400">One company is enough. Your profile will guide who we look for and how we approach them.</p></div><CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
     {effectiveStage === 'recruiter_search' && <SearchExperience preview={preview} />}
     {(effectiveStage === 'recruiter_found' || effectiveStage === 'email_generation') && <ApplicationAssembly preview={preview} />}
-    {effectiveStage === 'preview_ready' && <ConversionResult preview={preview} email={props.user.email} />}
+    {effectiveStage === 'preview_ready' && <ConversionResult preview={preview} email={props.user.email} onReplay={() => setReplayingResearch(true)} />}
     {preview.status === 'failed' && <Card hover={false} className="mx-auto mt-6 max-w-xl p-6 text-center"><p className="font-semibold text-white">The research was interrupted</p><p className="mt-2 text-sm text-gray-400">{preview.error?.message || 'You can try again without losing your profile or company.'}</p><Button className="mt-5" onClick={() => startOnboardingRecruiterSearch().then(() => router.refresh())}>Try again</Button></Card>}
   </div>
 }
