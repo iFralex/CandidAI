@@ -5,14 +5,13 @@ from bs4 import BeautifulSoup
 from bs4 import Tag
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
+from selenium.common.exceptions import StaleElementReferenceException
 import time
 from urllib.parse import urljoin, urlparse
-from typing import Optional, List, Tuple, Dict
+from typing import Optional, List, Dict
 import time
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.action_chains import ActionChains
 
 import undetected_chromedriver as uc
 import json
@@ -20,30 +19,9 @@ import time
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import WebDriverException
 import urllib3
-from server.emails_generation.utils import log_pdl_call, log_rocketreach_call
+from server.emails_generation.utils import log_pdl_call
 from server.emails_generation.ai_client import ai_chat
 
-def loginLinkedin(email: str, password: str, cookies_file: str = 'cookies.json'):
-    # Avvio browser
-    driver = uc.Chrome()
-    driver.get('https://www.linkedin.com/login')
-    time.sleep(2)  # attesa per caricamento pagina
-    
-    # Inserimento credenziali
-    driver.find_element(By.ID, "username").send_keys(email)
-    driver.find_element(By.ID, "password").send_keys(password)
-    
-    # Clic sul pulsante submit
-    driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
-    time.sleep(5)  # attesa login completato (da aumentare se serve)
-    
-    # Salvataggio cookie
-    cookies = driver.get_cookies()
-    with open(cookies_file, 'w') as file:
-        json.dump(cookies, file)
-    
-    # Chiusura browser
-    driver.quit()
 
 driver = None  # istanza globale
 _driver_lock = threading.Lock()
@@ -262,41 +240,10 @@ def log_ai_interaction(file_path: str, prompt: str, response: dict):
 
 
 # 1. Estrai tutti i link dal sorgente HTML
-def extract_links(html):
-    soup = BeautifulSoup(html, "html.parser")
-    links = set()
-    for a in soup.find_all('a', href=True):
-        href = a['href']
-        if href.startswith('http') or href.startswith('/'):
-            links.add(href)
-    return list(links)
 
 import spacy
 nlp = spacy.load("en_core_web_sm")
 
-def find_blog_link(html):
-    soup = BeautifulSoup(html, "html.parser")
-    candidate_links = []
-
-    blog_keywords = ["blog", "news", "articles", "stories", "insights", "updates"]
-
-    for a in soup.find_all('a', href=True):
-        text = (a.text or "").strip()
-        href = a['href']
-        if not text:
-            continue
-
-        doc = nlp(text.lower())
-        for token in doc:
-            if token.lemma_ in blog_keywords:
-                candidate_links.append(href)
-                break
-
-    if candidate_links:
-        # Restituisce il primo che sembra valido
-        return candidate_links[0]
-
-    return None
 
 import requests
 
@@ -1035,21 +982,6 @@ If no "next page" link is found, return '0'.
                 # Se è un link normale, risolvi normalmente
                 return urljoin(url, href)
 
-    # Se ancora non trova, prova con pattern comuni di URL
-    #page_number = extract_page_number(url)
-    #if page_number:
-    #    next_page_number = page_number + 1
-    #    return construct_paginated_url(url, next_page_number)
-    
-    # Prova ad aggiungere '/page/2' o '?page=2' all'URL base
-    #if '?' in url:
-    #    return f"{url}&page=2"
-    #else:
-    #    # Controlla se terminare con / o no
-    #    if url.endswith('/'):
-    #        return f"{url}page/2/"
-    #    else:
-    #        return f"{url}/page/2/"
 
 def predict_next_page_with_deepseek(first_url, second_url, current_url):
     """
@@ -1182,67 +1114,10 @@ def is_404_error(url):
         # Se ha superato tutti i controlli, probabilmente non è una pagina 404
         return False
     
-    except Exception as e:
+    except Exception:
         # In caso di errore nel processo, prudentemente supponi che sia un 404
         return True
     
-def find_pagination_links(soup, current_url, base_url):
-    """
-    Cerca i link di paginazione in una pagina HTML.
-    
-    Args:
-        soup (BeautifulSoup): Oggetto BeautifulSoup della pagina
-        current_url (str): URL corrente
-        base_url (str): URL base del sito
-    
-    Returns:
-        list: Lista di URL delle pagine di paginazione
-    """
-    pagination_links = []
-    
-    # Approccio 1: Cerca elementi con classi comuni di paginazione
-    pagination_selectors = [
-        ".pagination a", "nav.pagination a", ".pager a", ".page-numbers",
-        "a.page-link", ".nextpostslink", ".previouspostslink", "a.next", 
-        "a.prev", "a[rel='next']", "a[rel='prev']", ".wp-pagenavi a",
-        ".paginate a", ".navigation a", ".post-nav a", ".blog-pagination a",
-        "a.page", ".pager-older a", ".pager-newer a", ".pages a",
-        ".nav-links a", ".pagination-next", ".pagination-prev"
-    ]
-    
-    for selector in pagination_selectors:
-        try:
-            elements = soup.select(selector)
-            for element in elements:
-                href = element.get('href')
-                if href:
-                    # Converti URL relativi in assoluti
-                    absolute_url = urljoin(current_url, href)
-                    if is_valid_pagination_url(absolute_url, current_url):
-                        pagination_links.append(absolute_url)
-        except:
-            continue
-    
-    # Approccio 2: Cerca pattern numerici di paginazione
-    current_page_number = extract_page_number(current_url)
-    if current_page_number:
-        # Cerca link con numeri di pagina vicini
-        for i in range(current_page_number - 5, current_page_number + 6):
-            if i > 0 and i != current_page_number:
-                potential_url = construct_paginated_url(current_url, i)
-                if potential_url and potential_url not in pagination_links:
-                    pagination_links.append(potential_url)
-    
-    # Approccio 3: Cerca parole chiave come "page", "paged", "p=" nei link
-    all_links = soup.find_all('a', href=True)
-    for link in all_links:
-        href = link.get('href')
-        if href and any(pattern in href for pattern in ['/page/', '?page=', '&page=', 'paged=', '/p/', '?p=']):
-            absolute_url = urljoin(current_url, href)
-            if is_valid_pagination_url(absolute_url, current_url):
-                pagination_links.append(absolute_url)
-    
-    return pagination_links
 
 def is_valid_pagination_url(url, current_url):
     """
@@ -1504,9 +1379,6 @@ def extract_articles_with_deepseek(base_url, articles_num, html=None, batch_size
     for batch in batches:
         if len(articles) + articles_num > MAX_ARTICLES:
             break
-        # Costruisci il prompt
-        batch_json = json.dumps(batch, ensure_ascii=False)
-        
         # Invia la richiesta
         try:
             formatted_string = "[\n" + ",\n".join([
@@ -1727,7 +1599,6 @@ def get_articles_with_load_more(start_url, articles_num, max_clicks=5):
         return all_articles
         
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 
 def try_close_overlays(driver, similarity_threshold=0.40):
     """
@@ -1823,7 +1694,6 @@ def find_load_more_button(driver: WebDriver) -> Optional[WebElement]:
     from collections import defaultdict
     elements = driver.find_elements("xpath", "//button|//a")
 
-    elements_info: List[Tuple[WebElement, str, float]] = []
 
     # Frase target da confrontare semanticamente
     target_text = "load more"
@@ -1957,199 +1827,6 @@ def find_load_more_button(driver: WebDriver) -> Optional[WebElement]:
     return None
 
 
-def is_valid_interactive_element(driver, element):
-    """
-    Verifica se un elemento è valido e interattivo (visibile, abilitato e cliccabile).
-    
-    Args:
-        driver: Istanza del driver Selenium
-        element: WebElement da verificare
-        
-    Returns:
-        bool: True se l'elemento è valido e interattivo, False altrimenti
-    """
-    try:
-        # Verifica se l'elemento è ancora presente nel DOM
-        WebDriverWait(driver, 0.5).until(
-            EC.staleness_of(element)
-        )
-        return False  # Elemento non più presente
-    except TimeoutException:
-        # L'elemento è ancora nel DOM, continua con i controlli
-        pass
-    
-    try:
-        # Verifica che sia visibile e abilitato
-        if not (element.is_displayed() and element.is_enabled()):
-            return False
-        
-        # Verifica le dimensioni (evita elementi troppo piccoli)
-        size = element.size
-        if size['width'] < 5 or size['height'] < 5:
-            return False
-        
-        # Verifica che sia nel viewport o non troppo lontano
-        viewport_check = driver.execute_script("""
-            var elem = arguments[0];
-            var rect = elem.getBoundingClientRect();
-            var windowHeight = window.innerHeight || document.documentElement.clientHeight;
-            var windowWidth = window.innerWidth || document.documentElement.clientWidth;
-            
-            // Elemento è nel viewport o poco sotto
-            return (
-                rect.top <= windowHeight * 2 &&
-                rect.left >= 0 &&
-                rect.left <= windowWidth
-            );
-        """, element)
-        
-        if not viewport_check:
-            return False
-        
-        # Controlla se ha stile cursor:pointer o attributi di interazione
-        is_interactive = driver.execute_script("""
-            var elem = arguments[0];
-            var style = window.getComputedStyle(elem);
-            
-            // Controllo se ha aspetto di elemento interattivo
-            return (
-                style.cursor === 'pointer' || 
-                elem.tagName === 'BUTTON' || 
-                elem.tagName === 'A' || 
-                elem.hasAttribute('onclick') ||
-                elem.hasAttribute('href') ||
-                elem.getAttribute('role') === 'button'
-            );
-        """, element)
-        
-        return is_interactive
-        
-    except (StaleElementReferenceException, Exception) as e:
-        logging.debug(f"Errore nella validazione dell'elemento: {str(e)}")
-        return False
-
-def find_with_ai(driver):
-    """
-    Utilizza un approccio euristico avanzato per trovare pulsanti di caricamento.
-    Da utilizzare come fallback quando le altre strategie falliscono.
-    
-    Args:
-        driver: Istanza del driver Selenium
-        
-    Returns:
-        WebElement or None: Il pulsante trovato o None
-    """
-    # Raccolta elemento candidati
-    html_elements_info = []
-    candidates = []
-    
-    try:
-        # Seleziona elementi potenzialmente cliccabili
-        xpath = "//button | //a | //div[@role='button' or @tabindex='0'] | //span[@role='button' or @tabindex='0']"
-        elements = driver.find_elements(By.XPATH, xpath)
-        
-        for i, el in enumerate(elements):
-            try:
-                if not el.is_displayed():
-                    continue
-                    
-                text = el.text.strip()
-                tag = el.tag_name
-                class_attr = el.get_attribute("class") or ""
-                id_attr = el.get_attribute("id") or ""
-                
-                # Raccogli attributi rilevanti
-                attrs = driver.execute_script("""
-                    const el = arguments[0];
-                    const attrs = {};
-                    for (let attr of el.attributes) {
-                        attrs[attr.name] = attr.value;
-                    }
-                    return attrs;
-                """, el)
-                
-                # Posizione dell'elemento (importante per pulsanti di caricamento)
-                position = driver.execute_script("""
-                    const el = arguments[0];
-                    const rect = el.getBoundingClientRect();
-                    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
-                    return {
-                        x: rect.left,
-                        y: rect.top,
-                        bottom_ratio: (rect.top + rect.height) / windowHeight
-                    };
-                """, el)
-                
-                # Ignora elementi nella parte superiore della pagina
-                if position['bottom_ratio'] < 0.5 and len(elements) > 10:
-                    continue
-                
-                # Calcola uno score euristico per l'elemento
-                score = 0
-                
-                # Punteggio basato sul testo
-                load_more_patterns = [
-                    r'load\s*more', r'view\s*more', r'show\s*more', 
-                    r'more\s*posts', r'see\s*more', r'read\s*more',
-                    r'next', r'altri', r'altro', r'carica', r'mostra'
-                ]
-                
-                lower_text = text.lower()
-                
-                for pattern in load_more_patterns:
-                    if re.search(pattern, lower_text):
-                        score += 10
-                
-                # Punteggio basato sulla classe/id
-                lower_class = class_attr.lower()
-                lower_id = id_attr.lower()
-                
-                load_more_class_patterns = ['load', 'more', 'next', 'pag', 'button']
-                for pattern in load_more_class_patterns:
-                    if pattern in lower_class or pattern in lower_id:
-                        score += 5
-                
-                # Punteggio basato sulla posizione (favorisce elementi in basso)
-                score += min(position['bottom_ratio'] * 8, 8)
-                
-                # Penalizza elementi troppo piccoli
-                size = el.size
-                if size['width'] < 30 or size['height'] < 20:
-                    score -= 5
-                
-                html_elements_info.append({
-                    "index": i,
-                    "tag": tag,
-                    "text": text,
-                    "attributes": attrs,
-                    "position": position,
-                    "score": score
-                })
-                
-                candidates.append(el)
-                
-                if len(html_elements_info) >= 50:  # Limita la raccolta
-                    break
-                    
-            except StaleElementReferenceException:
-                continue
-            except Exception as e:
-                logging.debug(f"Errore durante analisi elemento {i}: {str(e)}")
-                continue
-                
-        # Ordina per score e seleziona il migliore
-        if html_elements_info:
-            html_elements_info.sort(key=lambda x: x["score"], reverse=True)
-            best_candidate = html_elements_info[0]
-            
-            if best_candidate["score"] >= 10:  # Soglia minima di confidenza
-                return candidates[html_elements_info.index(best_candidate)]
-            
-    except Exception as e:
-        logging.error(f"Errore nell'analisi euristica: {str(e)}")
-    
-    return None
-
 import json
 import ast
 
@@ -2265,7 +1942,6 @@ def extract_articles_content(articles: List[Dict[str, str]],
     Returns:
         Lista di dizionari contenenti il contenuto estratto per ogni articolo
     """
-    headers = {'User-Agent': user_agent}
     results = []
     
     # Dizionario di domini noti per personalizzare l'estrazione
@@ -2736,12 +2412,6 @@ def _convert_elements_to_markdown(elements, title=None) -> str:
     Returns:
         Contenuto in formato Markdown
     """
-    # Helper function per ottenere il testo completo, anche con tag annidati
-    def get_full_text(element):
-        if not element:
-            return ""
-        return element.get_text(strip=True)
-        
     markdown_content = ""
     
     for elem in elements:
@@ -2884,7 +2554,6 @@ def _extract_about_page_content(soup: BeautifulSoup, url: str) -> Dict[str, Any]
         
         # 1. Cerca mission/vision/valori
         mission_keywords = ['mission', 'missione', 'vision', 'visione', 'valori', 'values', 'objectives', 'obiettivi']
-        mission_section = None
         
         for keyword in mission_keywords:
             # Cerca heading con keyword
@@ -2904,7 +2573,6 @@ def _extract_about_page_content(soup: BeautifulSoup, url: str) -> Dict[str, Any]
         
         # 2. Cerca sezioni del team
         team_keywords = ['team', 'staff', 'people', 'persone', 'chi siamo', 'our team', 'il nostro team']
-        team_section = None
         
         for keyword in team_keywords:
             team_heading = main_container.find(['h1', 'h2', 'h3', 'h4'], string=lambda s: s and keyword.lower() in s.lower())
@@ -2969,7 +2637,6 @@ def _extract_about_page_content(soup: BeautifulSoup, url: str) -> Dict[str, Any]
         
         # 3. Cerca sezione storia/about
         history_keywords = ['storia', 'history', 'about us', 'chi siamo', 'about', 'la nostra storia']
-        history_section = None
         
         for keyword in history_keywords:
             history_heading = main_container.find(['h1', 'h2', 'h3'], string=lambda s: s and keyword.lower() in s.lower())
@@ -2988,7 +2655,6 @@ def _extract_about_page_content(soup: BeautifulSoup, url: str) -> Dict[str, Any]
         
         # 4. Cerca sezione contatti se presente
         contact_keywords = ['contatti', 'contact', 'contactos', 'reach us', 'find us']
-        contact_section = None
         
         for keyword in contact_keywords:
             contact_heading = main_container.find(['h1', 'h2', 'h3', 'h4'], string=lambda s: s and keyword.lower() in s.lower())
@@ -3142,129 +2808,11 @@ def _extract_about_page_content(soup: BeautifulSoup, url: str) -> Dict[str, Any]
     
     return markdown_content.strip()
 
-def generate_personalized_email(user_info, articles_content):
-    """
-    Genera un'email personalizzata che collega il profilo del candidato
-    con i contenuti degli articoli dell'azienda
-    """
-    # Prepara il prompt per generare l'email
-    prompt = f"""
-    Devi creare una email di presentazione personalizzata per un candidato da inviare a un recruiter.
-    L'email deve stabilire parallelismi tra l'esperienza del candidato e i contenuti degli articoli 
-    del blog aziendale, dimostrando un genuino interesse per l'azienda e una naturale compatibilità.
-    
-    Profilo del candidato:
-    {json.dumps(user_info, indent=2)}
-    
-    Articoli rilevanti del blog aziendale:
-    {json.dumps(articles_content, indent=2)}
-    
-    Requisiti per l'email:
-    1. Inizia con un'introduzione del candidato e il motivo del suo interesse per l'azienda
-    2. Evidenzia 2-3 parallelismi specifici tra le esperienze/competenze del candidato e i temi/tecnologie menzionati negli articoli
-    3. Cita brevemente contenuti specifici dagli articoli che dimostrano la sintonia con i valori o approcci tecnici dell'azienda
-    4. Mostra come il background del candidato lo renda particolarmente adatto per contribuire ai progetti/tecnologie discussi
-    5. Chiudi con una richiesta di colloquio e ringraziamenti
-    6. L'email deve essere professionale ma conversazionale, lunga circa 250-350 parole
-    7. Non essere troppo adulatorio, mantieni un tono autentico e credibile
-    
-    Crea l'email completa, pronta per essere inviata dopo una revisione da parte del candidato.
-    """
-    
-    # Genera l'email personalizzata
-    email = ai_chat(prompt)
-    return email
 
 import requests
 import re
 from bs4 import BeautifulSoup
 
-def get_linkedin_description(company):
-    # 1. Cerca la pagina LinkedIn aziendale con Google
-    search_results = search_on_google(f"{company} LinkedIn site:linkedin.com/company", exclude_url="")
-
-    linkedin_links = []
-    for item in search_results:
-        link = item.get("link", "")
-        if link.startswith("https://www.linkedin.com/company/"):
-            description = (
-                item.get("pagemap", {})
-                    .get("metatags", [{}])[0]
-                    .get("og:description", "")
-            )
-            # Estrai il numero di follower
-            match = re.search(r"([\d,]+)\s+followers", description)
-            if match:
-                followers_str = match.group(1).replace(",", "")
-                try:
-                    followers = int(followers_str)
-                except ValueError:
-                    followers = 0
-            else:
-                followers = 0
-            linkedin_links.append((link, followers))
-
-    if not linkedin_links:
-        return "Nessuna pagina LinkedIn trovata."
-
-    # 2. Scegli il link con più follower
-    best_link = max(linkedin_links, key=lambda x: x[1])[0]
-
-    # 3. Pulisci il link per ottenere solo /company/{stringa}/about/
-    match = re.match(r"https://www.linkedin.com/company/([^/]+)/?", best_link)
-    if not match:
-        return "Formato link LinkedIn non valido."
-
-    base_link = f"https://www.linkedin.com/company/{match.group(1)}/about/"
-
-    # 4. Ottieni l'HTML della pagina about
-    html = get_html(base_link)
-    if not html:
-        return "Errore nel recupero HTML dalla pagina LinkedIn."
-
-    soup = BeautifulSoup(html, "html.parser")
-
-    # 5. Trova la sezione descrizione e le info
-    section = soup.find("section", class_="artdeco-card org-page-details-module__card-spacing artdeco-card org-about-module__margin-bottom")
-    if not section:
-        return "Sezione informazioni non trovata."
-
-    markdown = ""
-
-    # Descrizione principale
-    p_tag = section.find("p")
-    if p_tag:
-        logging.info(p_tag.get_text(strip=True))
-        markdown += f"**Descrizione aziendale**:\n\n{p_tag.get_text(strip=True)}\n\n"
-
-    # Dettagli (dt = titolo, dd = contenuto)
-    dl = section.find("dl")
-    dl = section.find("dl")
-    if dl:
-        markdown += "**Informazioni aziendali**:\n\n"
-        
-        current_title = None
-        current_values = []
-
-        for child in dl.children:
-            if child.name == "dt":
-                # Se abbiamo accumulato un titolo precedente, scrivilo nel markdown
-                if current_title is not None:
-                    joined_values = " ".join(current_values).strip()
-                    markdown += f"- **{current_title}**: {joined_values}\n"
-
-                # Inizia una nuova sezione
-                current_title = child.get_text(strip=True)
-                current_values = []
-            elif child.name == "dd" and current_title is not None:
-                current_values.append(child.get_text(strip=True))
-
-        # Aggiungi l'ultima coppia dt-dd
-        if current_title is not None and current_values:
-            joined_values = " ".join(current_values).strip()
-            markdown += f"- **{current_title}**: {joined_values}\n"
-    
-    return markdown
 
 def get_about_page_link_with_google(company):
     """
@@ -3333,18 +2881,6 @@ def get_about_page_link_with_google(company):
     else:
         return None
 
-def get_about_description(company):
-    url = get_about_page_link_with_google(company)
-
-    if not url:
-        return
-
-    html = get_html(url)
-    soup = BeautifulSoup(html, "html.parser")
-    _clean_soup(soup)
-    result = _extract_about_page_content(soup, url)
-
-    return result
 
 def get_all_articles(company, target_position_description):
     article_links = []
@@ -3513,7 +3049,6 @@ def compact_linkedin_data(data):
     compact["experience"] = experience_list
     return compact
 
-from collections import defaultdict
 import os
 import json
 import time
@@ -3605,33 +3140,6 @@ def get_linkedin_profile_data(profile_url):
             return True
 
         def request_with_selected(url, params=None):
-            
-            def estimate_traffic_from_response(response):
-                """
-                Stima il traffico totale (byte inviati + ricevuti + overhead) 
-                a partire da una response di requests.
-                """
-                # Byte della richiesta
-                req_body = response.request.body or b""
-                req_headers = sum(len(k.encode()) + len(v.encode()) for k, v in response.request.headers.items())
-                bytes_sent = len(req_body) + req_headers
-
-                # Byte della risposta
-                resp_body = response.content
-                resp_headers = sum(len(k.encode()) + len(v.encode()) for k, v in response.headers.items())
-                bytes_received = len(resp_body) + resp_headers
-
-                # Stima overhead TCP/IP + HTTPS (~60 byte per pacchetto, pacchetti da 1500 byte)
-                packets_sent = max(1, bytes_sent // 1500 + 1)
-                packets_received = max(1, bytes_received // 1500 + 1)
-                overhead = (packets_sent + packets_received) * 60
-
-                total_traffic = bytes_sent + bytes_received + overhead
-
-                logging.info(f"Traffico totale stimato: {total_traffic} byte")
-
-                return total_traffic
-
             store = load_store()
             data, usage = store["data"], store["usage"]
 
@@ -4103,1007 +3611,9 @@ def get_linkedin_profile_data(profile_url):
         "educations": educations
     }
 
-def get_tech_recruiter_emails(company_name: str):
-    """
-    Recupera le email associate a recruiter tech da un dominio usando Hunter.io.
-
-    Args:
-        domain (str): Il dominio aziendale, es. "microsoft.com"
-
-    Returns:
-        list of dict: Lista di email con nome, ruolo e score.
-    """
-    def get_company_domain(company):
-        """
-        Uses Google search results and DeepSeek to identify the official About page of a company.
-        
-        Args:
-            company (str): The company name to search for
-            
-        Returns:
-            str or None: URL of the company's About page, or None if not found
-        """
-        # Search for the company's about page
-        results_raw = search_on_google(company, "", 10)
-        
-        if not results_raw:
-            logging.info("Nessun risultato trovato.")
-            return None
-        
-        # Mantieni solo il primo risultato per ogni dominio (ordine originale)
-        seen = set()
-        domains = []
-        for item in results_raw:
-            if "link" not in item or "title" not in item:
-                continue
-            domain = urlparse(item["link"]).netloc.replace("www.", "")
-            if domain not in seen:
-                seen.add(domain)
-                domains.append({"domain": domain, "title": item["title"]})
-
-        # Ritorna il dominio se cè un solo risultato
-        if len(domains) == 1:
-            return domains[0]["domain"]
-
-        # Scelte numeriche (es. "1, 2, 3")
-        choices_str = ", ".join(str(i) for i in range(1, len(domains) + 1))
-        
-        # Prompt migliorato
-        prompt = f"""
-        # Task: Identify the Most Likely Corporate Email Domain
-        You need to determine which of the following domains is most likely used for employee email addresses at '{company}' 
-        (e.g., for common staff such as HR, administration, etc.).
-
-        ## Instructions:
-        - Prefer the **main corporate domain** (e.g., 'company.com') over support, regional, or campaign-specific domains.
-        - Choose the domain that is most likely used by regular employees for work email addresses.
-        - Think briefly: in ONE short sentence, note which domain is the main corporate one and why.
-        - Then, on a NEW final line, output ONLY the number ({choices_str}) and nothing else on that line.
-
-        ## Domains:
-        """
-
-        for idx, r in enumerate(domains, 1):
-            prompt += f"{idx}. {r['domain']} — {r['title']}\n"
-
-        try:
-            deepseek_response = ai_chat(prompt).strip()
-            # reason-then-answer: the number is on the last line, so take the last integer
-            selected_index = int(re.findall(r'-?\d+', deepseek_response)[-1])
-        except Exception as e:
-            logging.info(f"Errore chiamata DeepSeek o conversione numero: {e}")
-            return None
-        
-        if 1 <= selected_index <= len(domains):
-            return domains[selected_index - 1]["domain"]
-        else:
-            return None
-
-    domain = get_company_domain(company_name)
-    
-    api_key = os.getenv("HUNTER_API_KEY")
-    url = "https://api.hunter.io/v2/domain-search"
-    params = {
-        "domain": domain,
-        "api_key": api_key,
-        "department": "hr"
-    }
-
-    response = requests.get(url, params=params, timeout=30)
-    if response.status_code != 200:
-        raise Exception(f"Errore {response.status_code}: {response.text}")
-
-    data = response.json()
-    #logging.info("Hunter.io response:", data)
-    emails = data.get("data", {}).get("emails", [])
-
-    entries = []
-    for e in emails:
-        full_name = f"{e.get('first_name', '')} {e.get('last_name', '')}".strip()
-        position = e.get("position", "N/A")
-        entries.append(f"{full_name} - {position}")
-
-    # Filtra per recruiter / hr / talent in ambito tech
-    keywords = ["recruiter", "talent", "hr", "human resources", "tech", "technology"]
-    filtered_emails = [
-        {
-            "email": email["value"],
-            "name": email.get("first_name", "") + " " + email.get("last_name", ""),
-            "position": email.get("position"),
-            "score": email.get("confidence")
-        }
-        for email in emails
-        if email.get("position") and any(kw in email["position"].lower() for kw in keywords)
-    ]
-    logging.info("Filtered emails:", filtered_emails)
-    return filtered_emails
 
 import math
 
-def find_company_recruiters_old(azienda, parametri=None, n_profiles=10, superficial_recruiter_target="", user_profile=""):
-    """
-    Search for recruiters associated with a specific company using AI-powered ranking and cascade evaluation.
-    
-    The function uses a cascading approach:
-    1. Execute a single query and rank results
-    2. Perform deep evaluation in smaller batches (2-3 profiles at a time)
-    3. If excellent profiles (score >= 7) are found, immediately add them to results
-    4. If n_profiles excellent profiles are reached, return immediately
-    5. Otherwise, proceed to next less restrictive query
-    6. Fallback: return best n_profiles from all evaluated profiles
-    
-    Args:
-        azienda (str): Company name or LinkedIn company URL
-        parametri (list): Ordered list (most to least important) of parameter objects 
-                         with format {'campo': str, 'valori': list}
-        n_profiles (int): Target number of excellent profiles to find (default: 10)
-        
-    Returns:
-        list: List of recruiter profiles with AI scores, ordered by quality
-    """
-
-    def execute_single_search(mandatory_params, optional_params, search_type=""):
-        """Execute a single search with given parameters"""
-        query = build_query(mandatory_params, optional_params)
-        if search_type:
-            logging.info(f"Executing {search_type} search with {len(optional_params)} optional params")
-        
-        return execute_search(query)
-
-    def execute_search(query):
-        """Execute search with given query parameters using RocketReach API"""
-        api_key = os.getenv("ROCKETREACH_API_KEY")
-        url = "https://api.rocketreach.co/api/v2/person/search"
-       
-        payload = {
-            "query": query,
-            "page_size": 20  # Standard API limit
-        }
-
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "Api-Key": api_key
-        }
-        
-        try:
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
-            response.raise_for_status()
-
-            data = response.json()
-            profiles = data.get("profiles", [])
-            log_rocketreach_call("person_search", {"query": query}, profiles)
-
-            nonlocal evaluated_names
-            evaluated_names |= {f"-{p['name']}" for p in profiles if p.get("name")}
-
-            return profiles
-
-        except requests.RequestException as e:
-            log_rocketreach_call("person_search", {"query": query}, [], error=str(e))
-            logging.info(f"Error executing search: {e}")
-            return []
-
-    def build_query(mandatory, optional_params):
-        """Build API query from mandatory and optional parameters"""
-        query = mandatory.copy()
-        query["name"] = list(evaluated_names)
-        for param in optional_params:
-            query[param['campo']] = param['valori']
-        return query
-
-    def calculate_initial_ranking(profile, position_in_results, query_precision_score, superficial_score):
-        """
-        Calculate initial ranking score for a profile.
-        Combines AI superficial score, result relevance, and query precision.
-        """
-        # Result relevance (higher for profiles appearing first)
-        # Score decreases from 10 to 1 based on position (max 25 results per query)
-        relevance_score = max(1, 10 - (position_in_results * 9 / 24))
-        
-        # Combine scores (weights: AI=50%, relevance=25%, precision=25%)
-        total_score = (
-            superficial_score * 0.5 + 
-            relevance_score * 0.25 + 
-            query_precision_score * 0.25
-        )
-        
-        return {
-            'profile': profile,
-            'initial_score': total_score,
-            'superficial_ai_score': superficial_score,
-            'relevance_score': relevance_score,
-            'query_precision_score': query_precision_score,
-            'deep_evaluated': False,
-            'final_ai_score': None
-        }
-
-    def get_batch_superficial_ai_scores(profiles):
-        """Get AI evaluation for multiple profiles in batch"""
-        try:
-            if not profiles:
-                return {}
-            
-            # Build batch prompt with all profiles
-            profiles_text = ""
-            for i, profile in enumerate(profiles, 1):
-                name = profile.get('name', 'Unknown')
-                title = profile.get('current_title', 'No title')
-                company = profile.get('current_employer', 'Unknown company')
-                location = profile.get('location', profile.get('country', 'Location not specified'))
-                
-                profiles_text += f"""
-
-    Profile {i}:
-    - Name: {name}
-    - Current Title: {title}
-    - Company: {company}
-    - Location: {location}
-    """
-            
-            chat_prompt = f"""Evaluate these profiles on a scale of 1-10 as potential contacts for the company "{azienda}" based on the target recruiter profile.
-
-    TARGET PROFILE: 
-    {superficial_recruiter_target}
-
-    PROFILES: 
-    {profiles_text}
-
-    EVALUATION CRITERIA:
-
-    1. TARGET PROFILE ALIGNMENT (0-6 points)
-    - Perfect match with target requirements: 5-6 points
-    - Good alignment: 3-4 points
-    - Partial alignment: 1-2 point
-    - No alignment: 0 points
-
-    2. ROLE RELEVANCE (0-4 points)
-    - HR/Recruiting roles: 4 points
-    - Leadership positions (C-level, Directors, VPs): 4 points
-    - Management roles: 1-3 points
-    - Other roles: 0-1 points
-
-    SCORING: Sum all points
-
-    STRICT RULES:
-    - Output valid JSON only, no extra text.
-    - Keys: profile number as string.
-    - Values: integer 1–10 (round if out of range).
-
-    Example:
-    {{"1": 7, "2": 5, "3": 9}}
-
-    ...
-
-    If profile is from different company, automatically assign score 1.
-            """
-            
-            response = ai_chat(chat_prompt)
-            
-            clean_response = re.sub(r'^```json\s*|```$', '', response, flags=re.DOTALL).strip()
-            scores = {}
-            
-            try:
-                parsed_scores = json.loads(clean_response)
-            except json.JSONDecodeError:
-                raise ValueError("Model response is not valid JSON.")
-
-            for idx_str, score in parsed_scores.items():
-                try:
-                    profile_idx = int(idx_str) - 1  # 0-based index
-                    score = max(1, min(10, int(score)))  # Clamp score to 1-10
-                except (ValueError, TypeError):
-                    continue  # Skip invalid entries
-
-                if 0 <= profile_idx < len(profiles):
-                    profile_id = profiles[profile_idx].get('id')
-                    scores[profile_id] = score
-
-            # Fill missing scores with default value
-            for profile in profiles:
-                profile_id = profile.get('id')
-                if profile_id not in scores:
-                    scores[profile_id] = 5
-            
-            return scores
-            
-        except Exception as e:
-            logging.info(f"Error in batch superficial AI scoring: {e}")
-            # Return default scores for all profiles
-            return {profile.get('id'): 5 for profile in profiles}
-
-    def remove_duplicates(new_results, existing_results):
-        """Remove duplicates based on profile ID"""
-        existing_ids = {result['profile'].get('id') for result in existing_results}
-        return [result for result in new_results if result['profile'].get('id') not in existing_ids]
-
-    
-    def process_and_evaluate_batch(temp_profiles, query_precision_score, force_evaluation=False):
-        """Process a batch of profiles with superficial and deep evaluation"""
-        if not temp_profiles:
-            return []
-        
-        # Reduced batch size threshold for faster processing
-        if len(temp_profiles) < 3 and not force_evaluation:
-            return []  # Wait for more profiles (reduced from 5 to 3)
-        
-        logging.info(f"Processing batch of {len(temp_profiles)} profiles...")
-        
-        # Step 1: Batch superficial evaluation
-        batch_superficial_scores = get_batch_superficial_ai_scores([p['profile'] for p in temp_profiles])
-        
-        # Step 2: Apply superficial scores and filter
-        qualified_profiles = []
-        for temp_profile in temp_profiles:
-            profile_id = temp_profile['profile'].get('id')
-            superficial_score = batch_superficial_scores.get(profile_id, 5)
-            
-            # Update the temp profile with superficial score
-            temp_profile['superficial_ai_score'] = superficial_score
-            
-            # Recalculate initial ranking with actual superficial score
-            relevance_score = max(1, 10 - (temp_profile['position'] * 9 / 9))
-            temp_profile['relevance_score'] = relevance_score
-            temp_profile['query_precision_score'] = query_precision_score
-            temp_profile['initial_score'] = (
-                superficial_score * 0.7 + 
-                relevance_score * 0.1 + 
-                query_precision_score * 0.2
-            )
-            
-            # Filter: only profiles with superficial score >= 5
-            if superficial_score >= 5:
-                qualified_profiles.append(temp_profile)
-            else:
-                logging.info(f"  Filtered out profile (superficial score: {superficial_score} < 5)")
-        
-        logging.info(f"  {len(qualified_profiles)}/{len(temp_profiles)} profiles passed superficial filter (score >= 5)")
-        
-        if not qualified_profiles:
-            return []
-        
-        # Step 3: Sort by initial ranking
-        qualified_profiles.sort(key=lambda x: x['initial_score'], reverse=True)
-        
-        # Step 4: Deep evaluation in smaller batches (2-3 profiles at a time)
-        logging.info(f"  Performing deep evaluation on {len(qualified_profiles)} qualified profiles in small batches...")
-        evaluated_profiles = get_batch_deep_evaluations_optimized(qualified_profiles, azienda)
-        
-        return evaluated_profiles
-    
-    def get_batch_deep_evaluations_optimized(ranked_profiles, azienda):
-        """Perform deep evaluation for multiple profiles in smaller batches with early termination"""
-        nonlocal excellent_profiles, n_profiles  # Access parent scope variables
-        
-        def search_and_get_linkedin_profile(profile_name):
-            """
-            Cerca il profilo LinkedIn tramite Google e restituisce i dati del profilo.
-            Fallback function per quando get_linkedin_profile_data fallisce.
-            """
-            try:
-                # Cerca profili LinkedIn su Google
-                search_results = search_on_google(f'"{profile_name}" {azienda} LinkedIn site:linkedin.com/in', exclude_url="")
-                
-                if not search_results:
-                    return None
-                
-                # Filtra solo i link di profili LinkedIn validi
-                linkedin_links = []
-                seen_urls = set()
-                
-                for item in search_results:
-                    link = item.get("link", "")
-                    title = item.get("title", "")
-                    snippet = item.get("snippet", "")
-                    
-                    if (link.startswith("https://www.linkedin.com/in/") or 
-                        link.startswith("https://linkedin.com/in/")) and link not in seen_urls:
-                        seen_urls.add(link)
-                        linkedin_links.append({"url": link, "title": title, "snippet": snippet})
-                
-                if not linkedin_links:
-                    return None
-                
-                # Se c'è un solo risultato, usalo direttamente
-                if len(linkedin_links) == 1:
-                    selected_url = linkedin_links[0]["url"]
-                else:
-                    # Usa AI per scegliere il profilo più pertinente
-                    selected_url = select_best_linkedin_profile(profile_name, linkedin_links)
-                    if not selected_url:
-                        # Se AI fallisce, usa il primo risultato
-                        selected_url = linkedin_links[0]["url"]
-                
-                # Prova a ottenere i dati del profilo selezionato
-                linkedin_data = get_linkedin_profile_data(selected_url)
-                
-                # Verifica se i dati sembrano corretti usando AI
-                if linkedin_data:
-                    return linkedin_data
-                else:
-                    # Se il profilo non sembra corretto, prova con altri risultati
-                    for link_data in linkedin_links[1:]:  # Salta il primo già provato
-                        try:
-                            alternative_data = get_linkedin_profile_data(link_data["url"])
-                            if alternative_data:
-                                return alternative_data
-                        except:
-                            continue
-                
-                return None
-                
-            except Exception as e:
-                logging.info(f"Error in search_and_get_linkedin_profile for {profile_name}: {e}")
-                return None
-
-        def select_best_linkedin_profile(profile_name, linkedin_links):
-            """
-            Usa AI per selezionare il profilo LinkedIn più pertinente dalla lista.
-            """
-            try:
-                if len(linkedin_links) <= 1:
-                    return linkedin_links[0]["url"] if linkedin_links else None
-                
-                # Scelte numeriche
-                choices_str = ", ".join(str(i) for i in range(1, len(linkedin_links) + 1))
-                
-                prompt = f"""
-    **Task:** Identify the most relevant LinkedIn profile.  
-    Select which of the following profiles is most likely to be **"{profile_name}"** at **"{azienda}"**, probably in **HR**, as **founder**, or in a **senior/executive role**.
-
-    **Instructions:**
-    - Reply **ONLY** with the number: {choices_str}  
-    - No explanations or extra text  
-    - Match priority:  
-    1. Name similarity (**"{profile_name}"**)  
-    2. Company match (**"{azienda}"**)  
-    3. Role relevance (HR, founder, senior/executive)
-
-    **Profiles:**
-
-        """
-                
-                for idx, link_data in enumerate(linkedin_links, 1):
-                    prompt += f"{idx}. {link_data['url']} — {link_data['title']} | {link_data['snippet']}\n"
-                
-                deepseek_response = ai_chat(prompt).strip()
-                selected_index = int(deepseek_response)
-                
-                if 1 <= selected_index <= len(linkedin_links):
-                    return linkedin_links[selected_index - 1]["url"]
-                else:
-                    return None
-                    
-            except Exception as e:
-                logging.info(f"Error in select_best_linkedin_profile: {e}")
-                return None
-
-        def is_currently_working_at_company(linkedin_data, target_company):
-            """
-            Verifica se il profilo lavora attualmente nell'azienda target.
-            """
-            target_lower = target_company.lower()
-            for exp in linkedin_data.get("experience", []):
-                company_name = exp.get("company", "").lower()
-                if target_lower in company_name:
-                    # Controlla se 'Present' appare nel totale o in qualche ruolo
-                    if "Present" in exp.get("total", ""):
-                        return True
-                    for role_str in exp.get("roles", []):
-                        if "Present" in role_str:
-                            return True
-            return False
-
-        try:
-            if not ranked_profiles:
-                return []
-            
-            profiles_with_linkedin = []
-            profiles_without_linkedin = []
-            
-            for ranked_profile in ranked_profiles:
-                profile = ranked_profile['profile']
-                if profile.get('linkedin_url'):
-                    profiles_with_linkedin.append(ranked_profile)
-                else:
-                    ranked_profile['final_ai_score'] = ranked_profile['superficial_ai_score']
-                    ranked_profile['deep_evaluated'] = True
-                    profiles_without_linkedin.append(ranked_profile)
-            
-            if not profiles_with_linkedin:
-                return profiles_without_linkedin
-            
-            SMALL_BATCH_SIZE = 5
-            num_profiles = len(profiles_with_linkedin)
-            all_evaluated = profiles_without_linkedin.copy()
-            
-            # --- NUOVA LOGICA: BATCH DINAMICO ---
-            # Usiamo un indice per scorrere tutti i profili con LinkedIn disponibili.
-            current_profile_index = 0
-            
-            # Continuiamo finché non abbiamo processato tutti i profili o raggiunto il target.
-            while current_profile_index < num_profiles and len(excellent_profiles) < n_profiles:
-                
-                logging.info(f"\nBuilding new deep evaluation batch (Target size: {SMALL_BATCH_SIZE})...")
-                
-                # Questo batch conterrà solo profili con dati LinkedIn validi.
-                valid_batch_profiles = []
-                
-                # Cicliamo per trovare abbastanza profili VALIDI per riempire il batch.
-                while len(valid_batch_profiles) < SMALL_BATCH_SIZE and current_profile_index < num_profiles:
-                    
-                    # Prendiamo il prossimo profilo dalla lista e avanziamo subito l'indice.
-                    ranked_profile = profiles_with_linkedin[current_profile_index]
-                    current_profile_index += 1
-
-                    profile = ranked_profile['profile']
-                    linkedin_url = profile.get('linkedin_url')
-                    linkedin_data = None
-                    
-                    logging.info(f"  Checking profile {current_profile_index}/{num_profiles}: {profile.get('name', 'Unknown')}")
-                    
-                    try:
-                        linkedin_data = get_linkedin_profile_data(linkedin_url)
-                    except Exception as e:
-                        logging.info(f"    - Error getting LinkedIn data, attempting search fallback...")
-                        try:
-                            profile_name = profile.get('name', '')
-                            if profile_name:
-                                linkedin_data = search_and_get_linkedin_profile(profile_name)
-                        except Exception as search_e:
-                            logging.info(f"    - LinkedIn search fallback failed: {search_e}")
-                    
-                    # Se abbiamo dati LinkedIn E il profilo lavora attualmente nell'azienda...
-                    if linkedin_data and is_currently_working_at_company(linkedin_data, azienda):
-                        logging.info(f"    ✓ Valid profile. Adding to batch ({len(valid_batch_profiles) + 1}/{SMALL_BATCH_SIZE}).")
-                        valid_batch_profiles.append({
-                            'original_ranked_profile': ranked_profile,
-                            'linkedin_data': linkedin_data
-                        })
-                    else:
-                        # Profilo non valido (non lavora più lì o dati non trovati).
-                        logging.info(f"    ✗ Invalid profile or not current employee. Using superficial score.")
-                        ranked_profile['final_ai_score'] = ranked_profile['superficial_ai_score']
-                        ranked_profile['deep_evaluated'] = True
-                        all_evaluated.append(ranked_profile)
-                
-                # Se, dopo aver cercato, non abbiamo trovato nessun profilo valido per il batch, continuiamo.
-                if not valid_batch_profiles:
-                    logging.info("Could not form a valid batch from remaining profiles.")
-                    continue
-
-                # Ora che abbiamo un batch pieno (o con tutti i profili validi rimasti), lo processiamo.
-                logging.info(f"Processing batch of {len(valid_batch_profiles)} valid profiles...")
-                
-                # Costruisci il prompt per il batch corrente
-                profiles_data = []
-                for j, profile_eval in enumerate(valid_batch_profiles):
-                    profiles_data.append(f"Profile {j+1}:\n{profile_eval['linkedin_data']}\n")
-                
-                profiles_text = "".join(profiles_data)
-                
-                # ... (il codice per costruire 'chat_prompt' e chiamare 'ai_chat(chat_prompt)' rimane invariato) ...
-                chat_prompt = f"""# CONTEXT
-Your objective is to evaluate each recruiter's suitability for recruiting the candidate described in the USER PROFILE for a position at the company "{azienda}". The score must reflect how objectively the recruiter matches this specific candidate, based exclusively on the following rules.
-
-# USER PROFILE: 
-{user_profile}
-
----
-
-# RECRUITER PROFILES: 
-{profiles_text}
-
----
-
-# ALGORITHMIC EVALUATION PROCESS:
-
-### STEP 1: DETAILED EVALUATION (Total: 10 points)
-For each recruiter, calculate their score by summing the points from each of the following categories.
-
-#### 1. WORK EXPERIENCE (0-3 points)
-This criterion measures the alignment between the recruiter's experience and the candidate's background. Apply the following rules in order:
-- **3 points (Same company history):** Award 3 points ONLY IF the recruiter's work history includes one or more of the same companies listed in the **candidate's work history**. Their role at that company does not matter for this rule.
-- **2 points (Same industry + similar skills focus):** If the 3-point rule is not met, award 2 points ONLY IF **both** of the following conditions are true:
-    a) The recruiter works in the candidate's primary industry.
-    b) Their profile explicitly states they hire for roles similar to the candidate's OR they support relevant departments (e.g., "Engineering", "R&D", "Product").
-- **1 point (Same industry only):** If the 2-point rule is not met, award 1 point if the recruiter works in the candidate's primary industry but supports non-relevant departments (e.g., "Corporate Functions", "Marketing", "Sales") or if their supported department is not specified.
-- **0 points (No overlap):** If none of the conditions above are met.
-
-#### 2. EDUCATION (0-2 points)
-- **2 points:** Same university as the candidate.
-- **1 point:** Same field of study as the candidate.
-- **0 points:** No similarity.
-
-#### 3. GEOGRAPHIC ALIGNMENT (0-2 points)
-- **2 points:** Same nationality as the candidate AND their profile indicates a focus on the candidate's geographic area.
-- **1 point:** Same nationality as the candidate OR their profile indicates coverage of the candidate's geographic area.
-- **0 points:** No geographic alignment.
-
-#### 4. RECRUITING EXPERIENCE (0-2 points)
-- To score any points in this category, the recruiter's profile (in the summary or job descriptions) MUST contain at least one of the following keywords: **"recruiting", "sourcing", "talent acquisition", "staffing", "hiring", "headhunting"**.
-    - **2 points:** If one of the keywords is present AND the role is senior-level with 2+ years of experience.
-    - **1 point:** If one of the keywords is present AND the role is junior-level with less than 2 years of experience.
-    - **0 points:** If none of the keywords are present, regardless of the job title (this includes HR Business Partner roles).
-
-#### 5. PROFILE QUALITY (0-1 point)
-- **1 point:** The profile has a summary and detailed experience descriptions.
-- **0 points:** The profile is incomplete.
-
----
-
-# OUTPUT REQUIREMENTS:
-- **Format**: Valid JSON only, with no additional text.
-- **Keys**: Profile number as a string (e.g., "1", "2", "3", ...).
-- **Values**: Integer score from 0 to 10.
-
-# EXAMPLE OUTPUT:
-{{"1": 2,"2": 4,"3": 8,"4": 3, "5": 2}}
-"""
-                
-                scores = ai_chat(chat_prompt, format="json")
-
-                # Processa i punteggi come prima
-                for idx_str, score in scores.items():
-                    try:
-                        response_idx = int(idx_str) - 1
-                        score = max(1, min(10, int(score)))
-                        
-                        if 0 <= response_idx < len(valid_batch_profiles):
-                            ranked_profile = valid_batch_profiles[response_idx]['original_ranked_profile']
-                            ranked_profile['final_ai_score'] = score
-                            ranked_profile['deep_evaluated'] = True
-                            all_evaluated.append(ranked_profile)
-                            
-                            if score >= 7:
-                                excellent_profiles.append(ranked_profile)
-                                logging.info(f"  ✓ EXCELLENT profile found (score: {score}) - Total: {len(excellent_profiles)}/{n_profiles}")
-                    except (ValueError, TypeError):
-                        continue
-                
-                # Il controllo di terminazione anticipata è implicito nel loop 'while' principale.
-
-            # Se usciamo dal loop perché abbiamo esaurito i profili, ma ne restano alcuni non processati
-            # nella lista originale, li marchiamo come valutati superficialmente.
-            if current_profile_index < num_profiles:
-                logging.info("🎯 TARGET REACHED! Stopping deep evaluation.")
-                for i in range(current_profile_index, num_profiles):
-                    remaining_profile = profiles_with_linkedin[i]
-                    remaining_profile['final_ai_score'] = remaining_profile['superficial_ai_score']
-                    remaining_profile['deep_evaluated'] = True
-                    all_evaluated.append(remaining_profile)
-            
-            return all_evaluated
-            
-        except Exception as e:
-            logging.info(f"Error in batch deep evaluation: {e}")
-            for ranked_profile in ranked_profiles:
-                if ranked_profile['final_ai_score'] is None:
-                    ranked_profile['final_ai_score'] = ranked_profile['superficial_ai_score']
-                    ranked_profile['deep_evaluated'] = True
-            return ranked_profiles            
-                
-    # Main execution variables
-    all_deep_evaluated = []  # All profiles that received deep evaluation
-    excellent_profiles = []  # Profiles with final score >= 7 (moved to function scope)
-    all_found_ids = set()  # Track IDs to avoid duplicates across queries
-    temp_profiles_batch = []  # Temporary batch for processing
-    parametri_opzionali = parametri.copy() if parametri else []
-    evaluated_names = set()
-
-    logging.info(f"=== CASCADING BATCH SEARCH FOR {n_profiles} EXCELLENT RECRUITERS ===")
-    logging.info(f"Target: Profiles with AI score >= 7")
-    logging.info("Using optimized batch evaluation with 3-profile threshold and 2-profile LinkedIn batches")
-    
-    # Prepare query parameters
-    # Replaced: base_mandatory_params logic
-    base_mandatory_params = {}
-    
-    # Determine company parameter type
-    if azienda.startswith('https://linkedin.com/company/') or azienda.startswith('https://www.linkedin.com/company/'):
-        base_mandatory_params['company_linkedin_url'] = [azienda]
-    else:
-        base_mandatory_params['company_name'] = [azienda]
-    
-    # Department-based mandatory parameters
-    dept_mandatory_params = base_mandatory_params.copy()
-    dept_mandatory_params['department'] = ['Recruiting', 'Talent Management']
-    
-    # Title-based alternative parameters
-    title_based_params = base_mandatory_params.copy()
-    title_based_params['current_title'] = [
-        'recruiter', 'recruiting', 'talent management', 'talent manager', 
-        'hr', 'human resources', 'talent acquisition', 'hiring manager',
-        'people operations', 'talent partner', 'staffing', 'headhunter',
-        'talent sourcer', 'recruitment specialist', 'hr business partner'
-    ]
-    
-    # Replaced: execute_single_search
-    # Replaced: build_query  
-    # Replaced: execute_search
-    # Replaced: calculate_initial_ranking
-    
-    # Cascading search process
-    current_optional = parametri_opzionali.copy()
-    query_level = 0
-    queries_exhausted = False
-    
-    while len(excellent_profiles) < n_profiles and not queries_exhausted:
-        query_level += 1
-        current_restriction_level = len(current_optional)
-        query_precision_score = min(10, (len(current_optional) + 1) * 2)
-        
-        logging.info(f"\n=== QUERY LEVEL {query_level} ===")
-        logging.info(f"Restriction level: {current_restriction_level} optional parameters (precision: {query_precision_score})")
-        logging.info(f"Current excellent profiles: {len(excellent_profiles)}/{n_profiles}")
-        logging.info(f"Temp batch size: {len(temp_profiles_batch)}")
-        
-        # Execute department-based search
-        dept_results = execute_single_search(dept_mandatory_params, current_optional, "department-based")
-        new_dept_profiles = 0
-        
-        # Process department results
-        for i, profile in enumerate(dept_results):
-            profile_id = profile.get('id')
-            if profile_id not in all_found_ids:
-                all_found_ids.add(profile_id)
-                temp_profile = {
-                    'profile': profile,
-                    'position': i,
-                    'deep_evaluated': False,
-                    'final_ai_score': None
-                }
-                temp_profiles_batch.append(temp_profile)
-                new_dept_profiles += 1
-        
-        logging.info(f"Department search: {new_dept_profiles} new profiles")
-        
-        # Process department batch if threshold reached (reduced to 3)
-        if len(temp_profiles_batch) >= 3 or (len(temp_profiles_batch) > 0 and len(excellent_profiles) + len(temp_profiles_batch) >= n_profiles):
-            logging.info(f"\n🔄 Processing department batch (size: {len(temp_profiles_batch)})...")
-            evaluated_profiles = process_and_evaluate_batch(temp_profiles_batch, query_precision_score)
-            
-            # Add to main list (excellent profiles already added in get_batch_deep_evaluations_optimized)
-            all_deep_evaluated.extend(evaluated_profiles)
-            
-            # Clear temp batch
-            temp_profiles_batch = []
-            
-            # Check if target reached after department processing
-            if len(excellent_profiles) >= n_profiles:
-                logging.info(f"\n🎯 TARGET REACHED after department search! Found {len(excellent_profiles)} excellent profiles")
-                break
-        
-        # Execute title-based search only if we still need more profiles
-        if len(excellent_profiles) < n_profiles:
-            title_results = execute_single_search(title_based_params, current_optional, "title-based")
-            new_title_profiles = 0
-            
-            # Process title results
-            for i, profile in enumerate(title_results):
-                profile_id = profile.get('id')
-                if profile_id not in all_found_ids:
-                    all_found_ids.add(profile_id)
-                    temp_profile = {
-                        'profile': profile,
-                        'position': i,
-                        'deep_evaluated': False,
-                        'final_ai_score': None
-                    }
-                    temp_profiles_batch.append(temp_profile)
-                    new_title_profiles += 1
-            
-            logging.info(f"Title search: {new_title_profiles} new profiles")
-            logging.info(f"Total temp batch size: {len(temp_profiles_batch)}")
-            
-            # Process title batch if threshold reached (reduced to 3)
-            if len(temp_profiles_batch) >= 3 or (len(temp_profiles_batch) > 0 and len(excellent_profiles) + len(temp_profiles_batch) >= n_profiles):
-                logging.info(f"\n🔄 Processing title batch (size: {len(temp_profiles_batch)})...")
-                evaluated_profiles = process_and_evaluate_batch(temp_profiles_batch, query_precision_score)
-                
-                # Add to main list (excellent profiles already added in get_batch_deep_evaluations_optimized)
-                all_deep_evaluated.extend(evaluated_profiles)
-                
-                # Clear temp batch
-                temp_profiles_batch = []
-                
-                # Check if target reached
-                if len(excellent_profiles) >= n_profiles:
-                    logging.info(f"\n🎯 TARGET REACHED after title search! Found {len(excellent_profiles)} excellent profiles")
-                    break
-        
-        # Check if no new profiles found in this query level
-        total_new_profiles = new_dept_profiles + (new_title_profiles if 'new_title_profiles' in locals() else 0)
-        
-        if total_new_profiles == 0:
-            if current_optional:
-                # Remove least important parameter
-                removed_param = current_optional.pop()
-                logging.info(f"No new profiles found. Removing parameter: {removed_param}")
-                continue
-            else:
-                # Try management levels fallback
-                logging.info("No optional parameters left. Trying management levels fallback...")
-                fallback_params = base_mandatory_params.copy()
-                fallback_params['management_levels'] = ['Founder/Owner', 'C-Level', 'Vice President', 'Head']
-                
-                fallback_results = execute_search(fallback_params)
-                new_fallback_profiles = 0
-                
-                for i, profile in enumerate(fallback_results):
-                    profile_id = profile.get('id')
-                    if profile_id not in all_found_ids:
-                        all_found_ids.add(profile_id)
-                        temp_profile = {
-                            'profile': profile,
-                            'position': i,
-                            'deep_evaluated': False,
-                            'final_ai_score': None
-                        }
-                        temp_profiles_batch.append(temp_profile)
-                        new_fallback_profiles += 1
-                
-                logging.info(f"Management fallback: {new_fallback_profiles} new profiles")
-                
-                if new_fallback_profiles == 0:
-                    queries_exhausted = True
-                    logging.info("All query possibilities exhausted.")
-                    break
-        else:
-            # Move to next restriction level if current_optional is not empty
-            if current_optional:
-                removed_param = current_optional.pop()
-                logging.info(f"\nMoving to next restriction level. Removing parameter: {removed_param}")
-            else:
-                queries_exhausted = True
-                
-    # Process any remaining profiles in temp batch
-    if temp_profiles_batch and len(excellent_profiles) < n_profiles:
-        logging.info(f"\n🔄 Processing final batch of {len(temp_profiles_batch)} profiles...")
-        evaluated_profiles = process_and_evaluate_batch(temp_profiles_batch, query_precision_score, force_evaluation=True)
-        
-        # Add to main list (excellent profiles already added in get_batch_deep_evaluations_optimized)
-        all_deep_evaluated.extend(evaluated_profiles)
-    
-    # Final results determination
-    logging.info(f"\n=== FINAL RESULTS ===")
-    
-    if len(excellent_profiles) >= n_profiles:
-        # Success scenario: return excellent profiles
-        logging.info(f"🎯 SUCCESS: Found {len(excellent_profiles)} excellent profiles (score >= 7)")
-        final_results = excellent_profiles[:n_profiles]
-    else:
-        # Fallback scenario: return best evaluated profiles
-        logging.info(f"⚠️  FALLBACK: Only {len(excellent_profiles)} excellent profiles found")
-        logging.info(f"Returning top {n_profiles} from {len(all_deep_evaluated)} evaluated profiles")
-        
-        # Sort all deep evaluated profiles by final score
-        all_deep_evaluated.sort(key=lambda x: x['final_ai_score'], reverse=True)
-        final_results = all_deep_evaluated[:n_profiles]
-    
-    # Prepare final output with scores
-    output_results = []
-    for ranked_profile in final_results:
-        profile_data = ranked_profile['profile'].copy()
-        profile_data['ai_scores'] = {
-            'initial_ranking_score': ranked_profile['initial_score'],
-            'superficial_ai_score': ranked_profile['superficial_ai_score'],
-            'final_ai_score': ranked_profile['final_ai_score'],
-            'is_excellent': ranked_profile['final_ai_score'] >= 7
-        }
-        output_results.append(profile_data)
-    
-    logging.info(f"Returning {len(output_results)} profiles with AI scoring")
-    logging.info(f"Total profiles evaluated: {len(all_deep_evaluated)}")
-    return output_results
-
-def generate_recruitment_email(articles_content, about_md, linkedin_md, user_info, recruiter_info):
-    """
-    Genera un'email personalizzata da inviare a un recruiter utilizzando le informazioni fornite.
-    
-    Args:
-        articles_content (list): Lista di dizionari contenenti informazioni sugli articoli del blog
-        about_md (str): Contenuto markdown della pagina 'About Us' dell'azienda
-        linkedin_md (str): Contenuto markdown della pagina LinkedIn dell'azienda
-        user_info (dict): Informazioni dell'utente/candidato
-        recruiter_info (dict): Informazioni del recruiter
-    
-    Returns:
-        str: L'email personalizzata pronta per essere inviata
-    """
-    
-    # Preparazione dei dati per il prompt
-    articles_text = ""
-    for i, article in enumerate(articles_content, 1):
-        articles_text += f"Articolo {i}:\nTitolo: {article['title']}\nURL: {article['url']}\n\nContenuto:\n{article['markdown']}\n\n"
-    
-    # Estrazione delle informazioni chiave dell'utente
-    user_name = user_info.get("name", "")
-    user_role = user_info.get("currentRole", "")
-    user_skills = ", ".join(user_info.get("skills", []))
-    user_experience = user_info.get("experience", "")
-    
-    # Estrazione delle informazioni chiave del recruiter
-    recruiter_name = recruiter_info.get("name", "")
-    recruiter_role = recruiter_info.get("role", "")
-    company_name = recruiter_info.get("company", "")
-    
-    # Creazione del prompt dettagliato per l'AI
-    prompt = f"""
-    Sei un esperto di comunicazione professionale e sviluppo di carriera in ambito tech/IT. Il tuo compito è creare un'email di candidatura altamente personalizzata e persuasiva da inviare a un recruiter.
-    
-    # CONTESTO
-    
-    ## Informazioni sul candidato
-    ```json
-    {user_info}
-    ```
-    
-    ## Informazioni sul recruiter
-    ```json
-    {recruiter_info}
-    ```
-    
-    ## Informazioni sull'azienda dalla pagina "About Us"
-    ```markdown
-    {about_md}
-    ```
-    
-    ## Informazioni aziendali da LinkedIn
-    ```markdown
-    {linkedin_md}
-    ```
-    
-    ## Articoli recenti del blog aziendale
-    {articles_text}
-    
-    # ISTRUZIONI
-    
-    Crea un'email di candidatura personalizzata che:
-    
-    1. Si rivolga direttamente al recruiter per nome e con un tono professionale ma non eccessivamente formale
-    
-    2. Abbia un oggetto incisivo e persuasivo che catturi l'attenzione
-    
-    3. Inizi con un'introduzione personale concisa che presenti il candidato e specifichi immediatamente l'interesse verso una posizione nell'azienda
-    
-    4. Faccia riferimento specifico e strategico ad almeno uno degli articoli del blog forniti, dimostrando una comprensione approfondita dei contenuti e collegandoli alle competenze o all'esperienza del candidato
-    
-    5. Evidenzi 2-3 realizzazioni chiave o competenze del candidato particolarmente rilevanti per l'azienda, basandosi sui valori e le tecnologie menzionate nelle informazioni aziendali
-    
-    6. Mostri un chiaro allineamento tra i valori/obiettivi del candidato e la cultura/missione dell'azienda
-    
-    7. Includa una call-to-action che richieda un colloquio o una conversazione, suggerendo anche disponibilità flessibile
-    
-    8. Si concluda in modo cortese e professionale
-    
-    9. Mantenga una lunghezza totale massima di 400 parole
-    
-    10. Sia strutturata in paragrafi brevi e leggibili
-    
-    # FORMATO OUTPUT
-    
-    Oggetto: [Oggetto dell'email]
-    
-    [Corpo dell'email]
-    
-    [Firma]
-    
-    La firma deve includere il nome completo del candidato, il suo ruolo attuale, eventuale link a portfolio/GitHub/LinkedIn e altre informazioni di contatto rilevanti.
-    
-    # NOTE IMPORTANTI
-    
-    - L'email deve essere autentica, non generica o eccessivamente commerciale.
-    - Evita frasi fatte e luoghi comuni del settore recruitment.
-    - Non esagerare con le lodi all'azienda; l'entusiasmo deve essere credibile.
-    - I riferimenti agli articoli devono essere precisi e mostrare vera comprensione del contenuto.
-    - Sii specifico riguardo a come il profilo del candidato si allinea con le esigenze dell'azienda.
-    """
-    
-    # Invio del prompt all'API del modello AI
-    generated_email = ai_chat(prompt)
-    
-    return generated_email
 
 # Esempio di utilizzo:
 articles_list = [
