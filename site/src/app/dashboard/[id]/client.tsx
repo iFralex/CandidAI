@@ -4,6 +4,7 @@
 
 import { track, refreshUserPropertiesFromFirestore } from "@/lib/analytics";
 import { FeedbackPrompt } from "@/components/FeedbackPrompt";
+import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { CompanyLogo } from "@/components/dashboard";
 import SkillsListBase, { calculateProgress, EducationList, ExperienceList } from "@/components/detailsServer";
 import { AdvancedFiltersClient, CriteriaDisplay } from "@/components/onboarding";
@@ -431,17 +432,9 @@ const RecruiterProfileCard = ({ data, defaultStrategy, inProgress }: { data: any
     handleSetRightStrategy()
   }, [strategy, defaultStrategy]);
 
-  const getInitials = (name: string) => {
-    if (!name) return "??";
-    const parts = name.trim().split(" ");
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
-
   const name = data?.recruiter_summary?.name || "Nome Cognome";
   const title = data?.recruiter_summary?.title || "Job Title";
   const location = data?.recruiter_summary?.location?.country || "Location";
-  const initials = getInitials(name);
 
   const handleFind = async () => {
     try {
@@ -463,9 +456,8 @@ const RecruiterProfileCard = ({ data, defaultStrategy, inProgress }: { data: any
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 150, damping: 15 }}
-          className="w-24 h-24 rounded-full bg-violet-500/30 border border-violet-500 flex items-center justify-center text-white font-semibold text-xl flex-shrink-0"
         >
-          {initials}
+          <ProfileAvatar name={name} size="lg" className="border-violet-500 bg-violet-500/30 text-xl text-white" />
         </motion.div>
         <motion.div variants={itemVariants} className="flex-1 min-w-0">
           <h3 className="text-2xl font-semibold text-white truncate">{name}</h3>

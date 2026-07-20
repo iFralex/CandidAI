@@ -7,6 +7,7 @@ import { BriefcaseBusiness, Building2, Check, Copy, Crown, ExternalLink, Graduat
 import { ProfileAnalysisClient, CompanyInputClient } from '@/components/onboarding'
 import { PlanSelector, type PlanInfo } from '@/components/PlanSelector'
 import { UnifiedCheckout } from '@/components/UnifiedCheckout'
+import { ProfileAvatar } from '@/components/ProfileAvatar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -173,10 +174,9 @@ function SearchExperience({ preview, replay = false, onReplayComplete }: { previ
 }
 
 function ApplicationAssembly({ preview }: { preview: OnboardingPreviewState }) {
-  const initials = (preview.recruiter?.name || '?').split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
   return <motion.div className="mx-auto flex min-h-[590px] max-w-3xl flex-col items-center justify-center text-center" initial={{ opacity: 0, y: 40, filter: 'blur(12px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -32, filter: 'blur(10px)' }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}>
     <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.6 }}><p className="text-sm uppercase tracking-[0.2em] text-emerald-300">Match found</p><h2 className="mt-4 text-3xl font-bold text-white sm:text-5xl">The best recruiter for you at {preview.company?.name} is</h2></motion.div>
-    <motion.div layout layoutId="onboarding-recruiter-card" className="mt-8 w-full" initial={{ opacity: 0, scale: 0.92, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}><Card hover={false} className="mx-auto max-w-xl border-emerald-400/20 p-7 sm:p-9"><div className="relative mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-violet-400/30 bg-violet-500/15 text-2xl font-semibold text-violet-200"><span>{initials}</span>{preview.recruiterProfile?.avatarUrl && <img src={preview.recruiterProfile.avatarUrl} alt="" className="absolute h-24 w-24 rounded-full object-cover" onError={event => { event.currentTarget.style.display = 'none' }} />}</div><p className="mt-5 text-2xl font-semibold text-white">{preview.recruiter?.name}</p><p className="mt-1 text-violet-300">{preview.recruiter?.jobTitle}</p><Separator className="my-6" /><p className="text-sm leading-7 text-gray-300">{preview.recruiterInsight?.reason || `This person emerged from the strongest match between your background and ${preview.company?.name}’s team, using “${preview.matchedQuery?.name || 'the best available strategy'}”.`}</p></Card></motion.div>
+    <motion.div layout layoutId="onboarding-recruiter-card" className="mt-8 w-full" initial={{ opacity: 0, scale: 0.92, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}><Card hover={false} className="mx-auto max-w-xl border-emerald-400/20 p-7 sm:p-9"><ProfileAvatar name={preview.recruiter?.name} imageUrl={preview.recruiterProfile?.avatarUrl} size="lg" className="mx-auto" /><p className="mt-5 text-2xl font-semibold text-white">{preview.recruiter?.name}</p><p className="mt-1 text-violet-300">{preview.recruiter?.jobTitle}</p><Separator className="my-6" /><p className="text-sm leading-7 text-gray-300">{preview.recruiterInsight?.reason || `This person emerged from the strongest match between your background and ${preview.company?.name}’s team, using “${preview.matchedQuery?.name || 'the best available strategy'}”.`}</p></Card></motion.div>
     <motion.div className="mt-7 flex items-center gap-2 text-sm text-gray-500" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.15, duration: 0.5 }}><Loader2 className="h-4 w-4 animate-spin text-violet-400" />Generating your personalized email…</motion.div>
   </motion.div>
 }
@@ -184,7 +184,6 @@ function ApplicationAssembly({ preview }: { preview: OnboardingPreviewState }) {
 function EmailDeliveryReveal({ preview }: { preview: OnboardingPreviewState }) {
   const [emailVisible, setEmailVisible] = useState(false)
   const [ready, setReady] = useState(false)
-  const initials = (preview.recruiter?.name || '?').split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
   const paragraphs = (preview.email?.body || '').split(/\n\s*\n/).filter(Boolean).slice(0, 3)
 
   useEffect(() => {
@@ -206,7 +205,7 @@ function EmailDeliveryReveal({ preview }: { preview: OnboardingPreviewState }) {
     <motion.div layout className={emailVisible ? 'grid items-stretch gap-5 lg:grid-cols-[280px_1fr]' : 'flex justify-center'} transition={{ layout: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }}>
       <motion.div layout layoutId="onboarding-recruiter-card" className="w-full max-w-[360px]" transition={{ layout: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }}>
         <Card hover={false} className="flex h-full flex-col items-center justify-center border-emerald-400/20 p-6 text-center">
-          <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-violet-400/30 bg-violet-500/15 font-semibold text-violet-200"><span>{initials}</span>{preview.recruiterProfile?.avatarUrl && <img src={preview.recruiterProfile.avatarUrl} alt="" className="absolute h-16 w-16 rounded-full object-cover" onError={event => { event.currentTarget.style.display = 'none' }} />}</div>
+          <ProfileAvatar name={preview.recruiter?.name} imageUrl={preview.recruiterProfile?.avatarUrl} size="sm" />
           <p className="mt-4 text-lg font-semibold text-white">{preview.recruiter?.name}</p>
           <p className="mt-1 text-sm text-violet-300">{preview.recruiter?.jobTitle}</p>
           <motion.div initial={{ scaleY: 0 }} animate={emailVisible ? { scaleY: 1 } : { scaleY: 0 }} className="mt-5 h-10 w-px origin-top bg-gradient-to-b from-violet-400/70 to-transparent lg:hidden" />
