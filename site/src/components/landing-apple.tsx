@@ -82,32 +82,34 @@ function HeroCta() {
  */
 function AppleHeroStatic() {
     return (
-        <div className="relative flex min-h-dvh w-full flex-col items-center justify-center gap-10 px-6 py-20 text-center">
+        <div className="relative flex min-h-dvh w-full items-center justify-center px-6 py-20">
             <AnimatedBackground />
-            <h1 className={`${syne.className} font-black leading-[0.9] tracking-tight text-[clamp(4rem,10vw,9rem)]`}>
-                <span className="block text-[#F5F3FF]">Land Your</span>
-                <span className="block bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
-                    Dream Job
-                </span>
-            </h1>
             {/* Says plainly what the product does, since "Land Your Dream Job"
                 alone doesn't explain it — no scroll-hint or early CTA needed
                 here (unlike the animated version below): everything, CTA
                 included, is already visible at once in this static layout. */}
-            <p className="max-w-xl text-lg text-gray-400">
-                AI-powered recruiter outreach, personalized for every company and role.
-            </p>
-            <div className="max-w-2xl text-left">
-                <div className="mb-3 flex flex-wrap items-center gap-4 font-mono text-xs uppercase tracking-[0.2em] text-violet-300">
-                    <span>To: {heroEmail.recruiter}</span>
-                    <span>Subject: {heroEmail.subject}</span>
-                </div>
-                <p className="whitespace-pre-line text-lg leading-relaxed text-gray-300">
-                    {heroEmail.preview}
+            <div className="relative z-10 flex flex-col items-center gap-10 text-center">
+                <h1 className={`${syne.className} font-black leading-[0.9] tracking-tight text-[clamp(4rem,10vw,9rem)]`}>
+                    <span className="block text-[#F5F3FF]">Land Your</span>
+                    <span className="block bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
+                        Dream Job
+                    </span>
+                </h1>
+                <p className="max-w-xl text-lg text-gray-400">
+                    AI-powered recruiter outreach, personalized for every company and role.
                 </p>
-            </div>
-            <div className="flex flex-col items-center gap-3">
-                <HeroCta />
+                <div className="max-w-2xl text-left">
+                    <div className="mb-3 flex flex-wrap items-center gap-4 font-mono text-xs uppercase tracking-[0.2em] text-violet-300">
+                        <span>To: {heroEmail.recruiter}</span>
+                        <span>Subject: {heroEmail.subject}</span>
+                    </div>
+                    <p className="whitespace-pre-line text-lg leading-relaxed text-gray-300">
+                        {heroEmail.preview}
+                    </p>
+                </div>
+                <div className="flex flex-col items-center gap-3">
+                    <HeroCta />
+                </div>
             </div>
         </div>
     );
@@ -153,92 +155,94 @@ function AppleHeroAnimated({ progress }: { progress: MotionValue<number> }) {
     });
 
     return (
-        <div className="relative flex h-full w-full flex-col items-center justify-center px-6 text-center">
+        <div className="relative h-full w-full">
             <AnimatedBackground />
-            <motion.h1
-                style={{ opacity: headlineOpacity, scale: headlineScale }}
-                className={`${syne.className} font-black leading-[0.9] tracking-tight text-[clamp(4rem,10vw,9rem)]`}
-            >
-                <span className="block text-[#F5F3FF]">Land Your</span>
-                <span className="block bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
-                    Dream Job
-                </span>
-            </motion.h1>
-
-            {/* Says plainly what the product does — "Land Your Dream Job" alone
-                is evocative but doesn't explain the mechanism. Shares the
-                headline's own opacity MotionValue: same fade-in/out rhythm,
-                no separate useTransform needed. */}
-            <motion.p style={{ opacity: headlineOpacity }} className="mt-4 max-w-xl px-6 text-lg text-gray-400">
-                AI-powered recruiter outreach, personalized for every company and role.
-            </motion.p>
-            <motion.div
-                style={{ opacity: headlineOpacity }}
-                className="mt-8 flex flex-col items-center gap-2 text-xs uppercase tracking-[0.15em] text-gray-500"
-            >
-                <span>Scroll to see your email take shape</span>
-                <ChevronDown className="h-4 w-4 animate-bounce" />
-            </motion.div>
-
-            {/* Quiet, non-dominant early exit for anyone who won't scroll
-                through the whole ~250vh sequence — deliberately NOT styled
-                like the gold "Ready to review" moment below, so it doesn't
-                compete with or preempt that payoff. */}
-            <motion.div
-                data-testid="apple-hero-early-cta"
-                style={{ opacity: earlyCtaOpacity, visibility: earlyCtaVisibility, pointerEvents: earlyCtaInteractive }}
-                className="absolute bottom-10"
-            >
-                <Link
-                    href="/register"
-                    className="text-sm text-gray-400 underline-offset-4 transition-colors hover:text-white hover:underline"
-                    onClick={() => track({ name: "landing_cta_click", params: { button_label: "Try one email free", section: "apple_hero_early" } })}
+            <div className="relative z-10 flex h-full w-full flex-col items-center justify-center px-6 text-center">
+                <motion.h1
+                    style={{ opacity: headlineOpacity, scale: headlineScale }}
+                    className={`${syne.className} font-black leading-[0.9] tracking-tight text-[clamp(4rem,10vw,9rem)]`}
                 >
-                    Try one email free →
-                </Link>
-            </motion.div>
+                    <span className="block text-[#F5F3FF]">Land Your</span>
+                    <span className="block bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
+                        Dream Job
+                    </span>
+                </motion.h1>
 
-            {/* Explicit centered anchor (top-1/2 + both translates) instead of a
-                bare `absolute` with no offsets — an absolutely positioned box
-                with no top/left/right/bottom falls back to an undefined
-                "static position" and can end up overlapping the headline. This
-                scene only ever renders when NOT reduced-motion, and the
-                headline/email opacity ranges only briefly overlap (0.22-0.28)
-                as a deliberate crossfade — never both at full opacity. */}
-            <motion.div
-                style={{ opacity: emailOpacity }}
-                className="absolute left-1/2 top-[44%] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 px-6 text-left sm:top-1/2"
-            >
-                <div className="mb-3 flex flex-wrap items-center gap-4 font-mono text-xs uppercase tracking-[0.2em] text-violet-300">
-                    <span>To: {heroEmail.recruiter}</span>
-                    <span>Subject: {heroEmail.subject}</span>
-                </div>
-                {/* The visible, scroll-scrubbed reveal is aria-hidden; a
-                    visually hidden `sr-only` element carries the FULL email
-                    text at all times, so a screen reader user gets the
-                    complete message immediately instead of a fragment tied to
-                    scroll position. Smaller on narrow screens (`text-base` vs
-                    `text-lg`) and anchored slightly higher (`top-[44%]`) than
-                    on desktop, so the full multi-line preview has less chance
-                    of growing tall enough to reach the final CTA at `bottom-16`
-                    on short mobile viewports. */}
-                <p aria-hidden="true" className="whitespace-pre-line text-base leading-relaxed text-gray-300 sm:text-lg">
-                    {heroEmail.preview.slice(0, revealCount)}
-                </p>
-                <p className="sr-only">{heroEmail.preview}</p>
-            </motion.div>
+                {/* Says plainly what the product does — "Land Your Dream Job" alone
+                    is evocative but doesn't explain the mechanism. Shares the
+                    headline's own opacity MotionValue: same fade-in/out rhythm,
+                    no separate useTransform needed. */}
+                <motion.p style={{ opacity: headlineOpacity }} className="mt-4 max-w-xl px-6 text-lg text-gray-400">
+                    AI-powered recruiter outreach, personalized for every company and role.
+                </motion.p>
+                <motion.div
+                    style={{ opacity: headlineOpacity }}
+                    className="mt-8 flex flex-col items-center gap-2 text-xs uppercase tracking-[0.15em] text-gray-500"
+                >
+                    <span>Scroll to see your email take shape</span>
+                    <ChevronDown className="h-4 w-4 animate-bounce" />
+                </motion.div>
 
-            {/* Gold accent reserved for this one completion moment — it never
-                appears elsewhere on the page, so it reads as a real signal.
-                data-testid lets the e2e suite (Task 10) assert this block's
-                real opacity before/after scrolling through the sequence. */}
-            <motion.div
-                data-testid="apple-hero-cta"
-                style={{ opacity: ctaOpacity, visibility: ctaVisibility, pointerEvents: ctaInteractive }}
-                className="absolute bottom-16 flex flex-col items-center gap-3"
-            >
-                <HeroCta />
-            </motion.div>
+                {/* Quiet, non-dominant early exit for anyone who won't scroll
+                    through the whole ~250vh sequence — deliberately NOT styled
+                    like the gold "Ready to review" moment below, so it doesn't
+                    compete with or preempt that payoff. */}
+                <motion.div
+                    data-testid="apple-hero-early-cta"
+                    style={{ opacity: earlyCtaOpacity, visibility: earlyCtaVisibility, pointerEvents: earlyCtaInteractive }}
+                    className="absolute bottom-10"
+                >
+                    <Link
+                        href="/register"
+                        className="text-sm text-gray-400 underline-offset-4 transition-colors hover:text-white hover:underline"
+                        onClick={() => track({ name: "landing_cta_click", params: { button_label: "Try one email free", section: "apple_hero_early" } })}
+                    >
+                        Try one email free →
+                    </Link>
+                </motion.div>
+
+                {/* Explicit centered anchor (top-1/2 + both translates) instead of a
+                    bare `absolute` with no offsets — an absolutely positioned box
+                    with no top/left/right/bottom falls back to an undefined
+                    "static position" and can end up overlapping the headline. This
+                    scene only ever renders when NOT reduced-motion, and the
+                    headline/email opacity ranges only briefly overlap (0.22-0.28)
+                    as a deliberate crossfade — never both at full opacity. */}
+                <motion.div
+                    style={{ opacity: emailOpacity }}
+                    className="absolute left-1/2 top-[44%] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 px-6 text-left sm:top-1/2"
+                >
+                    <div className="mb-3 flex flex-wrap items-center gap-4 font-mono text-xs uppercase tracking-[0.2em] text-violet-300">
+                        <span>To: {heroEmail.recruiter}</span>
+                        <span>Subject: {heroEmail.subject}</span>
+                    </div>
+                    {/* The visible, scroll-scrubbed reveal is aria-hidden; a
+                        visually hidden `sr-only` element carries the FULL email
+                        text at all times, so a screen reader user gets the
+                        complete message immediately instead of a fragment tied to
+                        scroll position. Smaller on narrow screens (`text-base` vs
+                        `text-lg`) and anchored slightly higher (`top-[44%]`) than
+                        on desktop, so the full multi-line preview has less chance
+                        of growing tall enough to reach the final CTA at `bottom-16`
+                        on short mobile viewports. */}
+                    <p aria-hidden="true" className="whitespace-pre-line text-base leading-relaxed text-gray-300 sm:text-lg">
+                        {heroEmail.preview.slice(0, revealCount)}
+                    </p>
+                    <p className="sr-only">{heroEmail.preview}</p>
+                </motion.div>
+
+                {/* Gold accent reserved for this one completion moment — it never
+                    appears elsewhere on the page, so it reads as a real signal.
+                    data-testid lets the e2e suite (Task 10) assert this block's
+                    real opacity before/after scrolling through the sequence. */}
+                <motion.div
+                    data-testid="apple-hero-cta"
+                    style={{ opacity: ctaOpacity, visibility: ctaVisibility, pointerEvents: ctaInteractive }}
+                    className="absolute bottom-16 flex flex-col items-center gap-3"
+                >
+                    <HeroCta />
+                </motion.div>
+            </div>
         </div>
     );
 }
