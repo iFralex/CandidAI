@@ -6,7 +6,7 @@ export const metadata = { title: "Dashboard" };
 import { Results, ResultsSkeleton, CampaignSkeleton } from "@/components/dashboardServer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Crown, ExternalLink, Mail, Plus, RefreshCw, Send } from "lucide-react";
+import { ArrowRight, CheckCircle, Crown, ExternalLink, Mail, Plus, RefreshCw, Send, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { redirect } from "next/navigation";
@@ -342,6 +342,7 @@ const Page = async () => {
         redirect('/login')
 
     const currentStep = user.onboardingStep || 1
+    const showFreePreviewUpgrade = Boolean(user.freePreviewConsumed) && (!user.plan || user.plan === "free_trial")
 
     if (currentStep < 10)
         return <OnboardingPage user={user} currentStep={currentStep} />
@@ -362,6 +363,36 @@ const Page = async () => {
 
 
             </div>
+
+            {showFreePreviewUpgrade && (
+                <Card hover={false} className="relative overflow-hidden border-violet-400/40 bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-fuchsia-500/10 p-6 shadow-2xl shadow-violet-950/30 sm:p-8">
+                    <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-violet-500/20 blur-3xl" />
+                    <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex items-start gap-4 sm:gap-5">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-violet-300/25 bg-violet-400/15 text-violet-200">
+                                <Mail className="h-7 w-7" />
+                            </div>
+                            <div>
+                                <div className="mb-2 flex flex-wrap items-center gap-2">
+                                    <Badge className="border-emerald-300/20 bg-emerald-400/10 text-emerald-300"><CheckCircle className="mr-1 h-3.5 w-3.5" />First application generated</Badge>
+                                </div>
+                                <h2 className="text-2xl font-bold text-white sm:text-3xl">Your first personalized email has already been created.</h2>
+                                <p className="mt-3 max-w-2xl leading-7 text-gray-300">You’ve completed the free preview. Choose a plan to research more companies, find more relevant recruiters, unlock verified email addresses, and generate new personalized outreach.</p>
+                            </div>
+                        </div>
+                        <Link href="/dashboard/plan-and-credits#plans" className="shrink-0">
+                            <Button size="lg" variant="primary" icon={<ArrowRight className="h-4 w-4" />}>
+                                Choose a plan
+                            </Button>
+                        </Link>
+                    </div>
+                    <div className="relative mt-6 flex flex-wrap gap-x-6 gap-y-2 border-t border-white/10 pt-5 text-sm text-violet-100/80">
+                        <span className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-violet-400" />More target companies</span>
+                        <span className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-violet-400" />Verified recruiter emails</span>
+                        <span className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-violet-400" />Advanced personalization</span>
+                    </div>
+                </Card>
+            )}
 
             <Suspense fallback={<DashboardSkeleton />}>
                 <ResultsWrapper userId={user.uid} plan={user.plan ?? "unknown"} maxCompanies={user.maxCompanies} companiesUsed={user.companiesUsed} />

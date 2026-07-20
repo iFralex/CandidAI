@@ -85,6 +85,7 @@ export async function GET(request) {
         emailVerified: decodedToken.email_verified,
         onboardingStep: userData.onboardingStep,
         onboardingStage: userData.onboardingStage,
+        freePreviewConsumed: Boolean(userData.freePreviewConsumedAt),
         plan: userData.plan,
         billingType: userData.billingType,
         credits: userData.credits,
