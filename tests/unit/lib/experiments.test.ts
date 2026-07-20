@@ -3,6 +3,7 @@ import {
     chooseVariant,
     EXPERIMENTS,
     isExperimentMeasurable,
+    isValidVariant,
     parseExperimentAssignments,
     resolveExperiments,
     serializeExperimentAssignments,
@@ -11,9 +12,11 @@ import {
 describe("experiments", () => {
     it("chooses weighted variants deterministically at the boundaries", () => {
         expect(chooseVariant("landing_redesign_v1", 0)).toBe("control");
-        expect(chooseVariant("landing_redesign_v1", 0.4999)).toBe("control");
-        expect(chooseVariant("landing_redesign_v1", 0.5)).toBe("redesign");
-        expect(chooseVariant("landing_redesign_v1", 0.9999)).toBe("redesign");
+        expect(chooseVariant("landing_redesign_v1", 0.3399)).toBe("control");
+        expect(chooseVariant("landing_redesign_v1", 0.34)).toBe("redesign");
+        expect(chooseVariant("landing_redesign_v1", 0.6699)).toBe("redesign");
+        expect(chooseVariant("landing_redesign_v1", 0.67)).toBe("apple");
+        expect(chooseVariant("landing_redesign_v1", 0.9999)).toBe("apple");
     });
 
     it("round-trips and sanitizes assignment cookies", () => {
@@ -23,6 +26,10 @@ describe("experiments", () => {
             landing_redesign_v1: "invalid",
             unknown_experiment: "control",
         })))).toEqual({});
+    });
+
+    it("accepts apple as a valid variant for landing_redesign_v1", () => {
+        expect(isValidVariant("landing_redesign_v1", "apple")).toBe(true);
     });
 
     it("does not assign draft experiments to production traffic", () => {

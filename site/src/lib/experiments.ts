@@ -43,7 +43,7 @@ export const EXPERIMENTS = {
         // ?ca_exp_landing_redesign_v1=redesign.
         status: "draft",
         paths: ["/"],
-        variants: { control: 50, redesign: 50 },
+        variants: { control: 34, redesign: 33, apple: 33 },
         allocationPercent: 100,
         primaryGoal: "signup_success",
         secondaryGoals: [
@@ -58,7 +58,7 @@ export const EXPERIMENTS = {
         minimumSamplePerVariant: 350,
         minimumRuntimeDays: 14,
         owner: "growth",
-        hypothesis: "A product-led landing increases qualified signups without harming activation or revenue.",
+        hypothesis: "A cinematic, scroll-driven introduction that leads with a personalized email as the hero artifact increases qualified signups without harming activation, video engagement, or revenue, compared to both the current control and the product-led redesign. This is an experience comparison (structure and pacing differ, not just visual style).",
         createdAt: "2026-07-18T00:00:00.000Z",
     },
 } as const satisfies Record<string, ExperimentDefinition>;

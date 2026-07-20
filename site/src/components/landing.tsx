@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from 'framer-motion';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { track } from "@/lib/analytics";
-import { ChevronDown, Sparkles, Target, Zap, Users, Mail, ArrowRight, Check, Star, Play, X, Menu, Clock, TrendingUp, Shield, Award, MessageSquare, BarChart3, Filter, Brain, Eye, Send, Calendar, MapPin, Briefcase, Crown, Infinity, TrendingDown, Bot, AlertTriangle, FileX, XCircle, Gift, Rocket } from 'lucide-react';
+import { ChevronDown, Sparkles, Target, Zap, Users, Mail, ArrowRight, Check, Star, X, Menu, Clock, TrendingUp, Shield, Award, MessageSquare, BarChart3, Filter, Brain, Eye, Send, Calendar, MapPin, Briefcase, Crown, Infinity, TrendingDown, Bot, AlertTriangle, FileX, XCircle, Gift, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -14,260 +14,13 @@ import { get } from 'http';
 import { PlanSelector } from '@/components/PlanSelector';
 import { Badge } from './ui/badge';
 import Link from 'next/link';
-import Player from "@vimeo/player";
-import { useRef } from "react";
-import { Pause, Maximize } from "lucide-react";
 import Image from 'next/image';
 import type { ExperimentAssignments } from '@/lib/experiments';
 import { AmbassadorPromo } from '@/components/AmbassadorPromo';
-
-const videos = [
-    {
-        vimeoId: "1171533200",
-        aspect: "aspect-[9/16]"
-    },
-    {
-        vimeoId: "1171533137",
-        aspect: "aspect-video"
-    }
-];
-
-
-export function HeroVideo() { // Assicurati che 'videos' sia passato come prop o sia importato
-    const [video, setVideo] = useState({});
-    const containerRef = useRef(null);
-    const playerRef = useRef(null);
-    const iframeRef = useRef(null);
-    const idleTimeoutRef = useRef(null);
-
-    const [playing, setPlaying] = useState(false);
-    const [showControls, setShowControls] = useState(false);
-    const [initialized, setInitialized] = useState(false);
-    const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isMobile, setIsMobile] = useState(false); // Nuovo stato per mobile
-
-    // Inizializza il player
-    const initPlayer = (e) => {
-        e?.stopPropagation();
-        setInitialized(true);
-        track({ name: "landing_video_play", params: { video_id: (video as any).vimeoId ?? "unknown" } });
-    };
-
-    useEffect(() => {
-        if (initialized && iframeRef.current && !playerRef.current) {
-            // Usa 'window.Vimeo.Player' o importala se usi il pacchetto npm '@vimeo/player'
-            playerRef.current = new Player(iframeRef.current);
-            playerRef.current.on("play", () => setPlaying(true));
-            playerRef.current.on("pause", () => {
-                setPlaying(false);
-                track({ name: "landing_video_pause", params: { video_id: (video as any).vimeoId ?? "unknown", watch_time_s: 0 } });
-            });
-            playerRef.current.on("ended", () => {
-                track({ name: "landing_video_end", params: { video_id: (video as any).vimeoId ?? "unknown" } });
-            });
-            playerRef.current.play().catch((e) => console.log("Errore play:", e));
-        }
-    }, [initialized]);
-
-    const toggleVideo = (e) => {
-        e?.stopPropagation();
-        if (!playerRef.current) return;
-        if (playing) {
-            playerRef.current.pause();
-        } else {
-            playerRef.current.setVolume(1);
-            playerRef.current.play();
-        }
-    };
-
-    const enterFullscreen = (e) => {
-        e?.stopPropagation();
-        if (!containerRef.current) return;
-        if (containerRef.current.requestFullscreen) {
-            containerRef.current.requestFullscreen();
-        } else if (containerRef.current.webkitRequestFullscreen) {
-            containerRef.current.webkitRequestFullscreen();
-        } else if (containerRef.current.msRequestFullscreen) {
-            containerRef.current.msRequestFullscreen();
-        }
-    };
-
-    // Gestione Resize per Mobile e Scelta Video
-    useEffect(() => {
-        const checkLayout = () => {
-            const width = window.innerWidth;
-            setIsMobile(typeof window !== "undefined" && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
-
-            // Verifica che 'videos' sia disponibile
-            if (videos && videos.length > 1) {
-                if (width >= 1024) {
-                    setVideo(videos[1]);
-                } else {
-                    setVideo(videos[0]);
-                }
-            }
-        };
-
-        checkLayout();
-        window.addEventListener("resize", checkLayout);
-
-        const handler = () => setIsFullscreen(!!document.fullscreenElement);
-        document.addEventListener("fullscreenchange", handler);
-
-        return () => {
-            window.removeEventListener("resize", checkLayout);
-            document.removeEventListener("fullscreenchange", handler);
-        };
-    }, []);
-
-    // --- NUOVA LOGICA CONTROLLI (Unificata per Desktop e Mobile) ---
-    const wakeControls = () => {
-        setShowControls(true);
-        if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
-        if (playing) {
-            idleTimeoutRef.current = setTimeout(() => {
-                setShowControls(false);
-            }, 2000); // Nasconde i controlli dopo 2 secondi
-        }
-    };
-
-    const handleMouseMove = () => {
-        if (isMobile) return; // Ignora hover su mobile
-        wakeControls();
-    };
-
-    const handleMouseLeave = () => {
-        if (isMobile) return; // Su mobile non nascondere bruscamente
-        if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
-        if (playing) setShowControls(false);
-    };
-
-    const handleTouchStart = () => {
-        if (isMobile) {
-            wakeControls();
-            playerRef.current?.setVolume(1); // null se il player non è ancora inizializzato
-        }
-    };
-
-    // Assicura che i controlli spariscano da soli quando inizia il play
-    useEffect(() => {
-        if (!initialized) return;
-
-        if (!playing) {
-            setShowControls(true); // Se in pausa, mostra sempre
-            if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
-        } else {
-            wakeControls(); // Se in play, mostra brevemente e poi nascondi
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [playing, initialized]);
-
-    const handleContainerClick = (e) => {
-        if (!initialized) return;
-
-        // Se siamo su mobile e i controlli sono nascosti, 
-        // il primo tap sveglia solo i controlli senza mettere in pausa
-        if (isMobile && !showControls && playing) {
-            wakeControls();
-            return;
-        }
-
-        toggleVideo(e);
-    };
-
-    const cursorStyle =
-        initialized && playing && !showControls
-            ? { cursor: "none" }
-            : { cursor: "pointer" };
-
-    return (
-        <div className="relative max-w-5xl mx-auto">
-            <div
-                ref={containerRef}
-                className={"relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black " + video.aspect}
-                style={cursorStyle}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                onTouchStart={handleTouchStart} // Aggiunto per il mobile
-                onClick={handleContainerClick}
-            >
-                {initialized && (
-                    <iframe
-                        ref={iframeRef}
-                        src={"https://player.vimeo.com/video/" + video.vimeoId + "?title=0&byline=0&portrait=0&badge=0&controls=0&loop=1"}
-                        allow="fullscreen"
-                        className="absolute inset-0 w-full h-full pointer-events-none"
-                        title="Hero Video"
-                    />
-                )}
-
-                {!initialized && video.vimeoId && (
-                    <div
-                        className="absolute inset-0 flex items-center justify-center cursor-pointer z-10"
-                        onClick={initPlayer}
-                    >
-                        <Image
-                            src={"https://vumbnail.com/" + video.vimeoId + ".jpg"}
-                            className="absolute inset-0 w-full h-full object-cover opacity-80"
-                            alt="Video thumbnail"
-                            width={1920}
-                            height={1080}
-                        />
-                        <div className="relative bg-black/20 backdrop-blur rounded-full p-8 transition-transform hover:scale-110">
-                            <Play className="w-12 h-12 text-white fill-white" />
-                        </div>
-                    </div>
-                )}
-
-                {initialized && showControls && (
-                    <div
-                        className="absolute inset-0 flex items-center justify-center z-20 transition-opacity duration-300"
-                        onClick={toggleVideo}
-                    >
-                        {playing ? (
-                            <Pause className="w-16 h-16 text-white bg-black/30 rounded-full p-4 backdrop-blur-sm transition-transform hover:scale-110" />
-                        ) : (
-                            <Play className="w-16 h-16 text-white bg-black/30 rounded-full p-4 backdrop-blur-sm transition-transform hover:scale-110 fill-white" />
-                        )}
-                    </div>
-                )}
-
-                {/* Il tasto Fullscreen compare solo se !isMobile */}
-                {initialized && !isFullscreen && showControls && !isMobile && (
-                    <button
-                        onClick={enterFullscreen}
-                        className="absolute bottom-4 right-4 bg-black/40 hover:bg-black/60 backdrop-blur rounded-full p-3 z-30 transition-all duration-300"
-                    >
-                        <Maximize className="w-5 h-5 text-white" />
-                    </button>
-                )}
-            </div>
-        </div>
-    );
-}
-
-// Animated Background Component
-const AnimatedBackground = () => {
-    return (
-        <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-900/20 via-purple-900/20 to-pink-900/20"></div>
-            {[...Array(8)].map((_, i) => (
-                <div
-                    key={i}
-                    className={`absolute w-72 h-72 rounded-full blur-xl opacity-20 animate-pulse`}
-                    style={{
-                        background: `radial-gradient(circle, ${['#8b5cf6', '#a855f7', '#c084fc', '#e879f9', '#f472b6', '#fb7185', '#06b6d4', '#10b981'][i]
-                            } 0%, transparent 70%)`,
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                        animationDelay: `${i * 2}s`,
-                        animationDuration: `${4 + i}s`
-                    }}
-                />
-            ))}
-        </div>
-    );
-};
+import { emailExamples } from '@/lib/email-examples';
+import { HeroVideo } from '@/components/HeroVideo';
+import { AnimatedBackground } from '@/components/AnimatedBackground';
+import { AppleHero, AppleCampaignVideo, AppleEmailGallery, AppleActTransition, AppleChapter } from '@/components/landing-apple';
 
 // Hero Section Component
 const HeroSection = () => {
@@ -1152,53 +905,7 @@ const ProcessSection = () => {
 const EmailExamplesSection = () => {
     const [selectedExample, setSelectedExample] = useState(0);
 
-    const examples = [
-        {
-            company: "Oatly",
-            candidate: "Freya Lindholm",
-            role: "Marketing · University of Gothenburg",
-            subject: "Marketing grad with food brand social growth",
-            preview: "Hi Hannah,\n\nI'm a recent marketing graduate from University of Gothenburg, and I've been following Oatly's playful social-first campaigns. During a 6-month internship at a local food brand, I grew their Instagram from 2,000 to 9,000 followers and ran a campaign that boosted online orders by 15%. I'm comfortable with Canva, Meta Ads, and content planning. I'd like to bring that scrappy growth mindset to Oatly's brand team. Could we have a 15-minute chat about junior roles on your social team?",
-            recruiter: "Hannah",
-            matchScore: "92%"
-        },
-        {
-            company: "HubSpot",
-            candidate: "Marcus Johnson",
-            role: "Sales · Arizona State University",
-            subject: "Aspiring SDR with top sales results",
-            preview: "Hi Ashley,\n\nI'm a final-year Business student at ASU with a top sales performance at an electronics retailer, where I closed $45k in a quarter as the top associate. I know you started as an SDR, which is the path I'm pursuing. My campus sales competition 2nd place showed I can learn fast. HubSpot's focus on helping small sales teams thrive resonates with me because I've seen how the right tools empower reps. Could we have a 15-minute chat about the SDR role?",
-            recruiter: "Ashley",
-            matchScore: "89%"
-        },
-        {
-            company: "N26",
-            candidate: "Lucía Morales",
-            role: "Finance · Valencia",
-            subject: "FP&A Junior Candidate — Lucia Morales",
-            preview: "Hi Julia,\n\nI noticed N26's recent push toward disciplined unit economics and path to profitability, which aligns with my background in financial modeling and efficiency. During my internship at a small advisory firm, I built an Excel model that cut monthly management reporting from two days to three hours. My thesis valued a listed company, strengthening my financial analysis skills. I believe my experience could contribute to N26's FP&A team as you drive disciplined financial planning. Could we schedule a 15-minute conversation to explore junior FP&A analyst opportunities?",
-            recruiter: "Julia",
-            matchScore: "94%"
-        },
-        {
-            company: "Razorpay",
-            candidate: "Rohan Mehta",
-            role: "Computer Science · VIT Vellore",
-            subject: "Rohan Mehta, built app used by 300",
-            preview: "Hi Ananya,\n\nI've been following Razorpay's product engineering expansion for merchant payments. I built a study-group scheduling app now used by about 300 classmates at VIT Vellore, working with React and Node. I also did freelance websites, giving me a feel for real-world requirements. I think my experience building a functional tool for real users aligns with the kind of scalable products Razorpay builds. Could we have a 15-minute chat about a junior full-stack role on your team?",
-            recruiter: "Ananya",
-            matchScore: "91%"
-        },
-        {
-            company: "Nubank",
-            candidate: "Camila Santos",
-            role: "Statistics · UFMG",
-            subject: "Data analyst candidate with Tableau experience",
-            preview: "Hi Bruno,\n\nAs a statistics graduate with internship experience in data analytics, I've been following Nubank's data-driven approach to credit and customer growth. In my 4-month internship at a retailer, I built a Tableau dashboard that helped reduce stockouts by about 10%. I'm currently learning Python to expand my analytics toolkit. I believe my experience using data to solve operational problems aligns with the work your analytics team does. Could we have a 15-minute chat to discuss junior analyst roles that fit my background?\n\nBest,\nCamila Santos",
-            recruiter: "Bruno",
-            matchScore: "93%"
-        }
-    ];
+    const examples = emailExamples;
 
     return (
         <section id="email-example" className="relative py-24 px-6 lg:px-8">
@@ -1654,6 +1361,29 @@ const LandingPage = ({ experiments = {} }: { experiments?: ExperimentAssignments
                 <PricingSection />
                 <FAQSection />
                 <CTASection />
+                <Footer />
+            </div>
+        );
+    }
+    if (landingVariant === "apple") {
+        return (
+            <div
+                className="min-h-screen bg-black text-white"
+                data-experiment="landing_redesign_v1"
+                data-variant="apple"
+            >
+                <AppleHero />
+                <RedesignTrustStrip />
+                <AppleCampaignVideo />
+                <AppleEmailGallery />
+                <AppleActTransition />
+                <AppleChapter index={0}><RedesignBenefits /></AppleChapter>
+                <AppleChapter index={1}><RedesignWorkflow /></AppleChapter>
+                <AppleChapter index={2}><ReviewsSection /></AppleChapter>
+                <AppleChapter index={3}><AmbassadorSection /></AppleChapter>
+                <AppleChapter index={4}><PricingSection /></AppleChapter>
+                <AppleChapter index={5}><FAQSection /></AppleChapter>
+                <AppleChapter index={6}><CTASection /></AppleChapter>
                 <Footer />
             </div>
         );
