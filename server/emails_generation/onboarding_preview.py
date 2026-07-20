@@ -27,6 +27,40 @@ logger = logging.getLogger(__name__)
 PREVIEW_DOCUMENT = "onboarding_preview"
 
 
+def public_recruiter_profile(recruiter: dict) -> dict:
+    """Project PDL data to fields safe to reveal in the free preview."""
+    location = recruiter.get("location_name") or recruiter.get("location") or ""
+    if isinstance(location, dict):
+        location = location.get("name") or location.get("locality") or ""
+
+    experience = []
+    for item in (recruiter.get("experience") or [])[:4]:
+        title = item.get("title") or {}
+        company = item.get("company") or {}
+        experience.append({
+            "title": title.get("name", "") if isinstance(title, dict) else str(title),
+            "company": company.get("name", "") if isinstance(company, dict) else str(company),
+            "startDate": item.get("start_date", ""),
+            "endDate": item.get("end_date", ""),
+        })
+
+    education = []
+    for item in (recruiter.get("education") or [])[:3]:
+        school = item.get("school") or {}
+        education.append({
+            "school": school.get("name", "") if isinstance(school, dict) else str(school),
+            "degree": item.get("degree") or (item.get("degrees") or [""])[0],
+        })
+
+    return {
+        "location": str(location),
+        "summary": str(recruiter.get("summary") or ""),
+        "skills": [str(skill) for skill in (recruiter.get("skills") or [])[:8]],
+        "experience": experience,
+        "education": education,
+    }
+
+
 def _preview_ref(user_id: str):
     return (
         db.collection("users")
@@ -95,6 +129,7 @@ def find_recruiter(user_id: str, job_id: str) -> None:
                 or account.get("profileSummary", {}).get("onboardingInsights", {}).get("selectedTargetRole", ""),
                 "queryCount": len(account.get("queries") or []),
                 "narrative": account.get("profileSummary", {}).get("onboardingInsights", {}).get("searchNarrative", ""),
+                "strengths": account.get("profileSummary", {}).get("onboardingInsights", {}).get("strengths", [])[:4],
             },
         )
 
@@ -108,6 +143,7 @@ def find_recruiter(user_id: str, job_id: str) -> None:
                     "jobTitle": recruiter.get("job_title", ""),
                     "linkedinUrl": recruiter.get("linkedin_url", ""),
                 },
+                recruiterProfile=public_recruiter_profile(recruiter),
                 matchedQuery=query or {},
                 recruiterFoundAt=firestore.SERVER_TIMESTAMP,
             )

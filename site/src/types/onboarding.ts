@@ -23,9 +23,16 @@ export interface OnboardingPreviewState {
   stage: OnboardingStage;
   resultId?: string;
   company?: { name: string; domain?: string; linkedin_url?: string };
-  searchContext?: { targetRole?: string; queryCount?: number; narrative?: string };
+  searchContext?: { targetRole?: string; queryCount?: number; narrative?: string; strengths?: string[] };
   searchProgress?: { attempt: number; total: number; strategy?: string; found?: boolean };
   recruiter?: { name: string; jobTitle: string; linkedinUrl?: string };
+  recruiterProfile?: {
+    location?: string;
+    summary?: string;
+    skills: string[];
+    experience: { title?: string; company?: string; startDate?: string; endDate?: string }[];
+    education: { school?: string; degree?: string }[];
+  };
   matchedQuery?: { id?: string | number; name?: string; criteria?: unknown[] };
   email?: { subject: string; body: string; keyPoints: string[] };
   recruiterInsight?: { reason?: string; points: string[] };

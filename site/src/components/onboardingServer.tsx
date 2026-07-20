@@ -31,6 +31,7 @@ function toClientPreview(data: FirebaseFirestore.DocumentData | undefined, fallb
             targetRole: data.searchContext.targetRole ? String(data.searchContext.targetRole) : undefined,
             queryCount: Number(data.searchContext.queryCount || 0),
             narrative: data.searchContext.narrative ? String(data.searchContext.narrative) : undefined,
+            strengths: Array.isArray(data.searchContext.strengths) ? data.searchContext.strengths.map(String) : [],
         } : undefined,
         searchProgress: data.searchProgress ? {
             attempt: Number(data.searchProgress.attempt || 0),
@@ -42,6 +43,21 @@ function toClientPreview(data: FirebaseFirestore.DocumentData | undefined, fallb
             name: String(data.recruiter.name || ""),
             jobTitle: String(data.recruiter.jobTitle || ""),
             linkedinUrl: data.recruiter.linkedinUrl ? String(data.recruiter.linkedinUrl) : undefined,
+        } : undefined,
+        recruiterProfile: data.recruiterProfile ? {
+            location: data.recruiterProfile.location ? String(data.recruiterProfile.location) : undefined,
+            summary: data.recruiterProfile.summary ? String(data.recruiterProfile.summary) : undefined,
+            skills: Array.isArray(data.recruiterProfile.skills) ? data.recruiterProfile.skills.map(String) : [],
+            experience: Array.isArray(data.recruiterProfile.experience) ? data.recruiterProfile.experience.map((item: any) => ({
+                title: item.title ? String(item.title) : undefined,
+                company: item.company ? String(item.company) : undefined,
+                startDate: item.startDate ? String(item.startDate) : undefined,
+                endDate: item.endDate ? String(item.endDate) : undefined,
+            })) : [],
+            education: Array.isArray(data.recruiterProfile.education) ? data.recruiterProfile.education.map((item: any) => ({
+                school: item.school ? String(item.school) : undefined,
+                degree: item.degree ? String(item.degree) : undefined,
+            })) : [],
         } : undefined,
         matchedQuery: data.matchedQuery ? {
             id: data.matchedQuery.id,
