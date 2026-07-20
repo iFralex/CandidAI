@@ -90,7 +90,7 @@ async function isUrlValid(url) {
     }
 }
 
-export const CompanyLogo = ({ company, link, maxSize = 12, minSize = 12 }) => {
+export const CompanyLogo = ({ company, link = null, maxSize = 12, minSize = 12 }) => {
     const [logo, setLogo] = useState(link || null);
 
     useEffect(() => {
