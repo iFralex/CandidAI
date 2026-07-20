@@ -8,7 +8,7 @@ import { ProfileAnalysisClient, CompanyInputClient, AdvancedFiltersClientWrapper
 import { PlanSelector, type PlanInfo } from '@/components/PlanSelector'
 import { UnifiedCheckout } from '@/components/UnifiedCheckout'
 import { ProfileAvatar } from '@/components/ProfileAvatar'
-import { CompanyLogo } from '@/components/dashboard'
+import { CompanyLogo } from '@/components/CompanyLogo'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -299,6 +299,10 @@ function ActivationChapter({ step, label, title, story, signal, onBack, backPend
 
 function PostPurchaseExperience({ props, preview }: { props: Props; preview: OnboardingPreviewState }) {
   const router = useRouter()
+  const serverStage = props.stage
+  const serverReturnToReview = Boolean(props.postPurchaseReturnToReview)
+  const [stage, setStage] = useState<OnboardingStage>(serverStage)
+  const [returnToReview, setReturnToReview] = useState(serverReturnToReview)
   const [pending, setPending] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
@@ -313,9 +317,23 @@ function PostPurchaseExperience({ props, preview }: { props: Props; preview: Onb
     setPending(key); setError('')
     try { await action(); router.refresh() } catch (err) { setError(err instanceof Error ? err.message : 'Something went wrong') } finally { setPending(null) }
   }
-  const moveTo = (stage: OnboardingStage, returnToReview = false) => run(`move-${stage}`, () => navigatePostPurchaseStage(stage, returnToReview))
-  const backTo = (stage: OnboardingStage) => props.postPurchaseReturnToReview ? moveTo('post_purchase_review') : moveTo(stage)
-  useEffect(() => { setHasUnsavedChanges(false); setProfileChanged(false) }, [props.stage])
+  const moveTo = async (nextStage: OnboardingStage, shouldReturnToReview = false) => {
+    const previousStage = stage
+    const previousReturnToReview = returnToReview
+    setPending(`move-${nextStage}`); setError(''); setStage(nextStage); setReturnToReview(shouldReturnToReview)
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    try {
+      await navigatePostPurchaseStage(nextStage, shouldReturnToReview)
+      router.refresh()
+    } catch (err) {
+      setStage(previousStage); setReturnToReview(previousReturnToReview)
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally { setPending(null) }
+  }
+  const backTo = (previousStage: OnboardingStage) => returnToReview ? moveTo('post_purchase_review') : moveTo(previousStage)
+  useEffect(() => { setStage(serverStage); setReturnToReview(serverReturnToReview) }, [serverReturnToReview, serverStage])
+  useEffect(() => { setHasUnsavedChanges(false); setProfileChanged(false) }, [stage])
+  props = { ...props, stage }
   if (props.stage === 'post_purchase') return <motion.div className="mx-auto max-w-5xl space-y-9" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
     <div className="text-center"><motion.div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-300 shadow-2xl shadow-emerald-500/20" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.15 }}><Check className="h-9 w-9" /></motion.div><Badge className="mt-6 bg-emerald-500/15 text-emerald-300">Purchase confirmed</Badge><h1 className="mt-4 text-4xl font-bold text-white sm:text-5xl">Thank you. {planInfo?.name} is now yours.</h1><p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-gray-400">Your first application proved the process. Now let&apos;s rebuild it with your paid-plan settings and turn it into a complete campaign.</p></div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[`${planData?.maxCompanies || 0} target companies`, planData?.recruiterStrategy ? `Up to ${planData.recruiterStrategy} recruiter criteria` : 'Verified recruiter emails', planData?.credits ? `${planData.credits.toLocaleString()} credits` : 'Company-by-company outreach', planData?.deepDiveReports ? 'Detailed company intelligence' : planData?.revealRecruiterEmail ? 'Direct contact details' : 'Personalized generation'].map((item, index) => <motion.div key={item} className="rounded-2xl border border-white/10 bg-white/[0.035] p-5" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 + index * 0.1 }}><span className="text-xs text-violet-300">0{index + 1}</span><p className="mt-3 text-sm font-medium text-white">{item}</p></motion.div>)}</div>

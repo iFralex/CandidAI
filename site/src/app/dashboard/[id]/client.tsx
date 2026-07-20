@@ -5,7 +5,7 @@
 import { track, refreshUserPropertiesFromFirestore } from "@/lib/analytics";
 import { FeedbackPrompt } from "@/components/FeedbackPrompt";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
-import { CompanyLogo } from "@/components/dashboard";
+import { CompanyLogo } from "@/components/CompanyLogo";
 import SkillsListBase, { calculateProgress, EducationList, ExperienceList } from "@/components/detailsServer";
 import { AdvancedFiltersClient, CriteriaDisplay } from "@/components/onboarding";
 import { Button } from "@/components/ui/button";

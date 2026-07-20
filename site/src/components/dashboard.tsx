@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { track } from "@/lib/analytics";
 import { Button } from "./ui/button";
 import { AlertCircle, ArrowDown, ArrowDown01, ArrowRight, Badge, BarChart3, Building2, Calendar, Check, CheckCircle, ChevronDown, Crown, Globe, Loader, Loader2, Mail, MapPin, Plus, Puzzle, RefreshCw, RotateCcw, Save, Send, Timer, TrendingUp, Users, X } from "lucide-react";
 import { Card } from "./ui/card";
-import Image from "next/image";
+export { CompanyLogo } from './CompanyLogo';
+import { CompanyLogo } from './CompanyLogo';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import Link from "next/link";
@@ -50,115 +51,6 @@ export const AnimatedResults = ({ className, children }) => {
     );
 };
 
-function getCachedLogo(company) {
-    if (typeof window === "undefined") return null;
-    const item = localStorage.getItem(`logo_${company}`);
-    if (!item) return null;
-
-    try {
-        const parsed = JSON.parse(item);
-        const now = Date.now();
-
-        // Controlla se è scaduto
-        if (now - parsed.timestamp > 24 * 60 * 60 * 1000) {
-            localStorage.removeItem(`logo_${company}`);
-            return null;
-        }
-        return parsed.url;
-    } catch {
-        localStorage.removeItem(`logo_${company}`);
-        return null;
-    }
-}
-
-// Funzione helper per salvare in cache
-function cacheLogo(company, url) {
-    const data = {
-        url,
-        timestamp: Date.now(),
-    };
-    localStorage.setItem(`logo_${company}`, JSON.stringify(data));
-}
-
-// Funzione per controllare se un link è ancora valido
-async function isUrlValid(url) {
-    try {
-        const response = await fetch(url, { method: "HEAD" });
-        return response.ok;
-    } catch {
-        return false;
-    }
-}
-
-export const CompanyLogo = ({ company, link = null, maxSize = 12, minSize = 12 }) => {
-    const [logo, setLogo] = useState(link || null);
-
-    useEffect(() => {
-        if (!company || link) return;
-
-        const loadLogo = async () => {
-            let cached = getCachedLogo(company);
-
-            // Se c'è una cache, verifica se è ancora valida
-            if (cached && (await isUrlValid(cached))) {
-                setLogo(cached);
-                return;
-            }
-
-            // Altrimenti, fai il fetch
-            const icon = await fetchLogo(company);
-            if (icon) {
-                cacheLogo(company, icon);
-                setLogo(icon);
-            }
-            console.log(icon)
-        };
-
-        loadLogo();
-    }, [company]);
-
-    return (
-        <div className={"relative aspect-square w-full rounded-xl flex items-center justify-center bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold overflow-hidden"} style={{ maxWidth: "calc(var(--spacing) * " + (maxSize || 12).toString() + ")", minWidth: "calc(var(--spacing) * " + (minSize || 12).toString() + ")" }}>
-            {logo ? (
-                <Image
-                    src={logo}
-                    alt={`${company} logo`}
-                    className="w-full h-full object-contain"
-                    fill
-                />
-            ) : (
-                company?.charAt(0).toUpperCase()
-            )}
-        </div>
-    );
-
-};
-
-async function fetchLogo(domain) {
-    if (logoCache.has(domain)) {
-        return logoCache.get(domain);
-    }
-
-    try {
-        const res = await fetch(
-            `https://api.brandfetch.io/v2/search/${encodeURIComponent(domain)}?limit=1`,
-            { cache: "force-cache" }
-        );
-
-        if (res.ok) {
-            const data = await res.json();
-            const icon = Array.isArray(data) && data[0]?.icon ? data[0].icon : null;
-            logoCache.set(domain, icon);
-            return icon;
-        }
-    } catch (e) {
-        console.error("Errore fetch logo:", e);
-    }
-
-    logoCache.set(domain, null);
-    return null;
-}
-
 const ProgressBar = ({ progress, className = '' }) => {
     return (
         <div className={`w-full bg-white/10 rounded-full h-2 overflow-hidden ${className}`}>
@@ -169,8 +61,6 @@ const ProgressBar = ({ progress, className = '' }) => {
         </div>
     );
 };
-
-const logoCache = new Map();
 
 const Dashboard = ({ results }) => {
 

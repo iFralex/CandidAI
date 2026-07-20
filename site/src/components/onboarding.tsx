@@ -1414,6 +1414,13 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
     return (
         <AdvancedFiltersClient strategy={strategy} setStrategy={setStrategy} maxStrategies={maxStrategies} readOnly={readOnly} onChangePlan={handleChangePlan} isChangePlanPending={isChangePlanPending}>
             {readOnly && <div className="mb-4"><UpgradeBanner onChangePlan={handleChangePlan} isPending={isChangePlanPending} position="bottom" /></div>}
+            <AnimatePresence>
+                {hasChanges && (
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mb-4 text-center">
+                        <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-sm text-amber-400"><AlertCircle className="h-4 w-4" />You have unsaved changes</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             {/* Action Buttons */}
             <motion.div
                 className="flex flex-wrap items-center justify-center gap-3 mb-4"
@@ -1484,38 +1491,6 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
                 </motion.button>
                 {saved && <span className="text-green-400 text-sm">Saved successfully.</span>}
             </motion.div>
-
-            {/* Changes Indicator */}
-            <AnimatePresence>
-                {hasChanges && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.8 }}
-                        transition={{ type: "spring", stiffness: 200 }}
-                        className="text-center"
-                    >
-                        <motion.span
-                            className="text-amber-400 text-sm flex items-center justify-center space-x-2 bg-amber-500/10 px-4 py-2 rounded-full inline-flex border border-amber-500/20"
-                            animate={{
-                                boxShadow: [
-                                    '0 0 0 0 rgba(251, 191, 36, 0.4)',
-                                    '0 0 0 10px rgba(251, 191, 36, 0)',
-                                ]
-                            }}
-                            transition={{ duration: 1.5, repeat: Infinity }}
-                        >
-                            <motion.div
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 1, repeat: Infinity }}
-                            >
-                                <AlertCircle className="w-4 h-4" />
-                            </motion.div>
-                            <span>You have unsaved changes</span>
-                        </motion.span>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
         </AdvancedFiltersClient>
     )

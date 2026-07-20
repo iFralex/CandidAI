@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { CompanyLogo } from "./dashboard";
+import { CompanyLogo } from "./CompanyLogo";
 import { Badge } from "./ui/badge";
 import { Edit2, Plus, X } from "lucide-react";
 import Link from "next/link";
