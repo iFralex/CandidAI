@@ -84,9 +84,9 @@ test.describe("Redesigned first candidacy", () => {
     await page.getByRole("button", { name: "Replay the research" }).click();
     await expect(page.getByRole("heading", { name: "We know what to look for." })).toBeVisible();
     await expect(page.getByText("Product recruiting in Sweden", { exact: true })).toBeVisible();
-    await expect(page.getByText("Klarna · IKEA")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Your application is taking shape" })).toBeVisible({ timeout: 6_000 });
-    await expect(page.getByText("Writing a personal introduction to Giulia")).toBeVisible();
+    await expect(page.getByText("Your same companies")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "The best recruiter for you at Spotify is" })).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByText("Generating your personalized email…")).toBeVisible();
     await page.getByRole("button", { name: "Back to result" }).click();
     await expect(page.getByRole("heading", { name: "Your first application is ready" })).toBeVisible();
     await page.getByRole("button", { name: "View full recruiter profile" }).click();
@@ -111,8 +111,8 @@ test.describe("Redesigned first candidacy", () => {
     await mockUser(page, { onboardingStep: 4, onboardingStage: "recruiter_found", onboardingPreview: preview });
     await page.route("**/api/protected/onboarding-preview", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: true, preview }) }));
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: "Your application is taking shape" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "The best recruiter for you at NVIDIA is" })).toBeVisible();
     await expect(page.getByText("Claudia Fenaroli")).toBeVisible();
-    await expect(page.getByText(/already writing the email/i)).toBeVisible();
+    await expect(page.getByText(/generating your personalized email/i)).toBeVisible();
   });
 });

@@ -27,6 +27,7 @@ export interface OnboardingPreviewState {
   searchProgress?: { attempt: number; total: number; strategy?: string; found?: boolean };
   recruiter?: { name: string; jobTitle: string; linkedinUrl?: string };
   recruiterProfile?: {
+    avatarUrl?: string;
     location?: string;
     summary?: string;
     skills: string[];

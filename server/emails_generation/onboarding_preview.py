@@ -53,6 +53,7 @@ def public_recruiter_profile(recruiter: dict) -> dict:
         })
 
     return {
+        "avatarUrl": str(recruiter.get("profile_pic_url") or recruiter.get("profile_picture_url") or ""),
         "location": str(location),
         "summary": str(recruiter.get("summary") or ""),
         "skills": [str(skill) for skill in (recruiter.get("skills") or [])[:8]],

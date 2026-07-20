@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Building2, Check, Copy, Crown, ExternalLink, Linkedin, Loader2, Mail, RotateCcw, Search, SlidersHorizontal, Sparkles, Target, UserRound } from 'lucide-react'
+import { BriefcaseBusiness, Building2, Check, Copy, Crown, ExternalLink, GraduationCap, Linkedin, Loader2, Mail, MapPin, RotateCcw, Search, SlidersHorizontal, Sparkles, Target, UserRound, Wrench } from 'lucide-react'
 import { ProfileAnalysisClient, CompanyInputClient } from '@/components/onboarding'
 import { PlanSelector, type PlanInfo } from '@/components/PlanSelector'
 import { UnifiedCheckout } from '@/components/UnifiedCheckout'
@@ -135,6 +135,16 @@ function SearchExperience({ preview, replay = false, onReplayComplete }: { previ
   const targetRole = preview.searchContext?.targetRole || 'your target role'
   const strengths = preview.searchContext?.strengths || []
   const visibleDetails = preview.strategyDetails?.[visibleStrategy] || []
+  const detailPresentation: Record<string, { label: string; icon: typeof MapPin }> = {
+    Seniority: { label: 'The right seniority', icon: UserRound },
+    'Relevant skills': { label: 'Your relevant skills', icon: Wrench },
+    'Previous companies': { label: 'Your same companies', icon: BriefcaseBusiness },
+    Education: { label: 'Your same university', icon: GraduationCap },
+    Country: { label: 'Your same country', icon: MapPin },
+    Continent: { label: 'Your same region', icon: MapPin },
+    'Contact type': { label: 'The right decision-maker', icon: Target },
+    'Search scope': { label: 'The strongest company connection', icon: Building2 },
+  }
   const scenes = [
     <div className="text-center"><p className="text-sm uppercase tracking-[0.22em] text-violet-300">The search has started</p><h2 className="mt-5 text-4xl font-bold tracking-tight text-white sm:text-6xl">We know what to look for.</h2><p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-gray-400">A contact who can understand your background and the value you could bring as {targetRole}.</p></div>,
     <Card hover={false} className="mx-auto w-full max-w-2xl border-violet-500/20 p-8 sm:p-10"><p className="text-xs uppercase tracking-[0.2em] text-violet-300">What makes you relevant</p><div className="mt-7 grid gap-3 sm:grid-cols-2">{(strengths.length ? strengths : ['Your professional experience', 'Your strongest skills', 'Your target role', 'Your geographic fit']).slice(0, 4).map(item => <div key={item} className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm text-gray-200"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />{item}</div>)}</div><p className="mt-7 text-sm leading-6 text-gray-400">These signals determine which people CandidAI prioritizes.</p></Card>,
@@ -153,16 +163,18 @@ function SearchExperience({ preview, replay = false, onReplayComplete }: { previ
     <div className="absolute inset-x-4 bottom-5 sm:inset-x-12">
       <p className="mb-3 text-center text-[11px] uppercase tracking-[0.2em] text-gray-600">Strategy currently being tested</p>
       <AnimatePresence mode="wait">
-        <motion.div key={visibleStrategy || 'initial'} initial={{ opacity: 0, y: 18, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.985 }} transition={{ duration: 0.5 }} className="mx-auto max-w-3xl rounded-2xl border border-white/10 bg-black/55 px-5 py-4 shadow-2xl backdrop-blur-xl"><div className="flex items-start gap-4"><span className="relative mt-1 flex h-3 w-3 shrink-0"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-60" /><span className="relative inline-flex h-3 w-3 rounded-full bg-violet-500" /></span><div className="min-w-0 flex-1"><p className="font-medium text-white">{visibleStrategy || 'Preparing the most precise strategy'}</p><p className="mt-1 text-xs text-gray-500">Looking for genuine overlap between your background and people at {company}.</p>{visibleDetails.length > 0 && <div className="mt-4 grid gap-2 sm:grid-cols-2">{visibleDetails.map(detail => <div key={detail.label} className="rounded-lg border border-white/[0.07] bg-white/[0.035] px-3 py-2"><p className="text-[10px] uppercase tracking-[0.14em] text-gray-600">{detail.label}</p><p className="mt-1 truncate text-xs text-gray-300">{detail.values.join(' · ')}</p></div>)}</div>}</div></div></motion.div>
+        <motion.div key={visibleStrategy || 'initial'} initial={{ opacity: 0, y: 18, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -16, scale: 0.98 }} transition={{ duration: 0.55 }} className="mx-auto max-w-3xl rounded-2xl border border-white/10 bg-black/55 px-5 py-4 shadow-2xl backdrop-blur-xl"><div className="flex items-start gap-4"><span className="relative mt-1 flex h-3 w-3 shrink-0"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-60" /><span className="relative inline-flex h-3 w-3 rounded-full bg-violet-500" /></span><div className="min-w-0 flex-1"><p className="font-medium text-white">{visibleStrategy || 'Preparing the most precise strategy'}</p><p className="mt-1 text-xs text-gray-500">Looking for genuine overlap between you and people at {company}.</p>{visibleDetails.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{visibleDetails.map(detail => { const presentation = detailPresentation[detail.label] || { label: detail.label, icon: Sparkles }; const Icon = presentation.icon; return <div key={detail.label} className="flex items-center gap-2 rounded-full border border-violet-400/15 bg-violet-400/[0.07] px-3 py-2 text-xs text-gray-200"><Icon className="h-3.5 w-3.5 text-violet-400" />{presentation.label}</div> })}</div>}</div></div></motion.div>
       </AnimatePresence>
     </div>
   </div>
 }
 
 function ApplicationAssembly({ preview }: { preview: OnboardingPreviewState }) {
-  return <motion.div className="mx-auto max-w-5xl space-y-7" initial={{ opacity: 0, y: 34, filter: 'blur(10px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}>
-    <motion.div className="text-center" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15, duration: 0.6 }}><Badge className="mb-4 bg-emerald-500/15 text-emerald-300">Best contact found</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Your application is taking shape</h2><p className="mt-3 text-gray-400">The match is ready. CandidAI is already writing the email—there’s nothing else you need to enter.</p></motion.div>
-    <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]"><motion.div initial={{ opacity: 0, x: -28 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4, duration: 0.65 }}><Card hover={false} className="h-full p-7 text-left"><p className="text-xs uppercase tracking-[0.18em] text-emerald-300">Selected for you</p><p className="mt-5 text-2xl font-semibold text-white">{preview.recruiter?.name}</p><p className="mt-1 text-violet-300">{preview.recruiter?.jobTitle}</p><p className="mt-1 text-sm text-gray-500">{preview.company?.name}</p><Separator className="my-6" /><p className="text-sm font-medium text-white">Why this person</p><p className="mt-2 text-sm leading-6 text-gray-400">This contact emerged from “{preview.matchedQuery?.name || 'the strongest available match'}” after comparing the recruiting team with your profile and location.</p></Card></motion.div><motion.div initial={{ opacity: 0, x: 28 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.65, duration: 0.65 }}><Card hover={false} className="relative h-full overflow-hidden p-7"><div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-400 to-transparent" /><div className="flex items-center justify-between"><div><p className="text-xs uppercase tracking-[0.18em] text-gray-500">Your email</p><p className="mt-2 font-medium text-white">Writing a personal introduction to {preview.recruiter?.name?.split(' ')[0] || 'your recruiter'}</p></div><Loader2 className="h-5 w-5 animate-spin text-violet-400" /></div><div className="mt-8 space-y-4"><div className="h-4 w-3/5 animate-pulse rounded bg-white/10" /><div className="h-px bg-white/10" /><div className="h-3 w-full animate-pulse rounded bg-white/10" /><div className="h-3 w-11/12 animate-pulse rounded bg-white/10" /><div className="h-3 w-4/5 animate-pulse rounded bg-white/10" /><div className="pt-3 text-sm text-violet-300"><Sparkles className="mr-2 inline h-4 w-4" />Connecting your experience to {preview.company?.name}</div></div></Card></motion.div></div>
+  const initials = (preview.recruiter?.name || '?').split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
+  return <motion.div className="mx-auto flex min-h-[590px] max-w-3xl flex-col items-center justify-center text-center" initial={{ opacity: 0, y: 40, filter: 'blur(12px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -32, filter: 'blur(10px)' }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}>
+    <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.6 }}><p className="text-sm uppercase tracking-[0.2em] text-emerald-300">Match found</p><h2 className="mt-4 text-3xl font-bold text-white sm:text-5xl">The best recruiter for you at {preview.company?.name} is</h2></motion.div>
+    <motion.div className="mt-8 w-full" initial={{ opacity: 0, scale: 0.92, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}><Card hover={false} className="mx-auto max-w-xl border-emerald-400/20 p-7 sm:p-9"><div className="relative mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-violet-400/30 bg-violet-500/15 text-2xl font-semibold text-violet-200"><span>{initials}</span>{preview.recruiterProfile?.avatarUrl && <img src={preview.recruiterProfile.avatarUrl} alt="" className="absolute h-24 w-24 rounded-full object-cover" onError={event => { event.currentTarget.style.display = 'none' }} />}</div><p className="mt-5 text-2xl font-semibold text-white">{preview.recruiter?.name}</p><p className="mt-1 text-violet-300">{preview.recruiter?.jobTitle}</p><Separator className="my-6" /><p className="text-sm leading-7 text-gray-300">{preview.recruiterInsight?.reason || `This person emerged from the strongest match between your background and ${preview.company?.name}’s team, using “${preview.matchedQuery?.name || 'the best available strategy'}”.`}</p></Card></motion.div>
+    <motion.div className="mt-7 flex items-center gap-2 text-sm text-gray-500" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.15, duration: 0.5 }}><Loader2 className="h-4 w-4 animate-spin text-violet-400" />Generating your personalized email…</motion.div>
   </motion.div>
 }
 
@@ -245,18 +257,22 @@ export function OnboardingExperience(props: Props) {
       strategy: preview.searchProgress?.strategy || preview.matchedQuery?.name || 'Replaying the successful matching strategy',
     },
   }
-  if (replayPhase === 'search' && effectiveStage === 'preview_ready') {
-    return <div><JourneyHeader stage="recruiter_search" /><SearchExperience preview={replayPreview} replay onReplayComplete={showReplayEmail} /></div>
-  }
-  if (replayPhase === 'email' && effectiveStage === 'preview_ready') {
-    return <div><JourneyHeader stage="email_generation" /><div className="relative"><Button variant="ghost" size="sm" className="absolute right-4 top-0 z-10 text-gray-500" onClick={stopReplay}>Back to result</Button><ApplicationAssembly preview={preview} /></div></div>
-  }
-  return <div><JourneyHeader stage={effectiveStage} />
-    {(effectiveStage === 'profile_source' || effectiveStage === 'profile_review') && <ProfileAnalysisClient userId={props.user.uid} plan="free_trial" initialProfile={props.profile} initialCvUrl={props.cvUrl} flow="guided" />}
-    {effectiveStage === 'target_company' && <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="mb-4 border-violet-400/20 bg-violet-400/10 text-violet-200">Choose one real opportunity</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Which company would you like to join?</h2><p className="mx-auto mt-3 max-w-xl text-gray-400">One company is enough. Your profile will guide who we look for and how we approach them.</p></div><CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
-    {effectiveStage === 'recruiter_search' && <SearchExperience preview={preview} />}
-    {(effectiveStage === 'recruiter_found' || effectiveStage === 'email_generation') && <ApplicationAssembly preview={preview} />}
-    {effectiveStage === 'preview_ready' && <ConversionResult preview={preview} email={props.user.email} onReplay={() => setReplayPhase('search')} />}
-    {preview.status === 'failed' && <Card hover={false} className="mx-auto mt-6 max-w-xl p-6 text-center"><p className="font-semibold text-white">The research was interrupted</p><p className="mt-2 text-sm text-gray-400">{preview.error?.message || 'You can try again without losing your profile or company.'}</p><Button className="mt-5" onClick={() => startOnboardingRecruiterSearch().then(() => router.refresh())}>Try again</Button></Card>}
+  const displayedStage: OnboardingStage = replayPhase === 'search' ? 'recruiter_search' : replayPhase === 'email' ? 'email_generation' : effectiveStage
+  const sceneKey = replayPhase === 'idle' ? effectiveStage : `replay-${replayPhase}`
+  return <div><JourneyHeader stage={displayedStage} />
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div key={sceneKey} className="relative" initial={{ opacity: 0, y: 28, filter: 'blur(9px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -32, filter: 'blur(12px)' }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>
+        {replayPhase === 'search' && <SearchExperience preview={replayPreview} replay onReplayComplete={showReplayEmail} />}
+        {replayPhase === 'email' && <><Button variant="ghost" size="sm" className="absolute right-4 top-0 z-10 text-gray-500" onClick={stopReplay}>Back to result</Button><ApplicationAssembly preview={preview} /></>}
+        {replayPhase === 'idle' && <>
+          {(effectiveStage === 'profile_source' || effectiveStage === 'profile_review') && <ProfileAnalysisClient userId={props.user.uid} plan="free_trial" initialProfile={props.profile} initialCvUrl={props.cvUrl} flow="guided" />}
+          {effectiveStage === 'target_company' && <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="mb-4 border-violet-400/20 bg-violet-400/10 text-violet-200">Choose one real opportunity</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Which company would you like to join?</h2><p className="mx-auto mt-3 max-w-xl text-gray-400">One company is enough. Your profile will guide who we look for and how we approach them.</p></div><CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
+          {effectiveStage === 'recruiter_search' && <SearchExperience preview={preview} />}
+          {(effectiveStage === 'recruiter_found' || effectiveStage === 'email_generation') && <ApplicationAssembly preview={preview} />}
+          {effectiveStage === 'preview_ready' && <ConversionResult preview={preview} email={props.user.email} onReplay={() => setReplayPhase('search')} />}
+          {preview.status === 'failed' && <Card hover={false} className="mx-auto mt-6 max-w-xl p-6 text-center"><p className="font-semibold text-white">The research was interrupted</p><p className="mt-2 text-sm text-gray-400">{preview.error?.message || 'You can try again without losing your profile or company.'}</p><Button className="mt-5" onClick={() => startOnboardingRecruiterSearch().then(() => router.refresh())}>Try again</Button></Card>}
+        </>}
+      </motion.div>
+    </AnimatePresence>
   </div>
 }

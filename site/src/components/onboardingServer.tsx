@@ -45,6 +45,7 @@ function toClientPreview(data: FirebaseFirestore.DocumentData | undefined, fallb
             linkedinUrl: data.recruiter.linkedinUrl ? String(data.recruiter.linkedinUrl) : undefined,
         } : undefined,
         recruiterProfile: data.recruiterProfile ? {
+            avatarUrl: data.recruiterProfile.avatarUrl ? String(data.recruiterProfile.avatarUrl) : undefined,
             location: data.recruiterProfile.location ? String(data.recruiterProfile.location) : undefined,
             summary: data.recruiterProfile.summary ? String(data.recruiterProfile.summary) : undefined,
             skills: Array.isArray(data.recruiterProfile.skills) ? data.recruiterProfile.skills.map(String) : [],
