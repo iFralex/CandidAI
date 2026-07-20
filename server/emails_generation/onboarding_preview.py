@@ -131,7 +131,6 @@ def find_recruiter(user_id: str, job_id: str) -> None:
             priority="realtime",
             progress_callback=recruiter_found,
             query_progress_callback=query_progress,
-            expand_fallbacks=False,
         )
         recruiter = (results.get(company["name"]) or ({}, None))[0]
         if not recruiter:
