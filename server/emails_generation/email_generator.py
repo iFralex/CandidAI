@@ -1,7 +1,6 @@
 from server.emails_generation.utils import extract_cv_text
 from server.emails_generation.blog_posts import ai_chat
 from server.emails_generation.database import save_email
-from server.emails_generation.recruiter import resolve_recruiter_work_email
 from typing import Dict
 import re
 
@@ -162,7 +161,7 @@ def generate_email(user_id, ids, companies, profile_summary, cv_url, result_blog
     for company in companies:
         articles_contents = result_blog[company["name"]]
         recruiter_summary, query = result_recruiters[company["name"]]
-        email_address = resolve_recruiter_work_email(recruiter_summary, company)
+        email_address = recruiter_summary.get("work_email")
         recruiter_summary = parse_recruiter(recruiter_summary)
         company_info = parse_company_info(result_company_info[company["name"]])
         profile_summary = parse_recruiter(profile_summary)
