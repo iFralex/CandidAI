@@ -24,6 +24,7 @@ import { recordServerEvent } from "@/lib/server-track";
 import { wrapEmail, button, tipBox, heading, paragraph, escapeHtml } from "@/lib/email-template";
 import { buildUnsubscribeUrl } from "@/lib/unsubscribe";
 import { completeCommunication, failCommunication, reserveCommunication, type CommunicationCategory } from "@/lib/communication-service";
+import { CUSTOMER_PROOF as PROOF, CUSTOMER_RESULTS_DISCLAIMER } from "@/lib/customer-proof";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,6 +52,11 @@ interface AccountContext {
     hasCompanies: boolean;
     hasCustomizations: boolean;
     stage?: string;
+    plan?: string;
+    targetCompany?: string;
+    targetRole?: string;
+    recruiterName?: string;
+    variant?: string;
 }
 
 interface StageConfig {
@@ -61,6 +67,13 @@ interface StageConfig {
     needsAccountData?: boolean;
     render: (firstName: string, unsubscribeUrl: string, ctx?: AccountContext) => { subject: string; html: string };
     category: CommunicationCategory;
+    variants?: readonly string[];
+}
+
+function stableVariant(userId: string, stageKey: string, variants: readonly string[]): string {
+    let hash = 2166136261;
+    for (const char of `${userId}:${stageKey}`) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
+    return variants[Math.abs(hash) % variants.length];
 }
 
 const STAGES: StageConfig[] = [
@@ -86,6 +99,7 @@ const STAGES: StageConfig[] = [
                 && Number.isFinite(activity)
                 && Date.now() - activity >= 30 * 60_000;
         },
+        needsAccountData: true,
         render: renderPreviewReadyFollowup,
         category: "onboarding",
     },
@@ -96,6 +110,7 @@ const STAGES: StageConfig[] = [
             const activity = timestampMs(u.lastOnboardingActivityAt);
             return u.onboardingStage === "checkout" && Number.isFinite(activity) && Date.now() - activity >= 4 * 60 * 60_000;
         },
+        needsAccountData: true,
         render: renderCheckoutAbandoned,
         category: "onboarding",
     },
@@ -111,13 +126,14 @@ const STAGES: StageConfig[] = [
         render: renderPostPurchaseResume,
         category: "onboarding",
     },
-    { key: "feature_tip", windowDays: [3, 5], render: renderFeatureTip, category: "marketing" },
+    { key: "feature_tip", windowDays: [3, 5], needsAccountData: true, render: renderFeatureTip, category: "marketing" },
     {
         key: "case_study",
         windowDays: [7, 9],
         extraFilter: (u) => (u.plan as string | undefined) === "free_trial" || !u.plan,
         render: renderCaseStudy,
         category: "marketing",
+        variants: ["problem", "outcome"],
     },
     {
         key: "upgrade_offer",
@@ -178,11 +194,18 @@ export async function GET(req: NextRequest) {
                         hasCompanies: Array.isArray(a.companies) && a.companies.length > 0,
                         hasCustomizations: !!a.customizations,
                         stage: String(u.onboardingStage || "profile_source"),
+                        plan: String(u.plan || "free_trial"),
+                        targetCompany: String(a.companies?.[0]?.name || u.onboardingPreview?.company?.name || ""),
+                        targetRole: String(a.profileSummary?.onboardingInsights?.selectedTargetRole || a.profileSummary?.title || ""),
+                        recruiterName: String(u.onboardingPreview?.recruiter?.name || ""),
                     };
                 } catch {
                     ctx = { hasCv: false, hasCompanies: false, hasCustomizations: false, stage: String(u.onboardingStage || "profile_source") };
                 }
             }
+
+            const variant = stage.variants ? stableVariant(uid, stage.key, stage.variants) : undefined;
+            ctx = { ...(ctx ?? {} as AccountContext), variant };
 
             const { subject, html } = stage.render(firstName, unsubscribeUrl, ctx);
             const dedupeKey = stage.key === "post_purchase_setup_resume"
@@ -193,9 +216,9 @@ export async function GET(req: NextRequest) {
                 const reservation = await reserveCommunication({
                     userId: uid,
                     dedupeKey,
-                    type: stage.key,
+                    type: variant ? `${stage.key}:${variant}` : stage.key,
                     category: stage.category,
-                    metadata: { onboardingStage: u.onboardingStage ?? null, onboardingStep: u.onboardingStep ?? null },
+                    metadata: { onboardingStage: u.onboardingStage ?? null, onboardingStep: u.onboardingStep ?? null, variant: variant ?? null },
                 });
                 if (!reservation.send) { skipped++; continue; }
                 const { data: sendData, error } = await resend.emails.send({
@@ -207,7 +230,7 @@ export async function GET(req: NextRequest) {
                 }, { idempotencyKey: `${uid}:${dedupeKey}`.slice(0, 256) });
                 if (error) throw new Error(JSON.stringify(error));
 
-                await completeCommunication({ userId: uid, dedupeKey, category: stage.category, type: stage.key, providerId: sendData?.id });
+                await completeCommunication({ userId: uid, dedupeKey, category: stage.category, type: variant ? `${stage.key}:${variant}` : stage.key, providerId: sendData?.id });
 
                 await doc.ref.update({
                     [flagField]: true,
@@ -239,29 +262,29 @@ function greet(firstName: string): string {
     return firstName ? `Your application is moving, ${escapeHtml(firstName)}.` : "Your application is moving.";
 }
 
-function renderPreviewReadyFollowup(firstName: string, unsubscribeUrl: string) {
+function renderPreviewReadyFollowup(firstName: string, unsubscribeUrl: string, ctx?: AccountContext) {
     return {
         subject: firstName ? `${firstName}, your first application is ready` : "Your first application is ready",
         html: wrapEmail(`
             ${heading(greet(firstName))}
-            ${paragraph(`The research is complete: CandidAI selected the strongest recruiter match we found and wrote your first application around your profile and target company.`)}
-            ${paragraph(`The result is saved. Open it to inspect why this recruiter was chosen, visit their LinkedIn profile, and copy or open the draft in your email app.`)}
+            ${paragraph(`The research is complete: CandidAI selected the strongest recruiter match we found${ctx?.targetCompany ? ` at <strong style="color:#fff;">${escapeHtml(ctx.targetCompany)}</strong>` : ""} and wrote your first application around your profile${ctx?.targetRole ? ` and your goal of pursuing <strong style="color:#fff;">${escapeHtml(ctx.targetRole)}</strong> opportunities` : ""}.`)}
+            ${paragraph(`The result is saved. Open it to inspect why ${ctx?.recruiterName ? `<strong style="color:#fff;">${escapeHtml(ctx.recruiterName)}</strong>` : "this recruiter"} was chosen, visit their LinkedIn profile, and copy or open the draft in your email app.`)}
             <div style="text-align: center; margin: 32px 0;">${button("Review my application →", `${DOMAIN}/dashboard`)}</div>
-            ${tipBox(`<strong style="color: #8b5cf6;">What CandidAI users changed:</strong> their baseline response rate from traditional applications was about 2%; targeted CandidAI outreach reached about 40%. Results vary, but the mechanism is simple: reach a relevant person with a message built for that company.`)}
+            ${tipBox(`<strong style="color: #8b5cf6;">What CandidAI users changed:</strong> their baseline response rate from traditional applications was ${PROOF.traditionalReplyRate}; targeted CandidAI outreach reached ${PROOF.candidaiReplyRate}. Results vary, but the mechanism is simple: reach a relevant person with a message built for that company.`)}
             ${paragraph(`Your free preview shows the recruiter and complete draft. A paid campaign adds the direct recruiter email, deeper company research, and definitive generation across 20, 50, or 100 target companies.`)}
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Talk soon,<br>Alessio</p>
         `, { preheader: "Your recruiter match and personalized email are waiting in CandidAI.", badge: "APPLICATION READY", unsubscribeUrl }),
     };
 }
 
-function renderCheckoutAbandoned(firstName: string, unsubscribeUrl: string) {
+function renderCheckoutAbandoned(firstName: string, unsubscribeUrl: string, ctx?: AccountContext) {
     return {
         subject: firstName ? `${firstName}, your application is still saved` : "Your application is still saved",
         html: wrapEmail(`
             ${heading(firstName ? `Your first result is still here, ${escapeHtml(firstName)}.` : "Your first result is still here.")}
-            ${paragraph(`You reached plan selection after seeing the recruiter and email CandidAI created for you. Your profile, target company, recruiter match, and preview remain saved.`)}
+            ${paragraph(`You reached plan selection after seeing the recruiter and email CandidAI created${ctx?.targetCompany ? ` for <strong style="color:#fff;">${escapeHtml(ctx.targetCompany)}</strong>` : " for you"}. Your profile, target company, recruiter match, and preview remain saved.`)}
             ${paragraph(`A paid campaign adds verified recruiter addresses and lets you generate across 20, 50, or 100 companies. Pro and Ultra also unlock control over recruiter criteria and writing instructions.`)}
-            ${tipBox(`<strong style="color:#8b5cf6;">One real customer result:</strong> Sanne had sent about 40 portal applications without a human reply. Eight targeted CandidAI emails produced five human replies, three introductory calls, two interview processes, and one offer in roughly four weeks. Individual results vary.`)}
+            ${tipBox(`<strong style="color:#8b5cf6;">One real customer result:</strong> Sanne had sent about ${PROOF.sanne.portalApplications} portal applications without a human reply. ${PROOF.sanne.targetedEmails} targeted CandidAI emails produced ${PROOF.sanne.humanReplies} human replies, ${PROOF.sanne.calls} introductory calls, ${PROOF.sanne.interviewProcesses} interview processes, and ${PROOF.sanne.offers} offer in ${PROOF.sanne.period}. Individual results vary.`)}
             <div style="text-align: center; margin: 32px 0;">${button("Return to my application →", `${DOMAIN}/dashboard`)}</div>
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">If something was unclear in checkout, reply to this email.<br>Alessio</p>
         `, { preheader: "Your first result and selected opportunity are still waiting.", badge: "PROGRESS SAVED", unsubscribeUrl }),
@@ -327,7 +350,7 @@ function renderFirstActionCheck(firstName: string, unsubscribeUrl: string, ctx?:
             <div style="text-align: center; margin: 32px 0;">
                 ${button(allDone ? "Review my email →" : nextStep.label + " →", nextStep.url)}
             </div>
-            ${tipBox(`<strong style="color: #8b5cf6;">Why finish the setup:</strong> among CandidAI users, roughly one in two junior candidates secured at least one call in their first month. Your profile and target company are the evidence CandidAI needs to choose the right person and write a specific message. Results vary by profile, market, and execution.`)}
+            ${tipBox(`<strong style="color: #8b5cf6;">Why finish the setup:</strong> among CandidAI users, ${PROOF.juniorCallRate} junior candidates secured at least one call in their first month. Your profile and target company are the evidence CandidAI needs to choose the right person and write a specific message. Results vary by profile, market, and execution.`)}
             ${paragraph(`If a step is unclear, reply and tell me where you stopped. I read the replies personally.`)}
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Thanks,<br>Alessio</p>
         `, {
@@ -341,44 +364,53 @@ function renderFirstActionCheck(firstName: string, unsubscribeUrl: string, ctx?:
 }
 
 // ── Stage 2: feature_tip (day 3) ──────────────────────────────────────────
-function renderFeatureTip(firstName: string, unsubscribeUrl: string) {
+function renderFeatureTip(firstName: string, unsubscribeUrl: string, ctx?: AccountContext) {
+    const hasCampaignControls = ctx?.plan === "pro" || ctx?.plan === "ultra";
+    const controlsCta = hasCampaignControls
+        ? { label: "Use my campaign controls →", url: `${DOMAIN}/dashboard` }
+        : { label: "See what each plan unlocks →", url: `${DOMAIN}/dashboard/plan-and-credits#plans` };
     return {
-        subject: firstName ? `${firstName}, three controls behind every CandidAI campaign` : "Three controls behind every CandidAI campaign",
+        subject: hasCampaignControls
+            ? (firstName ? `${firstName}, use the controls included in your plan` : "Use the controls included in your plan")
+            : (firstName ? `${firstName}, three controls behind every CandidAI campaign` : "Three controls behind every CandidAI campaign"),
         html: wrapEmail(`
             ${heading(firstName ? `The result is generated, but you keep control, ${escapeHtml(firstName)}.` : "The result is generated, but you keep control.")}
             ${paragraph(`<strong style="color:#ffffff;">Recruiter strategy:</strong> Pro and Ultra let you decide which shared signals matter—country, university, previous companies, role, seniority, and more.`)}
             ${paragraph(`<strong style="color:#ffffff;">Message direction:</strong> custom instructions tell CandidAI which achievements, tone, or constraints should appear across the campaign.`)}
             ${paragraph(`<strong style="color:#ffffff;">Per-company control:</strong> Ultra lets you review enriched company data and override both strategy and writing instructions for an individual company before generation.`)}
+            ${ctx?.targetRole ? paragraph(`For your <strong style="color:#fff;">${escapeHtml(ctx.targetRole)}</strong> direction, these controls keep recruiter selection and every message aligned with the opportunity you actually want.`) : ""}
             <div style="text-align: center; margin: 32px 0;">
-                ${button("Open my dashboard →", `${DOMAIN}/dashboard`)}
+                ${button(controlsCta.label, controlsCta.url)}
             </div>
-            ${tipBox(`<strong style="color: #8b5cf6;">The practical difference:</strong> CandidAI users received their first recruiter response in under 48 hours on average, compared with one to two weeks when a traditional application received a response at all. Results are not guaranteed.`)}
+            ${tipBox(`<strong style="color: #8b5cf6;">The practical difference:</strong> CandidAI users received their first recruiter response in ${PROOF.firstReplyTime} on average, compared with ${PROOF.traditionalReplyTime} when a traditional application received a response at all. Results are not guaranteed.`)}
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Cheers,<br>Alessio</p>
         `, { preheader: "Recruiter criteria, message direction, and per-company overrides explained.", badge: "CAMPAIGN CONTROLS", unsubscribeUrl }),
     };
 }
 
 // ── Stage 3: case_study (day 7) ────────────────────────────────────────────
-function renderCaseStudy(firstName: string, unsubscribeUrl: string) {
+function renderCaseStudy(firstName: string, unsubscribeUrl: string, ctx?: AccountContext) {
     return {
-        subject: firstName
+        subject: ctx?.variant === "outcome"
+            ? (firstName ? `${firstName}, 8 targeted emails—5 replies and 3 calls` : "8 targeted emails—5 replies and 3 calls")
+            : firstName
             ? `${firstName}, 40 ignored applications—then 3 calls in one month`
             : "40 ignored applications—then 3 calls in one month",
         html: wrapEmail(`
             ${heading("Sanne changed the channel—not her CV")}
             ${paragraph(`<strong style="color:#ffffff;">Sanne, 24</strong>, graduated in Business from the University of Groningen. She had a solid profile and one internship at a small company, but no headline employer on her CV.`)}
-            ${paragraph(`After roughly 40 applications through LinkedIn and company portals, she had received three automated rejections and no human reply. Her profile was entering an ATS alongside hundreds of others without reaching a relevant person.`)}
+            ${paragraph(`After roughly ${PROOF.sanne.portalApplications} applications through LinkedIn and company portals, she had received three automated rejections and no human reply. Her profile was entering an ATS alongside hundreds of others without reaching a relevant person.`)}
             <div style="border-left:3px solid #8b5cf6;padding:4px 0 4px 18px;margin:24px 0;color:#d1d5db;font-size:15px;line-height:1.7;font-style:italic;">“I didn't even know whether anyone was reading them.”</div>
-            ${paragraph(`Sanne selected eight European fintech and consumer companies she genuinely wanted—including N26, Adyen, Bolt, and Oatly. For each target, CandidAI identified a relevant recruiter, found a defensible connection, and built an individual email around one concrete result from her internship: an Excel model that cut a monthly reporting process by 60%.`)}
+            ${paragraph(`Sanne selected ${PROOF.sanne.targetedEmails} European fintech and consumer companies she genuinely wanted—including N26, Adyen, Bolt, and Oatly. For each target, CandidAI identified a relevant recruiter, found a defensible connection, and built an individual email around one concrete result from her internship: an Excel model that cut a monthly reporting process by ${PROOF.sanne.reportingImprovement}.`)}
 
             <div style="background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(124,58,237,.07));border:1px solid rgba(139,92,246,.35);border-radius:14px;padding:22px;margin:26px 0;">
-              <p style="color:#a78bfa;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;margin:0 0 14px;">Results in approximately four weeks</p>
+              <p style="color:#a78bfa;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;margin:0 0 14px;">Results in ${PROOF.sanne.period}</p>
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                <tr><td style="padding:7px 0;color:#aaa;font-size:14px;">Targeted emails</td><td style="text-align:right;color:#fff;font-size:18px;font-weight:700;">8</td></tr>
-                <tr><td style="padding:7px 0;color:#aaa;font-size:14px;">Human replies</td><td style="text-align:right;color:#fff;font-size:18px;font-weight:700;">5</td></tr>
-                <tr><td style="padding:7px 0;color:#aaa;font-size:14px;">Introductory calls</td><td style="text-align:right;color:#fff;font-size:18px;font-weight:700;">3</td></tr>
-                <tr><td style="padding:7px 0;color:#aaa;font-size:14px;">Interview processes</td><td style="text-align:right;color:#fff;font-size:18px;font-weight:700;">2</td></tr>
-                <tr><td style="padding:7px 0;color:#aaa;font-size:14px;">Offers</td><td style="text-align:right;color:#a78bfa;font-size:18px;font-weight:700;">1</td></tr>
+                <tr><td style="padding:7px 0;color:#aaa;font-size:14px;">Targeted emails</td><td style="text-align:right;color:#fff;font-size:18px;font-weight:700;">${PROOF.sanne.targetedEmails}</td></tr>
+                <tr><td style="padding:7px 0;color:#aaa;font-size:14px;">Human replies</td><td style="text-align:right;color:#fff;font-size:18px;font-weight:700;">${PROOF.sanne.humanReplies}</td></tr>
+                <tr><td style="padding:7px 0;color:#aaa;font-size:14px;">Introductory calls</td><td style="text-align:right;color:#fff;font-size:18px;font-weight:700;">${PROOF.sanne.calls}</td></tr>
+                <tr><td style="padding:7px 0;color:#aaa;font-size:14px;">Interview processes</td><td style="text-align:right;color:#fff;font-size:18px;font-weight:700;">${PROOF.sanne.interviewProcesses}</td></tr>
+                <tr><td style="padding:7px 0;color:#aaa;font-size:14px;">Offers</td><td style="text-align:right;color:#a78bfa;font-size:18px;font-weight:700;">${PROOF.sanne.offers}</td></tr>
               </table>
             </div>
 
@@ -388,10 +420,10 @@ function renderCaseStudy(firstName: string, unsubscribeUrl: string) {
             <div style="text-align: center; margin: 32px 0;">
                 ${button("Build my targeted campaign →", `${DOMAIN}/dashboard`)}
             </div>
-            <p style="color:#666;font-size:11px;line-height:1.5;margin:0 0 18px;">Individual customer outcome. Results vary by profile, market, target companies, message quality, and follow-through.</p>
+            <p style="color:#666;font-size:11px;line-height:1.5;margin:0 0 18px;">Individual customer outcome. ${CUSTOMER_RESULTS_DISCLAIMER}</p>
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Talk soon,<br>Alessio</p>
         `, {
-            preheader: "Eight targeted emails led to five human replies, three calls, and one offer.",
+            preheader: `${PROOF.sanne.targetedEmails} targeted emails led to ${PROOF.sanne.humanReplies} human replies, ${PROOF.sanne.calls} calls, and ${PROOF.sanne.offers} offer.`,
             badge: "REAL CUSTOMER STORY",
             unsubscribeUrl,
         }),
@@ -414,7 +446,7 @@ function renderUpgradeOffer(firstName: string, unsubscribeUrl: string) {
                 </div>
             </div>
             ${paragraph(`<strong style="color: #ffffff;">15% off any plan.</strong> The link below applies the code automatically, and you can compare every included feature before purchasing.`)}
-            ${tipBox(`<strong style="color:#8b5cf6;">Results from CandidAI users:</strong> targeted outreach produced about a 40% reply rate versus roughly 2% for their previous traditional applications—around 20× more replies. Individual results vary.`)}
+            ${tipBox(`<strong style="color:#8b5cf6;">Results from CandidAI users:</strong> targeted outreach produced a ${PROOF.candidaiReplyRate} reply rate versus ${PROOF.traditionalReplyRate} for their previous traditional applications—${PROOF.replyLift} more replies. Individual results vary.`)}
             <div style="text-align: center; margin: 32px 0;">
                 ${button("See plans (code pre-applied) →", ctaUrl)}
             </div>
@@ -422,4 +454,31 @@ function renderUpgradeOffer(firstName: string, unsubscribeUrl: string) {
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Cheers,<br>Alessio</p>
         `, { preheader: "WELCOME15 gives you 15% off any CandidAI plan.", badge: "MEMBER OFFER", unsubscribeUrl }),
     };
+}
+
+export function getLifecycleEmailPreviews() {
+    const unsubscribeUrl = `${DOMAIN}/unsubscribed?preview=1`;
+    const freeContext: AccountContext = {
+        hasCv: true,
+        hasCompanies: true,
+        hasCustomizations: true,
+        stage: "preview_ready",
+        plan: "free_trial",
+        targetCompany: "Adyen",
+        targetRole: "Junior Business Analyst",
+        recruiterName: "Sophie de Vries",
+    };
+    const paidContext: AccountContext = { ...freeContext, stage: "post_purchase_filters", plan: "pro" };
+    return [
+        { id: "first-action-incomplete", label: "First action · incomplete profile", ...renderFirstActionCheck("Sanne", unsubscribeUrl, { ...freeContext, hasCv: false, hasCompanies: false, hasCustomizations: false, stage: "profile_source" }) },
+        { id: "first-action-ready", label: "First action · result ready", ...renderFirstActionCheck("Sanne", unsubscribeUrl, freeContext) },
+        { id: "preview-ready", label: "Free preview ready · personalized", ...renderPreviewReadyFollowup("Sanne", unsubscribeUrl, freeContext) },
+        { id: "checkout-abandoned", label: "Checkout recovery · personalized", ...renderCheckoutAbandoned("Sanne", unsubscribeUrl, freeContext) },
+        { id: "post-purchase", label: "Post-purchase setup recovery", ...renderPostPurchaseResume("Sanne", unsubscribeUrl) },
+        { id: "feature-free", label: "Campaign controls · free user", ...renderFeatureTip("Sanne", unsubscribeUrl, freeContext) },
+        { id: "feature-pro", label: "Campaign controls · Pro user", ...renderFeatureTip("Sanne", unsubscribeUrl, paidContext) },
+        { id: "case-study-problem", label: "Case study · subject A (problem)", ...renderCaseStudy("Sanne", unsubscribeUrl, { ...freeContext, variant: "problem" }) },
+        { id: "case-study-outcome", label: "Case study · subject B (outcome)", ...renderCaseStudy("Sanne", unsubscribeUrl, { ...freeContext, variant: "outcome" }) },
+        { id: "upgrade-offer", label: "Upgrade offer", ...renderUpgradeOffer("Sanne", unsubscribeUrl) },
+    ];
 }

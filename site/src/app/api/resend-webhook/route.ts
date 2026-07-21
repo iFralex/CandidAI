@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { analyticsDay, metricKey } from "@/lib/analytics-aggregates";
+import { shouldSuppressEmail } from "@/lib/email-delivery";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -98,11 +99,16 @@ export async function POST(req: Request) {
       ...(eventData.bounce ? { bounce: eventData.bounce } : {}),
     }, { merge: true });
     const userRef = adminDb.collection("users").doc(index.userId);
-    if (["bounced", "complained", "suppressed"].includes(status)) {
+    if (shouldSuppressEmail(status, eventData.bounce)) {
       tx.set(userRef, {
         emailDeliverySuppressed: true,
         emailDeliverySuppressedReason: status,
         emailDeliverySuppressedAt: occurredAt,
+      }, { merge: true });
+    } else if (status === "bounced") {
+      tx.set(userRef, {
+        lastTransientEmailBounceAt: occurredAt,
+        lastTransientEmailBounce: eventData.bounce ?? null,
       }, { merge: true });
     }
     if (["opened", "clicked"].includes(status)) {

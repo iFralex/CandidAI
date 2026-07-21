@@ -177,6 +177,9 @@ export function AnalyticsDashboardClient() {
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
+                        <a href="/analytics/email-previews" className="text-xs text-white/60 hover:text-white px-3 py-1.5 rounded-md border border-white/10 hover:border-white/30">
+                            ✉️ Email previews
+                        </a>
                         <a href="/analytics/user" className="text-xs text-white/60 hover:text-white px-3 py-1.5 rounded-md border border-white/10 hover:border-white/30">
                             🔍 User search
                         </a>
