@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -17,9 +17,31 @@ const DEFAULT_LINKS: NavigationLink[] = [
     { label: "Reviews", href: "/#reviews" },
 ];
 
-export const Navigation = ({ simple = false, links }: { simple?: boolean; links?: NavigationLink[] }) => {
+export const Navigation = ({
+    simple = false,
+    links,
+    initialAuthenticated = false,
+}: {
+    simple?: boolean;
+    links?: NavigationLink[];
+    initialAuthenticated?: boolean;
+}) => {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [authenticated, setAuthenticated] = useState(initialAuthenticated);
     const visibleLinks = links ?? (simple ? [] : DEFAULT_LINKS);
+
+    useEffect(() => {
+        let active = true;
+        if (initialAuthenticated) return;
+        fetch("/api/protected/user", { credentials: "include", cache: "no-store" })
+            .then((response) => {
+                if (active && response.ok) setAuthenticated(true);
+            })
+            .catch(() => undefined);
+        return () => { active = false; };
+    }, [initialAuthenticated]);
+
+    const ctaLabel = authenticated ? "Go to dashboard" : "Get Started";
 
     return (
         <nav className="fixed top-0 w-full z-50 bg-black/20 backdrop-blur-lg border-b border-white/10">
@@ -43,7 +65,7 @@ export const Navigation = ({ simple = false, links }: { simple?: boolean; links?
                         ))}
                         <Link href="/dashboard">
                             <Button variant="primary" size="sm">
-                                Get Started
+                                {ctaLabel}
                             </Button>
                         </Link>
                     </div>
@@ -75,7 +97,7 @@ export const Navigation = ({ simple = false, links }: { simple?: boolean; links?
                             </Link>
                         ))}
                         <Link href="/dashboard" className="mt-3" onClick={() => setMobileOpen(false)}>
-                            <Button variant="primary" size="sm" className="w-full">Get Started</Button>
+                            <Button variant="primary" size="sm" className="w-full">{ctaLabel}</Button>
                         </Link>
                     </div>
                 </div>

@@ -101,7 +101,7 @@ export async function jumpToStep(targetStep: number) {
     revalidatePath('/dashboard');
 }
 
-export async function startServer(userId: string | null = null) {
+export async function startServer(userId: string | null = null, options: { throwOnError?: boolean } = {}) {
     if (!userId)
         userId = await checkAuth()
 
@@ -115,8 +115,12 @@ export async function startServer(userId: string | null = null) {
     })
     if (!res.ok) {
         const detail = await res.text().catch(() => "");
-        throw new Error(`Server runner failed: ${res.status}${detail ? ` ${detail.slice(0, 200)}` : ""}`)
+        const error = new Error(`Server runner failed: ${res.status}${detail ? ` ${detail.slice(0, 200)}` : ""}`)
+        if (options.throwOnError) throw error
+        console.error(error.message)
+        return false
     }
+    return true
 }
 
 function realtimeServerEndpoint(path: "start_onboarding_recruiter" | "start_onboarding_email") {
@@ -498,7 +502,7 @@ export async function savePostPurchaseCompanies(companies: { name: string; domai
     const accountRef = userRef.collection("data").doc("account");
     const previewRef = userRef.collection("data").doc("onboarding_preview");
     const resultsRef = userRef.collection("data").doc("results");
-    const [userSnap, previewSnap] = await Promise.all([userRef.get(), previewRef.get()]);
+    const [userSnap, previewSnap, resultsSnap] = await Promise.all([userRef.get(), previewRef.get(), resultsRef.get()]);
     const plan = String(userSnap.data()?.plan || "free_trial");
     const limit = Number(userSnap.data()?.maxCompanies ?? (plansData as any)[plan]?.maxCompanies ?? 1);
     if (!companies.length) throw new Error("Choose at least one target company");
@@ -535,6 +539,32 @@ export async function savePostPurchaseCompanies(companies: { name: string; domai
         batch.set(previewRef, { postPurchaseChoice: "replace", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     }
     batch.set(accountRef, { companies }, { merge: true });
+
+    // Preserve the established pipeline contract: Base and Pro entries already
+    // exist in results before Python starts, so they are generated immediately.
+    // Ultra deliberately leaves new entries absent because its company research
+    // must be reviewed and confirmed first.
+    if (!(plansData as any)[plan]?.companyConfirmationCalls) {
+        const results = resultsSnap.data() || {};
+        const idRefs = companies.map(company => adminDb.collection("ids").doc(`${company.name}-${userId}`));
+        const idSnaps = await Promise.all(idRefs.map(ref => ref.get()));
+        const resultUpdates: Record<string, any> = {};
+
+        companies.forEach((company, index) => {
+            const mappedId = idSnaps[index].exists ? String(idSnaps[index].data()?.id || "") : "";
+            const resultId = mappedId || adminDb.collection("_generated_ids").doc().id;
+            if (!results[resultId]) {
+                resultUpdates[resultId] = { company, start_date: Timestamp.now() };
+            }
+            if (!mappedId) {
+                batch.set(idRefs[index], { id: resultId }, { merge: true });
+            }
+        });
+
+        if (Object.keys(resultUpdates).length) {
+            batch.set(resultsRef, resultUpdates, { merge: true });
+        }
+    }
     batch.update(userRef, { onboardingStage: nextStage, onboardingStep: 8, postPurchaseReturnToReview: false });
     await batch.commit();
     revalidatePath("/dashboard");
@@ -641,7 +671,7 @@ export async function launchPostPurchaseCampaign() {
     // Do not mark onboarding complete until the worker has accepted the job.
     // Otherwise a transient runner/auth failure strands the account in a
     // completed state with no campaign running.
-    await startServer(userId);
+    await startServer(userId, { throwOnError: true });
     await userRef.update({
         onboardingStage: "completed",
         onboardingStep: 50,
