@@ -3734,6 +3734,15 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
     const [showGuidedPromise, setShowGuidedPromise] = useState(flow === 'guided' && !initialProfile)
     const [showProfileEditor, setShowProfileEditor] = useState(false)
     const [analysisMessageIndex, setAnalysisMessageIndex] = useState(0)
+    // "What opportunity are you pursuing now?" — allow a free-text role beyond the AI suggestions.
+    const initialCustomRole = (() => {
+        const insights = initialProfile?.onboardingInsights
+        const selected = insights?.selectedTargetRole
+        const suggestions = (insights?.targetRoleSuggestions || [initialProfile?.title]).filter(Boolean)
+        return selected && !suggestions.includes(selected) ? selected : ''
+    })()
+    const [showCustomRole, setShowCustomRole] = useState(Boolean(initialCustomRole))
+    const [customRole, setCustomRole] = useState(initialCustomRole)
 
     useEffect(() => {
         onDirtyChange?.(Boolean(cvFile) || JSON.stringify(profileSummary) !== JSON.stringify(initialProfile))
@@ -3839,7 +3848,6 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
             localProfile = profileSummary
             setProfileSummary(profileSummary)
             setAnalysisComplete(true)
-            if (flow === "guided") void markProfileReviewReady(cvFile && linkedinUrl.trim() ? "cv_linkedin" : cvFile ? "cv" : "linkedin")
         } catch (error) {
             console.error("Errore durante l'analisi del profilo:", error)
             const fallback: ProfileSummary = {
@@ -3859,12 +3867,16 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
             setAnalyzing(false)
         }
 
-        // Save draft immediately so a page refresh doesn't lose the profile
+        // Persist the generated profile immediately (submitProfile now uses set/merge,
+        // so it works even before the account doc exists), then, in the guided flow,
+        // advance the resumable stage to profile_review so a refresh returns to the
+        // review screen with the profile loaded instead of re-running PDL + AI.
         if (localProfile && !onSave) {
             try {
                 setIsDraftSaving(true)
                 const result = await submitProfile(plan, { linkedinUrl, profileSummary: localProfile }, cvFile?.blob, true)
                 if (result?.cvUrl) setLocalCvUrl(result.cvUrl)
+                if (flow === "guided") await markProfileReviewReady(cvFile && linkedinUrl.trim() ? "cv_linkedin" : cvFile ? "cv" : "linkedin")
             } catch (e) {
                 console.warn("Draft save failed:", e)
             } finally {
@@ -4161,7 +4173,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                                 <div className="border-b border-white/10 bg-gradient-to-r from-violet-500/10 to-transparent p-6 sm:p-8">
                                     <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start"><div><p className="text-xs uppercase tracking-[0.18em] text-violet-300">Candidate story</p><h3 className="mt-3 text-2xl font-semibold text-white">{profileSummary?.name}</h3><p className="mt-1 text-lg text-gray-300">{profileSummary?.title}</p><p className="mt-2 text-sm text-gray-500">{profileSummary?.location?.country}</p></div><div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-300">Profile ready</div></div>
                                 </div>
-                                <div className="grid gap-8 p-6 sm:p-8 md:grid-cols-2"><div><p className="text-sm font-medium text-white">What makes you stand out</p><div className="mt-4 space-y-3">{(profileSummary?.onboardingInsights?.strengths || profileSummary?.skills?.slice(0, 4) || []).slice(0, 4).map((strength: string) => <p key={strength} className="flex gap-2 text-sm text-gray-300"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />{strength}</p>)}</div></div><div><p className="text-sm font-medium text-white">What opportunity are you pursuing now?</p><div className="mt-4 flex flex-wrap gap-2">{(profileSummary?.onboardingInsights?.targetRoleSuggestions || [profileSummary?.title]).filter(Boolean).map((role: string) => { const selected = profileSummary?.onboardingInsights?.selectedTargetRole === role; return <Button key={role} type="button" size="sm" variant="ghost" className={selected ? 'border border-violet-300/60 bg-violet-500 text-white shadow-lg shadow-violet-500/20 ring-1 ring-violet-300/30 hover:bg-violet-400' : 'border border-white/10 bg-black/20 text-gray-400 hover:border-violet-400/40 hover:bg-violet-500/10 hover:text-white'} onClick={() => setProfileSummary((current: ProfileSummary) => ({ ...current, onboardingInsights: current.onboardingInsights ? { ...current.onboardingInsights, selectedTargetRole: role } : undefined }))}>{selected && <Check className="h-4 w-4" />}{role}</Button> })}</div><p className="mt-4 text-xs leading-5 text-gray-500">This choice guides who we prioritize and what the email emphasizes.</p></div></div>
+                                <div className="grid gap-8 p-6 sm:p-8 md:grid-cols-2"><div><p className="text-sm font-medium text-white">What makes you stand out</p><div className="mt-4 space-y-3">{(profileSummary?.onboardingInsights?.strengths || profileSummary?.skills?.slice(0, 4) || []).slice(0, 4).map((strength: string) => <p key={strength} className="flex gap-2 text-sm text-gray-300"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />{strength}</p>)}</div></div><div><p className="text-sm font-medium text-white">What opportunity are you pursuing now?</p><div className="mt-4 flex flex-wrap gap-2">{(profileSummary?.onboardingInsights?.targetRoleSuggestions || [profileSummary?.title]).filter(Boolean).map((role: string) => { const selected = !showCustomRole && profileSummary?.onboardingInsights?.selectedTargetRole === role; return <Button key={role} type="button" size="sm" variant="ghost" className={selected ? 'border border-violet-300/60 bg-violet-500 text-white shadow-lg shadow-violet-500/20 ring-1 ring-violet-300/30 hover:bg-violet-400' : 'border border-white/10 bg-black/20 text-gray-400 hover:border-violet-400/40 hover:bg-violet-500/10 hover:text-white'} onClick={() => { setShowCustomRole(false); setProfileSummary((current: ProfileSummary) => ({ ...current, onboardingInsights: current.onboardingInsights ? { ...current.onboardingInsights, selectedTargetRole: role } : undefined })); }}>{selected && <Check className="h-4 w-4" />}{role}</Button> })}<Button type="button" size="sm" variant="ghost" className={showCustomRole ? 'border border-violet-300/60 bg-violet-500 text-white shadow-lg shadow-violet-500/20 ring-1 ring-violet-300/30 hover:bg-violet-400' : 'border border-white/10 bg-black/20 text-gray-400 hover:border-violet-400/40 hover:bg-violet-500/10 hover:text-white'} onClick={() => { setShowCustomRole(true); setProfileSummary((current: ProfileSummary) => ({ ...current, onboardingInsights: current.onboardingInsights ? { ...current.onboardingInsights, selectedTargetRole: customRole } : undefined })); }}>{showCustomRole && <Check className="h-4 w-4" />}Something else</Button></div>{showCustomRole && <Input autoFocus value={customRole} maxLength={60} placeholder="Type the role you're pursuing" className="mt-3 max-w-sm" onChange={(e) => { const value = e.target.value; setCustomRole(value); setProfileSummary((current: ProfileSummary) => ({ ...current, onboardingInsights: current.onboardingInsights ? { ...current.onboardingInsights, selectedTargetRole: value } : undefined })); }} />}<p className="mt-4 text-xs leading-5 text-gray-500">This choice guides who we prioritize and what the email emphasizes.</p></div></div>
                             </Card>
                             <div className="text-center"><Button type="button" variant="ghost" onClick={() => setShowProfileEditor(value => !value)}>{showProfileEditor ? 'Hide profile details' : 'Edit profile details'}</Button></div>
                             {showProfileEditor && <ProfileSummaryCard cardVariants={cardVariants} profileSummary={profileSummary} setProfileSummary={setProfileSummary} cvFile={cvFile} handleCvUpload={handleCvUpload} />}
@@ -4219,7 +4231,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                         transition={{ delay: 0.5, duration: 0.6 }}
                     >
                         {strategyResetControl?.enabled && <div className="mb-5 flex max-w-2xl items-start gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-4 text-left"><Checkbox checked={strategyResetControl.rebuild} onCheckedChange={checked => strategyResetControl.onChange(checked === true)} className="mt-0.5" /><div><p className="text-sm font-medium text-amber-100">Rebuild recruiter strategies from this profile</p><p className="mt-1 text-xs leading-5 text-amber-100/65">If enabled, your existing filters will be replaced with new defaults based on these changes. Disable it to keep the filters you already configured.</p></div></div>}
-                        <div className="flex flex-wrap items-center justify-center gap-3">
+                        <div className="flex flex-col-reverse items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
                             {currentStep && !onSave && (
                                 <button
                                     onClick={handleBack}

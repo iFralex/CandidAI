@@ -43,7 +43,9 @@ export async function deleteProfile() {
         queries: FieldValue.delete(),
         customizations: FieldValue.delete(),
     }, { merge: true });
-    batch.update(userRef, { onboardingStep: 3, maxOnboardingStep: 3 });
+    // Reset the resumable stage too, so a refresh after "Start Over" returns to the
+    // initial upload screen instead of an empty review screen.
+    batch.update(userRef, { onboardingStep: 3, maxOnboardingStep: 3, onboardingStage: "profile_source" });
 
     await batch.commit();
     revalidatePath('/dashboard');
@@ -327,9 +329,10 @@ export async function markProfileReviewReady(source: "cv" | "linkedin" | "cv_lin
     const userId = await checkAuth();
     const userRef = adminDb.collection("users").doc(userId);
     const userSnap = await userRef.get();
-    // The generated profile still lives in the browser until the user confirms it.
-    // Measure the review scene without making it the resumable persisted stage.
-    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage || "profile_source", to: "profile_review", flow: "free_preview", step: 1, reason: "profile_generated", metadata: { source }, updateStage: false });
+    // The generated profile is already persisted (draft save) by the time we get here.
+    // Advance the resumable stage to profile_review so a refresh returns to the review
+    // screen with the profile loaded, instead of restarting the PDL + AI enrichment.
+    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage || "profile_source", to: "profile_review", flow: "free_preview", step: 2, reason: "profile_generated", metadata: { source } });
     return { success: true as const };
 }
 
@@ -852,7 +855,9 @@ export async function submitProfile(
             ...(flow === "guided" ? { onboardingStage: "target_company" } : {}),
         });
     } else {
-        batch.update(accountRef, updatedProfile);
+        // set/merge (not update) so the draft save works even before the account doc
+        // exists — otherwise update() throws "No document to update" for brand-new users.
+        batch.set(accountRef, updatedProfile, { merge: true });
     }
 
     await batch.commit();
