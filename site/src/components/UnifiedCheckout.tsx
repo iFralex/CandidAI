@@ -611,11 +611,16 @@ export function UnifiedCheckout({ purchaseType, itemId, email = "", onSuccess }:
     };
 
     return (
-        <div className="no-scrollbar overflow-y-auto space-y-4">
+        <div className="space-y-4">
             <Elements stripe={stripePromise}>
+                <div className="sticky top-0 z-20 border-b border-white/10 bg-background/95 pb-3 backdrop-blur-xl md:hidden">
+                    <PurchaseSummary purchaseType={purchaseType} itemId={itemId} discount={discount} />
+                </div>
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                        <PurchaseSummary purchaseType={purchaseType} itemId={itemId} discount={discount} />
+                        <div className="hidden md:block">
+                            <PurchaseSummary purchaseType={purchaseType} itemId={itemId} discount={discount} />
+                        </div>
                         <DiscountCodeInput
                             purchaseType={purchaseType}
                             itemId={itemId}

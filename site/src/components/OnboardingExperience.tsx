@@ -287,9 +287,9 @@ function ConversionResult({ preview, email }: { preview: OnboardingPreviewState;
     </section>
     <Dialog open={Boolean(selected)} onOpenChange={open => { if (!open) setSelected(null) }}>
       <DialogContent className="max-h-[92vh] w-[calc(100vw-2rem)] max-w-5xl overflow-y-auto p-5 sm:max-w-5xl sm:p-7">
-        <DialogHeader className="sticky top-0 z-20 -mx-5 -mt-5 border-b border-white/10 bg-background/95 px-5 pb-4 pt-5 text-left backdrop-blur-xl sm:static sm:mx-0 sm:mt-0 sm:border-0 sm:bg-transparent sm:p-0 sm:pr-8 sm:backdrop-blur-none">
+        <DialogHeader className="pr-8 text-left">
           <DialogTitle>{selected ? `Continue with ${selected.name}` : 'Complete your purchase'}</DialogTitle>
-          <DialogDescription>{selected ? `€${selected.price.toFixed(2)} one-time · ` : ''}Secure payment. Your progress stays saved if you close this window.</DialogDescription>
+          <DialogDescription>Secure one-time payment. Your progress stays saved if you close this window.</DialogDescription>
         </DialogHeader>
         {selected && <div className="pt-2"><UnifiedCheckout purchaseType="plan" itemId={selected.id} email={email || ''} /></div>}
       </DialogContent>
