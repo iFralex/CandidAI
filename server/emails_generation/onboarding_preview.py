@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from typing import Any
 import requests
 
@@ -18,10 +19,13 @@ from server.emails_generation.database import (
     save_companies_to_results,
 )
 from server.emails_generation.email_generator import generate_email
+from server.emails_generation.profile_enrich import enrich_profile_summary
 from server.emails_generation.recruiter import (
+    find_recruiter_by_linkedin_urls,
     find_recruiters_for_user,
     get_companies_info,
 )
+from server.emails_generation.utils import extract_cv_text
 from server.analytics import track
 
 logger = logging.getLogger(__name__)
@@ -79,9 +83,24 @@ def _preview_ref(user_id: str):
     )
 
 
+def _account_ref(user_id: str):
+    # Same path `get_account_data` reads from (server/emails_generation/database.py):
+    # users/{user_id}/data/account — reusing it here avoids a second Firestore access path.
+    return (
+        db.collection("users")
+        .document(user_id)
+        .collection("data")
+        .document("account")
+    )
+
+
 def update_preview(user_id: str, **fields: Any) -> None:
     fields["updatedAt"] = firestore.SERVER_TIMESTAMP
     _preview_ref(user_id).set(fields, merge=True)
+
+
+def write_profile_summary(user_id: str, profile_summary: dict) -> None:
+    _account_ref(user_id).set({"profileSummary": profile_summary}, merge=True)
 
 
 def _fail(user_id: str, stage: str, exc: Exception) -> None:
@@ -293,3 +312,50 @@ def create_email(user_id: str, job_id: str) -> None:
                 logger.exception("Unable to send completed-preview notification for %s", user_id)
     except Exception as exc:  # noqa: BLE001
         _fail(user_id, "email_generation", exc)
+
+
+def _fail_profile(user_id: str, exc: Exception) -> None:
+    logger.exception("Profile generation failed for %s", user_id)
+    update_preview(user_id, profileStatus="failed", profileError={
+        "code": "profile_generating_failed", "message": str(exc)[:300], "recoverable": True,
+    })
+    track("onboarding_job_failed", {"stage": "profile_generating", "error": str(exc)[:300]}, user_id=user_id)
+
+
+def generate_profile(user_id: str, job_id: str) -> None:
+    """Enrich the candidate profile from LinkedIn/PDL + CV and persist it."""
+    t0 = time.monotonic()
+    try:
+        update_preview(user_id, profileStatus="running", profileProgress="Reading your CV")
+        track("onboarding_job_started", {"stage": "profile_generating", "job_id": job_id, "queue": "onboarding_realtime"}, user_id=user_id)
+        account = get_account_data(user_id) or {}
+        linkedin_url = account.get("linkedinUrl")
+        cv_url = account.get("cvUrl")
+        if not linkedin_url and not cv_url:
+            raise ValueError("No LinkedIn URL or CV to generate a profile")
+
+        pdl_profile = None
+        t_pdl = time.monotonic()
+        if linkedin_url:
+            update_preview(user_id, profileProgress="Cross-referencing LinkedIn")
+            record = find_recruiter_by_linkedin_urls([linkedin_url]) or {}
+            pdl_profile = record or None
+        pdl_ms = int((time.monotonic() - t_pdl) * 1000)
+
+        cv_text = extract_cv_text(cv_url) if cv_url else "No CV was provided."
+
+        update_preview(user_id, profileProgress="Writing your candidate story")
+        t_ai = time.monotonic()
+        profile_summary = enrich_profile_summary(pdl_profile, cv_text)
+        ai_ms = int((time.monotonic() - t_ai) * 1000)
+
+        write_profile_summary(user_id, profile_summary)
+        update_preview(user_id, profileStatus="completed", profileProgress="Done")
+        track("profile_generation_completed", {
+            "job_id": job_id, "pdl_ms": pdl_ms, "ai_ms": ai_ms,
+            "total_ms": int((time.monotonic() - t0) * 1000),
+            "pdl_ok": bool(pdl_profile), "had_cv": bool(cv_url),
+            "had_linkedin": bool(linkedin_url), "success": True,
+        }, user_id=user_id)
+    except Exception as exc:  # noqa: BLE001
+        _fail_profile(user_id, exc)
