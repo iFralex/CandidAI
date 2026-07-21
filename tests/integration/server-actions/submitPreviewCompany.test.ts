@@ -250,6 +250,23 @@ describe("submitPreviewCompany server action", () => {
       expect(companiesCall![2]).toEqual({ merge: true });
     });
 
+    it("saves the preview doc with merge:true to preserve worker profile fields", async () => {
+      await submitPreviewCompany(company);
+
+      const previewCall = mockBatchSet.mock.calls.find(
+        ([, data]) => data?.status === "idle" && data?.stage === "target_company"
+      );
+      expect(previewCall).toBeDefined();
+      expect(previewCall![1]).toEqual(
+        expect.objectContaining({
+          status: "idle",
+          stage: "target_company",
+          company,
+        })
+      );
+      expect(previewCall![2]).toEqual({ merge: true });
+    });
+
     it("commits the batch", async () => {
       await submitPreviewCompany(company);
       expect(mockBatchCommit).toHaveBeenCalledOnce();

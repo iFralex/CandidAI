@@ -318,7 +318,7 @@ export async function submitPreviewCompany(company: { name: string; domain?: str
         stage: "target_company",
         company,
         updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: false });
+    }, { merge: true });
     batch.update(userRef, {
         onboardingStage: nextStage,
         onboardingStep: 3,
