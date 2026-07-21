@@ -163,25 +163,57 @@ interface ProfileSummary {
   };
 }`;
 
-  const res = await fetch("https://api.deepseek.com/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "deepseek-v4-flash",
-      messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" },
-      stream: false,
-    }),
-  });
+  const callDeepSeek = async (): Promise<Response> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 55_000);
+    try {
+      return await fetch("https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "deepseek-v4-flash",
+          messages: [{ role: "user", content: prompt }],
+          response_format: { type: "json_object" },
+          stream: false,
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  // PDL usually succeeds; if the AI step fails (timeout / network / bad output) we
+  // degrade to the PDL profile instead of losing everything. Only when there is no
+  // PDL data either do we throw, so the caller can let the user retry rather than
+  // persisting an empty placeholder.
+  const aiFallback = (): ProfileSummary => {
+    if (profileSummary) return profileSummary;
+    throw new Error("AI enrichment failed and no PDL data was available");
+  };
+
+  // Up to 2 attempts: retry on network error or transient 5xx (a bad LinkedIn/CV
+  // request, i.e. a 4xx, is not retried).
+  let res: Response | null = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      res = await callDeepSeek();
+      if (res.ok || res.status < 500) break;
+      console.error(`DeepSeek enrichProfileAI HTTP ${res.status} (attempt ${attempt})`);
+    } catch (err) {
+      res = null;
+      console.error(`DeepSeek enrichProfileAI request failed (attempt ${attempt}):`, (err as any)?.message);
+    }
+  }
+  if (!res) return aiFallback();
   if (!res.ok) {
     console.error("DeepSeek enrichProfileAI failed:", res.status, (await res.text()).slice(0, 200));
-    return profileSummary ?? {
-      name: "", title: "", skills: [], experience: [], education: [], projects: [], certifications: []
-    };
+    return aiFallback();
   }
+
   const dsData = await res.json();
   const raw = String(dsData?.choices?.[0]?.message?.content ?? "").trim();
   const json = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
@@ -190,11 +222,13 @@ interface ProfileSummary {
   try {
     merged = JSON.parse(json);
   } catch {
-    console.error("DeepSeek returned invalid JSON:", json);
-    return profileSummary ?? {
-      name: "", title: "", skills: [], experience: [], education: [], projects: [], certifications: []
-    };
+    console.error("DeepSeek returned invalid JSON:", json.slice(0, 200));
+    return aiFallback();
   }
+
+  // Guard against a well-formed but partial JSON that omits the arrays we map over.
+  merged.experience = Array.isArray(merged.experience) ? merged.experience : [];
+  merged.education = Array.isArray(merged.education) ? merged.education : [];
 
   // Re-attach PDL websites when DeepSeek dropped them (without fetching logos — that stays client-side)
   merged.experience = merged.experience.map((exp: any) => {

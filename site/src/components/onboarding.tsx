@@ -3864,19 +3864,10 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
         } catch (error) {
             console.error("Errore durante l'analisi del profilo:", error)
             generationError = ((error as any)?.message || String(error)).slice(0, 140)
-            const fallback: ProfileSummary = {
-                name: "Your name",
-                title: "Your current job title",
-                experience: [],
-                skills: [],
-                education: [],
-                location: { country: "Your country", continent: "Your continent" },
-                projects: [],
-                certifications: []
-            }
-            localProfile = fallback
-            setProfileSummary(fallback)
-            setAnalysisComplete(true)
+            // Genuine failure (e.g. AI enrichment failed and there was no PDL data to
+            // fall back to). Do NOT show a placeholder profile or persist anything
+            // below — keep the user on the input screen so they can retry cleanly.
+            alert("We couldn't read your profile this time. Please try again in a moment.")
         } finally {
             setAnalyzing(false)
         }
@@ -3885,7 +3876,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
         // so it works even before the account doc exists), then, in the guided flow,
         // advance the resumable stage to profile_review so a refresh returns to the
         // review screen with the profile loaded instead of re-running PDL + AI.
-        if (localProfile && !onSave) {
+        if (localProfile && !onSave && !generationError) {
             const tPersistStart = perf.now()
             try {
                 setIsDraftSaving(true)
