@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { BriefcaseBusiness, Building2, Check, Copy, Crown, ExternalLink, GraduationCap, Linkedin, Loader2, Mail, MapPin, Search, SlidersHorizontal, Sparkles, Target, UserRound, Wrench, Zap, Trash2, RefreshCw, ArrowRight, ArrowLeft, Pencil } from 'lucide-react'
 import { ProfileAnalysisClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient } from '@/components/onboarding'
+import { ProgressScene } from '@/components/onboarding/ProgressScene'
 import { PlanSelector, type PlanInfo } from '@/components/PlanSelector'
 import { UnifiedCheckout } from '@/components/UnifiedCheckout'
 import { ProfileAvatar } from '@/components/ProfileAvatar'
@@ -175,12 +176,13 @@ function SearchExperience({ preview, replay = false, onReplayComplete }: { previ
         <motion.div key={scene} className="w-full" initial={{ opacity: 0, y: 28, filter: 'blur(8px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -22, filter: 'blur(8px)' }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>{scenes[scene]}</motion.div>
       </AnimatePresence>
     </div>
-    <div className="relative mx-1 mt-4 sm:absolute sm:inset-x-12 sm:bottom-5 sm:mx-0 sm:mt-0">
-      <p className="mb-3 text-center text-[11px] uppercase tracking-[0.2em] text-gray-600">Strategy currently being tested</p>
-      <AnimatePresence mode="wait">
-        <motion.div key={visibleStrategy || 'initial'} initial={{ opacity: 0, y: 18, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -16, scale: 0.98 }} transition={{ duration: 0.55 }} className="mx-auto max-w-3xl rounded-2xl border border-white/10 bg-black/55 px-5 py-4 shadow-2xl backdrop-blur-xl"><div className="flex items-start gap-4"><span className="relative mt-1 flex h-3 w-3 shrink-0"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-60" /><span className="relative inline-flex h-3 w-3 rounded-full bg-violet-500" /></span><div className="min-w-0 flex-1"><p className="font-medium text-white">{visibleStrategy || 'Preparing the most precise strategy'}</p><p className="mt-1 text-xs text-gray-500">Looking for genuine overlap between you and people at {company}.</p>{visibleDetails.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{visibleDetails.map(detail => { const presentation = detailPresentation[detail.label] || { label: detail.label, icon: Sparkles }; const Icon = presentation.icon; return <div key={detail.label} className="flex items-center gap-2 rounded-full border border-violet-400/15 bg-violet-400/[0.07] px-3 py-2 text-xs text-gray-200"><Icon className="h-3.5 w-3.5 text-violet-400" />{presentation.label}</div> })}</div>}</div></div></motion.div>
-      </AnimatePresence>
-    </div>
+    <ProgressScene
+      eyebrow="Strategy currently being tested"
+      title={visibleStrategy || 'Preparing the most precise strategy'}
+      subtitle={`Looking for genuine overlap between you and people at ${company}.`}
+      phase={visibleStrategy}
+      phaseDetails={visibleDetails.map(detail => detailPresentation[detail.label] || { label: detail.label, icon: Sparkles })}
+    />
   </div>
 }
 
