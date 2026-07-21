@@ -247,7 +247,7 @@ function renderPreviewReadyFollowup(firstName: string, unsubscribeUrl: string) {
             ${paragraph(`The research is complete: CandidAI selected the strongest recruiter match we found and wrote your first application around your profile and target company.`)}
             ${paragraph(`The result is saved. Open it to inspect why this recruiter was chosen, visit their LinkedIn profile, and copy or open the draft in your email app.`)}
             <div style="text-align: center; margin: 32px 0;">${button("Review my application →", `${DOMAIN}/dashboard`)}</div>
-            ${tipBox(`<strong style="color: #8b5cf6;">What early beta users changed:</strong> their baseline response rate from traditional applications was about 2%; targeted CandidAI outreach reached about 40%. Results vary, but the mechanism is simple: reach a relevant person with a message built for that company.`)}
+            ${tipBox(`<strong style="color: #8b5cf6;">What CandidAI users changed:</strong> their baseline response rate from traditional applications was about 2%; targeted CandidAI outreach reached about 40%. Results vary, but the mechanism is simple: reach a relevant person with a message built for that company.`)}
             ${paragraph(`Your free preview shows the recruiter and complete draft. A paid campaign adds the direct recruiter email, deeper company research, and definitive generation across 20, 50, or 100 target companies.`)}
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Talk soon,<br>Alessio</p>
         `, { preheader: "Your recruiter match and personalized email are waiting in CandidAI.", badge: "APPLICATION READY", unsubscribeUrl }),
@@ -261,7 +261,7 @@ function renderCheckoutAbandoned(firstName: string, unsubscribeUrl: string) {
             ${heading(firstName ? `Your first result is still here, ${escapeHtml(firstName)}.` : "Your first result is still here.")}
             ${paragraph(`You reached plan selection after seeing the recruiter and email CandidAI created for you. Your profile, target company, recruiter match, and preview remain saved.`)}
             ${paragraph(`A paid campaign adds verified recruiter addresses and lets you generate across 20, 50, or 100 companies. Pro and Ultra also unlock control over recruiter criteria and writing instructions.`)}
-            ${tipBox(`<strong style="color:#8b5cf6;">One real beta result:</strong> Sanne had sent about 40 portal applications without a human reply. Eight targeted CandidAI emails produced five human replies, three introductory calls, two interview processes, and one offer in roughly four weeks. Individual results vary.`)}
+            ${tipBox(`<strong style="color:#8b5cf6;">One real customer result:</strong> Sanne had sent about 40 portal applications without a human reply. Eight targeted CandidAI emails produced five human replies, three introductory calls, two interview processes, and one offer in roughly four weeks. Individual results vary.`)}
             <div style="text-align: center; margin: 32px 0;">${button("Return to my application →", `${DOMAIN}/dashboard`)}</div>
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">If something was unclear in checkout, reply to this email.<br>Alessio</p>
         `, { preheader: "Your first result and selected opportunity are still waiting.", badge: "PROGRESS SAVED", unsubscribeUrl }),
@@ -327,7 +327,7 @@ function renderFirstActionCheck(firstName: string, unsubscribeUrl: string, ctx?:
             <div style="text-align: center; margin: 32px 0;">
                 ${button(allDone ? "Review my email →" : nextStep.label + " →", nextStep.url)}
             </div>
-            ${tipBox(`<strong style="color: #8b5cf6;">Why finish the setup:</strong> in the early beta cohort, roughly one in two junior candidates secured at least one call in their first month. Your profile and target company are the evidence CandidAI needs to choose the right person and write a specific message. Results vary by profile, market, and execution.`)}
+            ${tipBox(`<strong style="color: #8b5cf6;">Why finish the setup:</strong> among CandidAI users, roughly one in two junior candidates secured at least one call in their first month. Your profile and target company are the evidence CandidAI needs to choose the right person and write a specific message. Results vary by profile, market, and execution.`)}
             ${paragraph(`If a step is unclear, reply and tell me where you stopped. I read the replies personally.`)}
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Thanks,<br>Alessio</p>
         `, {
@@ -352,7 +352,7 @@ function renderFeatureTip(firstName: string, unsubscribeUrl: string) {
             <div style="text-align: center; margin: 32px 0;">
                 ${button("Open my dashboard →", `${DOMAIN}/dashboard`)}
             </div>
-            ${tipBox(`<strong style="color: #8b5cf6;">The practical difference:</strong> early beta users reported a first recruiter response in under 48 hours on average, compared with one to two weeks when a traditional application received a response at all. Results are not guaranteed.`)}
+            ${tipBox(`<strong style="color: #8b5cf6;">The practical difference:</strong> CandidAI users received their first recruiter response in under 48 hours on average, compared with one to two weeks when a traditional application received a response at all. Results are not guaranteed.`)}
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Cheers,<br>Alessio</p>
         `, { preheader: "Recruiter criteria, message direction, and per-company overrides explained.", badge: "CAMPAIGN CONTROLS", unsubscribeUrl }),
     };
@@ -388,11 +388,11 @@ function renderCaseStudy(firstName: string, unsubscribeUrl: string) {
             <div style="text-align: center; margin: 32px 0;">
                 ${button("Build my targeted campaign →", `${DOMAIN}/dashboard`)}
             </div>
-            <p style="color:#666;font-size:11px;line-height:1.5;margin:0 0 18px;">Individual outcome from an early beta user. Results vary by profile, market, target companies, message quality, and follow-through.</p>
+            <p style="color:#666;font-size:11px;line-height:1.5;margin:0 0 18px;">Individual customer outcome. Results vary by profile, market, target companies, message quality, and follow-through.</p>
             <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Talk soon,<br>Alessio</p>
         `, {
             preheader: "Eight targeted emails led to five human replies, three calls, and one offer.",
-            badge: "REAL BETA STORY",
+            badge: "REAL CUSTOMER STORY",
             unsubscribeUrl,
         }),
     };
@@ -414,7 +414,7 @@ function renderUpgradeOffer(firstName: string, unsubscribeUrl: string) {
                 </div>
             </div>
             ${paragraph(`<strong style="color: #ffffff;">15% off any plan.</strong> The link below applies the code automatically, and you can compare every included feature before purchasing.`)}
-            ${tipBox(`<strong style="color:#8b5cf6;">Early beta benchmark:</strong> targeted CandidAI outreach produced about a 40% reply rate versus roughly 2% for the testers' previous traditional applications—around 20× more replies. Early sample; individual results vary.`)}
+            ${tipBox(`<strong style="color:#8b5cf6;">Results from CandidAI users:</strong> targeted outreach produced about a 40% reply rate versus roughly 2% for their previous traditional applications—around 20× more replies. Individual results vary.`)}
             <div style="text-align: center; margin: 32px 0;">
                 ${button("See plans (code pre-applied) →", ctaUrl)}
             </div>
