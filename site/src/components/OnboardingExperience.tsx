@@ -47,7 +47,7 @@ const journey = [
 const searchSceneDurations = [4000, 9000, 4000, 10500, 4000]
 
 function JourneyHeader({ stage }: { stage: OnboardingStage }) {
-  const active = stage === 'profile_source' || stage === 'profile_review' ? 0
+  const active = stage === 'profile_source' || stage === 'profile_review' || stage === 'profile_generating' ? 0
     : stage === 'target_company' ? 1
     : stage === 'recruiter_search' || stage === 'recruiter_found' ? 2 : 3
   return (
@@ -66,11 +66,12 @@ function JourneyHeader({ stage }: { stage: OnboardingStage }) {
   )
 }
 
-function usePreview(initial: OnboardingPreviewState, shouldPoll: boolean) {
+function usePreview(initial: OnboardingPreviewState, shouldPoll: (preview: OnboardingPreviewState) => boolean) {
   const [preview, setPreview] = useState(initial)
   useEffect(() => setPreview(initial), [initial])
+  const pollActive = shouldPoll(preview)
   useEffect(() => {
-    if (!shouldPoll) return
+    if (!pollActive) return
     let cancelled = false
     const refresh = async () => {
       try {
@@ -86,7 +87,7 @@ function usePreview(initial: OnboardingPreviewState, shouldPoll: boolean) {
     void refresh()
     const timer = window.setInterval(refresh, 2500)
     return () => { cancelled = true; window.clearInterval(timer) }
-  }, [shouldPoll])
+  }, [pollActive])
   return preview
 }
 
@@ -366,8 +367,11 @@ export function OnboardingExperience(props: Props) {
   const [replayPhase, setReplayPhase] = useState<'idle' | 'search' | 'email' | 'reveal'>(() => props.stage === 'preview_ready' ? 'reveal' : 'idle')
   const [optimisticPostStage, setOptimisticPostStage] = useState<OnboardingStage | null>(null)
   const [optimisticReturnToReview, setOptimisticReturnToReview] = useState(false)
-  const poll = ['profile_generating', 'recruiter_search', 'recruiter_found', 'email_generation'].includes(props.stage)
-  const preview = usePreview(props.initialPreview, poll)
+  const shouldPollPreview = useCallback((current: OnboardingPreviewState) => (
+    ['profile_generating', 'recruiter_search', 'recruiter_found', 'email_generation'].includes(props.stage)
+      || (props.stage === 'target_company' && ['queued', 'running'].includes(current.profileStatus || ''))
+  ), [props.stage])
+  const preview = usePreview(props.initialPreview, shouldPollPreview)
   // The preview document intentionally remains `preview_ready` so its original
   // result can be archived. During paid activation the user document is the
   // source of truth for the current setup stage.
@@ -491,7 +495,17 @@ export function OnboardingExperience(props: Props) {
         {replayPhase === 'idle' && <>
           {isPostPurchase && <PostPurchaseExperience props={{ ...props, stage: effectiveStage, postPurchaseReturnToReview: optimisticPostStage ? optimisticReturnToReview : props.postPurchaseReturnToReview }} preview={preview} onNavigate={navigatePostPurchase} />}
           {(effectiveStage === 'profile_source' || effectiveStage === 'profile_review') && <ProfileAnalysisClient userId={props.user.uid} plan="free_trial" initialProfile={props.profile} initialCvUrl={props.cvUrl} flow="guided" />}
-          {effectiveStage === 'target_company' && <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="mb-4 border-violet-400/20 bg-violet-400/10 text-violet-200">Choose one real opportunity</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Which company would you like to join?</h2><p className="mx-auto mt-3 max-w-xl text-gray-400">One company is enough. Your profile will guide who we look for and how we approach them.</p></div><CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
+          {effectiveStage === 'target_company' && <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="mb-4 border-violet-400/20 bg-violet-400/10 text-violet-200">Choose one real opportunity</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Which company would you like to join?</h2><p className="mx-auto mt-3 max-w-xl text-gray-400">One company is enough. Your profile will guide who we look for and how we approach them.</p></div>
+            {['queued', 'running'].includes(preview.profileStatus || '') && (
+              <div className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/[0.07] px-3 py-1.5 text-xs text-violet-200">
+                <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-violet-500" /></span>
+                Building your profile… {preview.profileProgress || ''}
+              </div>
+            )}
+            {preview.profileStatus === 'failed' && (
+              <div className="mx-auto mb-4 w-fit rounded-full border border-red-400/20 bg-red-400/[0.07] px-3 py-1.5 text-xs text-red-200">Profile generation failed — you can retry after picking a company.</div>
+            )}
+            <CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
           {effectiveStage === 'profile_generating' && (
             preview.profileStatus === 'failed'
               ? <Card hover={false} className="mx-auto mt-6 max-w-xl p-6 text-center"><p className="font-semibold text-white">Building your profile was interrupted</p><p className="mt-2 text-sm text-gray-400">You can try again without losing your CV or LinkedIn details.</p><Button className="mt-5" onClick={retryProfileGeneration}>Try again</Button></Card>
