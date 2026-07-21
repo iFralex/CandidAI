@@ -36,6 +36,8 @@ export interface PlanSelectorProps {
     ctaLabel?: string;
     /** Whether to exclude the free_trial plan. Defaults to true */
     excludeFree?: boolean;
+    /** On phones, keep the comparison compact with one swipeable card at a time. */
+    mobileCarousel?: boolean;
 }
 
 export function PlanSelector({
@@ -44,6 +46,7 @@ export function PlanSelector({
     onCtaClick,
     ctaLabel = "Select Plan",
     excludeFree = true,
+    mobileCarousel = false,
 }: PlanSelectorProps) {
     const plans = excludeFree ? plansInfo.filter((p) => p.id !== "free_trial") : plansInfo;
 
@@ -85,7 +88,8 @@ export function PlanSelector({
     };
 
     return (
-        <div className="grid md:grid-cols-3 gap-6">
+        <>
+        <div className={mobileCarousel ? "flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:pb-0" : "grid gap-6 md:grid-cols-3"}>
             {plans.map((plan, index) => {
                 const Icon = iconMap[plan.icon] || Target;
                 const isSelected = selectedPlanId === plan.id;
@@ -98,7 +102,7 @@ export function PlanSelector({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: index * 0.1 }}
                         onClick={() => handlePlanClick(plan as PlanInfo)}
-                        className="cursor-pointer"
+                        className={mobileCarousel ? "w-[88%] shrink-0 snap-center cursor-pointer first:ml-[6%] last:mr-[6%] md:ml-0 md:mr-0 md:w-auto md:shrink" : "cursor-pointer"}
                     >
                         <Card
                             className={`flex flex-col p-6 relative h-full transition-all duration-200 ${
@@ -177,5 +181,7 @@ export function PlanSelector({
                 );
             })}
         </div>
+        {mobileCarousel && <p className="mt-2 text-center text-xs text-gray-600 md:hidden">Swipe to compare Base, Pro, and Ultra</p>}
+        </>
     );
 }
