@@ -45,14 +45,30 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
     position_description = account.get("customizations", {}).get("position_description", "")
     user_instructions = account.get("customizations", {}).get("instructions", "")
     
+    user_data = get_user_data(user_id) or {}
+    requires_company_confirmation = user_data.get("plan") == "ultra"
+
     # Crea o recupera ID univoci per ogni azienda
     companies, ids, new_companies = save_companies_to_results(user_id, companies, changed_companies)
     logging.info(f"🏢 Nuove aziende aggiunte: {[c['name'] for c in new_companies]}"  )
-    if len(new_companies) > 0:
-        get_companies_info(user_id, ids, new_companies)
+
+    companies_waiting_for_confirmation = []
+    if requires_company_confirmation:
+        # Ultra pauses every not-yet-enriched company before spending a
+        # generation. This also includes a preview company whose result ID was
+        # preserved but whose operational row was intentionally cleared.
+        for company in companies:
+            company_id = ids.get(f'{company["name"]}-{user_id}')
+            row = get_results_row(user_id, company_id) if company_id else {}
+            if not row.get("company_info"):
+                companies_waiting_for_confirmation.append(company)
+        if companies_waiting_for_confirmation:
+            get_companies_info(user_id, ids, companies_waiting_for_confirmation)
     logging.info(f"🏢 Aziende da processare: {[c['name'] for c in companies]}"  )
 
-    companies = [c for c in companies if c not in new_companies]
+    # Only Ultra waits for explicit confirmation. Base/Pro must process newly
+    # created companies immediately in this same run.
+    companies = [c for c in companies if c not in companies_waiting_for_confirmation]
 
     # Recupera lo stato attuale
     current_status = get_results_status(user_id)

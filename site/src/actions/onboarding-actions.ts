@@ -108,12 +108,14 @@ export async function startServer(userId: string | null = null) {
     const res = await fetch(process.env.SERVER_RUNNER_URL || "", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-API-Key": process.env.SESSION_API_KEY ?? "",
         },
         body: JSON.stringify({ user_id: userId })
     })
     if (!res.ok) {
-        console.error(`Server runner failed: ${res.status}`)
+        const detail = await res.text().catch(() => "");
+        throw new Error(`Server runner failed: ${res.status}${detail ? ` ${detail.slice(0, 200)}` : ""}`)
     }
 }
 
@@ -636,12 +638,15 @@ export async function launchPostPurchaseCampaign() {
     const account = accountSnap.data() || {};
     if (!user.plan || user.plan === "free_trial") throw new Error("A paid plan is required");
     if (!account.companies?.length || !account.customizations?.position_description) throw new Error("Complete your campaign setup before launching");
+    // Do not mark onboarding complete until the worker has accepted the job.
+    // Otherwise a transient runner/auth failure strands the account in a
+    // completed state with no campaign running.
+    await startServer(userId);
     await userRef.update({
         onboardingStage: "completed",
         onboardingStep: 50,
         activated_at: user.activated_at || FieldValue.serverTimestamp(),
     });
-    await startServer(userId);
     revalidatePath("/dashboard");
     redirect("/dashboard");
 }
