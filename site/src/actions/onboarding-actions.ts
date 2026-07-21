@@ -129,13 +129,13 @@ export async function startServer(userId: string | null = null, options: { throw
     return true
 }
 
-function realtimeServerEndpoint(path: "start_onboarding_recruiter" | "start_onboarding_email") {
+function realtimeServerEndpoint(path: "start_onboarding_recruiter" | "start_onboarding_email" | "start_onboarding_profile") {
     const configured = process.env.REALTIME_SERVER_URL || process.env.SERVER_RUNNER_URL || "";
-    const base = configured.replace(/\/(start_emails_generation|start_onboarding_recruiter|start_onboarding_email)\/?$/, "");
+    const base = configured.replace(/\/(start_emails_generation|start_onboarding_recruiter|start_onboarding_email|start_onboarding_profile)\/?$/, "");
     return `${base}/${path}`;
 }
 
-async function startRealtimeServer(path: "start_onboarding_recruiter" | "start_onboarding_email", userId: string, jobId: string) {
+async function startRealtimeServer(path: "start_onboarding_recruiter" | "start_onboarding_email" | "start_onboarding_profile", userId: string, jobId: string) {
     const response = await fetch(realtimeServerEndpoint(path), {
         method: "POST",
         headers: {
@@ -383,6 +383,46 @@ export async function startOnboardingRecruiterSearch() {
     }
     await recordOnboardingTransition({ userId, from: "target_company", to: "recruiter_search", flow: "free_preview", step: 4, metadata: { job_id: job.jobId }, updateStage: false });
     await recordOnboardingSignal({ event: "onboarding_job_queued", userId, stage: "recruiter_search", params: { job_id: job.jobId, queue: "onboarding_realtime" } });
+    revalidatePath("/dashboard");
+    return { success: true as const, jobId: job.jobId, resumed: false };
+}
+
+export async function startOnboardingProfileGeneration() {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const accountRef = userRef.collection("data").doc("account");
+    const previewRef = userRef.collection("data").doc("onboarding_preview");
+    const candidateJobId = adminDb.collection("_onboarding_jobs").doc().id;
+    const job = await adminDb.runTransaction(async tx => {
+        const [accountSnap, previewSnap] = await Promise.all([tx.get(accountRef), tx.get(previewRef)]);
+        const acc = accountSnap.data() || {};
+        if (!acc.linkedinUrl && !acc.cvUrl) throw new Error("LinkedIn or CV is required");
+        const existing = previewSnap.data();
+        if (existing?.profileJobId && ["queued", "running"].includes(existing.profileStatus)) {
+            return { jobId: existing.profileJobId as string, resumed: true };
+        }
+        tx.set(previewRef, {
+            profileJobId: candidateJobId,
+            profileStatus: "queued",
+            profileProgress: "Queued",
+            updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        tx.update(userRef, { onboardingStage: "target_company", onboardingStep: 3 });
+        return { jobId: candidateJobId, resumed: false };
+    });
+    if (job.resumed) return { success: true as const, jobId: job.jobId, resumed: true };
+
+    try {
+        await startRealtimeServer("start_onboarding_profile", userId, job.jobId);
+    } catch (error) {
+        await previewRef.set({
+            profileStatus: "failed",
+            profileError: { code: "queue_failed", message: String(error), recoverable: true },
+            updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        throw error;
+    }
+    await recordOnboardingSignal({ event: "profile_generation_started", userId, stage: "profile_generating", params: { job_id: job.jobId, queue: "onboarding_realtime" } });
     revalidatePath("/dashboard");
     return { success: true as const, jobId: job.jobId, resumed: false };
 }
