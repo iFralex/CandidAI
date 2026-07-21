@@ -298,14 +298,18 @@ export async function submitPreviewCompany(company: { name: string; domain?: str
     const userRef = adminDb.collection("users").doc(userId);
     const accountRef = userRef.collection("data").doc("account");
     const previewRef = userRef.collection("data").doc("onboarding_preview");
-    const [userSnap, accountSnap] = await Promise.all([userRef.get(), accountRef.get()]);
+    const [userSnap, previewSnap] = await Promise.all([userRef.get(), previewRef.get()]);
 
     if (userSnap.data()?.freePreviewConsumedAt) {
         return { success: false as const, error: "Your free candidacy has already been generated" };
     }
-    if (!accountSnap.data()?.profileSummary) {
-        return { success: false as const, error: "Complete your profile before choosing a company" };
-    }
+
+    // The profile may still be generating in the background (overlapped onboarding flow) —
+    // that's expected, not an error. Branch the next stage on where profile generation stands.
+    const profileStatus = previewSnap.data()?.profileStatus;
+    const nextStage = profileStatus === "completed" ? "profile_review"
+        : profileStatus === "failed" ? "target_company" // stay; UI shows retry
+        : "profile_generating";
 
     const batch = adminDb.batch();
     batch.set(accountRef, { companies: [company] }, { merge: true });
@@ -316,11 +320,16 @@ export async function submitPreviewCompany(company: { name: string; domain?: str
         updatedAt: FieldValue.serverTimestamp(),
     }, { merge: false });
     batch.update(userRef, {
-        onboardingStage: "target_company",
+        onboardingStage: nextStage,
         onboardingStep: 3,
     });
     await batch.commit();
-    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage, to: "target_company", flow: "free_preview", step: 3, metadata: { company: company.name }, updateStage: false });
+    if (nextStage === "profile_generating") {
+        // Not a lifecycle-tracked stage (residual-wait UI state) — record as a signal instead.
+        await recordOnboardingSignal({ event: "company_submitted_profile_pending", userId, stage: "profile_generating", params: { company: company.name } });
+    } else {
+        await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage, to: nextStage, flow: "free_preview", step: 3, metadata: { company: company.name }, updateStage: false });
+    }
     revalidatePath("/dashboard");
     return { success: true as const };
 }
