@@ -371,7 +371,15 @@ export function OnboardingExperience(props: Props) {
   // The preview document intentionally remains `preview_ready` so its original
   // result can be archived. During paid activation the user document is the
   // source of truth for the current setup stage.
-  const persistedStage = (postPurchaseStages.includes(props.stage) ? props.stage : (preview.stage || props.stage)) as OnboardingStage
+  // preview.stage only wins for the stages the Python worker actually drives on
+  // the preview doc (the recruiter/email pipeline); for everything else (e.g. the
+  // profile flow), the user doc's onboardingStage (props.stage) is authoritative.
+  const previewLiveStages: OnboardingStage[] = ['recruiter_search', 'recruiter_found', 'email_generation', 'preview_ready']
+  const persistedStage = (
+    postPurchaseStages.includes(props.stage)
+      ? props.stage
+      : (previewLiveStages.includes(preview.stage as OnboardingStage) ? preview.stage : props.stage)
+  ) as OnboardingStage
   const effectiveStage = (optimisticPostStage || persistedStage) as OnboardingStage
   const stageEnteredAt = useRef(Date.now())
   useEffect(() => {
