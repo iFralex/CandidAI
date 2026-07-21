@@ -250,6 +250,7 @@ export async function POST(req) {
                     const firstHtml = wrapEmail(`
         ${heading(`Your first application is ready, ${esc(userRecord.displayName || 'there')}.`)}
         ${paragraph(`CandidAI searched for the strongest recruiter match at <strong style="color: #ffffff;">${esc(firstItem.company?.name || 'your target company')}</strong> and generated a message from your candidate profile and the available company and recruiter context.`)}
+        ${tipBox(`<strong style="color:#8b5cf6;">Why targeted outreach matters:</strong> among early beta testers, CandidAI emails received replies at roughly 40% versus about 2% for their previous traditional applications. Early sample; results vary.`)}
 
         <div style="background: rgba(139, 92, 246, 0.05); border-radius: 12px; padding: 20px; margin: 0 0 28px;">
           <div style="display: table; width: 100%;">
@@ -412,7 +413,7 @@ export async function POST(req) {
                                 "One personalized draft ready to copy or open",
                             ],
                             nextSteps: "Review the recruiter and draft in your dashboard. The free result does not reveal the direct email address or include the deeper blog research used for definitive paid generation.",
-                            tip: "<strong style=\"color: #8b5cf6;\">Want to expand it?</strong> A paid plan reruns generation from your final campaign settings, includes verified recruiter email data when available, and covers 20, 50, or 100 companies.",
+                            tip: "<strong style=\"color: #8b5cf6;\">The beta pattern:</strong> roughly one in two junior beta users secured at least one call in their first month. A paid plan reruns generation from your final settings, includes verified recruiter email data when available, and covers 20, 50, or 100 companies. Early sample; results vary.",
                         },
                         base: {
                             badge: "BASE CAMPAIGN LAUNCHED",
@@ -427,7 +428,7 @@ export async function POST(req) {
                                 "Individual drafts with version history",
                             ],
                             nextSteps: "Results appear in the dashboard as companies complete. Review the selected recruiter and message before sending; you do not need to wait for the entire campaign.",
-                            tip: "<strong style=\"color: #8b5cf6;\">The preview is not reused:</strong> the definitive result is generated again so it can use your final campaign setup and retrieve the recruiter's direct address.",
+                            tip: "<strong style=\"color: #8b5cf6;\">A real beta result:</strong> after about 40 ignored portal applications, Sanne sent eight targeted CandidAI emails and received five human replies, three calls, two interview processes, and one offer in roughly four weeks. Individual results vary.",
                         },
                         pro: {
                             badge: "PRO CAMPAIGN LAUNCHED",
@@ -443,7 +444,7 @@ export async function POST(req) {
                                 "1,000 credits for regenerations and refinements",
                             ],
                             nextSteps: "Track completed companies in the dashboard and inspect each recruiter, research context, and draft. Credits remain available for targeted regeneration and refinements after the initial run.",
-                            tip: "<strong style=\"color: #8b5cf6;\">Keep instructions concrete:</strong> named projects, measurable outcomes, preferred tone, and claims to avoid give generation more useful direction than broad requests such as “make it compelling.”",
+                            tip: "<strong style=\"color: #8b5cf6;\">Keep instructions concrete:</strong> Sanne's strongest hook was not a famous employer—it was a measurable internship result: an Excel model that cut monthly reporting time by 60%. Named projects and outcomes give generation evidence a recruiter can remember.",
                         },
                         ultra: {
                             badge: "ULTRA CAMPAIGN LAUNCHED",
@@ -463,7 +464,7 @@ export async function POST(req) {
                                 "2,500 credits included",
                             ],
                             nextSteps: "Review enriched companies before their definitive generation. If the resolved company is wrong, replace it; if one target needs a different recruiter profile or message angle, override those settings for that company alone.",
-                            tip: "<strong style=\"color: #8b5cf6;\">Ultra is designed for precision at scale:</strong> campaign defaults keep the setup efficient, while per-company controls let you intervene where a target deserves a different approach.",
+                            tip: "<strong style=\"color: #8b5cf6;\">Precision at scale:</strong> early beta users reported a first recruiter response in under 48 hours on average. Ultra keeps campaign defaults efficient while letting you intervene with company-specific strategy where a target deserves a different approach. Results vary.",
                         },
                     };
 
@@ -520,6 +521,7 @@ export async function POST(req) {
                         html: wrapEmail(`
                           ${heading(`The search is complete, ${esc(name)}.`)}
                           ${paragraph(`CandidAI completed the progressive recruiter search for <strong>${company}</strong>, selected <strong>${recruiter}</strong>, and generated your first personalized application.`)}
+                          ${paragraph(`Early beta outreach produced roughly 20× more replies than testers' previous traditional applications. Your result is now ready for the same essential step: review the evidence, then reach the person rather than another generic inbox.`)}
                           ${tipBox(`<strong style="color:#8b5cf6;">Everything is saved:</strong> open the result to see why this recruiter was chosen, visit their LinkedIn profile, and review the complete draft.`)}
                           <div style="text-align:center;margin:32px 0;">${button('Review recruiter and application →', `${domain}/dashboard`)}</div>
                         `, { preheader: `Your personalized email for ${company} is ready`, badge: "APPLICATION READY" })
