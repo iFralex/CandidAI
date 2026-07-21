@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { AnimatePresence, LayoutGroup, motion } from 'framer-motion'
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { BriefcaseBusiness, Building2, Check, Copy, Crown, ExternalLink, GraduationCap, Linkedin, Loader2, Mail, MapPin, RotateCcw, Search, SlidersHorizontal, Sparkles, Target, UserRound, Wrench, Zap, Trash2, RefreshCw, ArrowRight, ArrowLeft, Pencil } from 'lucide-react'
 import { ProfileAnalysisClient, CompanyInputClient, AdvancedFiltersClientWrapper, SetupCompleteClient } from '@/components/onboarding'
 import { PlanSelector, type PlanInfo } from '@/components/PlanSelector'
@@ -297,12 +297,8 @@ function ActivationChapter({ step, label, title, story, signal, onBack, backPend
   return <div className="mx-auto max-w-5xl space-y-8">{onBack && <div className="flex flex-wrap items-center gap-3"><Button variant="ghost" size="sm" onClick={goBack} disabled={backPending} icon={backPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowLeft className="h-4 w-4" />}>Back</Button>{hasUnsavedChanges && <span className="text-xs text-amber-300">Unsaved changes will be lost.</span>}</div>}<div className="grid gap-7 lg:grid-cols-[1fr_300px] lg:items-end"><div><p className="text-xs uppercase tracking-[0.2em] text-violet-300">Chapter {step} · {label}</p><h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight text-white sm:text-5xl">{title}</h1><p className="mt-4 max-w-2xl text-lg leading-8 text-gray-400">{story}</p></div><Card hover={false} className="border-violet-400/20 bg-violet-500/[0.05] p-5"><Sparkles className="h-5 w-5 text-violet-300" /><p className="mt-3 text-xs uppercase tracking-[0.16em] text-gray-500">What this changes</p><p className="mt-2 text-sm leading-6 text-gray-200">{signal}</p></Card></div><div className="flex items-center gap-2">{chapters.map((chapter, index) => <div key={chapter} className="flex flex-1 items-center gap-2"><div className={`h-1.5 flex-1 rounded-full ${index + 1 <= step ? 'bg-violet-500' : 'bg-white/10'}`} /><span className={`hidden text-[10px] sm:block ${index + 1 === step ? 'text-violet-300' : 'text-gray-600'}`}>{chapter}</span></div>)}</div>{children}<Dialog open={confirmBackOpen} onOpenChange={setConfirmBackOpen}><DialogContent className="max-w-md"><DialogHeader><DialogTitle>Discard unsaved changes?</DialogTitle><DialogDescription>The changes on this page have not been saved. Going back will permanently discard them.</DialogDescription></DialogHeader><div className="flex justify-end gap-3 pt-3"><Button variant="secondary" onClick={() => setConfirmBackOpen(false)}>Keep editing</Button><Button variant="destructive" onClick={() => { setConfirmBackOpen(false); onBack?.() }}>Discard and go back</Button></div></DialogContent></Dialog></div>
 }
 
-function PostPurchaseExperience({ props, preview }: { props: Props; preview: OnboardingPreviewState }) {
+function PostPurchaseExperience({ props, preview, onNavigate }: { props: Props; preview: OnboardingPreviewState; onNavigate: (stage: OnboardingStage, returnToReview?: boolean) => Promise<void> }) {
   const router = useRouter()
-  const serverStage = props.stage
-  const serverReturnToReview = Boolean(props.postPurchaseReturnToReview)
-  const [stage, setStage] = useState<OnboardingStage>(serverStage)
-  const [returnToReview, setReturnToReview] = useState(serverReturnToReview)
   const [pending, setPending] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
@@ -318,22 +314,15 @@ function PostPurchaseExperience({ props, preview }: { props: Props; preview: Onb
     try { await action(); router.refresh() } catch (err) { setError(err instanceof Error ? err.message : 'Something went wrong') } finally { setPending(null) }
   }
   const moveTo = async (nextStage: OnboardingStage, shouldReturnToReview = false) => {
-    const previousStage = stage
-    const previousReturnToReview = returnToReview
-    setPending(`move-${nextStage}`); setError(''); setStage(nextStage); setReturnToReview(shouldReturnToReview)
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    setPending(`move-${nextStage}`); setError('')
     try {
-      await navigatePostPurchaseStage(nextStage, shouldReturnToReview)
-      router.refresh()
+      await onNavigate(nextStage, shouldReturnToReview)
     } catch (err) {
-      setStage(previousStage); setReturnToReview(previousReturnToReview)
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally { setPending(null) }
   }
-  const backTo = (previousStage: OnboardingStage) => returnToReview ? moveTo('post_purchase_review') : moveTo(previousStage)
-  useEffect(() => { setStage(serverStage); setReturnToReview(serverReturnToReview) }, [serverReturnToReview, serverStage])
-  useEffect(() => { setHasUnsavedChanges(false); setProfileChanged(false) }, [stage])
-  props = { ...props, stage }
+  const backTo = (previousStage: OnboardingStage) => props.postPurchaseReturnToReview ? moveTo('post_purchase_review') : moveTo(previousStage)
+  useEffect(() => { setHasUnsavedChanges(false); setProfileChanged(false) }, [props.stage])
   if (props.stage === 'post_purchase') return <motion.div className="mx-auto max-w-5xl space-y-9" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
     <div className="text-center"><motion.div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-300 shadow-2xl shadow-emerald-500/20" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.15 }}><Check className="h-9 w-9" /></motion.div><Badge className="mt-6 bg-emerald-500/15 text-emerald-300">Purchase confirmed</Badge><h1 className="mt-4 text-4xl font-bold text-white sm:text-5xl">Thank you. {planInfo?.name} is now yours.</h1><p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-gray-400">Your first application proved the process. Now let&apos;s rebuild it with your paid-plan settings and turn it into a complete campaign.</p></div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[`${planData?.maxCompanies || 0} target companies`, planData?.recruiterStrategy ? `Up to ${planData.recruiterStrategy} recruiter criteria` : 'Verified recruiter emails', planData?.credits ? `${planData.credits.toLocaleString()} credits` : 'Company-by-company outreach', planData?.deepDiveReports ? 'Detailed company intelligence' : planData?.revealRecruiterEmail ? 'Direct contact details' : 'Personalized generation'].map((item, index) => <motion.div key={item} className="rounded-2xl border border-white/10 bg-white/[0.035] p-5" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 + index * 0.1 }}><span className="text-xs text-violet-300">0{index + 1}</span><p className="mt-3 text-sm font-medium text-white">{item}</p></motion.div>)}</div>
@@ -352,13 +341,17 @@ function PostPurchaseExperience({ props, preview }: { props: Props; preview: Onb
 
 export function OnboardingExperience(props: Props) {
   const router = useRouter()
+  const reduceMotion = useReducedMotion()
   const [replayPhase, setReplayPhase] = useState<'idle' | 'search' | 'email' | 'reveal'>(() => props.stage === 'preview_ready' ? 'reveal' : 'idle')
+  const [optimisticPostStage, setOptimisticPostStage] = useState<OnboardingStage | null>(null)
+  const [optimisticReturnToReview, setOptimisticReturnToReview] = useState(false)
   const poll = ['recruiter_search', 'recruiter_found', 'email_generation'].includes(props.stage)
   const preview = usePreview(props.initialPreview, poll)
   // The preview document intentionally remains `preview_ready` so its original
   // result can be archived. During paid activation the user document is the
   // source of truth for the current setup stage.
-  const effectiveStage = (postPurchaseStages.includes(props.stage) ? props.stage : (preview.stage || props.stage)) as OnboardingStage
+  const persistedStage = (postPurchaseStages.includes(props.stage) ? props.stage : (preview.stage || props.stage)) as OnboardingStage
+  const effectiveStage = (optimisticPostStage || persistedStage) as OnboardingStage
   const previousStage = useRef<OnboardingStage>(effectiveStage)
   useEffect(() => { if (effectiveStage !== props.stage && ['target_company', 'recruiter_search'].includes(props.stage)) router.refresh() }, [effectiveStage, props.stage, router])
   useEffect(() => {
@@ -396,17 +389,39 @@ export function OnboardingExperience(props: Props) {
   const displayedStage: OnboardingStage = replayPhase === 'search' ? 'recruiter_search' : replayPhase === 'email' ? 'email_generation' : effectiveStage
   const sceneKey = replayPhase === 'idle' ? effectiveStage : `replay-${replayPhase}`
   const isPostPurchase = postPurchaseStages.includes(effectiveStage)
+  const stageSequence: OnboardingStage[] = ['profile_source', 'profile_review', 'target_company', 'recruiter_search', 'recruiter_found', 'email_generation', 'preview_ready', 'checkout', ...postPurchaseStages, 'completed']
+  const previousSceneIndex = useRef(stageSequence.indexOf(effectiveStage))
+  const currentSceneIndex = stageSequence.indexOf(effectiveStage)
+  const transitionDirection = currentSceneIndex >= previousSceneIndex.current ? 1 : -1
+  const navigatePostPurchase = useCallback(async (nextStage: OnboardingStage, returnToReview = false) => {
+    const previousStage = optimisticPostStage
+    const previousReturn = optimisticReturnToReview
+    setOptimisticPostStage(nextStage)
+    setOptimisticReturnToReview(returnToReview)
+    try {
+      await navigatePostPurchaseStage(nextStage, returnToReview)
+      router.refresh()
+    } catch (error) {
+      setOptimisticPostStage(previousStage)
+      setOptimisticReturnToReview(previousReturn)
+      throw error
+    }
+  }, [optimisticPostStage, optimisticReturnToReview, router])
+  useEffect(() => {
+    if (optimisticPostStage && props.stage === optimisticPostStage) setOptimisticPostStage(null)
+  }, [optimisticPostStage, props.stage])
+  useEffect(() => { previousSceneIndex.current = currentSceneIndex }, [currentSceneIndex, sceneKey])
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [sceneKey])
   return <LayoutGroup id="onboarding-completion"><div>{!isPostPurchase && <JourneyHeader stage={displayedStage} />}
-    <AnimatePresence mode="sync" initial={false}>
-      <motion.div key={sceneKey} className="relative" initial={{ opacity: 0, y: 28, filter: 'blur(9px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -32, filter: 'blur(12px)' }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div key={sceneKey} className="relative" initial={{ opacity: 0, x: reduceMotion ? 0 : 34 * transitionDirection, filter: reduceMotion ? 'none' : 'blur(8px)' }} animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, x: reduceMotion ? 0 : -28 * transitionDirection, filter: reduceMotion ? 'none' : 'blur(8px)' }} transition={{ duration: reduceMotion ? 0.12 : 0.42, ease: [0.22, 1, 0.36, 1] }}>
         {replayPhase === 'search' && <SearchExperience preview={replayPreview} replay onReplayComplete={showReplayEmail} />}
         {replayPhase === 'email' && <><Button variant="ghost" size="sm" className="absolute right-4 top-0 z-10 text-gray-500" onClick={stopReplay}>Back to result</Button><ApplicationAssembly preview={preview} /></>}
         {replayPhase === 'reveal' && <><Button variant="ghost" size="sm" className="absolute right-4 top-0 z-10 text-gray-500" onClick={stopReplay}>Skip animation</Button><EmailDeliveryReveal preview={preview} /></>}
         {replayPhase === 'idle' && <>
-          {isPostPurchase && <PostPurchaseExperience props={{ ...props, stage: effectiveStage }} preview={preview} />}
+          {isPostPurchase && <PostPurchaseExperience props={{ ...props, stage: effectiveStage, postPurchaseReturnToReview: optimisticPostStage ? optimisticReturnToReview : props.postPurchaseReturnToReview }} preview={preview} onNavigate={navigatePostPurchase} />}
           {(effectiveStage === 'profile_source' || effectiveStage === 'profile_review') && <ProfileAnalysisClient userId={props.user.uid} plan="free_trial" initialProfile={props.profile} initialCvUrl={props.cvUrl} flow="guided" />}
           {effectiveStage === 'target_company' && <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="mb-4 border-violet-400/20 bg-violet-400/10 text-violet-200">Choose one real opportunity</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Which company would you like to join?</h2><p className="mx-auto mt-3 max-w-xl text-gray-400">One company is enough. Your profile will guide who we look for and how we approach them.</p></div><CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
           {effectiveStage === 'recruiter_search' && <SearchExperience preview={preview} />}
