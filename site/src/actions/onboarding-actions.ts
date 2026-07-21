@@ -436,6 +436,23 @@ export async function startOnboardingProfileGeneration() {
     return { success: true as const, jobId: job.jobId, resumed: false };
 }
 
+// Called from the client once the `profile_generating` waiting scene observes
+// `profileStatus:"completed"` on the preview doc. Guarded by re-reading the
+// preview doc so a stale/racing call (e.g. a retry fired just before this)
+// can't advance the stage before the worker actually finished.
+export async function advanceToProfileReview() {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const previewRef = userRef.collection("data").doc("onboarding_preview");
+    const previewSnap = await previewRef.get();
+    if (previewSnap.data()?.profileStatus !== "completed") {
+        return { success: true as const };
+    }
+    await userRef.update({ onboardingStage: "profile_review", onboardingStep: 3 });
+    revalidatePath("/dashboard");
+    return { success: true as const };
+}
+
 export async function confirmRecruiterAndGenerateEmail(jobId: string) {
     const userId = await checkAuth();
     const userRef = adminDb.collection("users").doc(userId);

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 import { BriefcaseBusiness, Building2, Check, Copy, Crown, ExternalLink, GraduationCap, Linkedin, Loader2, Mail, MapPin, Search, SlidersHorizontal, Sparkles, Target, UserRound, Wrench, Zap, Trash2, RefreshCw, ArrowRight, ArrowLeft, Pencil } from 'lucide-react'
@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { choosePostPurchasePreviewAction, continueFreePreviewToDashboard, launchPostPurchaseCampaign, markOnboardingCheckoutOpened, navigatePostPurchaseStage, savePostPurchaseCompanies, savePostPurchaseFilters, savePostPurchaseInstructions, savePostPurchaseProfile, startOnboardingRecruiterSearch } from '@/actions/onboarding-actions'
+import { advanceToProfileReview, choosePostPurchasePreviewAction, continueFreePreviewToDashboard, launchPostPurchaseCampaign, markOnboardingCheckoutOpened, navigatePostPurchaseStage, savePostPurchaseCompanies, savePostPurchaseFilters, savePostPurchaseInstructions, savePostPurchaseProfile, startOnboardingProfileGeneration, startOnboardingRecruiterSearch } from '@/actions/onboarding-actions'
 import type { OnboardingPreviewState, OnboardingStage } from '@/types/onboarding'
 import { plansData, plansInfo } from '@/config'
 import { track } from '@/lib/analytics'
@@ -366,7 +366,7 @@ export function OnboardingExperience(props: Props) {
   const [replayPhase, setReplayPhase] = useState<'idle' | 'search' | 'email' | 'reveal'>(() => props.stage === 'preview_ready' ? 'reveal' : 'idle')
   const [optimisticPostStage, setOptimisticPostStage] = useState<OnboardingStage | null>(null)
   const [optimisticReturnToReview, setOptimisticReturnToReview] = useState(false)
-  const poll = ['recruiter_search', 'recruiter_found', 'email_generation'].includes(props.stage)
+  const poll = ['profile_generating', 'recruiter_search', 'recruiter_found', 'email_generation'].includes(props.stage)
   const preview = usePreview(props.initialPreview, poll)
   // The preview document intentionally remains `preview_ready` so its original
   // result can be archived. During paid activation the user document is the
@@ -411,6 +411,19 @@ export function OnboardingExperience(props: Props) {
       localStorage.removeItem('candidai-preview-notification')
     }
   }, [effectiveStage, preview.recruiter?.name])
+  const profileReviewAdvanceStarted = useRef(false)
+  useEffect(() => {
+    if (effectiveStage !== 'profile_generating' || preview.profileStatus !== 'completed') return
+    if (profileReviewAdvanceStarted.current) return
+    profileReviewAdvanceStarted.current = true
+    void advanceToProfileReview().then(() => router.refresh())
+  }, [effectiveStage, preview.profileStatus, router])
+  const retryProfileGeneration = useCallback(() => {
+    startTransition(async () => {
+      await startOnboardingProfileGeneration()
+      router.refresh()
+    })
+  }, [router])
   const stopReplay = useCallback(() => setReplayPhase('idle'), [])
   const showReplayEmail = useCallback(() => setReplayPhase('email'), [])
   useEffect(() => {
@@ -471,6 +484,17 @@ export function OnboardingExperience(props: Props) {
           {isPostPurchase && <PostPurchaseExperience props={{ ...props, stage: effectiveStage, postPurchaseReturnToReview: optimisticPostStage ? optimisticReturnToReview : props.postPurchaseReturnToReview }} preview={preview} onNavigate={navigatePostPurchase} />}
           {(effectiveStage === 'profile_source' || effectiveStage === 'profile_review') && <ProfileAnalysisClient userId={props.user.uid} plan="free_trial" initialProfile={props.profile} initialCvUrl={props.cvUrl} flow="guided" />}
           {effectiveStage === 'target_company' && <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="mb-4 border-violet-400/20 bg-violet-400/10 text-violet-200">Choose one real opportunity</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Which company would you like to join?</h2><p className="mx-auto mt-3 max-w-xl text-gray-400">One company is enough. Your profile will guide who we look for and how we approach them.</p></div><CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
+          {effectiveStage === 'profile_generating' && (
+            preview.profileStatus === 'failed'
+              ? <Card hover={false} className="mx-auto mt-6 max-w-xl p-6 text-center"><p className="font-semibold text-white">Building your profile was interrupted</p><p className="mt-2 text-sm text-gray-400">You can try again without losing your CV or LinkedIn details.</p><Button className="mt-5" onClick={retryProfileGeneration}>Try again</Button></Card>
+              : <div className="relative mx-auto flex min-h-[320px] max-w-3xl flex-col items-center justify-center overflow-visible px-1 sm:min-h-[480px] sm:overflow-hidden sm:px-0">
+                  <ProgressScene
+                    title="We're building your candidate profile."
+                    subtitle="This runs on our servers, you can safely wait here."
+                    phase={preview.profileProgress || 'Reading your CV'}
+                  />
+                </div>
+          )}
           {effectiveStage === 'recruiter_search' && <SearchExperience preview={preview} />}
           {(effectiveStage === 'recruiter_found' || effectiveStage === 'email_generation') && <ApplicationAssembly preview={preview} />}
           {effectiveStage === 'preview_ready' && <ConversionResult preview={preview} email={props.user.email} />}
