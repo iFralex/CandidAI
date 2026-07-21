@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runReport, runRealtimeReport, dateRange, GaDateRange } from "@/lib/ga-data-client";
 import { adminDb } from "@/lib/firebase-admin";
-import { QueryDocumentSnapshot, Timestamp } from "firebase-admin/firestore";
+import { FieldPath, QueryDocumentSnapshot, Timestamp } from "firebase-admin/firestore";
 import { loadClaritySnapshot } from "@/lib/clarity-data";
 import { adminAuth } from "@/lib/firebase-admin";
 import { publicExperimentDefinitions } from "@/lib/experiments";
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity, cohorts, timeToX, feedback, experiments, onboardingFunnel] = await Promise.all([
+        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity, cohorts, timeToX, feedback, experiments, onboardingFunnel, communications] = await Promise.all([
             runReport({
                 dateRanges: [dr],
                 metrics: [
@@ -143,6 +143,7 @@ export async function GET(req: NextRequest) {
             fetchFeedback().catch(() => emptyFeedback()),
             fetchExperimentReport(cutoffDate(range), experimentFilters).catch(() => []),
             fetchOnboardingFunnel(cutoffDate(range)).catch(() => []),
+            fetchCommunicationAnalytics(cutoffDate(range)).catch(() => emptyCommunicationAnalytics()),
         ]);
 
         const k = kpis.totals;
@@ -198,6 +199,7 @@ export async function GET(req: NextRequest) {
             experiments,
             experimentFilters,
             onboardingFunnel,
+            communications,
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -209,6 +211,77 @@ export async function GET(req: NextRequest) {
     }
 }
 
+type CommunicationAnalytics = {
+    totals: Record<string, number>;
+    categories: { name: string; sent: number; delivered: number; opened: number; clicked: number }[];
+    types: { name: string; sent: number; attributed: number; conversion: number; avgResumeMs: number | null }[];
+    cooldownUsers: number;
+    recentIssues: { userId: string; type: string; status: string; attempts: number; error: string | null; updatedAt: string | null }[];
+    health: { status: string; checkedAt: string | null; alerts: string[]; staleSending: number };
+};
+
+function emptyCommunicationAnalytics(): CommunicationAnalytics {
+    return { totals: {}, categories: [], types: [], cooldownUsers: 0, recentIssues: [], health: { status: "unknown", checkedAt: null, alerts: [], staleSending: 0 } };
+}
+
+async function fetchCommunicationAnalytics(cutoff: Date): Promise<CommunicationAnalytics> {
+    const cutoffDay = cutoff.toISOString().slice(0, 10);
+    const [dailySnap, healthSnap, cooldownSnap, recentCommunicationSnap] = await Promise.all([
+        adminDb.collection("analytics_daily").where(FieldPath.documentId(), ">=", cutoffDay).get(),
+        adminDb.collection("_system").doc("operational_health").get(),
+        adminDb.collection("users").where("lastLifecycleEmailSentAt", ">=", Timestamp.fromMillis(Date.now() - 48 * 60 * 60_000)).count().get(),
+        adminDb.collectionGroup("communications").orderBy("updatedAt", "desc").limit(100).get(),
+    ]);
+    const totals: Record<string, number> = {};
+    for (const doc of dailySnap.docs) for (const [key, value] of Object.entries(doc.data())) {
+        if (typeof value === "number") totals[key] = (totals[key] ?? 0) + value;
+    }
+    const categoryNames = new Set<string>();
+    const typeNames = new Set<string>();
+    for (const key of Object.keys(totals)) {
+        const categoryMatch = key.match(/^communications_sent_category_(.+)$/);
+        if (categoryMatch) categoryNames.add(categoryMatch[1]);
+        const typeMatch = key.match(/^communications_sent_type_(.+)$/);
+        if (typeMatch) typeNames.add(typeMatch[1]);
+    }
+    const categories = [...categoryNames].map(name => ({
+        name,
+        sent: totals[`communications_sent_category_${name}`] ?? 0,
+        delivered: totals[`communications_delivered_category_${name}`] ?? 0,
+        opened: totals[`communications_opened_category_${name}`] ?? 0,
+        clicked: totals[`communications_clicked_category_${name}`] ?? 0,
+    })).sort((a, b) => b.sent - a.sent);
+    const types = [...typeNames].map(name => {
+        const sent = totals[`communications_sent_type_${name}`] ?? 0;
+        const attributed = totals[`attributed_communication_${name}`] ?? 0;
+        return { name, sent, attributed, conversion: sent ? attributed / sent : 0, avgResumeMs: attributed ? (totals[`attributed_age_ms_${name}`] ?? 0) / attributed : null };
+    }).sort((a, b) => b.sent - a.sent);
+    const health = healthSnap.data() ?? {};
+    return {
+        totals,
+        categories,
+        types,
+        cooldownUsers: cooldownSnap.data().count,
+        recentIssues: recentCommunicationSnap.docs
+            .filter(doc => ["failed", "sending"].includes(String(doc.data().status)))
+            .slice(0, 20)
+            .map(doc => ({
+                userId: doc.ref.parent.parent?.id ?? "unknown",
+                type: String(doc.data().type ?? "unknown"),
+                status: String(doc.data().status ?? "unknown"),
+                attempts: Number(doc.data().attempts ?? 0),
+                error: doc.data().lastError ? String(doc.data().lastError) : null,
+                updatedAt: doc.data().updatedAt?.toDate?.().toISOString?.() ?? null,
+            })),
+        health: {
+            status: String(health.status ?? "unknown"),
+            checkedAt: health.checkedAt?.toDate?.().toISOString?.() ?? null,
+            alerts: Array.isArray(health.alerts) ? health.alerts.map(String) : [],
+            staleSending: Number(health.staleSending ?? 0),
+        },
+    };
+}
+
 const ONBOARDING_FUNNEL_STAGES = [
     "profile_source", "profile_review", "target_company", "recruiter_search",
     "recruiter_found", "email_generation", "preview_ready", "checkout",
@@ -217,11 +290,20 @@ const ONBOARDING_FUNNEL_STAGES = [
 ] as const;
 
 async function fetchOnboardingFunnel(cutoff: Date) {
-    const snap = await adminDb.collection("analytics_events")
-        .where("timestamp", ">=", Timestamp.fromDate(cutoff))
-        .orderBy("timestamp", "asc")
-        .limit(20_000)
-        .get();
+    const [snap, dailySnap] = await Promise.all([
+        adminDb.collection("analytics_events")
+            .where("timestamp", ">=", Timestamp.fromDate(cutoff))
+            .orderBy("timestamp", "asc")
+            .limit(20_000)
+            .get(),
+        adminDb.collection("analytics_daily")
+            .where(FieldPath.documentId(), ">=", cutoff.toISOString().slice(0, 10))
+            .get(),
+    ]);
+    const aggregateEntries = new Map<string, number>();
+    for (const doc of dailySnap.docs) for (const stage of ONBOARDING_FUNNEL_STAGES) {
+        aggregateEntries.set(stage, (aggregateEntries.get(stage) ?? 0) + Number(doc.data()[`onboarding_stage_${stage}`] ?? 0));
+    }
     const entered = new Map<string, Set<string>>();
     const errors = new Map<string, number>();
     const userStages = new Map<string, { stage: string; at: number }[]>();
@@ -251,9 +333,14 @@ async function fetchOnboardingFunnel(cutoff: Date) {
     return ONBOARDING_FUNNEL_STAGES.map((stage, index) => {
         const users = entered.get(stage)!;
         const nextStage = ONBOARDING_FUNNEL_STAGES[index + 1];
-        const completed = nextStage
+        const exactCompleted = nextStage
             ? [...users].filter(uid => entered.get(nextStage)?.has(uid)).length
             : users.size;
+        const useAggregates = snap.size >= 20_000 && (aggregateEntries.get(stage) ?? 0) > 0;
+        const enteredCount = useAggregates ? aggregateEntries.get(stage)! : users.size;
+        const completed = useAggregates && nextStage
+            ? Math.min(enteredCount, aggregateEntries.get(nextStage) ?? 0)
+            : exactCompleted;
         const durations: number[] = [];
         if (nextStage) for (const uid of users) {
             const rows = userStages.get(uid) ?? [];
@@ -265,9 +352,9 @@ async function fetchOnboardingFunnel(cutoff: Date) {
         const percentile = (p: number) => durations.length ? durations[Math.min(durations.length - 1, Math.floor((durations.length - 1) * p))] : null;
         return {
             stage,
-            entered: users.size,
+            entered: enteredCount,
             completed,
-            conversion: users.size ? completed / users.size : 0,
+            conversion: enteredCount ? completed / enteredCount : 0,
             medianMs: percentile(0.5),
             p95Ms: percentile(0.95),
             errors: errors.get(stage) ?? 0,

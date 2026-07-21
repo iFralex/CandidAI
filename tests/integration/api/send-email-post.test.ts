@@ -1,9 +1,18 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 
 // Hoist mocks so they are available inside vi.mock factory
-const { mockGetUser, mockEmailsSend } = vi.hoisted(() => ({
+const { mockGetUser, mockEmailsSend, mockReserve, mockComplete, mockFail } = vi.hoisted(() => ({
   mockGetUser: vi.fn(),
   mockEmailsSend: vi.fn(),
+  mockReserve: vi.fn(),
+  mockComplete: vi.fn(),
+  mockFail: vi.fn(),
+}));
+
+vi.mock("@/lib/communication-service", () => ({
+  reserveCommunication: mockReserve,
+  completeCommunication: mockComplete,
+  failCommunication: mockFail,
 }));
 
 vi.mock("resend", () => ({
@@ -19,6 +28,10 @@ vi.mock("resend", () => ({
 vi.mock("@/lib/firebase-admin", () => ({
   adminAuth: {
     getUser: mockGetUser,
+  },
+  adminDb: {
+    collection: vi.fn(() => ({ doc: vi.fn(() => ({})) })),
+    batch: vi.fn(() => ({ set: vi.fn(), commit: vi.fn().mockResolvedValue(undefined) })),
   },
 }));
 
@@ -51,6 +64,9 @@ describe("POST /api/send-email", () => {
     process.env.SESSION_API_KEY = TEST_INTERNAL_KEY;
     mockGetUser.mockResolvedValue(mockUserRecord);
     mockEmailsSend.mockResolvedValue({ data: { id: "email-id-123" }, error: null });
+    mockReserve.mockResolvedValue({ send: true });
+    mockComplete.mockResolvedValue(undefined);
+    mockFail.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -230,6 +246,21 @@ describe("POST /api/send-email", () => {
     });
   });
 
+  describe("communication idempotency", () => {
+    it("skips a duplicate without calling Resend", async () => {
+      mockReserve.mockResolvedValue({ send: false, reason: "duplicate" });
+      const res = await POST(makeRequest({ userId: "user123", type: "welcome" }));
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({ skipped: true, reason: "duplicate" });
+      expect(mockEmailsSend).not.toHaveBeenCalled();
+    });
+
+    it("records the provider id after a successful send", async () => {
+      await POST(makeRequest({ userId: "user123", type: "welcome" }));
+      expect(mockComplete).toHaveBeenCalledWith(expect.objectContaining({ providerId: "email-id-123" }));
+    });
+  });
+
   describe("Resend error handling", () => {
     it("returns an error response without crashing when Resend returns 500", async () => {
       mockEmailsSend.mockRejectedValue(
@@ -248,6 +279,7 @@ describe("POST /api/send-email", () => {
       expect(res.status).toBe(500);
       const body = await res.json();
       expect(body.error).toBeDefined();
+      expect(mockFail).toHaveBeenCalled();
     });
 
     it("returns a graceful error without crashing when Resend returns 429", async () => {

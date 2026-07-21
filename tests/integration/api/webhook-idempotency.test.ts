@@ -59,6 +59,11 @@ vi.mock("@/lib/firebase-admin", () => ({
       update: mockBatchUpdate,
       commit: mockBatchCommit,
     }),
+    runTransaction: vi.fn(async (callback) => callback({
+      get: mockDocGet,
+      set: mockBatchSet,
+      update: mockBatchUpdate,
+    })),
   },
 }));
 
@@ -84,6 +89,10 @@ vi.mock("@/config", () => ({
 
 vi.mock("@/actions/onboarding-actions", () => ({
   startServer: mockStartServer,
+}));
+
+vi.mock("@/lib/onboarding-lifecycle", () => ({
+  recordOnboardingTransition: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { POST } from "@/app/api/stripe-webhook/route";
@@ -122,6 +131,7 @@ function makeCreditEvent(
 
 describe("POST /api/stripe-webhook - Idempotency", () => {
   beforeEach(() => {
+    process.env.STRIPE_WEBHOOK_SECRET = "whsec_test";
     mockHeadersGet.mockReturnValue("t=123,v1=fakesig");
     mockBatchCommit.mockResolvedValue(undefined);
     mockStartServer.mockResolvedValue(undefined);

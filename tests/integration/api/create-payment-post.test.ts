@@ -20,6 +20,10 @@ vi.mock("next/headers", () => ({
   cookies: mockCookies,
 }));
 
+vi.mock("@/lib/firebase-admin", () => ({
+  adminDb: {},
+}));
+
 vi.mock("@/config", () => ({
   plansInfo: [
     { id: "free_trial", price: 0 },
@@ -43,7 +47,12 @@ function makePostRequest(body: Record<string, unknown>) {
   return new Request("http://localhost:3000/api/create-payment", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      acceptedTerms: true,
+      requestedImmediatePerformance: true,
+      termsVersion: "2026-07-19",
+      ...body,
+    }),
   });
 }
 

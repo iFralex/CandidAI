@@ -116,6 +116,14 @@ type Overview = {
     }[];
     experimentFilters: Record<string, string>;
     onboardingFunnel: { stage: string; entered: number; completed: number; conversion: number; medianMs: number | null; p95Ms: number | null; errors: number }[];
+    communications: {
+        totals: Record<string, number>;
+        categories: { name: string; sent: number; delivered: number; opened: number; clicked: number }[];
+        types: { name: string; sent: number; attributed: number; conversion: number; avgResumeMs: number | null }[];
+        cooldownUsers: number;
+        recentIssues: { userId: string; type: string; status: string; attempts: number; error: string | null; updatedAt: string | null }[];
+        health: { status: string; checkedAt: string | null; alerts: string[]; staleSending: number };
+    };
 };
 
 type TimeBucket = { sampleSize: number; medianMs: number | null; p25Ms: number | null; p75Ms: number | null };
@@ -196,6 +204,7 @@ export function AnalyticsDashboardClient() {
                         <KpiGrid kpis={data.kpis} />
                         <RevenuePanel revenue={data.revenue} />
                         <OnboardingFunnelPanel rows={data.onboardingFunnel} />
+                        <CommunicationsPanel data={data.communications} />
                         <ExperimentsPanel
                             experiments={data.experiments}
                             device={experimentDevice}
@@ -552,6 +561,52 @@ function OnboardingFunnelPanel({ rows }: { rows: Overview["onboardingFunnel"] })
                     <tbody>{rows.map(row => <tr key={row.stage} className="border-b border-white/5 last:border-0"><td className="py-2.5 font-mono text-white/80">{row.stage}</td><td className="py-2.5 tabular-nums">{row.entered}</td><td className="py-2.5 tabular-nums">{row.completed}</td><td className="py-2.5 tabular-nums text-violet-300">{Math.round(row.conversion * 100)}%</td><td className="py-2.5 tabular-nums text-white/60">{formatDuration(row.medianMs)}</td><td className="py-2.5 tabular-nums text-white/60">{formatDuration(row.p95Ms)}</td><td className={`py-2.5 tabular-nums ${row.errors ? "text-red-300" : "text-white/40"}`}>{row.errors}</td></tr>)}</tbody>
                 </table>
             </div>
+        </Card>
+    );
+}
+
+function CommunicationsPanel({ data }: { data: Overview["communications"] }) {
+    const total = (key: string) => data.totals[key] ?? 0;
+    const rate = (value: number, base: number) => base ? `${Math.round(value / base * 100)}%` : "—";
+    const sent = total("communications_sent");
+    return (
+        <Card title="Lifecycle communications">
+            <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2 mb-5">
+                <KpiTile label="Accepted" value={sent.toLocaleString()} />
+                <KpiTile label="Delivered" value={`${total("communications_delivered").toLocaleString()} · ${rate(total("communications_delivered"), sent)}`} />
+                <KpiTile label="Opened" value={`${total("communications_opened").toLocaleString()} · ${rate(total("communications_opened"), total("communications_delivered"))}`} />
+                <KpiTile label="Clicked" value={`${total("communications_clicked").toLocaleString()} · ${rate(total("communications_clicked"), total("communications_delivered"))}`} />
+                <KpiTile label="Bounced" value={total("communications_bounced").toLocaleString()} />
+                <KpiTile label="Failed" value={total("communications_failed").toLocaleString()} />
+                <KpiTile label="Duplicates avoided" value={total("communications_skipped_duplicate").toLocaleString()} />
+                <KpiTile label="Users in cooldown" value={data.cooldownUsers.toLocaleString()} />
+            </div>
+            {data.health.alerts.length > 0 && (
+                <div className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200">
+                    {data.health.alerts.join(" · ")}
+                </div>
+            )}
+            {data.health.alerts.length === 0 && <div className="mb-5 text-xs text-emerald-300/80">Operational health: {data.health.status}</div>}
+            <div className="grid lg:grid-cols-2 gap-6">
+                <div className="overflow-x-auto">
+                    <div className="text-xs font-medium text-white/70 mb-2">Delivery by category</div>
+                    <table className="w-full text-left text-xs"><thead className="text-white/40"><tr><th className="pb-2">Category</th><th>Sent</th><th>Delivered</th><th>Opened</th><th>Clicked</th></tr></thead><tbody>
+                        {data.categories.map(row => <tr key={row.name} className="border-t border-white/5"><td className="py-2 font-mono">{row.name}</td><td>{row.sent}</td><td>{row.delivered}</td><td>{row.opened}</td><td>{row.clicked}</td></tr>)}
+                    </tbody></table>
+                </div>
+                <div className="overflow-x-auto">
+                    <div className="text-xs font-medium text-white/70 mb-2">Onboarding resumed within 72h</div>
+                    <table className="w-full text-left text-xs"><thead className="text-white/40"><tr><th className="pb-2">Message</th><th>Sent</th><th>Resumed</th><th>Rate</th><th>Avg. delay</th></tr></thead><tbody>
+                        {data.types.map(row => <tr key={row.name} className="border-t border-white/5"><td className="py-2 font-mono">{row.name}</td><td>{row.sent}</td><td>{row.attributed}</td><td className="text-violet-300">{Math.round(row.conversion * 100)}%</td><td>{row.avgResumeMs === null ? "—" : `${Math.round(row.avgResumeMs / 3600000 * 10) / 10}h`}</td></tr>)}
+                    </tbody></table>
+                </div>
+            </div>
+            {data.recentIssues.length > 0 && <div className="mt-6 overflow-x-auto">
+                <div className="text-xs font-medium text-white/70 mb-2">Recent failed or unfinished attempts</div>
+                <table className="w-full min-w-[700px] text-left text-xs"><thead className="text-white/40"><tr><th className="pb-2">User</th><th>Message</th><th>Status</th><th>Attempts</th><th>Last error</th></tr></thead><tbody>
+                    {data.recentIssues.map((row, index) => <tr key={`${row.userId}-${row.type}-${index}`} className="border-t border-white/5"><td className="py-2 font-mono">{row.userId}</td><td className="font-mono">{row.type}</td><td className={row.status === "failed" ? "text-red-300" : "text-amber-300"}>{row.status}</td><td>{row.attempts}</td><td className="max-w-[360px] truncate text-white/50">{row.error ?? "—"}</td></tr>)}
+                </tbody></table>
+            </div>}
         </Card>
     );
 }

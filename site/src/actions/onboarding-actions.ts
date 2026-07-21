@@ -11,7 +11,9 @@ import { Resend } from 'resend'
 import { getTestMock } from '@/app/api/test/set-mock/route'
 import { buildDefaultRecruiterStrategies } from '@/lib/recruiter-strategies'
 import { recordOnboardingSignal, recordOnboardingTransition } from '@/lib/onboarding-lifecycle'
-import { cancelPendingOnboardingCommunications } from '@/lib/communication-service'
+import { cancelPendingOnboardingCommunications, completeCommunication, failCommunication, reserveCommunication } from '@/lib/communication-service'
+import { wrapEmail, button, heading, paragraph } from '@/lib/email-template'
+import { buildVerifyUrl } from '@/lib/verify-token'
 
 // Prepara un'email per l'archivio: rimuove campi privati/transitori e aggiunge archived_at
 function toEmailArchive(email: Record<string, any>) {
@@ -1966,20 +1968,39 @@ export async function updateUserEmail(newEmail: string) {
     const userId = await checkAuth();
 
     await adminAuth.updateUser(userId, { email: newEmail, emailVerified: false });
-    await adminDb.collection("users").doc(userId).update({ email: newEmail });
+    await adminDb.collection("users").doc(userId).update({
+        email: newEmail,
+        emailVerified: false,
+        emailDeliverySuppressed: FieldValue.delete(),
+        emailDeliverySuppressedReason: FieldValue.delete(),
+        emailDeliverySuppressedAt: FieldValue.delete(),
+    });
 
     // Email is now updated in Auth. Attempt to send verification link.
     // If this fails, the email change is still applied — user can resend verification.
+    const emailChangeDedupeKey = `email-change-verification:${Math.floor(Date.now() / 300000)}`;
+    let emailChangeReserved = false;
     try {
-        const verificationLink = await adminAuth.generateEmailVerificationLink(newEmail);
+        const verificationLink = buildVerifyUrl(userId);
+        const reservation = await reserveCommunication({ userId, dedupeKey: emailChangeDedupeKey, type: "email-change-verification", category: "transactional" });
+        if (!reservation.send) throw new Error(`Verification email skipped: ${reservation.reason}`);
+        emailChangeReserved = true;
         const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
+        const result = await resend.emails.send({
             from: "CandidAI <no-reply@candidai.tech>",
             to: newEmail,
-            subject: "Verify your new CandidAI email address",
-            html: `<p>You updated your CandidAI email address. Please verify it by clicking: <a href="${verificationLink}">Verify Email</a></p>`,
-        });
+            subject: "Confirm your new email address",
+            html: wrapEmail(`
+                ${heading("One last step to update your email")}
+                ${paragraph("You asked to use this address for your CandidAI account. Confirm it below so account alerts and campaign updates reach the right inbox.")}
+                <div style="text-align:center;margin:32px 0;">${button("Confirm new email →", verificationLink)}</div>
+                ${paragraph("If you didn't make this change, you can ignore this message and contact us at hello@candidai.tech.")}
+            `, { preheader: "Confirm your new address for CandidAI.", badge: "EMAIL CHANGE" }),
+        }, { idempotencyKey: `${userId}:${emailChangeDedupeKey}`.slice(0, 256) });
+        if (result.error) throw new Error(JSON.stringify(result.error));
+        await completeCommunication({ userId, dedupeKey: emailChangeDedupeKey, category: "transactional", type: "email-change-verification", providerId: result.data?.id });
     } catch (err) {
+        if (emailChangeReserved) await failCommunication({ userId, dedupeKey: emailChangeDedupeKey, error: err }).catch(() => undefined);
         console.error("Failed to send verification email after email update:", err);
         revalidatePath("/dashboard/profile");
         throw new Error("Email updated but verification email failed to send. Please use 'Resend Verification' to get a new link.");

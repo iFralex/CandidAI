@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase-admin";
 import { wrapEmail, button, tipBox, heading, paragraph, escapeHtml } from "@/lib/email-template";
 import { buildVerifyUrl } from "@/lib/verify-token";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
+import { analyticsDay, metricKey } from "@/lib/analytics-aggregates";
 import {
     completeCommunication,
     failCommunication,
@@ -114,35 +117,33 @@ export async function POST(req) {
 
             switch (type) {
                 case "welcome": {
-                    const subject = "🚀 Welcome to CandidAI – Let's Get You Hired!";
+                    const subject = "Verify your email to build your first CandidAI application";
                     const html = wrapEmail(`
-        ${heading(`Hey ${esc(userRecord.displayName || 'there')}! 👋`)}
-        ${paragraph(`Welcome to <strong style="color: #8b5cf6;">CandidAI</strong> – where AI meets opportunity! We're thrilled to have you join thousands of professionals who are landing their dream jobs with personalized outreach.`)}
-        ${tipBox(`<strong style="color: #8b5cf6;">💡 Did you know?</strong> Personalized emails to recruiters have a <strong>5x higher response rate</strong> than standard applications. You're already ahead of the game!`)}
-        ${paragraph(`Before you start generating those game-changing emails, please verify your account:`)}
+        ${heading(`Start with one real application, ${esc(userRecord.displayName || 'there')}.`)}
+        ${paragraph(`Verify your address and CandidAI will turn your CV or LinkedIn profile into a candidate profile, ask for one target company, search progressively for the strongest recruiter match, and write your first personalized email.`)}
+        ${tipBox(`<strong style="color: #8b5cf6;">What to expect:</strong> recruiter research can take a couple of minutes because CandidAI tests increasingly broad strategies until it finds a credible match. Your progress is saved throughout.`)}
         <div style="text-align: center; margin: 32px 0;">
-          ${button('Verify My Account', buildVerifyUrl(userId))}
+          ${button('Verify email and begin →', buildVerifyUrl(userId))}
         </div>
         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
           <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">
-            <strong style="color: #aaaaaa;">What's next?</strong><br>
-            Once verified, you'll complete your profile, select target companies, and let our AI craft perfectly personalized emails to the right recruiters.
+            If you did not create this account, no action is required.
           </p>
         </div>
-      `, { preheader: "Complete your CandidAI verification and start your journey to landing interviews", badge: "WELCOME ABOARD" });
+      `, { preheader: "Verify your address, build your profile, and generate one real application.", badge: "VERIFY YOUR EMAIL" });
                     return { subject, html };
                 }
 
                 case "password-reset": {
                     if (!data.resetLink) throw new Error("no reset link")
                     email = data.email
-                    const resetSubject = "🔒 Reset Your CandidAI Password";
+                    const resetSubject = "Reset your CandidAI password";
                     const resetHtml = wrapEmail(`
-        ${heading("Reset Your Password")}
-        ${paragraph(`We received a request to reset the password for your CandidAI account. No worries – it happens to the best of us!`)}
-        ${tipBox(`<strong style="color: #8b5cf6;">🔐 Security Note:</strong> This link will expire in 24 hours for your protection. If you didn't request this reset, you can safely ignore this email.`)}
+        ${heading("Choose a new password")}
+        ${paragraph(`A password reset was requested for your CandidAI account. Use the secure link below to choose a new password.`)}
+        ${tipBox(`<strong style="color: #8b5cf6;">Security:</strong> the link expires in 24 hours. If you did not request it, ignore this message; your password will remain unchanged.`)}
         <div style="text-align: center; margin: 32px 0;">
-          ${button('Reset My Password', `${data.resetLink}`)}
+          ${button('Reset password →', `${data.resetLink}`)}
         </div>
         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
           <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">
@@ -156,7 +157,7 @@ export async function POST(req) {
 
                 case "new_emails_generated":
                     const companiesCount = newData.length;
-                    const generatedSubject = `✨ ${companiesCount} ${companiesCount === 1 ? 'Company is' : 'Companies are'} Ready for Outreach!`;
+                    const generatedSubject = `${companiesCount} personalized ${companiesCount === 1 ? 'email is' : 'emails are'} ready to review`;
 
                     const companiesList = newData.map((item, index) => `
         <div style="background: rgba(139, 92, 246, 0.05); border-radius: 12px; padding: 20px; margin: ${index > 0 ? '16px' : '0'} 0;">
@@ -210,8 +211,8 @@ export async function POST(req) {
       `).join('');
 
                     const generatedHtml = wrapEmail(`
-        ${heading(`Your Emails Are Ready, ${esc(userRecord.displayName || 'there')}! 🎉`)}
-        ${paragraph(`Great news! We've crafted ${companiesCount} personalized ${companiesCount === 1 ? 'email' : 'emails'} tailored to your target ${companiesCount === 1 ? 'company' : 'companies'}. Each one is uniquely designed to catch the recruiter's attention and showcase your strengths.`)}
+        ${heading(`Your campaign has new results, ${esc(userRecord.displayName || 'there')}.`)}
+        ${paragraph(`CandidAI completed ${companiesCount} ${companiesCount === 1 ? 'company' : 'companies'}: recruiter research, company context, and an individually generated message are ready for your review.`)}
 
         <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.1) 100%); border: 2px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center;">
           <p style="color: #8b5cf6; font-size: 36px; font-weight: 700; margin: 0 0 8px;">${companiesCount}</p>
@@ -227,15 +228,15 @@ export async function POST(req) {
         ${companiesList}
 
         <div style="text-align: center; margin: 40px 0 32px;">
-          ${button('View & Send Emails', `${domain}/dashboard`)}
+          ${button('Review campaign results →', `${domain}/dashboard`)}
         </div>
 
-        ${tipBox(`<strong style="color: #8b5cf6;">💼 Pro Tip:</strong> Send your emails during business hours (Tuesday-Thursday, 10 AM - 2 PM) for the highest response rates. You can review and customize each email before sending!`)}
+        ${tipBox(`<strong style="color: #8b5cf6;">Before sending:</strong> verify that the recruiter is the person you want to contact and that every claim in the draft reflects your experience. You can edit the message without losing the generated version.`)}
 
         <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.2);">
           <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">
             <strong style="color: #aaaaaa;">What's next?</strong><br>
-            Review your personalized emails, make any final tweaks, and start sending! Remember to mark each as "sent" in your dashboard to track your outreach progress.
+            Open each result, review the research and draft, make any final edits, then mark it as sent so the dashboard can track campaign progress.
           </p>
         </div>
       `, { preheader: `${companiesCount} personalized emails ready for your review`, badge: "EMAILS READY" });
@@ -244,11 +245,11 @@ export async function POST(req) {
 
                 case "first_email_generated": {
                     const firstItem = newData[0] || {};
-                    const firstSubject = `🎉 Your first AI-crafted email is ready — check it out!`;
+                    const firstSubject = `Your first application for ${esc(firstItem.company?.name || 'your target company')} is ready`;
 
                     const firstHtml = wrapEmail(`
-        ${heading(`It's done, ${esc(userRecord.displayName || 'there')}. Your first personalized email is ready. 🎉`)}
-        ${paragraph(`Our AI has researched the recruiter at <strong style="color: #ffffff;">${esc(firstItem.company?.name || 'your target company')}</strong> and crafted a personalized email just for you. No templates, no copy-paste — written from scratch based on the company's news and the recruiter's background.`)}
+        ${heading(`Your first application is ready, ${esc(userRecord.displayName || 'there')}.`)}
+        ${paragraph(`CandidAI searched for the strongest recruiter match at <strong style="color: #ffffff;">${esc(firstItem.company?.name || 'your target company')}</strong> and generated a message from your candidate profile and the available company and recruiter context.`)}
 
         <div style="background: rgba(139, 92, 246, 0.05); border-radius: 12px; padding: 20px; margin: 0 0 28px;">
           <div style="display: table; width: 100%;">
@@ -293,10 +294,10 @@ export async function POST(req) {
         </div>
 
         <div style="text-align: center; margin: 0 0 28px;">
-          ${button('Review & Send My Email', `${domain}/dashboard`)}
+          ${button('Review recruiter and email →', `${domain}/dashboard`)}
         </div>
 
-        ${tipBox(`💡 <strong style="color: #8b5cf6;">Like what you see?</strong> Upgrade your plan and run a full campaign — up to 100 companies, each with a fully personalized email crafted by AI.`)}
+        ${tipBox(`<strong style="color: #8b5cf6;">What the preview excludes:</strong> to keep this first generation fast, it does not include the deeper company-blog research used in definitive campaigns, and the free result does not reveal the recruiter's direct email. Paid campaigns regenerate from your final settings and include the verified address when available.`)}
 
         <div style="padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.15);">
           <p style="color: #888888; font-size: 13px; line-height: 1.6; margin: 0;">
@@ -309,10 +310,10 @@ export async function POST(req) {
                 }
 
                 case "purchase-confirmation": {
-                    const confirmSubject = `✅ Purchase Confirmed – ${data.item}`;
+                    const confirmSubject = `Payment confirmed: ${data.item}`;
                     const confirmHtml = wrapEmail(`
-        ${heading("Payment Successful! 🎉")}
-        ${paragraph(`Thank you for your purchase. Your account has been updated and you're ready to keep going!`)}
+        ${heading("Your purchase is confirmed")}
+        ${paragraph(`Your CandidAI account has been updated. The details below match the completed payment.`)}
 
         <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.1) 100%); border: 2px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 24px; margin: 24px 0;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
@@ -344,7 +345,7 @@ export async function POST(req) {
         </div>
 
         <div style="text-align: center; margin: 32px 0;">
-          ${button('Go to Dashboard', `${domain}/dashboard`)}
+          ${button('Continue in CandidAI →', `${domain}/dashboard`)}
           ${data.receiptUrl ? button('View Receipt', data.receiptUrl, false) : ''}
         </div>
 
@@ -360,13 +361,13 @@ export async function POST(req) {
 
                 case "contact-confirmation": {
                     email = data.email;
-                    const contactSubject = `We received your message - CandidAI Support`;
+                    const contactSubject = `We received your CandidAI support request`;
                     const safeMessage = (data.message || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     const contactHtml = wrapEmail(`
-        ${heading(`We got your message, ${esc(data.name)}! 👋`)}
-        ${paragraph(`Thanks for reaching out. Our team will review your request and get back to you as soon as possible.`)}
+        ${heading(`Your message is in the queue, ${esc(data.name)}.`)}
+        ${paragraph(`We saved the request below and will reply to the address you provided.`)}
 
-        ${tipBox(`<strong style="color: #8b5cf6;">📬 What's next?</strong> You'll hear back from us at <strong>hello@candidai.tech</strong>, keep an eye on your inbox (and spam folder, just in case).`)}
+        ${tipBox(`<strong style="color: #8b5cf6;">What happens next:</strong> a reply will come from <strong>hello@candidai.tech</strong>. You can keep this confirmation as a copy of your request.`)}
 
         <div style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px; padding: 20px; margin: 24px 0;">
           <p style="margin: 0 0 8px; color: #888888; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Your message</p>
@@ -400,68 +401,69 @@ export async function POST(req) {
 
                     const planContent: Record<string, PlanContent> = {
                         free_trial: {
-                            badge: "🎁 FREE TRIAL ACTIVE",
-                            subject: `🎁 You're in, ${name}! Your first AI-crafted recruiter email is on its way`,
-                            preheader: "Your CandidAI free trial is live: one company, one shot, fully AI-personalized.",
-                            headline: `You're in, ${name}! Let's make your first move count.`,
-                            intro: `Thank you for completing your onboarding! Your free trial is now active. We've set up everything for <strong style="color: #8b5cf6;">1 target company</strong>, our AI will research the right recruiter and craft a fully personalized email just for you. No templates, no generic messages.`,
+                            badge: "FREE APPLICATION COMPLETE",
+                            subject: `${name}, your first CandidAI application is saved`,
+                            preheader: "Your recruiter match and first personalized application are saved in the dashboard.",
+                            headline: `Your first application is complete, ${name}.`,
+                            intro: `CandidAI has completed the free process for <strong style="color: #8b5cf6;">one target company</strong>: candidate analysis, progressive recruiter search, recruiter selection, and a personalized draft. The result is saved in your dashboard.`,
                             perks: [
-                                "1 company: AI researches the recruiter for you",
-                                "Fully personalized email (not a template)",
-                                "Ready to review and send from your dashboard",
+                                "One completed recruiter search",
+                                "Recruiter profile, LinkedIn link, and match rationale",
+                                "One personalized draft ready to copy or open",
                             ],
-                            nextSteps: "Your email will be ready in your dashboard shortly. Review it, make any tweaks you like, and hit send. If you love the results, upgrading to a paid plan takes seconds.",
-                            tip: "💡 <strong style=\"color: #8b5cf6;\">Pro tip:</strong> Personalized cold emails to recruiters get up to <strong>5× more replies</strong> than standard applications. You're already ahead.",
+                            nextSteps: "Review the recruiter and draft in your dashboard. The free result does not reveal the direct email address or include the deeper blog research used for definitive paid generation.",
+                            tip: "<strong style=\"color: #8b5cf6;\">Want to expand it?</strong> A paid plan reruns generation from your final campaign settings, includes verified recruiter email data when available, and covers 20, 50, or 100 companies.",
                         },
                         base: {
-                            badge: "🎯 BASE PLAN ACTIVE",
-                            subject: `🎯 Onboarding complete! Your 20-company outreach campaign is launching`,
-                            preheader: "CandidAI Base is live: up to 20 personalized recruiter emails, all AI-crafted.",
-                            headline: `Your campaign is launching, ${name}!`,
-                            intro: `Thank you for choosing CandidAI Base! You've unlocked a full outreach campaign, our AI will research recruiters across <strong style="color: #8b5cf6;">up to 20 target companies</strong> and write a unique, personalized email for each one. No copy-paste. Every email tailored to the specific company and recruiter.`,
+                            badge: "BASE CAMPAIGN LAUNCHED",
+                            subject: `${name}, your 20-company CandidAI campaign is underway`,
+                            preheader: "Recruiter research and definitive email generation have started for your Base campaign.",
+                            headline: `Your definitive campaign is underway, ${name}.`,
+                            intro: `You confirmed the campaign direction. CandidAI will now research recruiters across <strong style="color: #8b5cf6;">up to 20 target companies</strong>, retrieve direct recruiter email data when available, and generate an individual message for each result.`,
                             perks: [
-                                "Up to 20 companies: a real outreach campaign",
-                                "Individual recruiter research for each company",
-                                "Fully personalized emails, not templates",
-                                "Review and send from your dashboard at your pace",
+                                "Up to 20 target companies",
+                                "Recruiter research for every company",
+                                "Verified recruiter email included when available",
+                                "Individual drafts with version history",
                             ],
-                            nextSteps: "Your emails will appear in the dashboard as they're generated, you don't have to wait for all of them. Review each one, customize if needed, and start sending. The sooner you send, the sooner you hear back.",
-                            tip: "💡 <strong style=\"color: #8b5cf6;\">Send tip:</strong> Tuesday–Thursday, 10 AM–2 PM in the recruiter's timezone = highest open rates. Your dashboard shows each recruiter's company location to help you time it perfectly.",
+                            nextSteps: "Results appear in the dashboard as companies complete. Review the selected recruiter and message before sending; you do not need to wait for the entire campaign.",
+                            tip: "<strong style=\"color: #8b5cf6;\">The preview is not reused:</strong> the definitive result is generated again so it can use your final campaign setup and retrieve the recruiter's direct address.",
                         },
                         pro: {
-                            badge: "🚀 PRO PLAN ACTIVE",
-                            subject: `🚀 You're on Pro, ${name} - your AI-powered job search just shifted into high gear`,
-                            preheader: "50 companies, custom recruiter strategy, follow-up automation. Let's get you hired.",
-                            headline: `High gear, ${name}. Let's get you hired.`,
-                            intro: `Welcome to CandidAI Pro, where serious job seekers get serious results. You now have everything you need to run a professional, high-volume outreach campaign. Our AI will craft <strong style="color: #8b5cf6;">up to 50 personalized emails</strong>, using your custom recruiter strategy and writing instructions to make every message feel like it was written personally by you.`,
+                            badge: "PRO CAMPAIGN LAUNCHED",
+                            subject: `${name}, your Pro campaign is now using your strategy`,
+                            preheader: "Up to 50 companies, custom recruiter criteria, writing instructions, follow-ups, and 1,000 credits.",
+                            headline: `Your strategy is now becoming a campaign, ${name}.`,
+                            intro: `CandidAI is applying the recruiter criteria and writing direction you confirmed across <strong style="color: #8b5cf6;">up to 50 target companies</strong>. Each company receives its own recruiter search and definitive email generation.`,
                             perks: [
-                                "Up to 50 companies: a high-volume campaign",
-                                "Custom recruiter search strategy with up to 30 criteria",
-                                "Custom writing instructions: your voice, your style",
-                                "Follow-up email automation: never miss a reply",
+                                "Up to 50 target companies",
+                                "Custom recruiter strategy with up to 30 criteria",
+                                "Campaign-wide custom writing instructions",
+                                "Follow-up email automation",
                                 "1,000 credits for regenerations and refinements",
                             ],
-                            nextSteps: "Your emails are being generated now. Head to your dashboard to track progress, review drafts as they come in, and fine-tune any message with your custom instructions. Use your credits to regenerate emails that don't feel quite right.",
-                            tip: "⚡ <strong style=\"color: #8b5cf6;\">Power move:</strong> Use your <strong>custom instructions</strong> to inject your unique selling points: specific projects, metrics, or achievements you want every email to highlight. The more specific, the better the results.",
+                            nextSteps: "Track completed companies in the dashboard and inspect each recruiter, research context, and draft. Credits remain available for targeted regeneration and refinements after the initial run.",
+                            tip: "<strong style=\"color: #8b5cf6;\">Keep instructions concrete:</strong> named projects, measurable outcomes, preferred tone, and claims to avoid give generation more useful direction than broad requests such as “make it compelling.”",
                         },
                         ultra: {
-                            badge: "👑 ULTRA PLAN ACTIVE",
-                            subject: `👑 Welcome to Ultra, ${name} - every advantage, fully unlocked`,
-                            preheader: "100 companies, AI recommendations, deep-dive research, priority generation. You're in the fast lane.",
-                            headline: `Every advantage, fully unlocked. Welcome to Ultra, ${name}.`,
-                            intro: `You've chosen the most powerful job search tool available. CandidAI Ultra puts you at the front of every queue, with priority email generation, AI-powered company recommendations, deep-dive research reports, and a dedicated outreach pipeline covering <strong style="color: #8b5cf6;">up to 100 companies</strong>. This isn't just job searching. It's a coordinated campaign.`,
+                            badge: "ULTRA CAMPAIGN LAUNCHED",
+                            subject: `${name}, your Ultra campaign entered the priority pipeline`,
+                            preheader: "Up to 100 companies with enriched company data, per-company controls, recommendations, and priority generation.",
+                            headline: `Your most detailed campaign is now underway, ${name}.`,
+                            intro: `CandidAI Ultra is processing <strong style="color: #8b5cf6;">up to 100 companies</strong> through the priority pipeline, using enriched company information, your campaign strategy, and any company-specific overrides you confirmed.`,
                             perks: [
-                                "Up to 100 companies: maximum coverage",
-                                "Priority generation queue: your emails go first",
-                                "AI company recommendations: we find targets you haven't thought of",
-                                "Deep-dive company research reports per company",
-                                "Company confirmation calls: verify before you commit",
+                                "Up to 100 target companies",
+                                "Priority generation queue",
+                                "AI-assisted company recommendations",
+                                "Detailed company data before generation",
+                                "Confirm or replace each enriched company before spending a generation",
+                                "Per-company recruiter strategy and writing instructions",
                                 "Custom recruiter strategy with up to 50 criteria",
                                 "Follow-up email automation",
                                 "2,500 credits included",
                             ],
-                            nextSteps: "Your campaign is being built right now with priority processing. You'll also see AI-recommended companies in your dashboard, these are targets our AI thinks are a strong fit based on your profile. Confirm or skip each one. Your emails will be ready faster than any other plan.",
-                            tip: "👑 <strong style=\"color: #8b5cf6;\">Ultra advantage:</strong> Check your <strong>AI recommendations</strong> first - users who include AI-suggested companies report significantly more interview callbacks than those who rely on manual selection alone.",
+                            nextSteps: "Review enriched companies before their definitive generation. If the resolved company is wrong, replace it; if one target needs a different recruiter profile or message angle, override those settings for that company alone.",
+                            tip: "<strong style=\"color: #8b5cf6;\">Ultra is designed for precision at scale:</strong> campaign defaults keep the setup efficient, while per-company controls let you intervene where a target deserves a different approach.",
                         },
                     };
 
@@ -496,7 +498,7 @@ export async function POST(req) {
         ${tipBox(content.tip)}
 
         <div style="text-align: center; margin: 0 0 32px;">
-          ${button('Open My Dashboard', `${domain}/dashboard`)}
+                    ${button('Open campaign dashboard →', `${domain}/dashboard`)}
         </div>
 
         <div style="padding-top: 24px; border-top: 1px solid rgba(139, 92, 246, 0.15);">
@@ -514,11 +516,12 @@ export async function POST(req) {
                     const company = esc(data.company || 'your target company');
                     const recruiter = esc(data.recruiter || 'the selected recruiter');
                     return {
-                        subject: `Your first application for ${company} is ready`,
+                        subject: `Your recruiter match and application for ${company} are ready`,
                         html: wrapEmail(`
-                          ${heading(`Your first application is ready, ${esc(name)}.`)}
-                          ${paragraph(`CandidAI researched <strong>${company}</strong>, selected <strong>${recruiter}</strong>, and completed your personalized email.`)}
-                          ${button('Review my application', `${domain}/dashboard`)}
+                          ${heading(`The search is complete, ${esc(name)}.`)}
+                          ${paragraph(`CandidAI completed the progressive recruiter search for <strong>${company}</strong>, selected <strong>${recruiter}</strong>, and generated your first personalized application.`)}
+                          ${tipBox(`<strong style="color:#8b5cf6;">Everything is saved:</strong> open the result to see why this recruiter was chosen, visit their LinkedIn profile, and review the complete draft.`)}
+                          <div style="text-align:center;margin:32px 0;">${button('Review recruiter and application →', `${domain}/dashboard`)}</div>
                         `, { preheader: `Your personalized email for ${company} is ready`, badge: "APPLICATION READY" })
                     };
                 }
@@ -557,7 +560,7 @@ export async function POST(req) {
             to: email,
             subject,
             html,
-        });
+        }, userId && dedupeKey ? { idempotencyKey: `${userId}:${dedupeKey}`.slice(0, 256) } : undefined);
 
         if (result.error) throw new Error(JSON.stringify(result.error));
         if (userId && dedupeKey) {
@@ -568,6 +571,22 @@ export async function POST(req) {
                 type,
                 providerId: result.data?.id,
             });
+        } else if (result.data?.id) {
+            const batch = adminDb.batch();
+            batch.set(adminDb.collection("email_provider_index").doc(result.data.id), {
+                userId: userId ?? null,
+                dedupeKey: dedupeKey ?? null,
+                type,
+                category,
+                createdAt: FieldValue.serverTimestamp(),
+            }, { merge: true });
+            batch.set(adminDb.collection("analytics_daily").doc(analyticsDay()), {
+                communications_sent: FieldValue.increment(1),
+                [`communications_sent_category_${metricKey(category)}`]: FieldValue.increment(1),
+                [`communications_sent_type_${metricKey(type)}`]: FieldValue.increment(1),
+                updatedAt: FieldValue.serverTimestamp(),
+            }, { merge: true });
+            await batch.commit();
         }
 
         return NextResponse.json({ success: true, result });

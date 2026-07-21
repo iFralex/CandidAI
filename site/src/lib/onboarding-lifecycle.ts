@@ -1,7 +1,8 @@
 import "server-only";
 
 import { adminDb } from "@/lib/firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { analyticsDay, metricKey } from "@/lib/analytics-aggregates";
 
 export const ONBOARDING_STAGES = [
   "profile_source",
@@ -60,37 +61,98 @@ export async function recordOnboardingTransition(args: {
   metadata?: Record<string, unknown>;
   updateStage?: boolean;
 }): Promise<void> {
-  const now = FieldValue.serverTimestamp();
   const userRef = adminDb.collection("users").doc(args.userId);
   const eventRef = adminDb.collection("analytics_events").doc();
+  const firstEntryRef = adminDb.collection("onboarding_stage_entries").doc(`${args.userId}__${args.to}`);
+  const dailyRef = adminDb.collection("analytics_daily").doc(analyticsDay());
   const transitionAllowed = isAllowedOnboardingTransition(args.from, args.to);
-  const batch = adminDb.batch();
+  await adminDb.runTransaction(async tx => {
+    const [userSnap, firstEntrySnap] = await Promise.all([tx.get(userRef), tx.get(firstEntryRef)]);
+    const communication = userSnap.data()?.lastLifecycleCommunication;
+    const engagement = userSnap.data()?.lastCommunicationEngagement;
+    const sentAt = communication?.sentAt instanceof Timestamp ? communication.sentAt.toMillis() : Date.parse(String(communication?.sentAt ?? ""));
+    const ageMs = Number.isFinite(sentAt) ? Date.now() - sentAt : Number.POSITIVE_INFINITY;
+    const attributed = ageMs >= 0 && ageMs <= 72 * 60 * 60_000;
+    const attributionModel = engagement?.dedupeKey === communication?.dedupeKey && engagement?.event === "clicked"
+      ? "click_through"
+      : "view_through";
+    const attributionRef = attributed
+      ? adminDb.collection("communication_attributions").doc(`${args.userId}__${metricKey(String(communication.dedupeKey ?? "unknown"))}`)
+      : null;
+    const attributionSnap = attributionRef ? await tx.get(attributionRef) : null;
+    const attribution = attributed ? {
+      communication_type: communication.type ?? "unknown",
+      communication_category: communication.category ?? "unknown",
+      communication_dedupe_key: communication.dedupeKey ?? "unknown",
+      communication_age_ms: ageMs,
+      attribution_window_hours: 72,
+      attribution_model: attributionModel,
+    } : {};
 
-  batch.set(userRef, {
-    ...(args.updateStage === false ? {} : {
-      onboardingStage: args.to,
-      ...(typeof args.step === "number" ? { onboardingStep: args.step } : {}),
-    }),
-    onboardingStageEnteredAt: now,
-    lastOnboardingActivityAt: now,
-  }, { merge: true });
-  batch.set(eventRef, {
-    event: "onboarding_stage_entered",
-    params: {
-      from_stage: isOnboardingStage(args.from) ? args.from : "unknown",
-      to_stage: args.to,
-      flow: args.flow,
-      reason: args.reason ?? "user_progress",
-      transition_allowed: transitionAllowed,
-      ...(args.metadata ?? {}),
-    },
-    user_id: args.userId,
-    session_id: null,
-    page_path: "/dashboard",
-    timestamp: now,
-    source: "server",
+    tx.set(userRef, {
+      ...(args.updateStage === false ? {} : {
+        onboardingStage: args.to,
+        onboardingStageEnteredAt: FieldValue.serverTimestamp(),
+        ...(typeof args.step === "number" ? { onboardingStep: args.step } : {}),
+      }),
+      lastOnboardingActivityAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    tx.set(eventRef, {
+      event: "onboarding_stage_entered",
+      params: {
+        from_stage: isOnboardingStage(args.from) ? args.from : "unknown",
+        to_stage: args.to,
+        flow: args.flow,
+        reason: args.reason ?? "user_progress",
+        transition_allowed: transitionAllowed,
+        ...attribution,
+        ...(args.metadata ?? {}),
+      },
+      user_id: args.userId,
+      session_id: null,
+      page_path: "/dashboard",
+      timestamp: FieldValue.serverTimestamp(),
+      source: "server",
+    });
+    if (!firstEntrySnap.exists) {
+      tx.create(firstEntryRef, {
+        userId: args.userId,
+        stage: args.to,
+        flow: args.flow,
+        firstEnteredAt: FieldValue.serverTimestamp(),
+      });
+      tx.set(dailyRef, {
+        [`onboarding_stage_${metricKey(args.to)}`]: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+    if (attributed && !firstEntrySnap.exists) {
+      tx.set(dailyRef, {
+        [`attributed_stage_${metricKey(args.to)}`]: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+    if (attributed && attributionRef && !attributionSnap?.exists) {
+      tx.create(attributionRef, {
+        userId: args.userId,
+        dedupeKey: communication.dedupeKey ?? "unknown",
+        type: communication.type ?? "unknown",
+        category: communication.category ?? "unknown",
+        firstAttributedStage: args.to,
+        attributedAt: FieldValue.serverTimestamp(),
+        ageMs,
+        model: attributionModel,
+      });
+      tx.set(dailyRef, {
+        [`attributed_communication_${metricKey(String(communication.type ?? "unknown"))}`]: FieldValue.increment(1),
+        [`attributed_age_ms_${metricKey(String(communication.type ?? "unknown"))}`]: FieldValue.increment(ageMs),
+        communications_attributed: FieldValue.increment(1),
+        communications_attributed_age_ms: FieldValue.increment(ageMs),
+        [`communications_attributed_${attributionModel}`]: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
   });
-  await batch.commit();
 }
 
 export async function recordOnboardingSignal(args: {

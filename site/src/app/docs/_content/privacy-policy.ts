@@ -310,9 +310,11 @@ This type of service makes it possible to send emails to Users.
 
 **Place of processing:** United States
 
-**Personal Data processed:** Email address, first name, content of the messages.
+**Personal Data processed:** Email address, first name, message content and metadata, provider message identifier, sending and delivery timestamps, delivery delays, failures, bounces, complaints and suppression status. Where supported and enabled by the email provider, the Owner may also receive open and link-click events. Open and click data can be affected by privacy proxies and automated security scanners and is therefore treated as an approximate engagement signal rather than proof that a particular person read a message.
 
 Resend is the transactional and marketing email delivery service used by the Owner to deliver: (a) **transactional emails** essential to the Service (account welcome and verification, password reset, payment confirmation, notification that AI-generated emails are ready, onboarding completion); and (b) **marketing emails** sent at a low cadence in the first weeks after sign-up to help Users complete onboarding and discover relevant features (see "Marketing communications" below).
+
+Delivery events are used to diagnose failed communications, prevent repeated sending to suppressed addresses and monitor Service reliability. For onboarding analysis, CandidAI may associate the most recent lifecycle message with onboarding progress occurring within 72 hours, distinguishing a recorded link click from a view-through association where possible. This attribution is used in aggregate to evaluate whether a message helps Users continue the setup; it does not determine eligibility, pricing or access to the Service.
 
 **Service provided by:** Resend, Inc. (United States) – [Privacy Policy](https://resend.com/legal/privacy-policy)
 

@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/onboarding-sequence",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/onboarding-health",
+      "schedule": "20 * * * *"
     }
   ]
 }
