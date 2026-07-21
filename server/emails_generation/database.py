@@ -75,10 +75,12 @@ def get_user_settings(user_id):
     doc_ref = db.collection("users").document(user_id).collection("data").document("settings")
     doc = doc_ref.get()
     if not doc.exists:
-        return {"emailNotificationThreshold": 1}
+        return {"emailNotificationThreshold": 10, "campaignProgress": True, "previewReady": True}
     prefs = doc.to_dict().get("preferences", {})
     return {
         "emailNotificationThreshold": prefs.get("emailNotificationThreshold", 10),
+        "campaignProgress": prefs.get("campaignProgress", True),
+        "previewReady": prefs.get("previewReady", True),
     }
 
 def generate_unique_id():

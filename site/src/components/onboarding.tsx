@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { track, refreshUserPropertiesFromFirestore } from "@/lib/analytics"
 import { motion, AnimatePresence } from "framer-motion"
-import { resendEmailVerification, selectPlan, goBackStep, deleteProfile, jumpToStep, submitPreviewCompany, startOnboardingRecruiterSearch } from '@/actions/onboarding-actions'
+import { resendEmailVerification, selectPlan, goBackStep, deleteProfile, jumpToStep, markProfileReviewReady, submitPreviewCompany, startOnboardingRecruiterSearch } from '@/actions/onboarding-actions'
 import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, ArrowLeft, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark, Lock } from 'lucide-react'
 import { submitCompanies } from '@/actions/onboarding-actions'
 import { Building, Plus, X, Wand2 } from 'lucide-react'
@@ -3839,6 +3839,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
             localProfile = profileSummary
             setProfileSummary(profileSummary)
             setAnalysisComplete(true)
+            if (flow === "guided") void markProfileReviewReady(cvFile && linkedinUrl.trim() ? "cv_linkedin" : cvFile ? "cv" : "linkedin")
         } catch (error) {
             console.error("Errore durante l'analisi del profilo:", error)
             const fallback: ProfileSummary = {

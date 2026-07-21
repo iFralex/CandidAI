@@ -115,6 +115,7 @@ type Overview = {
         }[];
     }[];
     experimentFilters: Record<string, string>;
+    onboardingFunnel: { stage: string; entered: number; completed: number; conversion: number; medianMs: number | null; p95Ms: number | null; errors: number }[];
 };
 
 type TimeBucket = { sampleSize: number; medianMs: number | null; p25Ms: number | null; p75Ms: number | null };
@@ -194,6 +195,7 @@ export function AnalyticsDashboardClient() {
                         <Realtime data={data.realtime} />
                         <KpiGrid kpis={data.kpis} />
                         <RevenuePanel revenue={data.revenue} />
+                        <OnboardingFunnelPanel rows={data.onboardingFunnel} />
                         <ExperimentsPanel
                             experiments={data.experiments}
                             device={experimentDevice}
@@ -531,6 +533,24 @@ function RevenuePanel({ revenue }: { revenue: Overview["revenue"] }) {
                         ))}
                     </ul>
                 </div>
+            </div>
+        </Card>
+    );
+}
+
+function OnboardingFunnelPanel({ rows }: { rows: Overview["onboardingFunnel"] }) {
+    const formatDuration = (ms: number | null) => {
+        if (ms === null) return "—";
+        const seconds = Math.round(ms / 1000);
+        return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+    };
+    return (
+        <Card title="Onboarding per stage (server-side)">
+            <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-xs">
+                    <thead className="text-white/45"><tr className="border-b border-white/10"><th className="pb-2 font-medium">Stage</th><th className="pb-2 font-medium">Entrati</th><th className="pb-2 font-medium">Completati</th><th className="pb-2 font-medium">Conversione</th><th className="pb-2 font-medium">Mediana</th><th className="pb-2 font-medium">P95</th><th className="pb-2 font-medium">Errori</th></tr></thead>
+                    <tbody>{rows.map(row => <tr key={row.stage} className="border-b border-white/5 last:border-0"><td className="py-2.5 font-mono text-white/80">{row.stage}</td><td className="py-2.5 tabular-nums">{row.entered}</td><td className="py-2.5 tabular-nums">{row.completed}</td><td className="py-2.5 tabular-nums text-violet-300">{Math.round(row.conversion * 100)}%</td><td className="py-2.5 tabular-nums text-white/60">{formatDuration(row.medianMs)}</td><td className="py-2.5 tabular-nums text-white/60">{formatDuration(row.p95Ms)}</td><td className={`py-2.5 tabular-nums ${row.errors ? "text-red-300" : "text-white/40"}`}>{row.errors}</td></tr>)}</tbody>
+                </table>
             </div>
         </Card>
     );

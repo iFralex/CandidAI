@@ -72,6 +72,9 @@ export async function POST(req: Request) {
         createdAt: now,
         lastLogin: now,
         onboardingStep: 1,
+        onboardingStage: "profile_source",
+        onboardingStageEnteredAt: now,
+        lastOnboardingActivityAt: now,
         plan: "free_trial",
         credits: 0,
         emailVerified: false,
@@ -80,18 +83,21 @@ export async function POST(req: Request) {
           acceptedAt: now,
         },
       });
-
-      fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Internal-Key": process.env.SESSION_API_KEY ?? "",
-        },
-        body: JSON.stringify({
-          userId: uid,
-          type: "welcome"
-        })
-      });
+      try {
+        const welcomeResponse = await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Internal-Key": process.env.SESSION_API_KEY ?? "",
+          },
+          body: JSON.stringify({ userId: uid, type: "welcome" }),
+        });
+        if (!welcomeResponse.ok) console.error("Welcome email request failed", welcomeResponse.status);
+      } catch (emailError) {
+        // Account creation must still succeed; the failure is recorded by the
+        // communication service when the request reaches the email endpoint.
+        console.error("Welcome email request failed", emailError);
+      }
 
       // Sign in immediately to get an idToken for the session cookie
       const signInRes = await fetch(

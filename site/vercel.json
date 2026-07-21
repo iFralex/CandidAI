@@ -5,12 +5,8 @@
       "schedule": "0 8 * * *"
     },
     {
-      "path": "/api/cron/drip-stalled",
-      "schedule": "0 9 * * *"
-    },
-    {
       "path": "/api/cron/onboarding-sequence",
-      "schedule": "0 10 * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }

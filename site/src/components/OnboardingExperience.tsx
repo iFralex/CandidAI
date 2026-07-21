@@ -14,9 +14,10 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { choosePostPurchasePreviewAction, continueFreePreviewToDashboard, launchPostPurchaseCampaign, navigatePostPurchaseStage, savePostPurchaseCompanies, savePostPurchaseFilters, savePostPurchaseInstructions, savePostPurchaseProfile, startOnboardingRecruiterSearch } from '@/actions/onboarding-actions'
+import { choosePostPurchasePreviewAction, continueFreePreviewToDashboard, launchPostPurchaseCampaign, markOnboardingCheckoutOpened, navigatePostPurchaseStage, savePostPurchaseCompanies, savePostPurchaseFilters, savePostPurchaseInstructions, savePostPurchaseProfile, startOnboardingRecruiterSearch } from '@/actions/onboarding-actions'
 import type { OnboardingPreviewState, OnboardingStage } from '@/types/onboarding'
 import { plansData, plansInfo } from '@/config'
+import { track } from '@/lib/analytics'
 
 type Props = {
   user: { uid: string; email?: string; plan?: string }
@@ -239,7 +240,11 @@ function EmailDeliveryReveal({ preview }: { preview: OnboardingPreviewState }) {
 function ConversionResult({ preview, email }: { preview: OnboardingPreviewState; email?: string }) {
   const [selected, setSelected] = useState<PlanInfo | null>(null)
   const [copied, setCopied] = useState(false)
-  const choose = useCallback((plan: PlanInfo) => setSelected(plan), [])
+  const choose = useCallback((plan: PlanInfo) => {
+    setSelected(plan)
+    track({ name: 'preview_checkout_opened', params: { plan_id: plan.id } })
+    void markOnboardingCheckoutOpened(plan.id)
+  }, [])
   const recruiter = preview.recruiter
   const profile = preview.recruiterProfile
   const emailParagraphs = (preview.email?.body || '').split(/\n\s*\n/).filter(Boolean)
@@ -247,9 +252,11 @@ function ConversionResult({ preview, email }: { preview: OnboardingPreviewState;
   const copyEmail = async () => {
     await navigator.clipboard.writeText(`Subject: ${preview.email?.subject || ''}\n\n${preview.email?.body || ''}`)
     setCopied(true)
+    track({ name: 'preview_email_copied', params: { company_name: preview.company?.name || 'unknown' } })
     window.setTimeout(() => setCopied(false), 1800)
   }
   const openEmailApp = () => {
+    track({ name: 'preview_email_client_opened', params: { company_name: preview.company?.name || 'unknown' } })
     window.location.href = `mailto:?subject=${encodeURIComponent(preview.email?.subject || '')}&body=${encodeURIComponent(preview.email?.body || '')}`
   }
   return <motion.div className="mx-auto max-w-6xl space-y-12" initial={{ opacity: 0, y: 30, filter: 'blur(8px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}>
@@ -311,7 +318,11 @@ function PostPurchaseExperience({ props, preview, onNavigate }: { props: Props; 
   const previewCompanyName = preview.company?.name || props.companies?.[0]?.name || 'your preview company'
   const run = async (key: string, action: () => Promise<unknown>) => {
     setPending(key); setError('')
-    try { await action(); router.refresh() } catch (err) { setError(err instanceof Error ? err.message : 'Something went wrong') } finally { setPending(null) }
+    try {
+      await action()
+      if (key !== 'launch') track({ name: 'post_purchase_section_edited', params: { section: key } })
+      router.refresh()
+    } catch (err) { setError(err instanceof Error ? err.message : 'Something went wrong') } finally { setPending(null) }
   }
   const moveTo = async (nextStage: OnboardingStage, shouldReturnToReview = false) => {
     setPending(`move-${nextStage}`); setError('')
@@ -335,7 +346,7 @@ function PostPurchaseExperience({ props, preview, onNavigate }: { props: Props; 
   return <ActivationChapter step={5} label="Commit the campaign" title="Your campaign is assembled. See exactly where it is going." story="Your profile supplies the evidence. Every target below opens a separate research path, with its own recruiter selection and company-specific message." signal="Launching hands this complete campaign brief to the production pipeline. Nothing starts before you confirm.">
     <Card hover={false} className="overflow-hidden border-blue-400/20 p-0"><div className="border-b border-white/10 bg-gradient-to-r from-blue-500/10 via-violet-500/5 to-transparent p-6 sm:p-8"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs uppercase tracking-[0.18em] text-blue-300">Campaign destinations</p><h2 className="mt-2 text-2xl font-semibold text-white">{props.companies?.length || 0} companies, {props.companies?.length || 0} original conversations.</h2></div><Button size="sm" variant="secondary" disabled={Boolean(pending)} onClick={() => moveTo('post_purchase_companies', true)} icon={pending === 'move-post_purchase_companies' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}>{pending === 'move-post_purchase_companies' ? 'Opening targets...' : 'Edit targets'}</Button></div></div><div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-6">{props.companies?.map((company, index) => <div key={`${company.name}-${index}`} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4"><CompanyLogo company={company.domain || company.name} maxSize={11} minSize={11} /><div className="min-w-0 flex-1"><p className="truncate font-medium text-white">{company.name}</p><p className="mt-1 truncate text-xs text-gray-500">{company.domain || 'Company research prepared after launch'}</p></div><span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400" /></div>)}</div></Card>
     <div className="grid gap-4 md:grid-cols-3"><button disabled={Boolean(pending)} aria-busy={pending === 'move-post_purchase_profile'} className="text-left disabled:cursor-wait disabled:opacity-70" onClick={() => moveTo('post_purchase_profile', true)}><Card hover className="h-full p-6"><div className="flex items-center justify-between"><UserRound className="h-5 w-5 text-emerald-300" />{pending === 'move-post_purchase_profile' ? <Loader2 className="h-4 w-4 animate-spin text-violet-300" /> : <Pencil className="h-4 w-4 text-gray-600" />}</div><p className="mt-4 font-semibold text-white">{props.profile?.name || 'Candidate profile'}</p><p className="mt-1 text-sm text-gray-400">{pending === 'move-post_purchase_profile' ? 'Opening profile...' : props.profile?.title || 'Your campaign evidence'}</p></Card></button><button disabled={Boolean(pending)} aria-busy={pending === `move-${plan === 'pro' || plan === 'ultra' ? 'post_purchase_filters' : 'post_purchase_companies'}`} className="text-left disabled:cursor-wait disabled:opacity-70" onClick={() => moveTo(plan === 'pro' || plan === 'ultra' ? 'post_purchase_filters' : 'post_purchase_companies', true)}><Card hover className="h-full p-6"><div className="flex items-center justify-between"><SlidersHorizontal className="h-5 w-5 text-violet-300" />{pending === `move-${plan === 'pro' || plan === 'ultra' ? 'post_purchase_filters' : 'post_purchase_companies'}` ? <Loader2 className="h-4 w-4 animate-spin text-violet-300" /> : <Pencil className="h-4 w-4 text-gray-600" />}</div><p className="mt-4 text-2xl font-bold text-white">{props.queries?.length || 'Default'}</p><p className="mt-1 text-sm text-gray-400">{pending === `move-${plan === 'pro' || plan === 'ultra' ? 'post_purchase_filters' : 'post_purchase_companies'}` ? 'Opening strategy...' : 'recruiter strategies configured'}</p></Card></button><button disabled={Boolean(pending)} aria-busy={pending === 'move-post_purchase_instructions'} className="text-left disabled:cursor-wait disabled:opacity-70" onClick={() => moveTo('post_purchase_instructions', true)}><Card hover className="h-full p-6"><div className="flex items-center justify-between"><Zap className="h-5 w-5 text-amber-300" />{pending === 'move-post_purchase_instructions' ? <Loader2 className="h-4 w-4 animate-spin text-violet-300" /> : <Pencil className="h-4 w-4 text-gray-600" />}</div><p className="mt-4 line-clamp-2 font-semibold text-white">{props.customizations?.position_description}</p><p className="mt-1 text-sm text-gray-400">{pending === 'move-post_purchase_instructions' ? 'Opening direction...' : 'campaign direction'}</p></Card></button></div>
-    <Card hover={false} className="border-emerald-400/20 p-6 text-center sm:p-8"><h2 className="text-2xl font-semibold text-white">Everything is saved. Ready when you are.</h2><p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-gray-400">The definitive pipeline will research every company, select every recruiter from scratch, and write each email from this campaign brief.</p><Button size="lg" className="mt-6" disabled={Boolean(pending)} onClick={() => run('launch', launchPostPurchaseCampaign)} icon={pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}>{pending ? 'Launching...' : 'Launch my campaign'}</Button>{error && <p className="mt-4 text-sm text-red-300">{error}</p>}</Card>
+    <Card hover={false} className="border-emerald-400/20 p-6 text-center sm:p-8"><h2 className="text-2xl font-semibold text-white">Everything is saved. Ready when you are.</h2><p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-gray-400">The definitive pipeline will research every company, select every recruiter from scratch, and write each email from this campaign brief.</p><Button size="lg" className="mt-6" disabled={Boolean(pending)} onClick={() => { track({ name: 'campaign_launch_clicked', params: { plan, company_count: props.companies?.length || 0 } }); void run('launch', launchPostPurchaseCampaign) }} icon={pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}>{pending ? 'Launching...' : 'Launch my campaign'}</Button>{error && <p className="mt-4 text-sm text-red-300">{error}</p>}</Card>
   </ActivationChapter>
 }
 
@@ -352,6 +363,32 @@ export function OnboardingExperience(props: Props) {
   // source of truth for the current setup stage.
   const persistedStage = (postPurchaseStages.includes(props.stage) ? props.stage : (preview.stage || props.stage)) as OnboardingStage
   const effectiveStage = (optimisticPostStage || persistedStage) as OnboardingStage
+  const stageEnteredAt = useRef(Date.now())
+  useEffect(() => {
+    const enteredAt = Date.now()
+    stageEnteredAt.current = enteredAt
+    if (effectiveStage === 'recruiter_search') {
+      const existing = sessionStorage.getItem('candidai-search-started-at')
+      if (!existing) sessionStorage.setItem('candidai-search-started-at', String(enteredAt))
+      const engagedTimer = window.setTimeout(() => {
+        track({ name: 'search_experience_engaged', params: { visible_time_ms: Date.now() - enteredAt } })
+      }, 30_000)
+      return () => {
+        window.clearTimeout(engagedTimer)
+        const visible = Date.now() - enteredAt
+        track({ name: 'onboarding_scene_summary', params: { stage: effectiveStage, visible_time_ms: visible, left_page: document.visibilityState === 'hidden' } })
+        if (document.visibilityState === 'hidden') track({ name: 'search_experience_left', params: { visible_time_ms: visible } })
+      }
+    }
+    if (effectiveStage === 'preview_ready') {
+      const started = Number(sessionStorage.getItem('candidai-search-started-at') || 0)
+      if (started) {
+        track({ name: 'search_result_revealed', params: { total_search_time_ms: Date.now() - started } })
+        sessionStorage.removeItem('candidai-search-started-at')
+      }
+    }
+    return () => track({ name: 'onboarding_scene_summary', params: { stage: effectiveStage, visible_time_ms: Date.now() - enteredAt, left_page: document.visibilityState === 'hidden' } })
+  }, [effectiveStage])
   const previousStage = useRef<OnboardingStage>(effectiveStage)
   useEffect(() => { if (effectiveStage !== props.stage && ['target_company', 'recruiter_search'].includes(props.stage)) router.refresh() }, [effectiveStage, props.stage, router])
   useEffect(() => {

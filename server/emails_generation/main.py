@@ -17,6 +17,7 @@ import logging
 import os
 import time
 import requests
+import hashlib
 from server.analytics import track
 
 def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
@@ -281,6 +282,9 @@ def _send_notification_email(user_id, generated_email_data):
 
     # /api/send-email è server-to-server: richiede X-Internal-Key == SESSION_API_KEY.
     send_email_headers = {"X-Internal-Key": os.environ.get("SESSION_API_KEY", "")}
+    company_fingerprint = hashlib.sha256(
+        "|".join(sorted(str(item.get("company", {}).get("name", "")).lower() for item in generated_email_data)).encode("utf-8")
+    ).hexdigest()[:16]
 
     # Caso speciale: free trial con prima email generata
     user_data = get_user_data(user_id) or {}
@@ -292,6 +296,8 @@ def _send_notification_email(user_id, generated_email_data):
                 json={
                     "userId": user_id,
                     "type": "first_email_generated",
+                    "dedupeKey": "first-email-generated",
+                    "category": "operational",
                     "data": {"newData": generated_email_data},
                 },
                 headers=send_email_headers,
@@ -306,6 +312,8 @@ def _send_notification_email(user_id, generated_email_data):
         return
 
     settings = get_user_settings(user_id)
+    if not settings.get("campaignProgress", True):
+        return
     threshold = settings.get("emailNotificationThreshold", 10)
 
     if threshold == 0:
@@ -320,6 +328,8 @@ def _send_notification_email(user_id, generated_email_data):
             json={
                 "userId": user_id,
                 "type": "new_emails_generated",
+                "dedupeKey": f"generated-emails:{company_fingerprint}",
+                "category": "operational",
                 "data": {"newData": generated_email_data},
             },
             headers=send_email_headers,

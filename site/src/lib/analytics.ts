@@ -76,6 +76,7 @@ export type TrackingEvent =
     | { name: "google_auth_redirect"; params: { mode: "login" | "register" } }
 
     // ── Onboarding ───────────────────────────────────────────────────────────
+    | { name: "onboarding_started"; params: { method: "email" | "google"; to_stage: string; flow: string } }
     | { name: "onboarding_step_view"; params: { step: number } }
     | { name: "onboarding_step_complete"; params: { step: number } }
     | { name: "onboarding_step_back"; params: { from_step: number } }
@@ -84,6 +85,15 @@ export type TrackingEvent =
     | { name: "onboarding_file_upload"; params: { file_type: string; file_size_kb: number } }
     | { name: "onboarding_company_add"; params: { method: string; total_count: number } }
     | { name: "onboarding_custom_instructions_set"; params: { has_instructions: boolean } }
+    | { name: "onboarding_scene_summary"; params: { stage: string; visible_time_ms: number; left_page: boolean } }
+    | { name: "search_experience_engaged"; params: { visible_time_ms: number } }
+    | { name: "search_experience_left"; params: { visible_time_ms: number } }
+    | { name: "search_result_revealed"; params: { total_search_time_ms: number } }
+    | { name: "preview_email_copied"; params: { company_name: string } }
+    | { name: "preview_email_client_opened"; params: { company_name: string } }
+    | { name: "preview_checkout_opened"; params: { plan_id: string } }
+    | { name: "post_purchase_section_edited"; params: { section: string } }
+    | { name: "campaign_launch_clicked"; params: { plan: string; company_count: number } }
 
     // ── Dashboard ────────────────────────────────────────────────────────────
     | { name: "dashboard_view"; params: { campaign_count: number; plan: string } }
@@ -147,6 +157,13 @@ const PERSIST_EVENTS = new Set<TrackingEvent["name"]>([
     "checkout_success",
     "checkout_free_success",
     "onboarding_complete",
+    "onboarding_started",
+    "onboarding_scene_summary",
+    "search_experience_engaged",
+    "search_experience_left",
+    "search_result_revealed",
+    "preview_checkout_opened",
+    "campaign_launch_clicked",
     "signup_success",
     "email_send",
     "email_send_all",

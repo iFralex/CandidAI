@@ -152,6 +152,9 @@ export function LoginForm({
               createdAt: now,
               lastLogin: now,
               onboardingStep: 1,
+              onboardingStage: "profile_source",
+              onboardingStageEnteredAt: now,
+              lastOnboardingActivityAt: now,
               plan: "free_trial",
               credits: 0,
               emailVerified: true,
@@ -397,6 +400,7 @@ export function RegisterForm({
           const user = result.user;
           const userDocRef = doc(db, 'users', user.uid);
           const userDoc = await getDoc(userDocRef);
+          const createdAccount = !userDoc.exists();
 
           const now = new Date().toISOString();
           if (!userDoc.exists()) {
@@ -407,6 +411,9 @@ export function RegisterForm({
               createdAt: now,
               lastLogin: now,
               onboardingStep: 1,
+              onboardingStage: "profile_source",
+              onboardingStageEnteredAt: now,
+              lastOnboardingActivityAt: now,
               plan: "free_trial",
               credits: 0,
               emailVerified: true,
@@ -435,6 +442,9 @@ export function RegisterForm({
           });
 
           track({ name: "signup_success", params: { method: "google" } }, { userId: user.uid });
+          if (createdAccount) {
+            track({ name: "onboarding_started", params: { method: "google", to_stage: "profile_source", flow: "free_preview" } }, { userId: user.uid });
+          }
           identifyUser(user.uid, { plan: "free_trial", credits: 0, onboarding_step: 1, signup_method: "google" });
           void saveFirstTouchToUserDoc(user.uid);
           void saveExperimentAssignmentsToUserDoc(user.uid);

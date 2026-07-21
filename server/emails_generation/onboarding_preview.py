@@ -14,6 +14,7 @@ from server.emails_generation.database import (
     get_account_data,
     get_changed_companies,
     get_results_row,
+    get_user_settings,
     save_companies_to_results,
 )
 from server.emails_generation.email_generator import generate_email
@@ -21,6 +22,7 @@ from server.emails_generation.recruiter import (
     find_recruiters_for_user,
     get_companies_info,
 )
+from server.analytics import track
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +90,7 @@ def _fail(user_id: str, stage: str, exc: Exception) -> None:
             "recoverable": True,
         },
     )
+    track("onboarding_job_failed", {"stage": stage, "error": str(exc)[:300]}, user_id=user_id)
 
 
 def _load_context(user_id: str) -> tuple[dict, dict, str]:
@@ -120,6 +123,7 @@ def find_recruiter(user_id: str, job_id: str) -> None:
             startedAt=firestore.SERVER_TIMESTAMP,
             error=firestore.DELETE_FIELD,
         )
+        track("onboarding_job_started", {"stage": "recruiter_search", "job_id": job_id, "queue": "onboarding_realtime"}, user_id=user_id)
         account, company, result_id = _load_context(user_id)
         update_preview(
             user_id,
@@ -148,6 +152,17 @@ def find_recruiter(user_id: str, job_id: str) -> None:
                 matchedQuery=query or {},
                 recruiterFoundAt=firestore.SERVER_TIMESTAMP,
             )
+            db.collection("users").document(user_id).set({
+                "onboardingStage": "recruiter_found",
+                "onboardingStageEnteredAt": firestore.SERVER_TIMESTAMP,
+                "lastOnboardingActivityAt": firestore.SERVER_TIMESTAMP,
+            }, merge=True)
+            track("recruiter_search_completed", {
+                "job_id": job_id,
+                "company": company.get("name", ""),
+                "matched_strategy": (query or {}).get("name", ""),
+            }, user_id=user_id)
+            track("onboarding_stage_entered", {"from_stage": "recruiter_search", "to_stage": "recruiter_found", "flow": "free_preview", "job_id": job_id}, user_id=user_id)
 
         def query_progress(query, attempt, total, found):
             update_preview(
@@ -190,8 +205,14 @@ def create_email(user_id: str, job_id: str) -> None:
 
         update_preview(user_id, status="running", stage="email_generation")
         db.collection("users").document(user_id).set(
-            {"onboardingStage": "email_generation", "onboardingStep": 5}, merge=True
+            {
+                "onboardingStage": "email_generation",
+                "onboardingStep": 5,
+                "onboardingStageEnteredAt": firestore.SERVER_TIMESTAMP,
+                "lastOnboardingActivityAt": firestore.SERVER_TIMESTAMP,
+            }, merge=True
         )
+        track("onboarding_job_started", {"stage": "email_generation", "job_id": job_id, "queue": "onboarding_realtime"}, user_id=user_id)
         account, company, result_id = _load_context(user_id)
         row = get_results_row(user_id, result_id)
         recruiter = row.get("recruiter") or {}
@@ -239,15 +260,26 @@ def create_email(user_id: str, job_id: str) -> None:
             {
                 "onboardingStage": "preview_ready",
                 "freePreviewConsumedAt": firestore.SERVER_TIMESTAMP,
+                "onboardingStageEnteredAt": firestore.SERVER_TIMESTAMP,
+                "lastOnboardingActivityAt": firestore.SERVER_TIMESTAMP,
             },
         )
         batch.commit()
+        track("email_generation_completed", {"job_id": job_id, "company": company.get("name", ""), "flow": "free_preview"}, user_id=user_id)
+        track("free_preview_completed", {"job_id": job_id, "company": company.get("name", "")}, user_id=user_id)
+        track("onboarding_stage_entered", {"from_stage": "email_generation", "to_stage": "preview_ready", "flow": "free_preview", "job_id": job_id}, user_id=user_id)
         preferences = (_preview_ref(user_id).get().to_dict() or {}).get("notifications", {})
-        if preferences.get("email"):
+        if preferences.get("email") and get_user_settings(user_id).get("previewReady", True):
             try:
                 requests.post(
                     f'{os.environ.get("NEXT_PUBLIC_DOMAIN", "").rstrip("/")}/api/send-email',
-                    json={"userId": user_id, "type": "onboarding-recruiter-ready", "data": {"company": company.get("name", ""), "recruiter": recruiter.get("full_name", "")}},
+                    json={
+                        "userId": user_id,
+                        "type": "onboarding-recruiter-ready",
+                        "dedupeKey": f"preview-ready:{job_id}",
+                        "category": "operational",
+                        "data": {"jobId": job_id, "company": company.get("name", ""), "recruiter": recruiter.get("full_name", "")},
+                    },
                     headers={"X-Internal-Key": os.environ.get("SESSION_API_KEY", "")},
                     timeout=20,
                 ).raise_for_status()

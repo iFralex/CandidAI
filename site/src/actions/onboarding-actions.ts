@@ -10,6 +10,8 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { Resend } from 'resend'
 import { getTestMock } from '@/app/api/test/set-mock/route'
 import { buildDefaultRecruiterStrategies } from '@/lib/recruiter-strategies'
+import { recordOnboardingSignal, recordOnboardingTransition } from '@/lib/onboarding-lifecycle'
+import { cancelPendingOnboardingCommunications } from '@/lib/communication-service'
 
 // Prepara un'email per l'archivio: rimuove campi privati/transitori e aggiunge archived_at
 function toEmailArchive(email: Record<string, any>) {
@@ -314,7 +316,18 @@ export async function submitPreviewCompany(company: { name: string; domain?: str
         onboardingStep: 3,
     });
     await batch.commit();
+    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage, to: "target_company", flow: "free_preview", step: 3, metadata: { company: company.name }, updateStage: false });
     revalidatePath("/dashboard");
+    return { success: true as const };
+}
+
+export async function markProfileReviewReady(source: "cv" | "linkedin" | "cv_linkedin") {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+    // The generated profile still lives in the browser until the user confirms it.
+    // Measure the review scene without making it the resumable persisted stage.
+    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage || "profile_source", to: "profile_review", flow: "free_preview", step: 1, reason: "profile_generated", metadata: { source }, updateStage: false });
     return { success: true as const };
 }
 
@@ -363,6 +376,8 @@ export async function startOnboardingRecruiterSearch() {
         }, { merge: true });
         throw error;
     }
+    await recordOnboardingTransition({ userId, from: "target_company", to: "recruiter_search", flow: "free_preview", step: 4, metadata: { job_id: job.jobId }, updateStage: false });
+    await recordOnboardingSignal({ event: "onboarding_job_queued", userId, stage: "recruiter_search", params: { job_id: job.jobId, queue: "onboarding_realtime" } });
     revalidatePath("/dashboard");
     return { success: true as const, jobId: job.jobId, resumed: false };
 }
@@ -397,6 +412,7 @@ export async function confirmRecruiterAndGenerateEmail(jobId: string) {
         }, { merge: true });
         throw error;
     }
+    await recordOnboardingTransition({ userId, from: "recruiter_found", to: "email_generation", flow: "free_preview", step: 5, metadata: { job_id: jobId }, updateStage: false });
     revalidatePath("/dashboard");
     return { success: true as const, resumed: false };
 }
@@ -407,6 +423,15 @@ export async function setOnboardingNotificationPreference(channel: "email" | "br
         notifications: { [channel]: enabled },
         updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
+    await recordOnboardingSignal({ event: "recruiter_search_notification_selected", userId, stage: "recruiter_search", params: { channel, enabled } });
+    return { success: true as const };
+}
+
+export async function markOnboardingCheckoutOpened(planId: string) {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage || "preview_ready", to: "checkout", flow: "free_preview", step: 5, reason: "checkout_opened", metadata: { plan: planId } });
     return { success: true as const };
 }
 
@@ -415,7 +440,8 @@ export async function continueFreePreviewToDashboard() {
     const userRef = adminDb.collection("users").doc(userId);
     const previewSnap = await userRef.collection("data").doc("onboarding_preview").get();
     if (previewSnap.data()?.stage !== "preview_ready") throw new Error("The first candidacy is not ready");
-    await userRef.update({ onboardingStage: "completed", onboardingStep: 50 });
+    await recordOnboardingTransition({ userId, from: "preview_ready", to: "completed", flow: "free_preview", step: 50, reason: "continue_to_dashboard" });
+    await cancelPendingOnboardingCommunications(userId, "onboarding_completed");
     revalidatePath("/dashboard");
     redirect("/dashboard");
 }
@@ -492,6 +518,7 @@ export async function choosePostPurchasePreviewAction(choice: "regenerate" | "re
     }, { merge: true });
     batch.update(userRef, { onboardingStage: "post_purchase_profile", onboardingStep: 7, postPurchaseReturnToReview: false });
     await batch.commit();
+    await recordOnboardingTransition({ userId, from: user.onboardingStage || "post_purchase", to: "post_purchase_profile", flow: "post_purchase", step: 7, metadata: { preview_choice: choice }, updateStage: false });
     revalidatePath("/dashboard");
     return { success: true as const };
 }
@@ -567,6 +594,7 @@ export async function savePostPurchaseCompanies(companies: { name: string; domai
     }
     batch.update(userRef, { onboardingStage: nextStage, onboardingStep: 8, postPurchaseReturnToReview: false });
     await batch.commit();
+    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage || "post_purchase_profile", to: nextStage, flow: "post_purchase", step: 8, metadata: { company_count: companies.length }, updateStage: false });
     revalidatePath("/dashboard");
     return { success: true as const };
 }
@@ -587,6 +615,7 @@ export async function savePostPurchaseFilters(queries: any[]) {
         postPurchaseReturnToReview: false,
     });
     await batch.commit();
+    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage || "post_purchase_companies", to: userSnap.data()?.postPurchaseReturnToReview ? "post_purchase_review" : "post_purchase_instructions", flow: "post_purchase", step: 9, metadata: { strategy_count: queries.length }, updateStage: false });
     revalidatePath("/dashboard");
     return { success: true as const };
 }
@@ -607,6 +636,7 @@ export async function savePostPurchaseInstructions(customizations: { position_de
     // until the user explicitly launches the campaign.
     batch.update(userRef, { onboardingStage: "post_purchase_review", onboardingStep: 9, postPurchaseReturnToReview: false });
     await batch.commit();
+    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage || "post_purchase_instructions", to: "post_purchase_review", flow: "post_purchase", step: 9, metadata: { has_custom_instructions: Boolean(safe.instructions) }, updateStage: false });
     revalidatePath("/dashboard");
     return { success: true as const };
 }
@@ -627,6 +657,7 @@ export async function navigatePostPurchaseStage(stage: string, returnToReview = 
     const userSnap = await userRef.get();
     if (!userSnap.data()?.plan || userSnap.data()?.plan === "free_trial") throw new Error("A paid plan is required");
     await userRef.update({ onboardingStage: stage, onboardingStep: 9, postPurchaseReturnToReview: returnToReview });
+    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage, to: stage as any, flow: "post_purchase", step: 9, reason: "navigation", updateStage: false });
     revalidatePath("/dashboard");
     return { success: true as const };
 }
@@ -656,6 +687,7 @@ export async function savePostPurchaseProfile(plan: string, profileData: any, cv
         onboardingStep: 7,
         postPurchaseReturnToReview: false,
     });
+    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage || "post_purchase", to: userSnap.data()?.postPurchaseReturnToReview ? "post_purchase_review" : "post_purchase_companies", flow: "post_purchase", step: 7, metadata: { strategies_rebuilt: rebuildStrategies }, updateStage: false });
     revalidatePath("/dashboard");
     return { success: true as const };
 }
@@ -672,11 +704,26 @@ export async function launchPostPurchaseCampaign() {
     // Otherwise a transient runner/auth failure strands the account in a
     // completed state with no campaign running.
     await startServer(userId, { throwOnError: true });
-    await userRef.update({
-        onboardingStage: "completed",
-        onboardingStep: 50,
-        activated_at: user.activated_at || FieldValue.serverTimestamp(),
-    });
+    await userRef.update({ activated_at: user.activated_at || FieldValue.serverTimestamp() });
+    await recordOnboardingTransition({ userId, from: user.onboardingStage || "post_purchase_review", to: "completed", flow: "post_purchase", step: 50, reason: "campaign_launched", metadata: { plan: user.plan, company_count: account.companies.length } });
+    await recordOnboardingSignal({ event: "campaign_launched", userId, stage: "completed", params: { plan: user.plan, company_count: account.companies.length } });
+    await recordOnboardingSignal({ event: "onboarding_complete", userId, stage: "completed", params: { plan: user.plan, flow: "post_purchase" } });
+    await cancelPendingOnboardingCommunications(userId, "campaign_launched");
+    try {
+        await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Internal-Key": process.env.SESSION_API_KEY ?? "" },
+            body: JSON.stringify({
+                userId,
+                type: "onboarding-complete",
+                dedupeKey: `campaign-launched:${user.plan}`,
+                category: "operational",
+                data: { plan: user.plan, companies: account.companies.map((company: any) => company.name).filter(Boolean) },
+            }),
+        });
+    } catch (error) {
+        console.error("Failed to send campaign launch email:", error);
+    }
     revalidatePath("/dashboard");
     redirect("/dashboard");
 }
@@ -781,10 +828,12 @@ export async function submitProfile(
         .doc("account");
 
     const userRef = adminDb.collection("users").doc(userId);
+    let lifecycleFrom: unknown;
 
     if (!skipOnboardingStep) {
         const [userSnap, accountSnap] = await Promise.all([userRef.get(), accountRef.get()]);
         const existingMax: number = userSnap.data()?.maxOnboardingStep || 4;
+        lifecycleFrom = userSnap.data()?.onboardingStage;
         const existingProfile = accountSnap.data()?.profileSummary;
         const profileChanged = !!cv || JSON.stringify(profileData?.profileSummary) !== JSON.stringify(existingProfile);
         const nextStepBase = flow === "guided" ? 3 : 4;
@@ -805,6 +854,9 @@ export async function submitProfile(
     }
 
     await batch.commit();
+    if (!skipOnboardingStep && flow === "guided") {
+        await recordOnboardingTransition({ userId, from: lifecycleFrom || "profile_source", to: "target_company", flow: "free_preview", step: 3, metadata: { source: cv ? "cv" : profileData?.cvUrl ? "existing_cv" : "linkedin" }, updateStage: false });
+    }
 
     // Revalida la dashboard (Next.js)
     revalidatePath("/dashboard");
@@ -1791,6 +1843,9 @@ export async function updateSettings(data: {
     marketingEmails: boolean;
     reminderFrequency: string;
     emailNotificationThreshold: number;
+    onboardingReminders?: boolean;
+    previewReady?: boolean;
+    campaignProgress?: boolean;
 }) {
     const userId = await checkAuth();
 
@@ -1800,7 +1855,19 @@ export async function updateSettings(data: {
         .collection("data")
         .doc("settings");
 
-    await settingsRef.set({ preferences: data }, { merge: true });
+    const userRef = adminDb.collection("users").doc(userId);
+    const batch = adminDb.batch();
+    batch.set(settingsRef, { preferences: {
+        ...data,
+        onboardingReminders: data.onboardingReminders ?? true,
+        previewReady: data.previewReady ?? true,
+        campaignProgress: data.campaignProgress ?? true,
+        marketing: data.marketingEmails,
+    } }, { merge: true });
+    if (data.marketingEmails) {
+        batch.set(userRef, { unsubscribed: false, resubscribed_at: FieldValue.serverTimestamp() }, { merge: true });
+    }
+    await batch.commit();
 
     revalidatePath("/dashboard/settings");
 }
@@ -1816,13 +1883,16 @@ export async function getSettings() {
 
     const snap = await settingsRef.get();
     if (!snap.exists) {
-        return { marketingEmails: true, reminderFrequency: "weekly", emailNotificationThreshold: 10 };
+        return { marketingEmails: true, reminderFrequency: "weekly", emailNotificationThreshold: 10, onboardingReminders: true, previewReady: true, campaignProgress: true };
     }
     const prefs = snap.data()?.preferences ?? {};
     return {
         marketingEmails: prefs.marketingEmails ?? true,
         reminderFrequency: prefs.reminderFrequency ?? "weekly",
         emailNotificationThreshold: prefs.emailNotificationThreshold ?? 10,
+        onboardingReminders: prefs.onboardingReminders ?? true,
+        previewReady: prefs.previewReady ?? true,
+        campaignProgress: prefs.campaignProgress ?? true,
     };
 }
 
@@ -1836,7 +1906,9 @@ export const resendEmailVerification = async () => {
         },
         body: JSON.stringify({
             userId,
-            type: "welcome"
+            type: "welcome",
+            dedupeKey: `welcome-resend:${Math.floor(Date.now() / 300000)}`,
+            category: "transactional",
         })
     });
     if (!res.ok) {

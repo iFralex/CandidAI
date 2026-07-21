@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity, cohorts, timeToX, feedback, experiments] = await Promise.all([
+        const [kpis, trend, topEvents, topPages, sources, customFunnel, realtime, revenue, clarity, cohorts, timeToX, feedback, experiments, onboardingFunnel] = await Promise.all([
             runReport({
                 dateRanges: [dr],
                 metrics: [
@@ -142,6 +142,7 @@ export async function GET(req: NextRequest) {
             // ── Voice of customer (in-app micro-survey responses) ─────────
             fetchFeedback().catch(() => emptyFeedback()),
             fetchExperimentReport(cutoffDate(range), experimentFilters).catch(() => []),
+            fetchOnboardingFunnel(cutoffDate(range)).catch(() => []),
         ]);
 
         const k = kpis.totals;
@@ -196,6 +197,7 @@ export async function GET(req: NextRequest) {
             feedback,
             experiments,
             experimentFilters,
+            onboardingFunnel,
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -205,6 +207,72 @@ export async function GET(req: NextRequest) {
             { status: 500 }
         );
     }
+}
+
+const ONBOARDING_FUNNEL_STAGES = [
+    "profile_source", "profile_review", "target_company", "recruiter_search",
+    "recruiter_found", "email_generation", "preview_ready", "checkout",
+    "post_purchase", "post_purchase_profile", "post_purchase_companies",
+    "post_purchase_filters", "post_purchase_instructions", "post_purchase_review", "completed",
+] as const;
+
+async function fetchOnboardingFunnel(cutoff: Date) {
+    const snap = await adminDb.collection("analytics_events")
+        .where("timestamp", ">=", Timestamp.fromDate(cutoff))
+        .orderBy("timestamp", "asc")
+        .limit(20_000)
+        .get();
+    const entered = new Map<string, Set<string>>();
+    const errors = new Map<string, number>();
+    const userStages = new Map<string, { stage: string; at: number }[]>();
+    ONBOARDING_FUNNEL_STAGES.forEach(stage => entered.set(stage, new Set()));
+
+    for (const doc of snap.docs) {
+        const data = doc.data();
+        const uid = typeof data.user_id === "string" ? data.user_id : null;
+        if (!uid) continue;
+        const at = data.timestamp?.toMillis?.() ?? Date.parse(String(data.params?.occurred_at ?? ""));
+        if (data.event === "onboarding_started") {
+            entered.get("profile_source")!.add(uid);
+            if (Number.isFinite(at)) userStages.set(uid, [...(userStages.get(uid) ?? []), { stage: "profile_source", at }]);
+        }
+        if (data.event === "onboarding_stage_entered") {
+            const stage = String(data.params?.to_stage || "");
+            if (!entered.has(stage)) continue;
+            entered.get(stage)!.add(uid);
+            if (Number.isFinite(at)) userStages.set(uid, [...(userStages.get(uid) ?? []), { stage, at }]);
+        }
+        if (data.event === "onboarding_job_failed") {
+            const stage = String(data.params?.stage || "unknown");
+            errors.set(stage, (errors.get(stage) ?? 0) + 1);
+        }
+    }
+
+    return ONBOARDING_FUNNEL_STAGES.map((stage, index) => {
+        const users = entered.get(stage)!;
+        const nextStage = ONBOARDING_FUNNEL_STAGES[index + 1];
+        const completed = nextStage
+            ? [...users].filter(uid => entered.get(nextStage)?.has(uid)).length
+            : users.size;
+        const durations: number[] = [];
+        if (nextStage) for (const uid of users) {
+            const rows = userStages.get(uid) ?? [];
+            const current = rows.find(row => row.stage === stage);
+            const next = rows.find(row => row.stage === nextStage && current && row.at >= current.at);
+            if (current && next) durations.push(next.at - current.at);
+        }
+        durations.sort((a, b) => a - b);
+        const percentile = (p: number) => durations.length ? durations[Math.min(durations.length - 1, Math.floor((durations.length - 1) * p))] : null;
+        return {
+            stage,
+            entered: users.size,
+            completed,
+            conversion: users.size ? completed / users.size : 0,
+            medianMs: percentile(0.5),
+            p95Ms: percentile(0.95),
+            errors: errors.get(stage) ?? 0,
+        };
+    });
 }
 
 // ─── Experiments ───────────────────────────────────────────────────────────

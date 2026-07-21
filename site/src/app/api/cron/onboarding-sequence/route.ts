@@ -1,14 +1,14 @@
 /**
- * Onboarding email sequence — runs daily at 10:00 UTC, in addition to the
- * stalled-user drip cron at 09:00. Walks every signup through 4 stages:
+ * Unified onboarding lifecycle sequence — runs hourly. It handles contextual
+ * recovery messages and the longer-term educational sequence in one scheduler:
  *
  *   Day 1   welcome              → everyone
  *   Day 3   feature_tip          → everyone still active
  *   Day 7   case_study           → not-yet-paid users
  *   Day 14  upgrade_offer        → still on free_trial
  *
- * Each stage marks `seq_<stage>_sent` on the user doc → idempotent across
- * re-runs and manual triggers. Per-user errors don't abort the batch.
+ * The communications registry is the source of truth for idempotency and the
+ * user-doc flags remain as backwards-compatible operational markers.
  *
  * Auth: same pattern as the other crons (CRON_SECRET or SESSION_API_KEY).
  *
@@ -23,6 +23,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { recordServerEvent } from "@/lib/server-track";
 import { wrapEmail, button, tipBox, heading, paragraph, escapeHtml } from "@/lib/email-template";
 import { buildUnsubscribeUrl } from "@/lib/unsubscribe";
+import { completeCommunication, failCommunication, reserveCommunication, type CommunicationCategory } from "@/lib/communication-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +33,11 @@ const FROM = "Alessio (CandidAI) <no-reply@candidai.tech>";
 const REPLY_TO = "hello@candidai.tech";
 const DOMAIN = process.env.NEXT_PUBLIC_DOMAIN || "https://candidai.tech";
 const DAY_MS = 86400_000;
+
+function timestampMs(value: unknown): number {
+    if (value && typeof value === "object" && "toMillis" in value && typeof (value as any).toMillis === "function") return (value as any).toMillis();
+    return Date.parse(String(value ?? ""));
+}
 
 function isAuthorized(req: NextRequest): boolean {
     const auth = req.headers.get("authorization") ?? "";
@@ -44,6 +50,7 @@ interface AccountContext {
     hasCv: boolean;
     hasCompanies: boolean;
     hasCustomizations: boolean;
+    stage?: string;
 }
 
 interface StageConfig {
@@ -53,6 +60,7 @@ interface StageConfig {
     /** If true, fetch users/{uid}/data/account before rendering. */
     needsAccountData?: boolean;
     render: (firstName: string, unsubscribeUrl: string, ctx?: AccountContext) => { subject: string; html: string };
+    category: CommunicationCategory;
 }
 
 const STAGES: StageConfig[] = [
@@ -62,23 +70,61 @@ const STAGES: StageConfig[] = [
     // Skipped for anyone who already finished onboarding within the window.
     {
         key: "first_action_check",
-        windowDays: [1, 3],
+        windowDays: [0.83, 3],
         extraFilter: (u) => Number(u.onboardingStep ?? 0) < 5,
         needsAccountData: true,
         render: renderFirstActionCheck,
+        category: "onboarding",
     },
-    { key: "feature_tip", windowDays: [3, 5], render: renderFeatureTip },
+    {
+        key: "preview_ready_followup",
+        windowDays: [0, 30],
+        extraFilter: (u) => {
+            const activity = timestampMs(u.lastOnboardingActivityAt ?? u.freePreviewConsumedAt);
+            return u.onboardingStage === "preview_ready"
+                && (u.plan === "free_trial" || !u.plan)
+                && Number.isFinite(activity)
+                && Date.now() - activity >= 30 * 60_000;
+        },
+        render: renderPreviewReadyFollowup,
+        category: "onboarding",
+    },
+    {
+        key: "checkout_abandoned",
+        windowDays: [0, 30],
+        extraFilter: (u) => {
+            const activity = timestampMs(u.lastOnboardingActivityAt);
+            return u.onboardingStage === "checkout" && Number.isFinite(activity) && Date.now() - activity >= 4 * 60 * 60_000;
+        },
+        render: renderCheckoutAbandoned,
+        category: "onboarding",
+    },
+    {
+        key: "post_purchase_setup_resume",
+        windowDays: [0, 30],
+        extraFilter: (u) => {
+            const activity = timestampMs(u.lastOnboardingActivityAt);
+            return String(u.onboardingStage || "").startsWith("post_purchase")
+                && Number.isFinite(activity)
+                && Date.now() - activity >= 20 * 60 * 60_000;
+        },
+        render: renderPostPurchaseResume,
+        category: "onboarding",
+    },
+    { key: "feature_tip", windowDays: [3, 5], render: renderFeatureTip, category: "marketing" },
     {
         key: "case_study",
         windowDays: [7, 9],
         extraFilter: (u) => (u.plan as string | undefined) === "free_trial" || !u.plan,
         render: renderCaseStudy,
+        category: "marketing",
     },
     {
         key: "upgrade_offer",
         windowDays: [14, 16],
         extraFilter: (u) => (u.plan as string | undefined) === "free_trial",
         render: renderUpgradeOffer,
+        category: "marketing",
     },
 ];
 
@@ -129,15 +175,27 @@ export async function GET(req: NextRequest) {
                         hasCv: !!a.cvUrl,
                         hasCompanies: Array.isArray(a.companies) && a.companies.length > 0,
                         hasCustomizations: !!a.customizations,
+                        stage: String(u.onboardingStage || "profile_source"),
                     };
                 } catch {
-                    ctx = { hasCv: false, hasCompanies: false, hasCustomizations: false };
+                    ctx = { hasCv: false, hasCompanies: false, hasCustomizations: false, stage: String(u.onboardingStage || "profile_source") };
                 }
             }
 
             const { subject, html } = stage.render(firstName, unsubscribeUrl, ctx);
+            const dedupeKey = stage.key === "post_purchase_setup_resume"
+                ? `lifecycle:${stage.key}:${String(u.onboardingStage || "unknown")}`
+                : `lifecycle:${stage.key}`;
 
             try {
+                const reservation = await reserveCommunication({
+                    userId: uid,
+                    dedupeKey,
+                    type: stage.key,
+                    category: stage.category,
+                    metadata: { onboardingStage: u.onboardingStage ?? null, onboardingStep: u.onboardingStep ?? null },
+                });
+                if (!reservation.send) { skipped++; continue; }
                 const { error } = await resend.emails.send({
                     from: FROM, to: email, replyTo: REPLY_TO, subject, html,
                     headers: {
@@ -146,6 +204,8 @@ export async function GET(req: NextRequest) {
                     },
                 });
                 if (error) throw new Error(JSON.stringify(error));
+
+                await completeCommunication({ userId: uid, dedupeKey, category: stage.category, type: stage.key });
 
                 await doc.ref.update({
                     [flagField]: true,
@@ -159,6 +219,7 @@ export async function GET(req: NextRequest) {
                 });
             } catch (err) {
                 failed++;
+                await failCommunication({ userId: uid, dedupeKey, error: err }).catch(() => undefined);
                 console.error(`[${stage.key}] send failed for ${uid}:`, err);
             }
         }
@@ -175,21 +236,64 @@ function greet(firstName: string): string {
     return firstName ? `Hey ${escapeHtml(firstName)}! 👋` : "Hey there! 👋";
 }
 
+function renderPreviewReadyFollowup(firstName: string, unsubscribeUrl: string) {
+    return {
+        subject: firstName ? `${firstName}, your first application is ready` : "Your first application is ready",
+        html: wrapEmail(`
+            ${heading(greet(firstName))}
+            ${paragraph(`Your recruiter match and personalized first application are ready. We saved the complete result, so you can return without repeating the research.`)}
+            ${paragraph(`Open the result to review the recruiter, copy the email, open it in your email app, or turn this first preview into a full campaign.`)}
+            <div style="text-align: center; margin: 32px 0;">${button("Review my application →", `${DOMAIN}/dashboard`)}</div>
+            ${tipBox(`<strong style="color: #8b5cf6;">Your progress is safe:</strong> the recruiter and draft are already stored in your account.`)}
+            <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">Talk soon,<br>Alessio</p>
+        `, { preheader: "Your recruiter match and personalized email are waiting in CandidAI.", badge: "APPLICATION READY", unsubscribeUrl }),
+    };
+}
+
+function renderCheckoutAbandoned(firstName: string, unsubscribeUrl: string) {
+    return {
+        subject: firstName ? `${firstName}, your application is still saved` : "Your application is still saved",
+        html: wrapEmail(`
+            ${heading(greet(firstName))}
+            ${paragraph(`You opened the plan checkout after seeing your first recruiter match, but didn't finish the purchase. Nothing was lost: your profile, company, recruiter, and preview email are still saved.`)}
+            ${paragraph(`When you're ready, you can return to the same result and choose the campaign size that fits your search.`)}
+            <div style="text-align: center; margin: 32px 0;">${button("Return to my application →", `${DOMAIN}/dashboard`)}</div>
+            <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">If something was unclear in checkout, reply to this email.<br>Alessio</p>
+        `, { preheader: "Your first result and selected opportunity are still waiting.", badge: "PROGRESS SAVED", unsubscribeUrl }),
+    };
+}
+
+function renderPostPurchaseResume(firstName: string, unsubscribeUrl: string) {
+    return {
+        subject: firstName ? `${firstName}, finish shaping your campaign` : "Finish shaping your campaign",
+        html: wrapEmail(`
+            ${heading(greet(firstName))}
+            ${paragraph(`Your plan is active and your campaign setup is saved. The remaining choices determine which recruiters we prioritize and what every email should emphasize.`)}
+            ${paragraph(`Return to the exact chapter you left: profile, companies, recruiter strategy, message direction, or final launch review.`)}
+            <div style="text-align: center; margin: 32px 0;">${button("Continue campaign setup →", `${DOMAIN}/dashboard`)}</div>
+            ${tipBox(`<strong style="color: #8b5cf6;">Nothing will generate prematurely:</strong> the definitive campaign begins only when you confirm the launch review.`)}
+            <p style="color: #888888; font-size: 14px; line-height: 1.6; margin: 0;">See you inside,<br>Alessio</p>
+        `, { preheader: "Your plan is active; complete the last campaign choices before launch.", badge: "CAMPAIGN SETUP", unsubscribeUrl }),
+    };
+}
+
 // ── Stage 1: first_action_check (day 1-3) ────────────────────────────────
 // Diagnoses what the user has actually done vs. what's still missing, then
 // points at exactly the next step. Not a "welcome" — the /api/auth signup
 // flow already sends one. Skipped if onboardingStep >= 5 (= already done).
 function renderFirstActionCheck(firstName: string, unsubscribeUrl: string, ctx?: AccountContext) {
-    const c = ctx ?? { hasCv: false, hasCompanies: false, hasCustomizations: false };
+    const c = ctx ?? { hasCv: false, hasCompanies: false, hasCustomizations: false, stage: "profile_source" };
     const allDone = c.hasCv && c.hasCompanies && c.hasCustomizations;
 
     // Compute next step + CTA destination based on what's missing.
-    const nextStep = !c.hasCompanies
-        ? { label: "Add your first company", url: `${DOMAIN}/dashboard` }
-        : !c.hasCv
-            ? { label: "Upload your CV", url: `${DOMAIN}/dashboard` }
+    const nextStep = c.stage === "profile_source" || !c.hasCv
+        ? { label: "Build your candidate profile", url: `${DOMAIN}/dashboard` }
+        : c.stage === "profile_review"
+            ? { label: "Review your candidate story", url: `${DOMAIN}/dashboard` }
+            : !c.hasCompanies
+                ? { label: "Choose your target company", url: `${DOMAIN}/dashboard` }
             : !c.hasCustomizations
-                ? { label: "Customize your email tone", url: `${DOMAIN}/dashboard` }
+                ? { label: "Continue my first application", url: `${DOMAIN}/dashboard` }
                 : { label: "Open my dashboard", url: `${DOMAIN}/dashboard` };
 
     const item = (done: boolean, label: string) => `

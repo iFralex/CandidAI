@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebase-admin";
 import { wrapEmail, button, tipBox, heading, paragraph, escapeHtml } from "@/lib/email-template";
 import { buildVerifyUrl } from "@/lib/verify-token";
+import {
+    completeCommunication,
+    failCommunication,
+    reserveCommunication,
+    type CommunicationCategory,
+} from "@/lib/communication-service";
 
 // Null-safe HTML escaper for values that originate from scraping / PDL / AI /
 // user input (company names, recruiter names, article titles, email previews,
@@ -26,8 +32,10 @@ export async function POST(req) {
     if (!isAuthorized(req)) {
         return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
+    let reservedUserId: string | null = null;
+    let reservedDedupeKey: string | null = null;
     try {
-        const { userId, type, data = {} } = await req.json();
+        const { userId, type, data = {}, dedupeKey: requestedDedupeKey, category: requestedCategory } = await req.json();
 
         const VALID_TYPES = ["welcome", "password-reset", "new_emails_generated", "first_email_generated", "purchase-confirmation", "contact-confirmation", "onboarding-complete", "onboarding-recruiter-ready"];
         const TYPES_REQUIRING_USER_ID = ["welcome", "new_emails_generated", "first_email_generated", "purchase-confirmation", "onboarding-complete", "onboarding-recruiter-ready"];
@@ -46,6 +54,29 @@ export async function POST(req) {
             );
         }
 
+        const defaultCategories: Record<string, CommunicationCategory> = {
+            welcome: "transactional",
+            "password-reset": "transactional",
+            "purchase-confirmation": "transactional",
+            "contact-confirmation": "transactional",
+            "onboarding-complete": "operational",
+            "onboarding-recruiter-ready": "operational",
+            first_email_generated: "operational",
+            new_emails_generated: "operational",
+        };
+        const category: CommunicationCategory = ["transactional", "operational", "onboarding", "marketing"].includes(requestedCategory)
+            ? requestedCategory
+            : defaultCategories[type] ?? "operational";
+        const defaultDedupeKeys: Record<string, string | undefined> = {
+            welcome: userId ? "welcome" : undefined,
+            "onboarding-complete": userId ? `onboarding-complete:${data.plan || "free_trial"}` : undefined,
+            "onboarding-recruiter-ready": userId ? `preview-ready:${data.jobId || data.company || "first"}` : undefined,
+            first_email_generated: userId ? "first-email-generated" : undefined,
+        };
+        const dedupeKey = typeof requestedDedupeKey === "string" && requestedDedupeKey
+            ? requestedDedupeKey.slice(0, 180)
+            : defaultDedupeKeys[type];
+
         // --- Get user from Firebase Auth ---
         let userRecord, email;
         if (userId) {
@@ -58,6 +89,22 @@ export async function POST(req) {
                     { status: 404 }
                 );
             }
+        }
+
+
+        if (userId && dedupeKey) {
+            const reservation = await reserveCommunication({
+                userId,
+                dedupeKey,
+                type,
+                category,
+                metadata: { company: data.company ?? null, plan: data.plan ?? null },
+            });
+            if (!reservation.send) {
+                return NextResponse.json({ success: true, skipped: true, reason: reservation.reason });
+            }
+            reservedUserId = userId;
+            reservedDedupeKey = dedupeKey;
         }
 
         const getEmailTemplate = (type, data: any = {}) => {
@@ -512,12 +559,26 @@ export async function POST(req) {
             html,
         });
 
+        if (result.error) throw new Error(JSON.stringify(result.error));
+        if (userId && dedupeKey) {
+            await completeCommunication({
+                userId,
+                dedupeKey,
+                category,
+                type,
+                providerId: result.data?.id,
+            });
+        }
+
         return NextResponse.json({ success: true, result });
 
     } catch (err) {
         console.error("Email API Error:", err);
+        if (reservedUserId && reservedDedupeKey) {
+            await failCommunication({ userId: reservedUserId, dedupeKey: reservedDedupeKey, error: err }).catch(() => undefined);
+        }
         return NextResponse.json(
-            { error: "Internal Server Error", detail: err.message },
+            { error: "Internal Server Error", detail: err instanceof Error ? err.message : String(err) },
             { status: 500 }
         );
     }

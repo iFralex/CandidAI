@@ -7,12 +7,16 @@ import { startServer } from "@/actions/onboarding-actions";
 import { FieldValue } from "firebase-admin/firestore";
 import { recordPaymentSuccess } from "@/lib/server-track";
 import { incrementDiscountUsage } from "@/lib/discount-codes";
+import { recordOnboardingTransition } from "@/lib/onboarding-lifecycle";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-16" });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-11-17.clover" });
 
 export async function POST(req: Request) {
   const body = await req.text();
   const sig = (await headers()).get("stripe-signature");
+  if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
+    return new Response("Webhook signature configuration is missing", { status: 400 });
+  }
 
   let event: Stripe.Event;
   try {
@@ -124,6 +128,9 @@ export async function POST(req: Request) {
         isOnboarding: isOnboardingPurchaseRef.value,
         source: "webhook",
       });
+      if (isOnboardingPurchaseRef.value && purchaseType === "plan") {
+        await recordOnboardingTransition({ userId, from: "checkout", to: "post_purchase", flow: "post_purchase", step: 6, reason: "payment_succeeded", metadata: { plan: itemId, payment_id: paymentIntent.id }, updateStage: false });
+      }
 
       if (purchaseType === "plan" && !isOnboardingPurchaseRef.value) {
         try {
@@ -164,6 +171,8 @@ export async function POST(req: Request) {
           body: JSON.stringify({
             userId,
             type: "purchase-confirmation",
+            dedupeKey: `purchase-confirmation:${paymentIntent.id}`,
+            category: "transactional",
             data: { amount: amountFormatted, item: itemName, newBalance, receiptUrl },
           }),
         });

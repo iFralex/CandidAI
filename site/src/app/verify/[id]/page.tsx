@@ -1,4 +1,5 @@
-import { adminAuth } from "@/lib/firebase-admin";
+import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { CheckCheck, CheckCircle } from "lucide-react";
@@ -35,10 +36,35 @@ const Page = async ({ params, searchParams }) => {
             emailVerified: true
         })
 
+        // Verification is the first meaningful onboarding entry for email users.
+        // Keep this idempotent because verification links can be opened repeatedly.
+        await adminDb.runTransaction(async transaction => {
+            const userRef = adminDb.collection("users").doc(id);
+            const userSnap = await transaction.get(userRef);
+            if (!userSnap.exists || userSnap.data()?.emailVerified === true) return;
+
+            const eventRef = adminDb.collection("analytics_events").doc();
+            transaction.set(userRef, {
+                emailVerified: true,
+                onboardingStage: "profile_source",
+                onboardingStageEnteredAt: FieldValue.serverTimestamp(),
+                lastOnboardingActivityAt: FieldValue.serverTimestamp(),
+            }, { merge: true });
+            transaction.set(eventRef, {
+                event: "onboarding_started",
+                user_id: id,
+                session_id: null,
+                page_path: "/dashboard",
+                params: { method: "email", to_stage: "profile_source", flow: "free_preview" },
+                timestamp: FieldValue.serverTimestamp(),
+                source: "server",
+            });
+        });
+
         await fetch(process.env.NEXT_PUBLIC_DOMAIN + "/api/refresh-user", {
             method: "POST",
             headers: {
-                cookie: await cookies()
+                cookie: (await cookies()).toString()
             }
         })
     } catch {

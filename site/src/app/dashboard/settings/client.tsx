@@ -14,12 +14,18 @@ interface SettingsFormProps {
     defaultMarketingEmails: boolean
     defaultReminderFrequency: string
     defaultEmailNotificationThreshold: number
+    defaultOnboardingReminders: boolean
+    defaultPreviewReady: boolean
+    defaultCampaignProgress: boolean
 }
 
-export function SettingsForm({ defaultMarketingEmails, defaultReminderFrequency, defaultEmailNotificationThreshold }: SettingsFormProps) {
+export function SettingsForm({ defaultMarketingEmails, defaultReminderFrequency, defaultEmailNotificationThreshold, defaultOnboardingReminders, defaultPreviewReady, defaultCampaignProgress }: SettingsFormProps) {
     const [marketingEmails, setMarketingEmails] = useState(defaultMarketingEmails)
     const [reminderFrequency, setReminderFrequency] = useState(defaultReminderFrequency)
     const [emailNotificationThreshold, setEmailNotificationThreshold] = useState(String(defaultEmailNotificationThreshold))
+    const [onboardingReminders, setOnboardingReminders] = useState(defaultOnboardingReminders)
+    const [previewReady, setPreviewReady] = useState(defaultPreviewReady)
+    const [campaignProgress, setCampaignProgress] = useState(defaultCampaignProgress)
     const [saved, setSaved] = useState(false)
     const [isPending, startTransition] = useTransition()
     const [tutorialReset, setTutorialReset] = useState(false)
@@ -27,11 +33,14 @@ export function SettingsForm({ defaultMarketingEmails, defaultReminderFrequency,
 
     const handleSave = () => {
         startTransition(async () => {
-            await updateSettings({ marketingEmails, reminderFrequency, emailNotificationThreshold: Number(emailNotificationThreshold) })
+            await updateSettings({ marketingEmails, reminderFrequency, emailNotificationThreshold: Number(emailNotificationThreshold), onboardingReminders, previewReady, campaignProgress })
             const changed: string[] = []
             if (marketingEmails !== defaultMarketingEmails) changed.push("marketing_emails")
             if (reminderFrequency !== defaultReminderFrequency) changed.push("reminder_frequency")
             if (String(emailNotificationThreshold) !== String(defaultEmailNotificationThreshold)) changed.push("notification_threshold")
+            if (onboardingReminders !== defaultOnboardingReminders) changed.push("onboarding_reminders")
+            if (previewReady !== defaultPreviewReady) changed.push("preview_ready_notifications")
+            if (campaignProgress !== defaultCampaignProgress) changed.push("campaign_progress_notifications")
             if (changed.length) track({ name: "profile_update", params: { fields: changed } })
             setSaved(true)
             setTimeout(() => setSaved(false), 3000)
@@ -61,6 +70,18 @@ export function SettingsForm({ defaultMarketingEmails, defaultReminderFrequency,
                         checked={marketingEmails}
                         onCheckedChange={setMarketingEmails}
                     />
+                </div>
+                <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                    <div className="space-y-0.5"><Label htmlFor="onboarding-reminders" className="text-sm font-medium text-white">Onboarding reminders</Label><p className="text-sm text-gray-400">Help me resume the exact step I left unfinished.</p></div>
+                    <Switch id="onboarding-reminders" checked={onboardingReminders} onCheckedChange={setOnboardingReminders} />
+                </div>
+                <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                    <div className="space-y-0.5"><Label htmlFor="preview-ready" className="text-sm font-medium text-white">Preview ready</Label><p className="text-sm text-gray-400">Notify me when the recruiter and first application are ready.</p></div>
+                    <Switch id="preview-ready" checked={previewReady} onCheckedChange={setPreviewReady} />
+                </div>
+                <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                    <div className="space-y-0.5"><Label htmlFor="campaign-progress" className="text-sm font-medium text-white">Campaign progress</Label><p className="text-sm text-gray-400">Receive operational updates as campaign emails become ready.</p></div>
+                    <Switch id="campaign-progress" checked={campaignProgress} onCheckedChange={setCampaignProgress} />
                 </div>
             </div>
 

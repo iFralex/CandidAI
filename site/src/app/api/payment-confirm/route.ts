@@ -1,11 +1,12 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
-import { plansData, CREDIT_PACKAGES } from "@/config";
+import { plansData, plansInfo, CREDIT_PACKAGES } from "@/config";
 import { startServer } from "@/actions/onboarding-actions";
 import { FieldValue } from "firebase-admin/firestore";
 import { recordPaymentSuccess } from "@/lib/server-track";
 import { incrementDiscountUsage } from "@/lib/discount-codes";
+import { recordOnboardingTransition } from "@/lib/onboarding-lifecycle";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-11-17.clover" });
 
@@ -116,6 +117,9 @@ export async function POST(req: Request) {
             isOnboarding: isOnboardingPurchase,
             source: "payment-confirm",
         });
+        if (isOnboardingPurchase && purchaseType === "plan") {
+            await recordOnboardingTransition({ userId, from: "checkout", to: "post_purchase", flow: "post_purchase", step: 6, reason: "payment_succeeded", metadata: { plan: itemId, payment_id: pi.id }, updateStage: false });
+        }
 
         if (purchaseType === "plan" && !isOnboardingPurchase) {
             try {
@@ -123,6 +127,31 @@ export async function POST(req: Request) {
             } catch (err) {
                 console.error("Failed to start server:", err);
             }
+        }
+
+        try {
+            let receiptUrl: string | null = null;
+            if (pi.latest_charge) {
+                const charge = await stripe.charges.retrieve(pi.latest_charge as string);
+                receiptUrl = charge.receipt_url ?? null;
+            }
+            const refreshedUser = await userRef.get();
+            const itemName = purchaseType === "credits"
+                ? `${CREDIT_PACKAGES.find(pkg => pkg.id === itemId)?.credits ?? ""} Credits`
+                : `${plansInfo.find(plan => plan.id === itemId)?.name ?? itemId} Plan`;
+            await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-Internal-Key": process.env.SESSION_API_KEY ?? "" },
+                body: JSON.stringify({
+                    userId,
+                    type: "purchase-confirmation",
+                    dedupeKey: `purchase-confirmation:${pi.id}`,
+                    category: "transactional",
+                    data: { amount: `€${(pi.amount / 100).toFixed(2)}`, item: itemName, newBalance: refreshedUser.data()?.credits ?? 0, receiptUrl },
+                }),
+            });
+        } catch (emailError) {
+            console.error("Failed to send purchase confirmation:", emailError);
         }
 
         return NextResponse.json({ success: true });

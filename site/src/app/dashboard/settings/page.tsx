@@ -54,6 +54,9 @@ async function SettingsContent() {
             defaultMarketingEmails={settings.marketingEmails}
             defaultReminderFrequency={settings.reminderFrequency}
             defaultEmailNotificationThreshold={settings.emailNotificationThreshold}
+            defaultOnboardingReminders={settings.onboardingReminders}
+            defaultPreviewReady={settings.previewReady}
+            defaultCampaignProgress={settings.campaignProgress}
         />
     )
 }

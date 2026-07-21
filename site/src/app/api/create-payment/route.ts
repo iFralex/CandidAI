@@ -9,8 +9,9 @@ import { FieldValue } from "firebase-admin/firestore";
 import { startServer } from "@/actions/onboarding-actions";
 import { validateDiscountCode, incrementDiscountUsage } from "@/lib/discount-codes";
 import { recordPaymentSuccess } from "@/lib/server-track";
+import { recordOnboardingTransition } from "@/lib/onboarding-lifecycle";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2023-08-16" });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-11-17.clover" });
 
 export async function POST(req: Request) {
     const { payment_method_id, purchaseType, itemId, discountCode, acceptedTerms, requestedImmediatePerformance, termsVersion } = await req.json();
@@ -165,10 +166,25 @@ export async function POST(req: Request) {
                 isOnboarding: isOnboardingPurchase,
                 source: "create-payment-free",
             });
+            if (isOnboardingPurchase && purchaseType === "plan") {
+                await recordOnboardingTransition({ userId: user.uid, from: "checkout", to: "post_purchase", flow: "post_purchase", step: 6, reason: "payment_succeeded", metadata: { plan: itemId, payment_id: freeKey }, updateStage: false });
+            }
 
             if (purchaseType === "plan" && !isOnboardingPurchase) {
                 try { await startServer(user.uid); } catch { /* non bloccante */ }
             }
+
+            await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-Internal-Key": process.env.SESSION_API_KEY ?? "" },
+                body: JSON.stringify({
+                    userId: user.uid,
+                    type: "purchase-confirmation",
+                    dedupeKey: `purchase-confirmation:${freeKey}`,
+                    category: "transactional",
+                    data: { amount: "€0.00", item: purchaseType === "plan" ? `${plansInfo.find(plan => plan.id === itemId)?.name ?? itemId} Plan` : `${CREDIT_PACKAGES.find(pkg => pkg.id === itemId)?.credits ?? ""} Credits`, newBalance: 0, receiptUrl: null },
+                }),
+            }).catch(() => undefined);
 
             return NextResponse.json({ success: true, free: true });
         }
