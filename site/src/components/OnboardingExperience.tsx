@@ -177,7 +177,6 @@ function SearchExperience({ preview, replay = false, onReplayComplete }: { previ
       </AnimatePresence>
     </div>
     <ProgressScene
-      eyebrow="Strategy currently being tested"
       title={visibleStrategy || 'Preparing the most precise strategy'}
       subtitle={`Looking for genuine overlap between you and people at ${company}.`}
       phase={visibleStrategy}
