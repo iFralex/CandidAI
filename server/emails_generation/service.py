@@ -47,3 +47,16 @@ def start_onboarding_email(user_id: str, job_id: str):
         logger.error(f"Errore enqueue email realtime: {e}")
         return jsonify({"error": "Errore interno del server"}), 500
     return jsonify({"status": "queued", "job_id": job_id}), 202
+
+
+def start_onboarding_profile(user_id: str, job_id: str):
+    try:
+        enqueue(
+            preview_module.generate_profile,
+            args=(user_id, job_id),
+            queue="onboarding_realtime",
+        )
+    except Exception as e:
+        logger.error(f"Errore enqueue profile realtime: {e}")
+        return jsonify({"error": "Errore interno del server"}), 500
+    return jsonify({"status": "queued", "job_id": job_id}), 202
