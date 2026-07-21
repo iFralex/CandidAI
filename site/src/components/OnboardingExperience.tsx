@@ -49,14 +49,15 @@ function JourneyHeader({ stage }: { stage: OnboardingStage }) {
     : stage === 'target_company' ? 1
     : stage === 'recruiter_search' || stage === 'recruiter_found' ? 2 : 3
   return (
-    <div className="mx-auto mb-12 max-w-3xl" aria-label="First application progress">
-      <div className="mb-3 flex items-center justify-between text-xs text-gray-500"><span>Your first application</span><span className="flex items-center gap-1.5"><Check className="h-3 w-3 text-emerald-400" />Saved automatically</span></div>
-      <div className="flex items-center justify-between gap-2">
+    <div className="sticky top-0 z-30 -mx-4 mb-8 border-b border-white/5 bg-[#08050d]/90 px-4 py-3 backdrop-blur-xl sm:static sm:mx-auto sm:mb-12 sm:max-w-3xl sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none" aria-label="First application progress">
+      <div className="mb-2 flex items-center justify-between text-xs sm:hidden"><span className="font-medium text-white">Step {active + 1} of 4 · {journey[active].label}</span><span className="flex items-center gap-1 text-gray-500"><Check className="h-3 w-3 text-emerald-400" /><span className="sr-only">Saved automatically</span>Saved</span></div>
+      <div className="mb-3 hidden items-center justify-between text-xs text-gray-500 sm:flex"><span>Your first application</span><span className="flex items-center gap-1.5"><Check className="h-3 w-3 text-emerald-400" />Saved automatically</span></div>
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2">
         {journey.map((item, index) => {
           const Icon = item.icon
           const done = index < active
           const current = index === active
-          return <div key={item.key} className="flex flex-1 items-center last:flex-none"><div className="flex flex-col items-center gap-2"><div className={`flex h-10 w-10 items-center justify-center rounded-full border ${done ? 'border-emerald-400/40 bg-emerald-400/15 text-emerald-300' : current ? 'border-violet-400 bg-violet-500/20 text-violet-300' : 'border-white/10 bg-white/5 text-gray-600'}`}>{done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}</div><span className={`text-xs ${current ? 'text-white' : 'text-gray-500'}`}>{item.label}</span></div>{index < journey.length - 1 && <div className={`mx-2 mb-6 h-px flex-1 ${index < active ? 'bg-emerald-400/40' : 'bg-white/10'}`} />}</div>
+          return <div key={item.key} className="flex flex-1 items-center last:flex-none"><div className="flex flex-col items-center gap-2"><div className={`flex h-8 w-8 items-center justify-center rounded-full border sm:h-10 sm:w-10 ${done ? 'border-emerald-400/40 bg-emerald-400/15 text-emerald-300' : current ? 'border-violet-400 bg-violet-500/20 text-violet-300' : 'border-white/10 bg-white/5 text-gray-600'}`}>{done ? <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}</div><span className={`hidden text-xs sm:block ${current ? 'text-white' : 'text-gray-500'}`}>{item.label}</span></div>{index < journey.length - 1 && <div className={`mx-1.5 h-px flex-1 sm:mx-2 sm:mb-6 ${index < active ? 'bg-emerald-400/40' : 'bg-white/10'}`} />}</div>
         })}
       </div>
     </div>
@@ -286,9 +287,9 @@ function ConversionResult({ preview, email }: { preview: OnboardingPreviewState;
     </section>
     <Dialog open={Boolean(selected)} onOpenChange={open => { if (!open) setSelected(null) }}>
       <DialogContent className="max-h-[92vh] w-[calc(100vw-2rem)] max-w-5xl overflow-y-auto p-5 sm:max-w-5xl sm:p-7">
-        <DialogHeader className="pr-8 text-left">
+        <DialogHeader className="sticky top-0 z-20 -mx-5 -mt-5 border-b border-white/10 bg-background/95 px-5 pb-4 pt-5 text-left backdrop-blur-xl sm:static sm:mx-0 sm:mt-0 sm:border-0 sm:bg-transparent sm:p-0 sm:pr-8 sm:backdrop-blur-none">
           <DialogTitle>{selected ? `Continue with ${selected.name}` : 'Complete your purchase'}</DialogTitle>
-          <DialogDescription>Secure one-time payment. Your onboarding progress stays saved if you close this window.</DialogDescription>
+          <DialogDescription>{selected ? `€${selected.price.toFixed(2)} one-time · ` : ''}Secure payment. Your progress stays saved if you close this window.</DialogDescription>
         </DialogHeader>
         {selected && <div className="pt-2"><UnifiedCheckout purchaseType="plan" itemId={selected.id} email={email || ''} /></div>}
       </DialogContent>

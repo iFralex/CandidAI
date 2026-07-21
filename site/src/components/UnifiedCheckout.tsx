@@ -316,7 +316,7 @@ function CheckoutForm({ email, purchaseType, itemId, discount, onSuccess }: Chec
     }
 
     return (
-        <form onSubmit={handlePay} className="space-y-6">
+        <form onSubmit={handlePay} className="space-y-6 pb-20 sm:pb-0">
             {!isFree && (
                 <>
                     <PaymentRequestButton
@@ -356,21 +356,17 @@ function CheckoutForm({ email, purchaseType, itemId, discount, onSuccess }: Chec
                 </span>
             </label>
 
-            <Button className="w-full" onClick={handlePay} disabled={loading || !consentGranted}>
-                {loading ? (
-                    <span className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Processing...
-                    </span>
-                ) : isFree ? (
-                    <span className="flex items-center gap-2">
-                        Confirm free purchase <ArrowRight className="w-4 h-4" />
-                    </span>
-                ) : (
-                    <span className="flex items-center gap-2">
-                        Pay {formatPrice(amountCents)} <ArrowRight className="w-4 h-4" />
-                    </span>
-                )}
-            </Button>
+            <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-background/95 p-4 backdrop-blur-xl sm:static sm:m-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+                <Button className="w-full" onClick={handlePay} disabled={loading || !consentGranted}>
+                    {loading ? (
+                        <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Processing...</span>
+                    ) : isFree ? (
+                        <span className="flex items-center gap-2">Confirm free purchase <ArrowRight className="w-4 h-4" /></span>
+                    ) : (
+                        <span className="flex items-center gap-2">Pay {formatPrice(amountCents)} <ArrowRight className="w-4 h-4" /></span>
+                    )}
+                </Button>
+            </div>
         </form>
     );
 }
@@ -420,7 +416,7 @@ function PurchaseSummary({ purchaseType, itemId, discount }: PurchaseSummaryProp
                     <div className="text-white font-bold text-xl">{formatPrice(amountCents)}</div>
                 </div>
             </div>
-            <ul className="space-y-1">
+            <ul className="hidden space-y-1 sm:block">
                 {plan.features.slice(0, 4).map((feature, idx) => (
                     <li key={idx} className="flex items-center gap-2 text-sm text-gray-300">
                         <Check className="w-3 h-3 text-green-400 flex-shrink-0" />
@@ -632,7 +628,7 @@ export function UnifiedCheckout({ purchaseType, itemId, email = "", onSuccess }:
                                 <div className="text-sm text-gray-300">Payment method</div>
                                 <Badge className="bg-slate-700/30">Secure <Lock className="w-3 h-3 ml-1" /></Badge>
                             </div>
-                            <div className="mt-3 text-xs text-gray-400">
+                            <div className="mt-3 hidden text-xs text-gray-400 sm:block">
                                 Card details are processed securely by Stripe, we never see full card numbers.
                             </div>
                         </Card>
