@@ -1,16 +1,9 @@
 {
+  "//": "Hobby plan allows only daily crons. The hourly lifecycle jobs (onboarding-sequence, onboarding-health) are triggered from the VPS system crontab via curl with Authorization: Bearer $SESSION_API_KEY; the functions still run on Vercel.",
   "crons": [
     {
       "path": "/api/cron/analytics-digest",
       "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/onboarding-sequence",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/cron/onboarding-health",
-      "schedule": "20 * * * *"
     }
   ]
 }
