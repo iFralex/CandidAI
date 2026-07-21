@@ -35,6 +35,11 @@ def public_recruiter_profile(recruiter: dict) -> dict:
     if isinstance(location, dict):
         location = location.get("name") or location.get("locality") or ""
 
+    # Country only, to mirror the candidate-profile card (name, role, country).
+    country = recruiter.get("location_country") or ""
+    if not country and isinstance(recruiter.get("location"), dict):
+        country = recruiter["location"].get("country") or ""
+
     experience = []
     for item in (recruiter.get("experience") or [])[:4]:
         title = item.get("title") or {}
@@ -57,6 +62,7 @@ def public_recruiter_profile(recruiter: dict) -> dict:
     return {
         "avatarUrl": str(recruiter.get("profile_pic_url") or recruiter.get("profile_picture_url") or ""),
         "location": str(location),
+        "country": str(country).title(),
         "summary": str(recruiter.get("summary") or ""),
         "skills": [str(skill) for skill in (recruiter.get("skills") or [])[:8]],
         "experience": experience,

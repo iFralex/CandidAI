@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from "framer-motion";
+import { useEffect, useRef } from "react";
 import { Gift, Target, Rocket, Crown, Check, X, CheckCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,22 @@ export function PlanSelector({
 }: PlanSelectorProps) {
     const plans = excludeFree ? plansInfo.filter((p) => p.id !== "free_trial") : plansInfo;
 
+    // On phones, start the carousel centered on the recommended (popular) plan.
+    const carouselRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!mobileCarousel) return;
+        const container = carouselRef.current;
+        if (!container || window.matchMedia("(min-width: 768px)").matches) return;
+        const popularIndex = plans.findIndex((p) => p.popular);
+        if (popularIndex < 1) return;
+        const card = container.children[popularIndex] as HTMLElement | undefined;
+        if (!card) return;
+        const delta = (card.getBoundingClientRect().left - container.getBoundingClientRect().left)
+            - (container.clientWidth - card.clientWidth) / 2;
+        container.scrollBy({ left: delta, behavior: "auto" });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mobileCarousel]);
+
     // Build a unified feature list for comparison (same approach as landing.tsx)
     const splitFeature = (feature: string) => {
         const numMatch = feature.match(/(\d[\d.,]*)/);
@@ -89,7 +106,7 @@ export function PlanSelector({
 
     return (
         <>
-        <div className={mobileCarousel ? "flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:pb-0" : "grid gap-6 md:grid-cols-3"}>
+        <div ref={carouselRef} className={mobileCarousel ? "flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:pb-0" : "grid gap-6 md:grid-cols-3"}>
             {plans.map((plan, index) => {
                 const Icon = iconMap[plan.icon] || Target;
                 const isSelected = selectedPlanId === plan.id;

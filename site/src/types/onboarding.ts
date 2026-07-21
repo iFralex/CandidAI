@@ -35,6 +35,7 @@ export interface OnboardingPreviewState {
   recruiterProfile?: {
     avatarUrl?: string;
     location?: string;
+    country?: string;
     summary?: string;
     skills: string[];
     experience: { title?: string; company?: string; startDate?: string; endDate?: string }[];
