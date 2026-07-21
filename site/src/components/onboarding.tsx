@@ -3773,11 +3773,18 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
     const analyzeProfile = async () => {
         if (!cvFile && !linkedinUrl.trim()) return;
         let localProfile: ProfileSummary | null = null
+        // Per-phase timing so we can compute average durations and spot the slow phase.
+        const perf = typeof performance !== "undefined" ? performance : { now: () => Date.now() }
+        const t0 = perf.now()
+        const timing = { pdl_ms: 0, ai_ms: 0, logo_ms: 0, persist_ms: 0, total_ms: 0 }
+        let pdlOk = false
+        let generationError = ""
         try {
             setAnalyzing(true)
 
             // PDL enrichment - optional, tolerate failures. No logo fetching here:
             // logos are fetched after the Gemini merge, using the websites the server preserves.
+            const tPdlStart = perf.now()
             let pdlProfile: ProfileSummary | null = null;
             try {
                 if (!linkedinUrl.trim()) throw new Error("LinkedIn not provided")
@@ -3797,9 +3804,12 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
             } catch (e) {
                 console.warn("PDL enrichment failed, proceeding with CV only:", e);
             }
+            timing.pdl_ms = Math.round(perf.now() - tPdlStart)
+            pdlOk = Boolean(pdlProfile)
 
             // AI enrichment - always runs, with or without PDL data.
             // The server merges PDL + CV and guarantees all known websites are preserved.
+            const tAiStart = perf.now()
             let merged: ProfileSummary;
             if (cvFile) {
                 const cvData = new FormData();
@@ -3812,6 +3822,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
             } else {
                 throw new Error("Unable to read either profile source")
             }
+            timing.ai_ms = Math.round(perf.now() - tAiStart)
 
             // Fetch logos client-side from the websites the server returned
             const fetchLogo = async (website?: string): Promise<string | null> => {
@@ -3829,10 +3840,12 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                 return null;
             };
 
+            const tLogoStart = perf.now()
             const [experience, education] = await Promise.all([
                 Promise.all(merged.experience.map(async (exp: any) => ({ ...exp, logo: await fetchLogo(exp.company?.website) }))),
                 Promise.all(merged.education.map(async (edu: any) => ({ ...edu, logo: await fetchLogo(edu.school?.website) }))),
             ]);
+            timing.logo_ms = Math.round(perf.now() - tLogoStart)
 
             const firstSuggestedRole = merged.onboardingInsights?.targetRoleSuggestions?.[0]
             const profileSummary: ProfileSummary = {
@@ -3850,6 +3863,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
             setAnalysisComplete(true)
         } catch (error) {
             console.error("Errore durante l'analisi del profilo:", error)
+            generationError = ((error as any)?.message || String(error)).slice(0, 140)
             const fallback: ProfileSummary = {
                 name: "Your name",
                 title: "Your current job title",
@@ -3872,6 +3886,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
         // advance the resumable stage to profile_review so a refresh returns to the
         // review screen with the profile loaded instead of re-running PDL + AI.
         if (localProfile && !onSave) {
+            const tPersistStart = perf.now()
             try {
                 setIsDraftSaving(true)
                 const result = await submitProfile(plan, { linkedinUrl, profileSummary: localProfile }, cvFile?.blob, true)
@@ -3879,10 +3894,26 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                 if (flow === "guided") await markProfileReviewReady(cvFile && linkedinUrl.trim() ? "cv_linkedin" : cvFile ? "cv" : "linkedin")
             } catch (e) {
                 console.warn("Draft save failed:", e)
+                if (!generationError) generationError = "persist_failed"
             } finally {
                 setIsDraftSaving(false)
+                timing.persist_ms = Math.round(perf.now() - tPersistStart)
             }
         }
+
+        timing.total_ms = Math.round(perf.now() - t0)
+        track({
+            name: "profile_generation_timing",
+            params: {
+                ...timing,
+                pdl_ok: pdlOk,
+                had_cv: Boolean(cvFile),
+                had_linkedin: Boolean(linkedinUrl.trim()),
+                flow,
+                success: !generationError,
+                ...(generationError ? { error: generationError } : {}),
+            },
+        })
     }
 
     const handleRecalculatePersona = async () => {
