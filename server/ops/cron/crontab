@@ -1,0 +1,3 @@
+0 8 * * * /root/cron/candidai-lifecycle-cron.sh /api/cron/analytics-digest
+0 * * * * /root/cron/candidai-lifecycle-cron.sh /api/cron/onboarding-sequence
+20 * * * * /root/cron/candidai-lifecycle-cron.sh /api/cron/onboarding-health
