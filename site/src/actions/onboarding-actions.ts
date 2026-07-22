@@ -334,17 +334,6 @@ export async function submitPreviewCompany(company: { name: string; domain?: str
     return { success: true as const };
 }
 
-export async function markProfileReviewReady(source: "cv" | "linkedin" | "cv_linkedin") {
-    const userId = await checkAuth();
-    const userRef = adminDb.collection("users").doc(userId);
-    const userSnap = await userRef.get();
-    // The generated profile is already persisted (draft save) by the time we get here.
-    // Advance the resumable stage to profile_review so a refresh returns to the review
-    // screen with the profile loaded, instead of restarting the PDL + AI enrichment.
-    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage || "profile_source", to: "profile_review", flow: "free_preview", step: 2, reason: "profile_generated", metadata: { source } });
-    return { success: true as const };
-}
-
 export async function startOnboardingRecruiterSearch() {
     const userId = await checkAuth();
     const userRef = adminDb.collection("users").doc(userId);
