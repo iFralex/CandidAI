@@ -12,6 +12,8 @@ const {
   mockAnalyticsAdd,
   mockRedirect,
   mockFetch,
+  mockRecordOnboardingTransition,
+  mockRecordOnboardingSignal,
 } = vi.hoisted(() => ({
   mockGetTokens: vi.fn(),
   mockCookiesGet: vi.fn(),
@@ -23,6 +25,8 @@ const {
   mockAnalyticsAdd: vi.fn(),
   mockRedirect: vi.fn(),
   mockFetch: vi.fn(),
+  mockRecordOnboardingTransition: vi.fn(),
+  mockRecordOnboardingSignal: vi.fn(),
 }));
 
 vi.mock("next-firebase-auth-edge", () => ({
@@ -47,6 +51,11 @@ vi.mock("next/cache", () => ({
 
 vi.mock("next/navigation", () => ({
   redirect: mockRedirect,
+}));
+
+vi.mock("@/lib/onboarding-lifecycle", () => ({
+  recordOnboardingTransition: mockRecordOnboardingTransition,
+  recordOnboardingSignal: mockRecordOnboardingSignal,
 }));
 
 // Firestore mock shaped for startOnboardingProfileGeneration:

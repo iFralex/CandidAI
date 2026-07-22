@@ -503,7 +503,10 @@ export function OnboardingExperience(props: Props) {
               </div>
             )}
             {preview.profileStatus === 'failed' && (
-              <div className="mx-auto mb-4 w-fit rounded-full border border-red-400/20 bg-red-400/[0.07] px-3 py-1.5 text-xs text-red-200">Profile generation failed — you can retry after picking a company.</div>
+              <div className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-full border border-red-400/20 bg-red-400/[0.07] px-3 py-1.5 text-xs text-red-200">
+                <span>Profile generation failed — you can retry after picking a company.</span>
+                <Button size="sm" variant="secondary" className="h-6 px-2 py-0 text-xs" onClick={retryProfileGeneration}>Try again</Button>
+              </div>
             )}
             <CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
           {effectiveStage === 'profile_generating' && (

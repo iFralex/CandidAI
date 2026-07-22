@@ -421,6 +421,7 @@ export async function startOnboardingProfileGeneration() {
         throw error;
     }
     await recordOnboardingSignal({ event: "profile_generation_started", userId, stage: "profile_generating", params: { job_id: job.jobId, queue: "onboarding_realtime" } });
+    await recordOnboardingTransition({ userId, from: "profile_source", to: "target_company", flow: "free_preview", step: 3, updateStage: false });
     revalidatePath("/dashboard");
     return { success: true as const, jobId: job.jobId, resumed: false };
 }
@@ -438,6 +439,7 @@ export async function advanceToProfileReview() {
         return { success: true as const };
     }
     await userRef.update({ onboardingStage: "profile_review", onboardingStep: 3 });
+    await recordOnboardingTransition({ userId, from: "profile_generating", to: "profile_review", flow: "free_preview", step: 3, updateStage: false });
     revalidatePath("/dashboard");
     return { success: true as const };
 }
