@@ -3770,6 +3770,42 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
         }
     }, [initialProfile, initialCvUrl])
 
+    // The server worker generates the profile without company/school logos.
+    // Fetch them client-side for display (spec option A: non-blocking, cosmetic).
+    // Only in the review path (no onSave) so we never spuriously mark the
+    // post-purchase editor dirty — there onDirtyChange is passed alongside onSave.
+    const logosAttempted = useRef(false)
+    useEffect(() => {
+        if (onSave || !profileSummary || logosAttempted.current) return
+        const exps: any[] = profileSummary.experience || []
+        const edus: any[] = profileSummary.education || []
+        const needsLogos = exps.some(e => !e.logo && e.company?.website) || edus.some(e => !e.logo && e.school?.website)
+        if (!needsLogos) return
+        logosAttempted.current = true
+        let cancelled = false
+        const fetchLogo = async (website?: string): Promise<string | null> => {
+            if (!website) return null
+            try {
+                const domain = website.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split(/[/?#]/)[0]
+                const res = await fetch(`https://api.brandfetch.io/v2/search/${encodeURIComponent(domain)}?limit=1`, { cache: "force-cache" })
+                if (res.ok) {
+                    const data = await res.json()
+                    if (Array.isArray(data) && data[0]?.icon) return data[0].icon
+                }
+            } catch { /* logo is cosmetic; ignore failures */ }
+            return null
+        }
+        void (async () => {
+            const [experience, education] = await Promise.all([
+                Promise.all(exps.map(async e => (!e.logo && e.company?.website) ? { ...e, logo: (await fetchLogo(e.company.website)) || e.logo } : e)),
+                Promise.all(edus.map(async e => (!e.logo && e.school?.website) ? { ...e, logo: (await fetchLogo(e.school.website)) || e.logo } : e)),
+            ])
+            if (!cancelled) setProfileSummary((cur: ProfileSummary) => cur ? { ...cur, experience, education } : cur)
+        })()
+        return () => { cancelled = true }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profileSummary, onSave])
+
     const analyzeProfile = async () => {
         if (!cvFile && !linkedinUrl.trim()) return;
         try {
