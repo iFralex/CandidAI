@@ -533,10 +533,10 @@ export function OnboardingExperience(props: Props) {
               ? <Card hover={false} className="mx-auto mt-6 max-w-xl p-6 text-center"><p className="font-semibold text-white">Building your profile was interrupted</p><p className="mt-2 text-sm text-gray-400">You can try again without losing your CV or LinkedIn details.</p><Button className="mt-5" onClick={retryProfileGeneration}>Try again</Button></Card>
               : <ProfileBuildingExperience preview={preview} />
           )}
-          {effectiveStage === 'recruiter_search' && <SearchExperience preview={preview} />}
-          {(effectiveStage === 'recruiter_found' || effectiveStage === 'email_generation') && <ApplicationAssembly preview={preview} />}
+          {effectiveStage === 'recruiter_search' && preview.status !== 'failed' && <SearchExperience preview={preview} />}
+          {(effectiveStage === 'recruiter_found' || effectiveStage === 'email_generation') && preview.status !== 'failed' && <ApplicationAssembly preview={preview} />}
           {effectiveStage === 'preview_ready' && <ConversionResult preview={preview} email={props.user.email} />}
-          {preview.status === 'failed' && <Card hover={false} className="mx-auto mt-6 max-w-xl p-6 text-center"><p className="font-semibold text-white">The research was interrupted</p><p className="mt-2 text-sm text-gray-400">{preview.error?.message || 'You can try again without losing your profile or company.'}</p><Button className="mt-5" onClick={() => startOnboardingRecruiterSearch().then(() => router.refresh())}>Try again</Button></Card>}
+          {preview.status === 'failed' && <Card hover={false} className="mx-auto mt-6 max-w-xl p-6 text-center"><p className="font-semibold text-white">The research was interrupted</p><p className="mt-2 text-sm text-gray-400">You can try again without losing your profile or company.</p><Button className="mt-5" onClick={() => startOnboardingRecruiterSearch().then(() => router.refresh())}>Try again</Button></Card>}
         </>}
       </motion.div>
     </AnimatePresence>
