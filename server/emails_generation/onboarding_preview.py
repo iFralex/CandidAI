@@ -33,42 +33,6 @@ logger = logging.getLogger(__name__)
 PREVIEW_DOCUMENT = "onboarding_preview"
 
 
-# ── THROWAWAY: onboarding mock replay (delete after testing) ──────────────────
-# Gated to a single test account. For that user the realtime handlers skip the
-# expensive PDL/DeepSeek work and replay a captured fixture (_onboarding_mock/
-# fixture), so the whole flow can be re-tested for free. Inert for everyone else.
-_MOCK_UID = "TSHVb2cw3caRHlIf7vyEGfNO0eO2"  # ifralex.business@gmail.com
-_MOCK_FX = None
-
-
-def _mock_fixture() -> dict:
-    global _MOCK_FX
-    if _MOCK_FX is None:
-        try:
-            _MOCK_FX = db.collection("_onboarding_mock").document("fixture").get().to_dict() or {}
-        except Exception:
-            _MOCK_FX = {}
-    return _MOCK_FX
-
-
-def _mock(user_id: str) -> bool:
-    return user_id == _MOCK_UID and bool(_mock_fixture().get("profileSummary"))
-
-
-def _mock_ms(key: str, default_ms: int) -> float:
-    """Per-stage simulated duration, in seconds, from an env var (milliseconds)."""
-    try:
-        return max(0, int(os.environ.get(key, default_ms))) / 1000.0
-    except Exception:
-        return default_ms / 1000.0
-
-
-def _mock_fail(stage: str) -> bool:
-    """Force a stage to fail (to test error/retry UI). Env: MOCK_FAIL=profile,recruiter,email"""
-    return stage in {s.strip() for s in os.environ.get("MOCK_FAIL", "").split(",") if s.strip()}
-# ─────────────────────────────────────────────────────────────────────────────
-
-
 def public_recruiter_profile(recruiter: dict) -> dict:
     """Project PDL data to fields safe to reveal in the free preview."""
     location = recruiter.get("location_name") or recruiter.get("location") or ""
@@ -185,27 +149,6 @@ def find_recruiter(user_id: str, job_id: str) -> None:
             error=firestore.DELETE_FIELD,
         )
         track("onboarding_job_started", {"stage": "recruiter_search", "job_id": job_id, "queue": "onboarding_realtime"}, user_id=user_id)
-        if _mock(user_id):  # THROWAWAY
-            if _mock_fail("recruiter"):
-                raise RuntimeError("mock: forced recruiter search failure")
-            fx = _mock_fixture()
-            acc = get_account_data(user_id) or {}
-            mock_company = (acc.get("companies") or [{}])[0]
-            insights = (acc.get("profileSummary", {}) or {}).get("onboardingInsights", {}) or {}
-            time.sleep(_mock_ms("MOCK_RECRUITER_MS", 1500))
-            update_preview(
-                user_id, company=mock_company, status="running", stage="recruiter_found",
-                recruiter=fx.get("recruiter") or {}, recruiterProfile=fx.get("recruiterProfile") or {},
-                matchedQuery=fx.get("matchedQuery") or {}, recruiterFoundAt=firestore.SERVER_TIMESTAMP,
-                searchContext={"targetRole": insights.get("selectedTargetRole", ""), "queryCount": 0,
-                               "narrative": insights.get("searchNarrative", ""), "strengths": (insights.get("strengths", []) or [])[:4]},
-            )
-            db.collection("users").document(user_id).set({
-                "onboardingStage": "recruiter_found", "onboardingStageEnteredAt": firestore.SERVER_TIMESTAMP,
-                "lastOnboardingActivityAt": firestore.SERVER_TIMESTAMP}, merge=True)
-            track("recruiter_search_completed", {"job_id": job_id, "company": mock_company.get("name", ""), "mock": True}, user_id=user_id)
-            create_email(user_id, job_id)
-            return
         account, company, result_id = _load_context(user_id)
         update_preview(
             user_id,
@@ -295,18 +238,6 @@ def create_email(user_id: str, job_id: str) -> None:
             }, merge=True
         )
         track("onboarding_job_started", {"stage": "email_generation", "job_id": job_id, "queue": "onboarding_realtime"}, user_id=user_id)
-        if _mock(user_id):  # THROWAWAY — replay fixture email, do NOT consume the free preview so it can be re-tested
-            if _mock_fail("email"):
-                raise RuntimeError("mock: forced email generation failure")
-            fx = _mock_fixture()
-            time.sleep(_mock_ms("MOCK_EMAIL_MS", 1500))
-            update_preview(user_id, status="completed", stage="preview_ready",
-                           email=fx.get("email") or {}, recruiterInsight=fx.get("recruiterInsight") or {})
-            db.collection("users").document(user_id).set({
-                "onboardingStage": "preview_ready", "onboardingStageEnteredAt": firestore.SERVER_TIMESTAMP,
-                "lastOnboardingActivityAt": firestore.SERVER_TIMESTAMP}, merge=True)
-            track("free_preview_completed", {"job_id": job_id, "mock": True}, user_id=user_id)
-            return
         account, company, result_id = _load_context(user_id)
         row = get_results_row(user_id, result_id)
         recruiter = row.get("recruiter") or {}
@@ -397,20 +328,6 @@ def generate_profile(user_id: str, job_id: str) -> None:
     try:
         update_preview(user_id, profileStatus="running", profileProgress="Reading your CV")
         track("onboarding_job_started", {"stage": "profile_generating", "job_id": job_id, "queue": "onboarding_realtime"}, user_id=user_id)
-        if _mock(user_id):  # THROWAWAY — the profile stage is 3 distinct calls: CV extraction, PDL, AI enrichment
-            for label, call, ms_key, default in (
-                ("Reading your CV", "cv", "MOCK_CV_MS", 1000),
-                ("Cross-referencing LinkedIn", "pdl", "MOCK_PDL_MS", 1000),
-                ("Writing your candidate story", "ai", "MOCK_AI_MS", 1500),
-            ):
-                update_preview(user_id, profileProgress=label)
-                time.sleep(_mock_ms(ms_key, default))
-                if _mock_fail(call):
-                    raise RuntimeError(f"mock: forced {call} call failure")
-            write_profile_summary(user_id, _mock_fixture()["profileSummary"])
-            update_preview(user_id, profileStatus="completed", profileProgress="Done")
-            track("profile_generation_completed", {"job_id": job_id, "mock": True}, user_id=user_id)
-            return
         account = get_account_data(user_id) or {}
         linkedin_url = account.get("linkedinUrl")
         cv_url = account.get("cvUrl")
