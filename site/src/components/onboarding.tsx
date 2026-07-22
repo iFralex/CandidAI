@@ -3720,6 +3720,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
     const router = useRouter()
     const [linkedinUrl, setLinkedinUrl] = useState('')
     const [analyzing, setAnalyzing] = useState(false)
+    const [isStarting, setIsStarting] = useState(false)
     const [analysisComplete, setAnalysisComplete] = useState(!!initialProfile)
     const [profileSummary, setProfileSummary] = useState<ProfileSummary>(initialProfile || null)
     const [recruiterPersona, setRecruiterPersona] = useState('')
@@ -3809,11 +3810,12 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
     const analyzeProfile = async () => {
         if (!cvFile && !linkedinUrl.trim()) return;
         try {
-            setAnalyzing(true)
+            // Just a button spinner: no intermediate "generating" screen. This step
+            // only uploads the CV and starts the server job, then hands off directly
+            // to the company step. The actual profile generation is shown server-side
+            // (on the company step / the profile_generating scene).
+            setIsStarting(true)
 
-            // Upload the CV (if any) and persist the LinkedIn URL so the server job
-            // has everything it needs. No profileSummary yet — the server worker
-            // generates it.
             const result = await submitProfile(plan, { linkedinUrl }, cvFile?.blob, true)
             if (result?.cvUrl) setLocalCvUrl(result.cvUrl)
 
@@ -3824,12 +3826,12 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
             router.refresh()
         } catch (error) {
             console.error("Errore durante l'analisi del profilo:", error)
-            setAnalyzing(false)
+            setIsStarting(false)
             alert("We couldn't read your profile this time. Please try again in a moment.")
         }
-        // On success we deliberately leave `analyzing` true: the router.refresh above
+        // On success we deliberately leave `isStarting` true: the router.refresh above
         // re-renders the server component to the company step and unmounts this input
-        // screen. Resetting analyzing here would flash the input screen for a frame.
+        // screen, so the button never flips back before the transition lands.
     }
 
     const handleRecalculatePersona = async () => {
@@ -4046,13 +4048,13 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                             )}
                             <Button
                                 onClick={analyzeProfile}
-                                disabled={flow === 'guided'
+                                disabled={isStarting || (flow === 'guided'
                                     ? (!cvFile && !linkedinUrl.trim()) || (!!linkedinUrl.trim() && !linkedinUrl.includes("linkedin.com/in/"))
-                                    : !linkedinUrl.trim() || (!linkedinUrl.startsWith("https://linkedin.com/in/") && !linkedinUrl.startsWith("https://www.linkedin.com/in/")) || !cvFile}
+                                    : !linkedinUrl.trim() || (!linkedinUrl.startsWith("https://linkedin.com/in/") && !linkedinUrl.startsWith("https://www.linkedin.com/in/")) || !cvFile)}
                                 size="md"
                             >
-                                <Brain className="w-5 h-5" />
-                                <span>{flow === 'guided' ? 'Turn this into my candidate profile' : 'Analyze My Profile'}</span>
+                                {isStarting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Brain className="w-5 h-5" />}
+                                <span>{isStarting ? 'Starting…' : (flow === 'guided' ? 'Turn this into my candidate profile' : 'Analyze My Profile')}</span>
                             </Button>
                         </div>
                     </div>
