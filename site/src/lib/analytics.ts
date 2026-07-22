@@ -86,7 +86,6 @@ export type TrackingEvent =
     | { name: "onboarding_company_add"; params: { method: string; total_count: number } }
     | { name: "onboarding_custom_instructions_set"; params: { has_instructions: boolean } }
     | { name: "onboarding_scene_summary"; params: { stage: string; visible_time_ms: number; left_page: boolean } }
-    | { name: "profile_generation_timing"; params: { pdl_ms: number; ai_ms: number; logo_ms: number; persist_ms: number; total_ms: number; pdl_ok: boolean; had_cv: boolean; had_linkedin: boolean; flow: string; success: boolean; error?: string } }
     | { name: "search_experience_engaged"; params: { visible_time_ms: number } }
     | { name: "search_experience_left"; params: { visible_time_ms: number } }
     | { name: "search_result_revealed"; params: { total_search_time_ms: number } }
@@ -160,7 +159,6 @@ const PERSIST_EVENTS = new Set<TrackingEvent["name"]>([
     "onboarding_complete",
     "onboarding_started",
     "onboarding_scene_summary",
-    "profile_generation_timing",
     "search_experience_engaged",
     "search_experience_left",
     "search_result_revealed",
