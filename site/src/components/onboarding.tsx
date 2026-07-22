@@ -4220,7 +4220,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                                     </>
                                 ) : (
                                     <>
-                                        <span>{onSave ? "Save Changes" : flow === 'guided' ? "Yes, this represents me" : "Continue Setup"}</span>
+                                        <span>{onSave ? "Save Changes" : flow === 'guided' ? "Build my application" : "Continue Setup"}</span>
                                         {!onSave && <ArrowRight className="w-5 h-5" />}
                                     </>
                                 )}
@@ -4718,7 +4718,7 @@ export function CompanyInputClient({
                         </>
                     ) : (
                         <>
-                            <span>{mode === 'single-preview' ? `Build my application${selectedCompanies[0]?.name ? ` for ${selectedCompanies[0].name}` : ''}` : mode === 'campaign-setup' ? 'Save targets and continue' : 'Continue Setup'}</span>
+                            <span>{mode === 'single-preview' ? `Continue${selectedCompanies[0]?.name ? ` with ${selectedCompanies[0].name}` : ''}` : mode === 'campaign-setup' ? 'Save targets and continue' : 'Continue Setup'}</span>
                             <ArrowRight className="w-5 h-5" />
                         </>
                     )}

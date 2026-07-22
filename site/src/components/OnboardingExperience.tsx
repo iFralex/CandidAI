@@ -187,15 +187,19 @@ function SearchExperience({ preview, replay = false, onReplayComplete }: { previ
 }
 
 function ProfileBuildingExperience({ preview }: { preview: OnboardingPreviewState }) {
+  const company = preview.company?.name || 'the company you chose'
   const [scene, setScene] = useState(0)
+  // What the user actually wants during this wait: reassurance it's working, and a
+  // preview of what's coming next — for the company they just chose.
   const scenes = [
-    <div key="s0" className="text-center"><p className="text-sm uppercase tracking-[0.22em] text-violet-300">Building your profile</p><h2 className="mt-5 text-4xl font-bold tracking-tight text-white sm:text-6xl">Turning your CV and LinkedIn into a story.</h2><p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-gray-400">CandidAI reads your background the way a recruiter would, then shapes it into a clear candidate profile.</p></div>,
-    <div key="s1" className="text-center"><BriefcaseBusiness className="mx-auto h-10 w-10 text-violet-300" /><h2 className="mt-6 text-4xl font-bold text-white sm:text-5xl">Reading your experience.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-400">Roles, companies, education and projects, cross-referenced between your CV and LinkedIn so nothing gets lost.</p></div>,
-    <div key="s2" className="text-center"><Sparkles className="mx-auto h-10 w-10 text-violet-300" /><h2 className="mt-6 text-4xl font-bold text-white sm:text-5xl">Writing your candidate story.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-400">Surfacing what makes you relevant, so every outreach email can speak to your real strengths.</p></div>,
+    <div key="s0" className="text-center"><p className="text-sm uppercase tracking-[0.22em] text-violet-300">Almost there</p><h2 className="mt-5 text-4xl font-bold tracking-tight text-white sm:text-6xl">Shaping your background into a profile.</h2><p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-gray-400">We read your experience the way a recruiter would, so what matters about you stands out.</p></div>,
+    <div key="s1" className="text-center"><Building2 className="mx-auto h-10 w-10 text-violet-300" /><h2 className="mt-6 text-4xl font-bold text-white sm:text-5xl">Next, we find your person at {company}.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-400">Not a generic careers inbox. A real recruiter whose background actually overlaps with yours.</p></div>,
+    <div key="s2" className="text-center"><Mail className="mx-auto h-10 w-10 text-violet-300" /><h2 className="mt-6 text-4xl font-bold text-white sm:text-5xl">Then, a message written for {company}.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-400">Referencing what they actually do and why you fit, so it never reads like a template.</p></div>,
+    <div key="s3" className="text-center"><Target className="mx-auto h-10 w-10 text-violet-300" /><h2 className="mt-6 text-4xl font-bold text-white sm:text-5xl">One precise message beats a hundred cold applications.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-400">That's the whole idea: reach the right person at {company}, with something worth replying to.</p></div>,
   ]
-  const durations = [4200, 5200, 6000]
+  const durations = [4600, 6000, 6000, 6000]
   useEffect(() => {
-    const timer = window.setTimeout(() => setScene(value => (value + 1) % scenes.length), durations[scene] || 5000)
+    const timer = window.setTimeout(() => setScene(value => (value + 1) % scenes.length), durations[scene] || 5500)
     return () => window.clearTimeout(timer)
   }, [scene])
   return <div className="relative mx-auto flex max-w-5xl flex-col overflow-visible sm:min-h-[680px] sm:overflow-hidden">
@@ -206,7 +210,7 @@ function ProfileBuildingExperience({ preview }: { preview: OnboardingPreviewStat
     </div>
     <ProgressScene
       title={preview.profileProgress || 'Reading your CV'}
-      subtitle="This runs on our servers, you can keep this tab open."
+      subtitle={`Preparing your outreach to ${company}.`}
       phase={preview.profileProgress || 'Reading your CV'}
     />
   </div>
@@ -522,18 +526,6 @@ export function OnboardingExperience(props: Props) {
           {isPostPurchase && <PostPurchaseExperience props={{ ...props, stage: effectiveStage, postPurchaseReturnToReview: optimisticPostStage ? optimisticReturnToReview : props.postPurchaseReturnToReview }} preview={preview} onNavigate={navigatePostPurchase} />}
           {(effectiveStage === 'profile_source' || effectiveStage === 'profile_review') && <ProfileAnalysisClient userId={props.user.uid} plan="free_trial" initialProfile={props.profile} initialCvUrl={props.cvUrl} flow="guided" />}
           {effectiveStage === 'target_company' && <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="mb-4 border-violet-400/20 bg-violet-400/10 text-violet-200">Choose one real opportunity</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Which company would you like to join?</h2><p className="mx-auto mt-3 max-w-xl text-gray-400">One company is enough. Your profile will guide who we look for and how we approach them.</p></div>
-            {['queued', 'running'].includes(preview.profileStatus || '') && (
-              <div className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-full border border-violet-400/20 bg-violet-400/[0.07] px-3 py-1.5 text-xs text-violet-200">
-                <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-violet-500" /></span>
-                Building your profile… {preview.profileProgress || ''}
-              </div>
-            )}
-            {preview.profileStatus === 'failed' && (
-              <div className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-full border border-red-400/20 bg-red-400/[0.07] px-3 py-1.5 text-xs text-red-200">
-                <span>Profile generation failed — you can retry after picking a company.</span>
-                <Button size="sm" variant="secondary" className="h-6 px-2 py-0 text-xs" onClick={retryProfileGeneration}>Try again</Button>
-              </div>
-            )}
             <CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
           {effectiveStage === 'profile_generating' && (
             preview.profileStatus === 'failed'

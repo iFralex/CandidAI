@@ -308,8 +308,7 @@ export async function submitPreviewCompany(company: { name: string; domain?: str
     // that's expected, not an error. Branch the next stage on where profile generation stands.
     const profileStatus = previewSnap.data()?.profileStatus;
     const nextStage = profileStatus === "completed" ? "profile_review"
-        : profileStatus === "failed" ? "target_company" // stay; UI shows retry
-        : "profile_generating";
+        : "profile_generating"; // running OR failed -> the waiting scene (which shows progress, or a retry on failure)
 
     const batch = adminDb.batch();
     batch.set(accountRef, { companies: [company] }, { merge: true });
