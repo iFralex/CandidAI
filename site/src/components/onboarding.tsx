@@ -3826,9 +3826,10 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
             console.error("Errore durante l'analisi del profilo:", error)
             setAnalyzing(false)
             alert("We couldn't read your profile this time. Please try again in a moment.")
-        } finally {
-            setAnalyzing(false)
         }
+        // On success we deliberately leave `analyzing` true: the router.refresh above
+        // re-renders the server component to the company step and unmounts this input
+        // screen. Resetting analyzing here would flash the input screen for a frame.
     }
 
     const handleRecalculatePersona = async () => {

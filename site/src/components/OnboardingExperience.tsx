@@ -186,6 +186,32 @@ function SearchExperience({ preview, replay = false, onReplayComplete }: { previ
   </div>
 }
 
+function ProfileBuildingExperience({ preview }: { preview: OnboardingPreviewState }) {
+  const [scene, setScene] = useState(0)
+  const scenes = [
+    <div key="s0" className="text-center"><p className="text-sm uppercase tracking-[0.22em] text-violet-300">Building your profile</p><h2 className="mt-5 text-4xl font-bold tracking-tight text-white sm:text-6xl">Turning your CV and LinkedIn into a story.</h2><p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-gray-400">CandidAI reads your background the way a recruiter would, then shapes it into a clear candidate profile.</p></div>,
+    <div key="s1" className="text-center"><BriefcaseBusiness className="mx-auto h-10 w-10 text-violet-300" /><h2 className="mt-6 text-4xl font-bold text-white sm:text-5xl">Reading your experience.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-400">Roles, companies, education and projects, cross-referenced between your CV and LinkedIn so nothing gets lost.</p></div>,
+    <div key="s2" className="text-center"><Sparkles className="mx-auto h-10 w-10 text-violet-300" /><h2 className="mt-6 text-4xl font-bold text-white sm:text-5xl">Writing your candidate story.</h2><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-400">Surfacing what makes you relevant, so every outreach email can speak to your real strengths.</p></div>,
+  ]
+  const durations = [4200, 5200, 6000]
+  useEffect(() => {
+    const timer = window.setTimeout(() => setScene(value => (value + 1) % scenes.length), durations[scene] || 5000)
+    return () => window.clearTimeout(timer)
+  }, [scene])
+  return <div className="relative mx-auto flex max-w-5xl flex-col overflow-visible sm:min-h-[680px] sm:overflow-hidden">
+    <div className="flex min-h-[430px] items-center justify-center px-1 py-8 sm:min-h-0 sm:flex-1 sm:px-4 sm:py-0 sm:pb-64">
+      <AnimatePresence mode="wait">
+        <motion.div key={scene} className="w-full" initial={{ opacity: 0, y: 28, filter: 'blur(8px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -22, filter: 'blur(8px)' }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>{scenes[scene]}</motion.div>
+      </AnimatePresence>
+    </div>
+    <ProgressScene
+      title={preview.profileProgress || 'Reading your CV'}
+      subtitle="This runs on our servers, you can keep this tab open."
+      phase={preview.profileProgress || 'Reading your CV'}
+    />
+  </div>
+}
+
 function ApplicationAssembly({ preview }: { preview: OnboardingPreviewState }) {
   return <motion.div className="mx-auto flex min-h-[590px] max-w-3xl flex-col items-center justify-center text-center" initial={{ opacity: 0, y: 40, filter: 'blur(12px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -32, filter: 'blur(10px)' }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}>
     <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.6 }}><div className="mx-auto mb-5 w-fit rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-2 shadow-2xl shadow-emerald-500/10"><CompanyLogo company={preview.company?.domain || preview.company?.name} maxSize={14} minSize={14} /></div><p className="text-sm uppercase tracking-[0.2em] text-emerald-300">Match found at {preview.company?.name}</p><h2 className="mt-4 text-3xl font-bold text-white sm:text-5xl">The best recruiter for you is</h2></motion.div>
@@ -512,13 +538,7 @@ export function OnboardingExperience(props: Props) {
           {effectiveStage === 'profile_generating' && (
             preview.profileStatus === 'failed'
               ? <Card hover={false} className="mx-auto mt-6 max-w-xl p-6 text-center"><p className="font-semibold text-white">Building your profile was interrupted</p><p className="mt-2 text-sm text-gray-400">You can try again without losing your CV or LinkedIn details.</p><Button className="mt-5" onClick={retryProfileGeneration}>Try again</Button></Card>
-              : <div className="relative mx-auto flex min-h-[320px] max-w-3xl flex-col items-center justify-center overflow-visible px-1 sm:min-h-[480px] sm:overflow-hidden sm:px-0">
-                  <ProgressScene
-                    title="We're building your candidate profile."
-                    subtitle="This runs on our servers, you can safely wait here."
-                    phase={preview.profileProgress || 'Reading your CV'}
-                  />
-                </div>
+              : <ProfileBuildingExperience preview={preview} />
           )}
           {effectiveStage === 'recruiter_search' && <SearchExperience preview={preview} />}
           {(effectiveStage === 'recruiter_found' || effectiveStage === 'email_generation') && <ApplicationAssembly preview={preview} />}
