@@ -397,13 +397,16 @@ def generate_profile(user_id: str, job_id: str) -> None:
     try:
         update_preview(user_id, profileStatus="running", profileProgress="Reading your CV")
         track("onboarding_job_started", {"stage": "profile_generating", "job_id": job_id, "queue": "onboarding_realtime"}, user_id=user_id)
-        if _mock(user_id):  # THROWAWAY
-            if _mock_fail("profile"):
-                raise RuntimeError("mock: forced profile generation failure")
-            step = _mock_ms("MOCK_PROFILE_MS", 2400) / 2
-            for phase in ("Cross-referencing LinkedIn", "Writing your candidate story"):
-                time.sleep(step)
-                update_preview(user_id, profileProgress=phase)
+        if _mock(user_id):  # THROWAWAY — the profile stage is 3 distinct calls: CV extraction, PDL, AI enrichment
+            for label, call, ms_key, default in (
+                ("Reading your CV", "cv", "MOCK_CV_MS", 1000),
+                ("Cross-referencing LinkedIn", "pdl", "MOCK_PDL_MS", 1000),
+                ("Writing your candidate story", "ai", "MOCK_AI_MS", 1500),
+            ):
+                update_preview(user_id, profileProgress=label)
+                time.sleep(_mock_ms(ms_key, default))
+                if _mock_fail(call):
+                    raise RuntimeError(f"mock: forced {call} call failure")
             write_profile_summary(user_id, _mock_fixture()["profileSummary"])
             update_preview(user_id, profileStatus="completed", profileProgress="Done")
             track("profile_generation_completed", {"job_id": job_id, "mock": True}, user_id=user_id)
