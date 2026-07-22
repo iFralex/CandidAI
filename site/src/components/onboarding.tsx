@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { track, refreshUserPropertiesFromFirestore } from "@/lib/analytics"
 import { motion, AnimatePresence } from "framer-motion"
-import { resendEmailVerification, selectPlan, goBackStep, deleteProfile, jumpToStep, submitPreviewCompany, startOnboardingRecruiterSearch, startOnboardingProfileGeneration } from '@/actions/onboarding-actions'
+import { resendEmailVerification, selectPlan, goBackStep, jumpToStep, submitPreviewCompany, startOnboardingRecruiterSearch, startOnboardingProfileGeneration } from '@/actions/onboarding-actions'
 import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, ArrowLeft, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark, Lock } from 'lucide-react'
 import { submitCompanies } from '@/actions/onboarding-actions'
 import { Building, Plus, X, Wand2 } from 'lucide-react'
@@ -3726,7 +3726,6 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
     const [recruiterPersona, setRecruiterPersona] = useState('')
     const [isPending, startTransition] = useTransition()
     const [isBackPending, startBackTransition] = useTransition()
-    const [isDeletePending, startDeleteTransition] = useTransition()
     const [cvFile, setCvFile] = useState<{ name: string, blob: any } | null>()
     const [localCvUrl, setLocalCvUrl] = useState<string | undefined>(initialCvUrl ?? undefined)
     const [isDraftSaving, setIsDraftSaving] = useState(false)
@@ -3873,13 +3872,6 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                 // Legacy path unchanged.
                 await submitProfile(plan, { linkedinUrl, profileSummary, cvUrl: cvFile ? undefined : effectiveCvUrl }, cvFile?.blob, false, flow)
             }
-        })
-    }
-
-    const handleDeleteProfile = () => {
-        startDeleteTransition(async () => {
-            await deleteProfile()
-            router.refresh()
         })
     }
 
@@ -4191,21 +4183,11 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                             {currentStep && !onSave && (
                                 <button
                                     onClick={handleBack}
-                                    disabled={isBackPending || isPending || isDeletePending}
+                                    disabled={isBackPending || isPending}
                                     className="inline-flex items-center space-x-2 bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
                                 >
                                     {isBackPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowLeft className="w-5 h-5" />}
                                     <span>Back</span>
-                                </button>
-                            )}
-                            {!onSave && (
-                                <button
-                                    onClick={handleDeleteProfile}
-                                    disabled={isDeletePending || isPending || isBackPending}
-                                    className="inline-flex items-center space-x-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-red-500/20"
-                                >
-                                    {isDeletePending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
-                                    <span>Start Over</span>
                                 </button>
                             )}
                             <button

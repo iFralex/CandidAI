@@ -203,6 +203,73 @@ describe("startOnboardingProfileGeneration server action", () => {
     });
   });
 
+  describe("retry from the generating scene — { stayOnGenerating: true }", () => {
+    beforeEach(() => {
+      mockAccountGet.mockResolvedValue(snap({ linkedinUrl: "https://linkedin.com/in/someone" }));
+      // Previous attempt failed; retry must re-enqueue and keep the user on the
+      // generating scene (company already chosen), not bounce to target_company.
+      mockPreviewGet.mockResolvedValue(snap({ profileJobId: "failed-job-1", profileStatus: "failed" }));
+    });
+
+    it("sets onboardingStage:'profile_generating' (not target_company)", async () => {
+      await startOnboardingProfileGeneration({ stayOnGenerating: true });
+
+      expect(mockTxUpdate).toHaveBeenCalledWith(
+        expect.anything(),
+        { onboardingStage: "profile_generating", onboardingStep: 3 }
+      );
+    });
+
+    it("skips the target_company transition and flags retry on the signal", async () => {
+      await startOnboardingProfileGeneration({ stayOnGenerating: true });
+
+      expect(mockRecordOnboardingTransition).not.toHaveBeenCalled();
+      expect(mockRecordOnboardingSignal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: "profile_generation_started",
+          params: expect.objectContaining({ retry: "1" }),
+        })
+      );
+    });
+  });
+
+  describe("stale running job — worker killed mid-run (e.g. a deploy)", () => {
+    beforeEach(() => {
+      mockAccountGet.mockResolvedValue(snap({ linkedinUrl: "https://linkedin.com/in/someone" }));
+      mockPreviewGet.mockResolvedValue(snap({
+        profileJobId: "dead-job-777",
+        profileStatus: "running",
+        // updatedAt 5 minutes ago, in the { _seconds } JSON shape the poll serializes.
+        updatedAt: { _seconds: Math.floor((Date.now() - 5 * 60_000) / 1000), _nanoseconds: 0 },
+      }));
+    });
+
+    it("re-enqueues a fresh job instead of resuming the dead one", async () => {
+      const result = await startOnboardingProfileGeneration();
+
+      expect(result).toEqual({ success: true, jobId: "generated-job-id-123", resumed: false });
+      const setCall = mockTxSet.mock.calls.find(([, data]) => data?.profileStatus === "queued");
+      expect(setCall).toBeDefined();
+      expect(mockFetch).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe("fresh running job — genuinely in flight", () => {
+    it("still resumes when updatedAt is recent", async () => {
+      mockAccountGet.mockResolvedValue(snap({ linkedinUrl: "https://linkedin.com/in/someone" }));
+      mockPreviewGet.mockResolvedValue(snap({
+        profileJobId: "live-job-1",
+        profileStatus: "running",
+        updatedAt: { _seconds: Math.floor(Date.now() / 1000), _nanoseconds: 0 },
+      }));
+
+      const result = await startOnboardingProfileGeneration();
+
+      expect(result).toEqual({ success: true, jobId: "live-job-1", resumed: true });
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+  });
+
   describe("neither linkedinUrl nor cvUrl on the account", () => {
     beforeEach(() => {
       mockAccountGet.mockResolvedValue(snap({}));

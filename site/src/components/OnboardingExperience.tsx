@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { advanceToProfileReview, choosePostPurchasePreviewAction, continueFreePreviewToDashboard, launchPostPurchaseCampaign, markOnboardingCheckoutOpened, navigatePostPurchaseStage, savePostPurchaseCompanies, savePostPurchaseFilters, savePostPurchaseInstructions, savePostPurchaseProfile, startOnboardingProfileGeneration, startOnboardingRecruiterSearch } from '@/actions/onboarding-actions'
 import type { OnboardingPreviewState, OnboardingStage } from '@/types/onboarding'
+import { isProfileJobStale } from '@/types/onboarding'
 import { plansData, plansInfo } from '@/config'
 import { track } from '@/lib/analytics'
 
@@ -467,6 +468,11 @@ export function OnboardingExperience(props: Props) {
       router.refresh()
     })
   }, [router])
+  // A profile job whose worker died mid-run (e.g. a deploy killed gunicorn)
+  // leaves profileStatus stuck at running/queued. usePreview re-renders every
+  // poll (~2.5s), so this re-evaluates until updatedAt crosses the stale window
+  // and we surface the same retry card as an explicit failure.
+  const profileJobStale = isProfileJobStale(preview.profileStatus, preview.updatedAt)
   const stopReplay = useCallback(() => setReplayPhase('idle'), [])
   const showReplayEmail = useCallback(() => setReplayPhase('email'), [])
   useEffect(() => {
@@ -529,7 +535,7 @@ export function OnboardingExperience(props: Props) {
           {effectiveStage === 'target_company' && <div className="mx-auto max-w-4xl"><div className="mb-8 text-center"><Badge className="mb-4 border-violet-400/20 bg-violet-400/10 text-violet-200">Choose one real opportunity</Badge><h2 className="text-3xl font-bold text-white sm:text-4xl">Which company would you like to join?</h2><p className="mx-auto mt-3 max-w-xl text-gray-400">One company is enough. Your profile will guide who we look for and how we approach them.</p></div>
             <CompanyInputClient userId={props.user.uid} maxCompanies={1} initialCompanies={props.companies} mode="single-preview" /></div>}
           {effectiveStage === 'profile_generating' && (
-            preview.profileStatus === 'failed'
+            (preview.profileStatus === 'failed' || profileJobStale)
               ? <Card hover={false} className="mx-auto mt-6 max-w-xl p-6 text-center"><p className="font-semibold text-white">Building your profile was interrupted</p><p className="mt-2 text-sm text-gray-400">You can try again without losing your CV or LinkedIn details.</p><Button className="mt-5" onClick={retryProfileGeneration}>Try again</Button></Card>
               : <ProfileBuildingExperience preview={preview} />
           )}

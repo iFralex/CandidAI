@@ -210,27 +210,27 @@ describe("submitPreviewCompany server action", () => {
     });
   });
 
-  describe("profileStatus:'failed' — stay on the company step so the UI can show retry", () => {
+  describe("profileStatus:'failed' — treated like not-ready: go to the generating scene (which shows retry)", () => {
     beforeEach(() => {
       mockPreviewGet.mockResolvedValue(snap({ profileStatus: "failed" }));
     });
 
-    it("sets onboardingStage to 'target_company' via batch.update", async () => {
+    it("sets onboardingStage to 'profile_generating' via batch.update", async () => {
       await submitPreviewCompany(company);
 
       expect(mockBatchUpdate).toHaveBeenCalledWith(
         expect.anything(),
-        { onboardingStage: "target_company", onboardingStep: 3 }
+        { onboardingStage: "profile_generating", onboardingStep: 3 }
       );
     });
 
-    it("records the lifecycle transition to 'target_company'", async () => {
+    it("does not call recordOnboardingTransition, emits a signal instead", async () => {
       await submitPreviewCompany(company);
 
-      expect(mockRecordOnboardingTransition).toHaveBeenCalledWith(
-        expect.objectContaining({ to: "target_company" })
+      expect(mockRecordOnboardingTransition).not.toHaveBeenCalled();
+      expect(mockRecordOnboardingSignal).toHaveBeenCalledWith(
+        expect.objectContaining({ stage: "profile_generating" })
       );
-      expect(mockRecordOnboardingSignal).not.toHaveBeenCalled();
     });
   });
 

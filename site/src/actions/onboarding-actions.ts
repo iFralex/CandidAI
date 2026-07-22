@@ -11,6 +11,7 @@ import { Resend } from 'resend'
 import { getTestMock } from '@/app/api/test/set-mock/route'
 import { buildDefaultRecruiterStrategies } from '@/lib/recruiter-strategies'
 import { recordOnboardingSignal, recordOnboardingTransition } from '@/lib/onboarding-lifecycle'
+import { isProfileJobStale } from '@/types/onboarding'
 import { cancelPendingOnboardingCommunications, completeCommunication, failCommunication, reserveCommunication } from '@/lib/communication-service'
 import { wrapEmail, button, heading, paragraph } from '@/lib/email-template'
 import { buildVerifyUrl } from '@/lib/verify-token'
@@ -395,7 +396,14 @@ export async function startOnboardingProfileGeneration(options?: { stayOnGenerat
         const acc = accountSnap.data() || {};
         if (!acc.linkedinUrl && !acc.cvUrl) throw new Error("LinkedIn or CV is required");
         const existing = previewSnap.data();
-        if (existing?.profileJobId && ["queued", "running"].includes(existing.profileStatus)) {
+        // Resume a live job — but only if it isn't stale. A job whose worker was
+        // killed mid-run (e.g. a deploy) leaves profileStatus stuck at
+        // running/queued forever; without this it would block re-enqueue and
+        // strand the user. isProfileJobStale requires a proven-old updatedAt, so
+        // a genuinely in-flight job (fresh progress writes) still resumes.
+        if (existing?.profileJobId
+            && ["queued", "running"].includes(existing.profileStatus)
+            && !isProfileJobStale(existing.profileStatus, existing.updatedAt)) {
             return { jobId: existing.profileJobId as string, resumed: true };
         }
         tx.set(previewRef, {
