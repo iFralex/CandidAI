@@ -53,6 +53,19 @@ def _mock_fixture() -> dict:
 
 def _mock(user_id: str) -> bool:
     return user_id == _MOCK_UID and bool(_mock_fixture().get("profileSummary"))
+
+
+def _mock_ms(key: str, default_ms: int) -> float:
+    """Per-stage simulated duration, in seconds, from an env var (milliseconds)."""
+    try:
+        return max(0, int(os.environ.get(key, default_ms))) / 1000.0
+    except Exception:
+        return default_ms / 1000.0
+
+
+def _mock_fail(stage: str) -> bool:
+    """Force a stage to fail (to test error/retry UI). Env: MOCK_FAIL=profile,recruiter,email"""
+    return stage in {s.strip() for s in os.environ.get("MOCK_FAIL", "").split(",") if s.strip()}
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -173,11 +186,13 @@ def find_recruiter(user_id: str, job_id: str) -> None:
         )
         track("onboarding_job_started", {"stage": "recruiter_search", "job_id": job_id, "queue": "onboarding_realtime"}, user_id=user_id)
         if _mock(user_id):  # THROWAWAY
+            if _mock_fail("recruiter"):
+                raise RuntimeError("mock: forced recruiter search failure")
             fx = _mock_fixture()
             acc = get_account_data(user_id) or {}
             mock_company = (acc.get("companies") or [{}])[0]
             insights = (acc.get("profileSummary", {}) or {}).get("onboardingInsights", {}) or {}
-            time.sleep(1.5)
+            time.sleep(_mock_ms("MOCK_RECRUITER_MS", 1500))
             update_preview(
                 user_id, company=mock_company, status="running", stage="recruiter_found",
                 recruiter=fx.get("recruiter") or {}, recruiterProfile=fx.get("recruiterProfile") or {},
@@ -281,8 +296,10 @@ def create_email(user_id: str, job_id: str) -> None:
         )
         track("onboarding_job_started", {"stage": "email_generation", "job_id": job_id, "queue": "onboarding_realtime"}, user_id=user_id)
         if _mock(user_id):  # THROWAWAY — replay fixture email, do NOT consume the free preview so it can be re-tested
+            if _mock_fail("email"):
+                raise RuntimeError("mock: forced email generation failure")
             fx = _mock_fixture()
-            time.sleep(1.5)
+            time.sleep(_mock_ms("MOCK_EMAIL_MS", 1500))
             update_preview(user_id, status="completed", stage="preview_ready",
                            email=fx.get("email") or {}, recruiterInsight=fx.get("recruiterInsight") or {})
             db.collection("users").document(user_id).set({
@@ -381,8 +398,11 @@ def generate_profile(user_id: str, job_id: str) -> None:
         update_preview(user_id, profileStatus="running", profileProgress="Reading your CV")
         track("onboarding_job_started", {"stage": "profile_generating", "job_id": job_id, "queue": "onboarding_realtime"}, user_id=user_id)
         if _mock(user_id):  # THROWAWAY
+            if _mock_fail("profile"):
+                raise RuntimeError("mock: forced profile generation failure")
+            step = _mock_ms("MOCK_PROFILE_MS", 2400) / 2
             for phase in ("Cross-referencing LinkedIn", "Writing your candidate story"):
-                time.sleep(1.2)
+                time.sleep(step)
                 update_preview(user_id, profileProgress=phase)
             write_profile_summary(user_id, _mock_fixture()["profileSummary"])
             update_preview(user_id, profileStatus="completed", profileProgress="Done")
