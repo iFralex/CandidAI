@@ -76,6 +76,9 @@ function toClientPreview(data: FirebaseFirestore.DocumentData | undefined, fallb
             reason: data.recruiterInsight.reason ? String(data.recruiterInsight.reason) : undefined,
             points: Array.isArray(data.recruiterInsight.points) ? data.recruiterInsight.points.map(String) : [],
         } : undefined,
+        profileStatus: typeof data.profileStatus === "string" ? data.profileStatus : undefined,
+        profileProgress: typeof data.profileProgress === "string" ? data.profileProgress : undefined,
+        profileJobId: typeof data.profileJobId === "string" ? data.profileJobId : undefined,
         error: data.error ? {
             code: String(data.error.code || "unknown"),
             message: data.error.message ? String(data.error.message) : undefined,

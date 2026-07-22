@@ -129,13 +129,13 @@ export async function startServer(userId: string | null = null, options: { throw
     return true
 }
 
-function realtimeServerEndpoint(path: "start_onboarding_recruiter" | "start_onboarding_email") {
+function realtimeServerEndpoint(path: "start_onboarding_recruiter" | "start_onboarding_email" | "start_onboarding_profile") {
     const configured = process.env.REALTIME_SERVER_URL || process.env.SERVER_RUNNER_URL || "";
-    const base = configured.replace(/\/(start_emails_generation|start_onboarding_recruiter|start_onboarding_email)\/?$/, "");
+    const base = configured.replace(/\/(start_emails_generation|start_onboarding_recruiter|start_onboarding_email|start_onboarding_profile)\/?$/, "");
     return `${base}/${path}`;
 }
 
-async function startRealtimeServer(path: "start_onboarding_recruiter" | "start_onboarding_email", userId: string, jobId: string) {
+async function startRealtimeServer(path: "start_onboarding_recruiter" | "start_onboarding_email" | "start_onboarding_profile", userId: string, jobId: string) {
     const response = await fetch(realtimeServerEndpoint(path), {
         method: "POST",
         headers: {
@@ -298,14 +298,18 @@ export async function submitPreviewCompany(company: { name: string; domain?: str
     const userRef = adminDb.collection("users").doc(userId);
     const accountRef = userRef.collection("data").doc("account");
     const previewRef = userRef.collection("data").doc("onboarding_preview");
-    const [userSnap, accountSnap] = await Promise.all([userRef.get(), accountRef.get()]);
+    const [userSnap, previewSnap] = await Promise.all([userRef.get(), previewRef.get()]);
 
     if (userSnap.data()?.freePreviewConsumedAt) {
         return { success: false as const, error: "Your free candidacy has already been generated" };
     }
-    if (!accountSnap.data()?.profileSummary) {
-        return { success: false as const, error: "Complete your profile before choosing a company" };
-    }
+
+    // The profile may still be generating in the background (overlapped onboarding flow) —
+    // that's expected, not an error. Branch the next stage on where profile generation stands.
+    const profileStatus = previewSnap.data()?.profileStatus;
+    const nextStage = profileStatus === "completed" ? "profile_review"
+        : profileStatus === "failed" ? "target_company" // stay; UI shows retry
+        : "profile_generating";
 
     const batch = adminDb.batch();
     batch.set(accountRef, { companies: [company] }, { merge: true });
@@ -314,25 +318,19 @@ export async function submitPreviewCompany(company: { name: string; domain?: str
         stage: "target_company",
         company,
         updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: false });
+    }, { merge: true });
     batch.update(userRef, {
-        onboardingStage: "target_company",
+        onboardingStage: nextStage,
         onboardingStep: 3,
     });
     await batch.commit();
-    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage, to: "target_company", flow: "free_preview", step: 3, metadata: { company: company.name }, updateStage: false });
+    if (nextStage === "profile_generating") {
+        // Not a lifecycle-tracked stage (residual-wait UI state) — record as a signal instead.
+        await recordOnboardingSignal({ event: "company_submitted_profile_pending", userId, stage: "profile_generating", params: { company: company.name } });
+    } else {
+        await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage, to: nextStage, flow: "free_preview", step: 3, metadata: { company: company.name }, updateStage: false });
+    }
     revalidatePath("/dashboard");
-    return { success: true as const };
-}
-
-export async function markProfileReviewReady(source: "cv" | "linkedin" | "cv_linkedin") {
-    const userId = await checkAuth();
-    const userRef = adminDb.collection("users").doc(userId);
-    const userSnap = await userRef.get();
-    // The generated profile is already persisted (draft save) by the time we get here.
-    // Advance the resumable stage to profile_review so a refresh returns to the review
-    // screen with the profile loaded, instead of restarting the PDL + AI enrichment.
-    await recordOnboardingTransition({ userId, from: userSnap.data()?.onboardingStage || "profile_source", to: "profile_review", flow: "free_preview", step: 2, reason: "profile_generated", metadata: { source } });
     return { success: true as const };
 }
 
@@ -385,6 +383,65 @@ export async function startOnboardingRecruiterSearch() {
     await recordOnboardingSignal({ event: "onboarding_job_queued", userId, stage: "recruiter_search", params: { job_id: job.jobId, queue: "onboarding_realtime" } });
     revalidatePath("/dashboard");
     return { success: true as const, jobId: job.jobId, resumed: false };
+}
+
+export async function startOnboardingProfileGeneration() {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const accountRef = userRef.collection("data").doc("account");
+    const previewRef = userRef.collection("data").doc("onboarding_preview");
+    const candidateJobId = adminDb.collection("_onboarding_jobs").doc().id;
+    const job = await adminDb.runTransaction(async tx => {
+        const [accountSnap, previewSnap] = await Promise.all([tx.get(accountRef), tx.get(previewRef)]);
+        const acc = accountSnap.data() || {};
+        if (!acc.linkedinUrl && !acc.cvUrl) throw new Error("LinkedIn or CV is required");
+        const existing = previewSnap.data();
+        if (existing?.profileJobId && ["queued", "running"].includes(existing.profileStatus)) {
+            return { jobId: existing.profileJobId as string, resumed: true };
+        }
+        tx.set(previewRef, {
+            profileJobId: candidateJobId,
+            profileStatus: "queued",
+            profileProgress: "Queued",
+            updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        tx.update(userRef, { onboardingStage: "target_company", onboardingStep: 3 });
+        return { jobId: candidateJobId, resumed: false };
+    });
+    if (job.resumed) return { success: true as const, jobId: job.jobId, resumed: true };
+
+    try {
+        await startRealtimeServer("start_onboarding_profile", userId, job.jobId);
+    } catch (error) {
+        await previewRef.set({
+            profileStatus: "failed",
+            profileError: { code: "queue_failed", message: String(error), recoverable: true },
+            updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        throw error;
+    }
+    await recordOnboardingSignal({ event: "profile_generation_started", userId, stage: "profile_generating", params: { job_id: job.jobId, queue: "onboarding_realtime" } });
+    await recordOnboardingTransition({ userId, from: "profile_source", to: "target_company", flow: "free_preview", step: 3, updateStage: false });
+    revalidatePath("/dashboard");
+    return { success: true as const, jobId: job.jobId, resumed: false };
+}
+
+// Called from the client once the `profile_generating` waiting scene observes
+// `profileStatus:"completed"` on the preview doc. Guarded by re-reading the
+// preview doc so a stale/racing call (e.g. a retry fired just before this)
+// can't advance the stage before the worker actually finished.
+export async function advanceToProfileReview() {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const previewRef = userRef.collection("data").doc("onboarding_preview");
+    const previewSnap = await previewRef.get();
+    if (previewSnap.data()?.profileStatus !== "completed") {
+        return { success: true as const };
+    }
+    await userRef.update({ onboardingStage: "profile_review", onboardingStep: 3 });
+    await recordOnboardingTransition({ userId, from: "profile_generating", to: "profile_review", flow: "free_preview", step: 3, updateStage: false });
+    revalidatePath("/dashboard");
+    return { success: true as const };
 }
 
 export async function confirmRecruiterAndGenerateEmail(jobId: string) {

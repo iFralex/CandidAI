@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { track, refreshUserPropertiesFromFirestore } from "@/lib/analytics"
 import { motion, AnimatePresence } from "framer-motion"
-import { resendEmailVerification, selectPlan, goBackStep, deleteProfile, jumpToStep, markProfileReviewReady, submitPreviewCompany, startOnboardingRecruiterSearch } from '@/actions/onboarding-actions'
+import { resendEmailVerification, selectPlan, goBackStep, deleteProfile, jumpToStep, submitPreviewCompany, startOnboardingRecruiterSearch, startOnboardingProfileGeneration } from '@/actions/onboarding-actions'
 import { Gift, Target, Rocket, Crown, Check, CheckCircle, ArrowRight, ArrowLeft, Loader2, Globe, Brain, User, Edit3, Link, Flag, Edit, Edit2, Edit3Icon, Edit2Icon, Scroll, Linkedin, CopyPlus, PlusSquare, Zap, CircleHelp, CreditCard, Apple, CircleQuestionMark, Lock } from 'lucide-react'
 import { submitCompanies } from '@/actions/onboarding-actions'
 import { Building, Plus, X, Wand2 } from 'lucide-react'
@@ -3770,141 +3770,65 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
         }
     }, [initialProfile, initialCvUrl])
 
+    // The server worker generates the profile without company/school logos.
+    // Fetch them client-side for display (spec option A: non-blocking, cosmetic).
+    // Only in the review path (no onSave) so we never spuriously mark the
+    // post-purchase editor dirty — there onDirtyChange is passed alongside onSave.
+    const logosAttempted = useRef(false)
+    useEffect(() => {
+        if (onSave || !profileSummary || logosAttempted.current) return
+        const exps: any[] = profileSummary.experience || []
+        const edus: any[] = profileSummary.education || []
+        const needsLogos = exps.some(e => !e.logo && e.company?.website) || edus.some(e => !e.logo && e.school?.website)
+        if (!needsLogos) return
+        logosAttempted.current = true
+        let cancelled = false
+        const fetchLogo = async (website?: string): Promise<string | null> => {
+            if (!website) return null
+            try {
+                const domain = website.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split(/[/?#]/)[0]
+                const res = await fetch(`https://api.brandfetch.io/v2/search/${encodeURIComponent(domain)}?limit=1`, { cache: "force-cache" })
+                if (res.ok) {
+                    const data = await res.json()
+                    if (Array.isArray(data) && data[0]?.icon) return data[0].icon
+                }
+            } catch { /* logo is cosmetic; ignore failures */ }
+            return null
+        }
+        void (async () => {
+            const [experience, education] = await Promise.all([
+                Promise.all(exps.map(async e => (!e.logo && e.company?.website) ? { ...e, logo: (await fetchLogo(e.company.website)) || e.logo } : e)),
+                Promise.all(edus.map(async e => (!e.logo && e.school?.website) ? { ...e, logo: (await fetchLogo(e.school.website)) || e.logo } : e)),
+            ])
+            if (!cancelled) setProfileSummary((cur: ProfileSummary) => cur ? { ...cur, experience, education } : cur)
+        })()
+        return () => { cancelled = true }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profileSummary, onSave])
+
     const analyzeProfile = async () => {
         if (!cvFile && !linkedinUrl.trim()) return;
-        let localProfile: ProfileSummary | null = null
-        // Per-phase timing so we can compute average durations and spot the slow phase.
-        const perf = typeof performance !== "undefined" ? performance : { now: () => Date.now() }
-        const t0 = perf.now()
-        const timing = { pdl_ms: 0, ai_ms: 0, logo_ms: 0, persist_ms: 0, total_ms: 0 }
-        let pdlOk = false
-        let generationError = ""
         try {
             setAnalyzing(true)
 
-            // PDL enrichment - optional, tolerate failures. No logo fetching here:
-            // logos are fetched after the Gemini merge, using the websites the server preserves.
-            const tPdlStart = perf.now()
-            let pdlProfile: ProfileSummary | null = null;
-            try {
-                if (!linkedinUrl.trim()) throw new Error("LinkedIn not provided")
-                const record = await enrichProfilePDL(linkedinUrl);
-                if (record) {
-                    pdlProfile = {
-                        name: record.full_name || "",
-                        title: record.job_title || "",
-                        experience: (record.experience || []).map((exp: any) => ({ ...exp, logo: null })),
-                        education: (record.education || []).map((edu: any) => ({ ...edu, logo: null })),
-                        skills: record.skills || [],
-                        location: { country: record.location_country ?? "", continent: record.location_continent ?? "" },
-                        projects: [],
-                        certifications: [],
-                    };
-                }
-            } catch (e) {
-                console.warn("PDL enrichment failed, proceeding with CV only:", e);
-            }
-            timing.pdl_ms = Math.round(perf.now() - tPdlStart)
-            pdlOk = Boolean(pdlProfile)
+            // Upload the CV (if any) and persist the LinkedIn URL so the server job
+            // has everything it needs. No profileSummary yet — the server worker
+            // generates it.
+            const result = await submitProfile(plan, { linkedinUrl }, cvFile?.blob, true)
+            if (result?.cvUrl) setLocalCvUrl(result.cvUrl)
 
-            // AI enrichment - always runs, with or without PDL data.
-            // The server merges PDL + CV and guarantees all known websites are preserved.
-            const tAiStart = perf.now()
-            let merged: ProfileSummary;
-            if (cvFile) {
-                const cvData = new FormData();
-                cvData.append("cv", cvFile.blob);
-                merged = await enrichProfileAI(pdlProfile, cvData);
-            } else if (pdlProfile) {
-                // One high-value call creates the candidate story and all
-                // onboarding insights from LinkedIn, even without a CV.
-                merged = await enrichProfileAI(pdlProfile, new FormData());
-            } else {
-                throw new Error("Unable to read either profile source")
-            }
-            timing.ai_ms = Math.round(perf.now() - tAiStart)
+            // Kick off the background job; the server advances onboardingStage to
+            // target_company so the refresh below lands the user on the next step.
+            await startOnboardingProfileGeneration()
 
-            // Fetch logos client-side from the websites the server returned
-            const fetchLogo = async (website?: string): Promise<string | null> => {
-                if (!website) return null;
-                try {
-                    const domain = website.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split(/[/?#]/)[0];
-                    const res = await fetch(`https://api.brandfetch.io/v2/search/${encodeURIComponent(domain)}?limit=1`, { cache: "force-cache" });
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (Array.isArray(data) && data[0]?.icon) return data[0].icon;
-                    }
-                } catch (e) {
-                    console.warn("Logo fetch failed for", website, e);
-                }
-                return null;
-            };
-
-            const tLogoStart = perf.now()
-            const [experience, education] = await Promise.all([
-                Promise.all(merged.experience.map(async (exp: any) => ({ ...exp, logo: await fetchLogo(exp.company?.website) }))),
-                Promise.all(merged.education.map(async (edu: any) => ({ ...edu, logo: await fetchLogo(edu.school?.website) }))),
-            ]);
-            timing.logo_ms = Math.round(perf.now() - tLogoStart)
-
-            const firstSuggestedRole = merged.onboardingInsights?.targetRoleSuggestions?.[0]
-            const profileSummary: ProfileSummary = {
-                ...merged,
-                experience,
-                education,
-                onboardingInsights: merged.onboardingInsights ? {
-                    ...merged.onboardingInsights,
-                    selectedTargetRole: merged.onboardingInsights.selectedTargetRole || firstSuggestedRole,
-                } : undefined,
-            };
-
-            localProfile = profileSummary
-            setProfileSummary(profileSummary)
-            setAnalysisComplete(true)
+            router.refresh()
         } catch (error) {
             console.error("Errore durante l'analisi del profilo:", error)
-            generationError = ((error as any)?.message || String(error)).slice(0, 140)
-            // Genuine failure (e.g. AI enrichment failed and there was no PDL data to
-            // fall back to). Do NOT show a placeholder profile or persist anything
-            // below — keep the user on the input screen so they can retry cleanly.
+            setAnalyzing(false)
             alert("We couldn't read your profile this time. Please try again in a moment.")
         } finally {
             setAnalyzing(false)
         }
-
-        // Persist the generated profile immediately (submitProfile now uses set/merge,
-        // so it works even before the account doc exists), then, in the guided flow,
-        // advance the resumable stage to profile_review so a refresh returns to the
-        // review screen with the profile loaded instead of re-running PDL + AI.
-        if (localProfile && !onSave && !generationError) {
-            const tPersistStart = perf.now()
-            try {
-                setIsDraftSaving(true)
-                const result = await submitProfile(plan, { linkedinUrl, profileSummary: localProfile }, cvFile?.blob, true)
-                if (result?.cvUrl) setLocalCvUrl(result.cvUrl)
-                if (flow === "guided") await markProfileReviewReady(cvFile && linkedinUrl.trim() ? "cv_linkedin" : cvFile ? "cv" : "linkedin")
-            } catch (e) {
-                console.warn("Draft save failed:", e)
-                if (!generationError) generationError = "persist_failed"
-            } finally {
-                setIsDraftSaving(false)
-                timing.persist_ms = Math.round(perf.now() - tPersistStart)
-            }
-        }
-
-        timing.total_ms = Math.round(perf.now() - t0)
-        track({
-            name: "profile_generation_timing",
-            params: {
-                ...timing,
-                pdl_ok: pdlOk,
-                had_cv: Boolean(cvFile),
-                had_linkedin: Boolean(linkedinUrl.trim()),
-                flow,
-                success: !generationError,
-                ...(generationError ? { error: generationError } : {}),
-            },
-        })
     }
 
     const handleRecalculatePersona = async () => {
@@ -3934,10 +3858,17 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                 await onSave(plan, { linkedinUrl, profileSummary }, cvFile?.blob ?? null)
                 setSaved(true)
                 setTimeout(() => setSaved(false), 3000)
+            } else if (flow === 'guided') {
+                // Overlapped flow: the worker already persisted the profile and the company
+                // is already chosen. Save any review-screen edits WITHOUT resetting the stage
+                // (skipOnboardingStep=true), then start the recruiter search, which advances
+                // the stage to recruiter_search and enqueues the job.
+                await submitProfile(plan, { linkedinUrl, profileSummary, cvUrl: cvFile ? undefined : effectiveCvUrl }, cvFile?.blob, true, flow)
+                await startOnboardingRecruiterSearch()
+                router.refresh()
             } else {
-                // If no new CV, pass the already-saved cvUrl (from draft save or initial load)
+                // Legacy path unchanged.
                 await submitProfile(plan, { linkedinUrl, profileSummary, cvUrl: cvFile ? undefined : effectiveCvUrl }, cvFile?.blob, false, flow)
-                if (flow === 'guided') router.refresh()
             }
         })
     }
@@ -4311,7 +4242,7 @@ import React, {
     useCallback,
     useEffect,
 } from "react";
-import { enrichProfileAI, enrichProfilePDL, translateSkillsToEnglish } from '@/actions/pdl'
+import { translateSkillsToEnglish } from '@/actions/pdl'
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
 import { Checkbox } from './ui/checkbox'
 import { ScrollArea, ScrollBar } from './ui/scroll-area'
@@ -4616,7 +4547,10 @@ export function CompanyInputClient({
                     if (!company) throw new Error("Choose one company")
                     const result = await submitPreviewCompany(company as { name: string; domain?: string; linkedin_url?: string })
                     if (!result.success) throw new Error(result.error)
-                    await startOnboardingRecruiterSearch()
+                    // Do NOT start the recruiter search here: the profile may still be
+                    // generating / unconfirmed. submitPreviewCompany already set the stage
+                    // (profile_review / profile_generating). Recruiter search starts on
+                    // profile confirm ("Yes, this represents me").
                     router.refresh()
                 } else {
                     await submitCompanies(companies as { name: string; domain: string }[]);

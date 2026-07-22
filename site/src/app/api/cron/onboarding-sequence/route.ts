@@ -316,7 +316,7 @@ function renderFirstActionCheck(firstName: string, unsubscribeUrl: string, ctx?:
     // Compute next step + CTA destination based on what's missing.
     const nextStep = c.stage === "profile_source" || !c.hasCv
         ? { label: "Build your candidate profile", url: `${DOMAIN}/dashboard` }
-        : c.stage === "profile_review"
+        : c.stage === "profile_review" || c.stage === "profile_generating"
             ? { label: "Review your candidate story", url: `${DOMAIN}/dashboard` }
             : !c.hasCompanies
                 ? { label: "Choose your target company", url: `${DOMAIN}/dashboard` }

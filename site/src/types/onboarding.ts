@@ -5,6 +5,7 @@ export type OnboardingStage =
   | "recruiter_search"
   | "recruiter_found"
   | "email_generation"
+  | "profile_generating"
   | "preview_ready"
   | "checkout"
   | "post_purchase"
@@ -46,5 +47,8 @@ export interface OnboardingPreviewState {
   strategyDetails?: Record<string, { label: string; values: string[] }[]>;
   email?: { subject: string; body: string; keyPoints: string[] };
   recruiterInsight?: { reason?: string; points: string[] };
+  profileStatus?: string;
+  profileProgress?: string;
+  profileJobId?: string;
   error?: { code: string; message?: string; recoverable: boolean };
 }
