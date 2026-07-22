@@ -384,7 +384,7 @@ export async function startOnboardingRecruiterSearch() {
     return { success: true as const, jobId: job.jobId, resumed: false };
 }
 
-export async function startOnboardingProfileGeneration() {
+export async function startOnboardingProfileGeneration(options?: { stayOnGenerating?: boolean }) {
     const userId = await checkAuth();
     const userRef = adminDb.collection("users").doc(userId);
     const accountRef = userRef.collection("data").doc("account");
@@ -404,7 +404,7 @@ export async function startOnboardingProfileGeneration() {
             profileProgress: "Queued",
             updatedAt: FieldValue.serverTimestamp(),
         }, { merge: true });
-        tx.update(userRef, { onboardingStage: "target_company", onboardingStep: 3 });
+        tx.update(userRef, { onboardingStage: options?.stayOnGenerating ? "profile_generating" : "target_company", onboardingStep: 3 });
         return { jobId: candidateJobId, resumed: false };
     });
     if (job.resumed) return { success: true as const, jobId: job.jobId, resumed: true };
@@ -419,8 +419,10 @@ export async function startOnboardingProfileGeneration() {
         }, { merge: true });
         throw error;
     }
-    await recordOnboardingSignal({ event: "profile_generation_started", userId, stage: "profile_generating", params: { job_id: job.jobId, queue: "onboarding_realtime" } });
-    await recordOnboardingTransition({ userId, from: "profile_source", to: "target_company", flow: "free_preview", step: 3, updateStage: false });
+    await recordOnboardingSignal({ event: "profile_generation_started", userId, stage: "profile_generating", params: { job_id: job.jobId, queue: "onboarding_realtime", retry: options?.stayOnGenerating ? "1" : "0" } });
+    if (!options?.stayOnGenerating) {
+        await recordOnboardingTransition({ userId, from: "profile_source", to: "target_company", flow: "free_preview", step: 3, updateStage: false });
+    }
     revalidatePath("/dashboard");
     return { success: true as const, jobId: job.jobId, resumed: false };
 }

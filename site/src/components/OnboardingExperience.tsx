@@ -463,7 +463,7 @@ export function OnboardingExperience(props: Props) {
   }, [effectiveStage, preview.profileStatus, router])
   const retryProfileGeneration = useCallback(() => {
     startTransition(async () => {
-      await startOnboardingProfileGeneration()
+      await startOnboardingProfileGeneration({ stayOnGenerating: true })
       router.refresh()
     })
   }, [router])
