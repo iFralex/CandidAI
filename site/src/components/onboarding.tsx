@@ -3822,10 +3822,17 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                 await onSave(plan, { linkedinUrl, profileSummary }, cvFile?.blob ?? null)
                 setSaved(true)
                 setTimeout(() => setSaved(false), 3000)
+            } else if (flow === 'guided') {
+                // Overlapped flow: the worker already persisted the profile and the company
+                // is already chosen. Save any review-screen edits WITHOUT resetting the stage
+                // (skipOnboardingStep=true), then start the recruiter search, which advances
+                // the stage to recruiter_search and enqueues the job.
+                await submitProfile(plan, { linkedinUrl, profileSummary, cvUrl: cvFile ? undefined : effectiveCvUrl }, cvFile?.blob, true, flow)
+                await startOnboardingRecruiterSearch()
+                router.refresh()
             } else {
-                // If no new CV, pass the already-saved cvUrl (from draft save or initial load)
+                // Legacy path unchanged.
                 await submitProfile(plan, { linkedinUrl, profileSummary, cvUrl: cvFile ? undefined : effectiveCvUrl }, cvFile?.blob, false, flow)
-                if (flow === 'guided') router.refresh()
             }
         })
     }
@@ -4504,7 +4511,10 @@ export function CompanyInputClient({
                     if (!company) throw new Error("Choose one company")
                     const result = await submitPreviewCompany(company as { name: string; domain?: string; linkedin_url?: string })
                     if (!result.success) throw new Error(result.error)
-                    await startOnboardingRecruiterSearch()
+                    // Do NOT start the recruiter search here: the profile may still be
+                    // generating / unconfirmed. submitPreviewCompany already set the stage
+                    // (profile_review / profile_generating). Recruiter search starts on
+                    // profile confirm ("Yes, this represents me").
                     router.refresh()
                 } else {
                     await submitCompanies(companies as { name: string; domain: string }[]);
