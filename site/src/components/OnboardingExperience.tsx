@@ -39,7 +39,6 @@ const journey = [
   { key: 'details', label: 'Details', icon: UserRound },
   { key: 'company', label: 'Company', icon: Building2 },
   { key: 'profile', label: 'Profile', icon: Sparkles },
-  { key: 'recruiter', label: 'Contact', icon: Search },
   { key: 'email', label: 'Email', icon: Mail },
 ]
 
@@ -51,8 +50,7 @@ function JourneyHeader({ stage }: { stage: OnboardingStage }) {
   const active = stage === 'profile_source' ? 0
     : stage === 'target_company' ? 1
     : stage === 'profile_generating' || stage === 'profile_review' ? 2
-    : stage === 'recruiter_search' || stage === 'recruiter_found' ? 3
-    : 4
+    : 3 // recruiter_search / recruiter_found / email_generation / preview_ready — all the automatic build toward the email
   return (
     <div className="sticky top-0 z-30 -mx-4 mb-8 border-b border-white/5 bg-[#08050d]/90 px-4 py-3 backdrop-blur-xl sm:static sm:mx-auto sm:mb-12 sm:max-w-3xl sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none" aria-label="First application progress">
       <div className="mb-2 flex items-center justify-between text-xs sm:hidden"><span className="font-medium text-white">Step {active + 1} of {journey.length} · {journey[active].label}</span><span className="flex items-center gap-1 text-gray-500"><Check className="h-3 w-3 text-emerald-400" /><span className="sr-only">Saved automatically</span>Saved</span></div>
