@@ -257,7 +257,7 @@ export function SetupCompleteClient({ userId, defaultCustomizations, onSave, cur
                         </>
                     )}
                 </button>
-                {saved && <span className="text-green-400 text-sm">Saved successfully.</span>}
+                {saved && <span className="w-full text-center text-green-400 text-sm">Saved successfully.</span>}
 
             </motion.div>
         </>
@@ -316,9 +316,9 @@ function StepExplanation({ title, items }: {
     )
 }
 
-function UpgradeBanner({ onChangePlan, isPending, position = 'top' }: {
-    onChangePlan: () => void
-    isPending: boolean
+function UpgradeBanner({ position = 'top' }: {
+    onChangePlan?: () => void
+    isPending?: boolean
     position?: 'top' | 'bottom'
 }) {
     return (
@@ -336,16 +336,6 @@ function UpgradeBanner({ onChangePlan, isPending, position = 'top' }: {
                     </p>
                 </div>
             </div>
-            <motion.button
-                onClick={onChangePlan}
-                disabled={isPending}
-                className="shrink-0 inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-            >
-                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
-                <span>Change Plan</span>
-            </motion.button>
         </motion.div>
     )
 }
@@ -1489,7 +1479,7 @@ export function AdvancedFiltersClientWrapper({ defaultStrategy, maxStrategies, u
                         </>
                     )}
                 </motion.button>
-                {saved && <span className="text-green-400 text-sm">Saved successfully.</span>}
+                {saved && <span className="w-full text-center text-green-400 text-sm">Saved successfully.</span>}
             </motion.div>
 
         </AdvancedFiltersClient>
@@ -4208,7 +4198,7 @@ export function ProfileAnalysisClient({ userId, plan, initialProfile, initialCvU
                                 )}
                             </button>
                         </div>
-                        {saved && <span className="text-green-400 text-sm">Saved successfully.</span>}
+                        {saved && <span className="w-full text-center text-green-400 text-sm">Saved successfully.</span>}
 
                         <p className="text-sm text-gray-500">
                             This information helps us find the perfect recruiters for you
