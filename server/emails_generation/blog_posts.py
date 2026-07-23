@@ -1,5 +1,7 @@
 import os
 import re
+import socket
+import subprocess
 import threading
 from bs4 import BeautifulSoup
 from bs4 import Tag
@@ -25,6 +27,69 @@ from server.emails_generation.ai_client import ai_chat
 
 driver = None  # istanza globale
 _driver_lock = threading.Lock()
+_xvfb_process = None
+_xvfb_lock = threading.Lock()
+_XVFB_DISPLAY = ":99"
+_XVFB_SOCKET = "/tmp/.X11-unix/X99"
+
+
+def _display_is_ready():
+    """Return True only when the X11 socket exists and accepts connections."""
+    if not os.path.exists(_XVFB_SOCKET):
+        return False
+
+    probe = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    probe.settimeout(0.2)
+    try:
+        probe.connect(_XVFB_SOCKET)
+        return True
+    except OSError:
+        return False
+    finally:
+        probe.close()
+
+
+def _ensure_xvfb():
+    """Start display :99 when needed and wait until it is ready for Chrome."""
+    global _xvfb_process
+
+    with _xvfb_lock:
+        if _display_is_ready():
+            os.environ["DISPLAY"] = _XVFB_DISPLAY
+            return
+
+        logging.info("🖥️ Starting Xvfb on display %s", _XVFB_DISPLAY)
+        _xvfb_process = subprocess.Popen(
+            [
+                "Xvfb",
+                _XVFB_DISPLAY,
+                "-ac",
+                "-screen",
+                "0",
+                "1920x1080x24",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            # Check readiness before the process status: another worker may have
+            # won the race to start the shared display.
+            if _display_is_ready():
+                os.environ["DISPLAY"] = _XVFB_DISPLAY
+                logging.info("✅ Xvfb display %s is ready", _XVFB_DISPLAY)
+                return
+
+            # Even if our process lost a cross-process startup race, keep
+            # waiting: the other worker may still be bringing :99 online.
+            _xvfb_process.poll()
+            time.sleep(0.05)
+
+        raise RuntimeError(
+            f"Xvfb display {_XVFB_DISPLAY} did not become ready within 10 seconds"
+        )
 
 def init_driver(force_new=False):
     global driver
@@ -36,10 +101,7 @@ def init_driver(force_new=False):
     # Se non esiste, crealo (lock per evitare init concorrenti)
     with _driver_lock:
         if driver is None:
-            running = os.popen("pgrep -f 'Xvfb :99'").read().strip()
-            if not running:
-                os.system("Xvfb :99 -ac -screen 0 1920x1080x24 &")
-            os.environ["DISPLAY"] = ":99"
+            _ensure_xvfb()
 
             logging.info("🟢 Creating new driver")
             options = uc.ChromeOptions()
