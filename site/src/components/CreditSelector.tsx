@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Zap, Check } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -20,10 +20,33 @@ export interface CreditSelectorProps {
     selectedId?: string;
     showBuyButton?: boolean;
     onBuyClick?: (pkg: CreditPackage) => void;
+    /** On phones, collapse the three packages into one swipeable card at a time. */
+    mobileCarousel?: boolean;
 }
 
-export function CreditSelector({ onSelect, selectedId, showBuyButton = false, onBuyClick }: CreditSelectorProps) {
+export function CreditSelector({ onSelect, selectedId, showBuyButton = false, onBuyClick, mobileCarousel = false }: CreditSelectorProps) {
     const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+    // On phones, start the carousel centered on the recommended (Popular) package.
+    const carouselRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!mobileCarousel) return;
+        const container = carouselRef.current;
+        if (!container || window.matchMedia("(min-width: 640px)").matches) return;
+        const popularIndex = CREDIT_PACKAGES.findIndex((p) => p.id === "pkg_2500");
+        if (popularIndex < 0) return;
+        const raf = requestAnimationFrame(() => {
+            const card = container.children[popularIndex] as HTMLElement | undefined;
+            if (!card || !container.clientWidth) return;
+            const target = container.scrollLeft
+                + card.getBoundingClientRect().left
+                - container.getBoundingClientRect().left
+                - (container.clientWidth - card.clientWidth) / 2;
+            container.scrollTo({ left: Math.max(0, target), behavior: "auto" });
+        });
+        return () => cancelAnimationFrame(raf);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mobileCarousel]);
 
     const packageLabels: Record<string, string> = {
         pkg_1000: "Starter",
@@ -38,7 +61,8 @@ export function CreditSelector({ onSelect, selectedId, showBuyButton = false, on
     };
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <>
+        <div ref={carouselRef} className={mobileCarousel ? "flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3 sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0" : "grid grid-cols-1 sm:grid-cols-3 gap-4"}>
             {CREDIT_PACKAGES.map((pkg, index) => {
                 const isSelected = selectedId === pkg.id;
                 const isHovered = hoveredId === pkg.id;
@@ -52,6 +76,7 @@ export function CreditSelector({ onSelect, selectedId, showBuyButton = false, on
                         transition={{ duration: 0.4, delay: index * 0.1 }}
                         onMouseEnter={() => setHoveredId(pkg.id)}
                         onMouseLeave={() => setHoveredId(null)}
+                        className={mobileCarousel ? "w-[80%] shrink-0 snap-center first:ml-[6%] last:mr-[6%] sm:ml-0 sm:mr-0 sm:w-auto" : undefined}
                     >
                         <Card
                             className={`relative p-5 cursor-pointer transition-all duration-200 flex flex-col gap-3 ${
@@ -118,5 +143,7 @@ export function CreditSelector({ onSelect, selectedId, showBuyButton = false, on
                 );
             })}
         </div>
+        {mobileCarousel && <p className="mt-2 text-center text-xs text-gray-600 sm:hidden">Swipe to compare packages</p>}
+        </>
     );
 }

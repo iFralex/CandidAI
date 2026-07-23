@@ -142,6 +142,7 @@ export default function PlanAndCreditsClient({ email, plan = "free_trial", credi
                     selectedId={selectedCreditId}
                     showBuyButton={true}
                     onBuyClick={handleCreditBuy}
+                    mobileCarousel
                 />
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-white/10 pt-5 text-xs text-gray-500"><span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-emerald-400" />Secure Stripe checkout</span><span>Credits are added immediately</span><span>Available across your campaigns</span></div>
             </section>
