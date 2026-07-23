@@ -24,6 +24,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTutorial as useTutorialHook } from "@/components/TutorialContext";
+import { FollowUpPanel } from "@/components/FollowUpPanel";
 
 // ============== ANIMATION VARIANTS ==============
 const containerVariants = {
@@ -1045,11 +1046,12 @@ export function EmailDraftButton({
   );
 }
 
-export const CreditsDialog = ({ children, contentType, unlocked, className = "", action, number = 1, email = "" }: { children: any, contentType: any, unlocked: any, className?: string, action?: () => Promise<any>, number?: number, email?: string }) => {
+export const CreditsDialog = ({ children, contentType, unlocked, className = "", action, number = 1, email = "", onSuccess }: { children: any, contentType: any, unlocked: any, className?: string, action?: () => Promise<any>, number?: number, email?: string, onSuccess?: () => void | Promise<void> }) => {
   const requiredCredits = (creditsInfo[contentType]?.cost || 0) * number;
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [error, setError] = useState(null);
   const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   const [selectedCreditPackageId, setSelectedCreditPackageId] = useState("pkg_1000");
 
   const handleUnlock = async () => {
@@ -1071,11 +1073,14 @@ export const CreditsDialog = ({ children, contentType, unlocked, className = "",
       const companyName = document.querySelector<HTMLElement>("[data-company-name]")?.dataset.companyName ?? companyId ?? "unknown";
       track({ name: "recruiter_find", params: { company_name: companyName, cost: requiredCredits } });
     }
+    setIsUnlocking(false);
+    setCreditDialogOpen(false);
+    await onSuccess?.();
   };
 
   return (
     <>
-    <Dialog>
+    <Dialog open={creditDialogOpen} onOpenChange={setCreditDialogOpen}>
       <DialogTrigger className={className} onClick={() => unlocked ? action?.() : null}>{children}</DialogTrigger>
       {!unlocked && (
         <DialogContent>
@@ -1948,7 +1953,32 @@ const COMPANY_DETAIL_STEPS = [
 
 // Questo è il componente principale che assembla tutte le parti animate
 // e riceve i dati dal componente Server.
-export default function ResultClient({ data, customizations, emailSent }: { data: any; customizations: any; emailSent: any }) {
+export default function ResultClient({ data, customizations, emailSent, followUp, plan, userEmail }: { data: any; customizations: any; emailSent: any; followUp?: any; plan?: string; userEmail?: string }) {
+  const companyId = typeof window !== "undefined"
+    ? window.location.pathname.split("/").filter(Boolean).pop() ?? ""
+    : "";
+  const followUpsEnabled = plan === "pro" || plan === "ultra";
+  const originalEmailSent = Boolean((data.email?.email_sent?._seconds ?? data.email?.email_sent?.seconds ?? 0) > 0);
+  const paidFollowUpAction = (
+    _trigger: React.ReactNode,
+    action: () => Promise<{ success: boolean; error?: string }>,
+    onSuccess: () => void | Promise<void>,
+  ) => (
+    <CreditsDialog
+      contentType="follow-up"
+      unlocked={false}
+      action={action}
+      email={userEmail}
+      onSuccess={onSuccess}
+      className="contents"
+    >
+      <span className="inline-flex cursor-pointer items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:scale-105">
+        Continue · 50 credits
+        <Sparkles className="ml-2 h-4 w-4" />
+      </span>
+    </CreditsDialog>
+  );
+
   return (
     <motion.div
       variants={containerVariants}
@@ -1963,6 +1993,30 @@ export default function ResultClient({ data, customizations, emailSent }: { data
       <div data-tutorial="email-section">
         <EmailGenerated data={data} defaultInstructions={customizations.instructions} emailSent={emailSent} />
       </div>
+      {(originalEmailSent || followUp) && (
+        <section>
+          <div className="mb-5">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-violet-300">Continue the conversation</p>
+            <h2 className="mt-2 text-2xl font-semibold text-white">Follow-up</h2>
+          </div>
+          <FollowUpPanel
+            campaign={{
+              id: companyId,
+              company: data.company,
+              recruiter: {
+                name: data.recruiter_summary?.name,
+                job_title: data.recruiter_summary?.job_title,
+                email: data.email?.email_address === true ? "" : data.email?.email_address,
+              },
+              email_sent: data.email?.email_sent,
+              follow_up: followUp,
+            }}
+            enabled={followUpsEnabled}
+            email={userEmail}
+            renderPaidAction={paidFollowUpAction}
+          />
+        </section>
+      )}
       <div data-tutorial="recruiter-section">
         <RecruiterSummary originalData={data} customStrategy={customizations.queries} />
       </div>

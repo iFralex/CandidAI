@@ -36,8 +36,8 @@ const DASHBOARD_STEPS = [
     },
     {
         targetId: 'nav-follow-ups',
-        title: 'Follow Ups (Coming Soon)',
-        description: 'Automated follow-up emails will be sent on your behalf to companies that haven\'t responded yet.',
+        title: 'Follow Ups',
+        description: 'See when a conversation is worth continuing and generate a personalized follow-up only when you request it.',
     },
     {
         targetId: 'nav-credits',
@@ -222,6 +222,7 @@ async function ResultsWrapper({ userId, plan, maxCompanies, companiesUsed }: { u
                 startDate,
                 estimatedCompletion,
                 emailsGenerated,
+                followUp: info?.follow_up ?? null,
                 stage
             };
         });

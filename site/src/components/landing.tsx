@@ -1241,7 +1241,7 @@ const FAQSection = () => {
         },
         {
             question: "How does the follow-up automation work?",
-            answer: "Our AI analyzes response patterns and suggests the optimal timing for follow-ups. You'll receive notifications when it's the perfect time to send a follow-up, along with AI-generated follow-up messages."
+            answer: "CandidAI tracks when your first outreach was sent and suggests a respectful time to follow up. The message is generated only when you request it, so you stay in control of every conversation."
         },
         {
             question: "Can I buy a new plan when my limit is reached?",

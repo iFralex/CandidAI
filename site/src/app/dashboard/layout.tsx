@@ -18,7 +18,7 @@ import { TutorialOverlay } from '@/components/TutorialOverlay';
 const navigationItems = [
     { name: 'Dashboard', icon: <Home className="w-5 h-5" />, href: '/dashboard', tutorialId: 'nav-dashboard' },
     { name: 'Send All', icon: <Activity className="w-5 h-5" />, href: '/dashboard/send-all', tutorialId: 'nav-send-all' },
-    { name: 'Follow Ups', icon: <Bell className="w-5 h-5" />, href: '/dashboard/follow-ups', comingSoon: true, tutorialId: 'nav-follow-ups' },
+    { name: 'Follow Ups', icon: <Bell className="w-5 h-5" />, href: '/dashboard/follow-ups', tutorialId: 'nav-follow-ups' },
     { name: 'Plan & Credits', icon: <BarChart3 className="w-5 h-5" />, href: '/dashboard/plan-and-credits', tutorialId: 'nav-credits' },
     { name: 'Support', icon: <HelpCircle className="w-5 h-5" />, href: '/dashboard/help', tutorialId: 'nav-support' },
     { name: 'Settings', icon: <Settings className="w-5 h-5" />, href: '/dashboard/settings', tutorialId: 'nav-settings' }

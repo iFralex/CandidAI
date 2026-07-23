@@ -188,7 +188,14 @@ const PageContent = async ({ params }: { params: { id: string } }) => {
     const customizations = dataResponse.customizations;
 
     // I dati recuperati vengono passati al componente client tramite props
-    return <ResultClient data={details} customizations={customizations} emailSent={dataResponse.email_sent} />;
+    return <ResultClient
+        data={details}
+        customizations={customizations}
+        emailSent={dataResponse.email_sent}
+        followUp={dataResponse.follow_up}
+        plan={dataResponse.plan}
+        userEmail={dataResponse.user_email}
+    />;
 };
 
 

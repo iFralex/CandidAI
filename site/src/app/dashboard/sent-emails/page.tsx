@@ -36,6 +36,7 @@ function parseSentCampaigns(rawData: Record<string, any>) {
                 progress: 100,
                 emailsGenerated: 1,
                 emailsSent: 1,
+                followUp: info?.follow_up ?? null,
                 stage: "Email sent",
             };
         });

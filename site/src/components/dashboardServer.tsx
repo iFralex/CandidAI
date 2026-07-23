@@ -6,7 +6,7 @@ import { getTokens } from "next-firebase-auth-edge";
 import { cookies } from "next/headers";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from 'next/link';
-import { ArrowRight, Building2, Calendar, Check, CheckCircle, Globe, MapPin, RefreshCw, Send, Timer, Users, X } from 'lucide-react';
+import { ArrowRight, Building2, Calendar, Check, CheckCircle, Globe, MapPin, MessageCircleReply, RefreshCw, Send, Timer, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Suspense } from "react";
 import { cn } from "@/lib/utils";
@@ -95,6 +95,18 @@ export const CampaignCard = ({ campaign }) => {
                         )}
                         {campaign.emailsSent > 0 && (
                             <span>{campaign.emailsSent} sent</span>
+                        )}
+                        {campaign.followUp?.status === "sent" && (
+                            <span className="inline-flex items-center gap-1.5 text-emerald-300">
+                                <MessageCircleReply className="h-3.5 w-3.5" />
+                                Follow-up sent
+                            </span>
+                        )}
+                        {campaign.followUp?.status === "draft" && (
+                            <span className="inline-flex items-center gap-1.5 text-violet-300">
+                                <MessageCircleReply className="h-3.5 w-3.5" />
+                                Follow-up ready
+                            </span>
                         )}
                     </div>
                 </div>
