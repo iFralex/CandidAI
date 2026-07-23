@@ -64,7 +64,16 @@ export default function PlanAndCreditsClient({ email, plan = "free_trial", credi
 
     const handleSuccess = () => {
         setCheckoutOpen(false);
-        router.refresh();
+        // A plan purchase may have started the post-purchase onboarding
+        // (first paid plan) or upgraded an existing paid plan. Either way the
+        // dashboard is the right destination: it renders the post-purchase
+        // setup when onboardingStep < 10, or the normal dashboard otherwise.
+        // Credits just top up the balance, so refresh in place.
+        if (purchaseType === "plan") {
+            router.push("/dashboard");
+        } else {
+            router.refresh();
+        }
     };
 
     return (

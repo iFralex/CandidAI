@@ -1,12 +1,11 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
-import { plansData, plansInfo, CREDIT_PACKAGES } from "@/config";
-import { startServer } from "@/actions/onboarding-actions";
+import { plansInfo, CREDIT_PACKAGES } from "@/config";
 import { FieldValue } from "firebase-admin/firestore";
 import { recordPaymentSuccess } from "@/lib/server-track";
 import { incrementDiscountUsage } from "@/lib/discount-codes";
-import { recordOnboardingTransition } from "@/lib/onboarding-lifecycle";
+import { computePlanGrant, recordPlanPurchaseTransition, type PlanGrantOutcome } from "@/lib/plan-purchase";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-11-17.clover" });
 
@@ -39,7 +38,7 @@ export async function POST(req: Request) {
         // payment within milliseconds; a non-transactional exists-then-set
         // check allowed both to pass and double-credited the user.
         let alreadyProcessed = false;
-        let isOnboardingPurchase = false;
+        let planOutcome: PlanGrantOutcome | null = null;
 
         // Pre-fetch out-of-transaction reads that don't need atomicity.
         let userSnapData: Record<string, any> | undefined;
@@ -74,26 +73,11 @@ export async function POST(req: Request) {
                 if (!pkg) throw new Error("Credit package not found");
                 tx.update(userRef, { credits: FieldValue.increment(pkg.credits) });
             } else if (purchaseType === "plan") {
-                const planData = plansData[itemId as keyof typeof plansData];
-                const includedCredits = planData?.credits || 0;
-                const newPlanMaxCompanies = planData?.maxCompanies || 0;
-
-                const currentMax: number = userSnapData?.maxCompanies ?? 0;
-                const usedCount = Object.entries(resultsData ?? {}).filter(
-                    ([k, v]: any) => k !== "companies_to_confirm" && typeof v === "object" && v?.company
-                ).length;
-                const remaining = Math.max(0, currentMax - usedCount);
-                const maxCompanies = newPlanMaxCompanies + remaining;
-
-                const currentOnboardingStep: number = userSnapData?.onboardingStep ?? 50;
-                const isOnboarding = currentOnboardingStep < 10;
-                isOnboardingPurchase = isOnboarding;
+                const grant = computePlanGrant({ itemId, userData: userSnapData, resultsData });
+                planOutcome = grant.outcome;
                 tx.update(userRef, {
-                    plan: itemId,
-                    maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
-                    credits: FieldValue.increment(includedCredits),
-                    onboardingStep: isOnboarding ? 6 : 50,
-                    ...(isOnboarding ? { onboardingStage: "post_purchase" } : {}),
+                    ...grant.fields,
+                    credits: FieldValue.increment(grant.includedCredits),
                 });
             }
         });
@@ -114,20 +98,16 @@ export async function POST(req: Request) {
             itemId,
             amountCents: pi.amount,
             currency: pi.currency,
-            isOnboarding: isOnboardingPurchase,
+            isOnboarding: planOutcome === "first_paid",
             source: "payment-confirm",
         });
-        if (isOnboardingPurchase && purchaseType === "plan") {
-            await recordOnboardingTransition({ userId, from: "checkout", to: "post_purchase", flow: "post_purchase", step: 6, reason: "payment_succeeded", metadata: { plan: itemId, payment_id: pi.id }, updateStage: false });
+        if (purchaseType === "plan" && planOutcome) {
+            await recordPlanPurchaseTransition({ outcome: planOutcome, userId, itemId, userData: userSnapData, paymentId: pi.id });
         }
 
-        if (purchaseType === "plan" && !isOnboardingPurchase) {
-            try {
-                await startServer(userId as any);
-            } catch (err) {
-                console.error("Failed to start server:", err);
-            }
-        }
+        // No startServer at payment time: the buyer launches explicitly from the
+        // post-purchase flow. Server generation is idempotent, so nothing is
+        // generated (or charged) until they add companies and launch.
 
         try {
             let receiptUrl: string | null = null;

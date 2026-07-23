@@ -202,6 +202,18 @@ export const plansInfo = [
   }
 ];
 
+/**
+ * A plan is "paid" when it is a real purchased tier (price > 0). `free_trial`
+ * and an unset/undefined plan are NOT paid. Used to decide whether a plan
+ * purchase is a user's FIRST paid plan — which must run the post-purchase
+ * onboarding — versus an already-paid user changing tier.
+ */
+export function isPaidPlan(plan?: string | null): boolean {
+  if (!plan) return false;
+  const info = plansInfo.find((p) => p.id === plan);
+  return info ? info.price > 0 : plan !== "free_trial";
+}
+
 export const CREDIT_PACKAGES = [
   { id: "pkg_1000", credits: 1000, price: 1000 }, // 10€
   { id: "pkg_2500", credits: 2500, price: 2000 }, // 20€

@@ -2,14 +2,13 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { plansInfo, CREDIT_PACKAGES, plansData } from "@/config";
+import { plansInfo, CREDIT_PACKAGES } from "@/config";
 import { applyDiscount } from "@/lib/utils";
 import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
-import { startServer } from "@/actions/onboarding-actions";
 import { validateDiscountCode, incrementDiscountUsage } from "@/lib/discount-codes";
 import { recordPaymentSuccess } from "@/lib/server-track";
-import { recordOnboardingTransition } from "@/lib/onboarding-lifecycle";
+import { computePlanGrant, recordPlanPurchaseTransition, type PlanGrantOutcome } from "@/lib/plan-purchase";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-11-17.clover" });
 
@@ -86,7 +85,7 @@ export async function POST(req: Request) {
             const paymentRef = userRef.collection("payments").doc(freeKey);
 
             let alreadyProcessed = false;
-            let isOnboardingPurchase = false;
+            let planOutcome: PlanGrantOutcome | null = null;
 
             let userSnapData: Record<string, any> | undefined;
             let resultsData: Record<string, any> | undefined;
@@ -124,25 +123,11 @@ export async function POST(req: Request) {
                     const pkg = CREDIT_PACKAGES.find((p) => p.id === itemId)!;
                     tx.update(userRef, { credits: FieldValue.increment(pkg.credits) });
                 } else if (purchaseType === "plan") {
-                    const planData = plansData[itemId as keyof typeof plansData];
-                    const newPlanMaxCompanies = planData?.maxCompanies ?? 0;
-
-                    const currentMax: number = userSnapData?.maxCompanies ?? 0;
-                    const usedCount = Object.entries(resultsData ?? {}).filter(
-                        ([k, v]: any) => k !== "companies_to_confirm" && typeof v === "object" && v?.company
-                    ).length;
-                    const remaining = Math.max(0, currentMax - usedCount);
-                    const maxCompanies = newPlanMaxCompanies + remaining;
-
-                    const currentOnboardingStep: number = userSnapData?.onboardingStep ?? 50;
-                    const isOnboarding = currentOnboardingStep < 10;
-                    isOnboardingPurchase = isOnboarding;
+                    const grant = computePlanGrant({ itemId, userData: userSnapData, resultsData });
+                    planOutcome = grant.outcome;
                     tx.update(userRef, {
-                        plan: itemId,
-                        maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
-                        credits: FieldValue.increment(planData?.credits ?? 0),
-                        onboardingStep: isOnboarding ? 6 : 50,
-                        ...(isOnboarding ? { onboardingStage: "post_purchase" } : {}),
+                        ...grant.fields,
+                        credits: FieldValue.increment(grant.includedCredits),
                     });
                 }
             });
@@ -163,16 +148,15 @@ export async function POST(req: Request) {
                 itemId,
                 amountCents: 0,
                 currency: "eur",
-                isOnboarding: isOnboardingPurchase,
+                isOnboarding: planOutcome === "first_paid",
                 source: "create-payment-free",
             });
-            if (isOnboardingPurchase && purchaseType === "plan") {
-                await recordOnboardingTransition({ userId: user.uid, from: "checkout", to: "post_purchase", flow: "post_purchase", step: 6, reason: "payment_succeeded", metadata: { plan: itemId, payment_id: freeKey }, updateStage: false });
+            if (purchaseType === "plan" && planOutcome) {
+                await recordPlanPurchaseTransition({ outcome: planOutcome, userId: user.uid, itemId, userData: userSnapData, paymentId: freeKey });
             }
 
-            if (purchaseType === "plan" && !isOnboardingPurchase) {
-                try { await startServer(user.uid); } catch { /* non bloccante */ }
-            }
+            // No startServer at payment time: the buyer launches explicitly from
+            // the post-purchase flow (idempotent generation).
 
             await fetch(`${process.env.NEXT_PUBLIC_DOMAIN}/api/send-email`, {
                 method: "POST",

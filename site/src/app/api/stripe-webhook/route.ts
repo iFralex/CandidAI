@@ -1,12 +1,11 @@
 // app/api/stripe-webhook/route.ts
 import Stripe from "stripe";
 import { adminDb } from "@/lib/firebase-admin";
-import { plansInfo, CREDIT_PACKAGES, plansData } from "@/config";
-import { startServer } from "@/actions/onboarding-actions";
+import { plansInfo, CREDIT_PACKAGES } from "@/config";
 import { FieldValue } from "firebase-admin/firestore";
 import { recordPaymentSuccess } from "@/lib/server-track";
 import { incrementDiscountUsage } from "@/lib/discount-codes";
-import { recordOnboardingTransition } from "@/lib/onboarding-lifecycle";
+import { computePlanGrant, recordPlanPurchaseTransition, type PlanGrantOutcome } from "@/lib/plan-purchase";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-11-17.clover" });
 
@@ -44,7 +43,7 @@ export async function POST(req: Request) {
       // discount usage. Use a Firestore transaction so the existence check
       // and the side-effecting writes happen atomically; if the doc already
       // exists at commit time, the transaction's other writes never apply.
-      const isOnboardingPurchaseRef = { value: false };
+      let planOutcome: PlanGrantOutcome | null = null;
       let alreadyProcessed = false;
 
       // Pre-fetch out-of-transaction reads that don't need atomicity
@@ -83,26 +82,11 @@ export async function POST(req: Request) {
         } else if (purchaseType === "plan") {
           const plan = plansInfo.find((p) => p.id === itemId);
           if (!plan) throw new Error("Piano non trovato");
-          const planData = plansData[itemId as keyof typeof plansData];
-          const includedCredits = planData?.credits || 0;
-          const newPlanMaxCompanies = planData?.maxCompanies || 0;
-
-          const currentMax: number = userSnapData?.maxCompanies ?? 0;
-          const usedCount = Object.entries(resultsData ?? {}).filter(
-            ([k, v]: any) => k !== "companies_to_confirm" && typeof v === "object" && v?.company
-          ).length;
-          const remaining = Math.max(0, currentMax - usedCount);
-          const maxCompanies = newPlanMaxCompanies + remaining;
-
-          const currentOnboardingStep: number = userSnapData?.onboardingStep ?? 50;
-          const isOnboarding = currentOnboardingStep < 10;
-          isOnboardingPurchaseRef.value = isOnboarding;
+          const grant = computePlanGrant({ itemId, userData: userSnapData, resultsData });
+          planOutcome = grant.outcome;
           tx.update(userRef, {
-            plan: itemId,
-            maxCompanies: isOnboarding ? newPlanMaxCompanies : maxCompanies,
-            credits: FieldValue.increment(includedCredits),
-            onboardingStep: isOnboarding ? 6 : 50,
-            ...(isOnboarding ? { onboardingStage: "post_purchase" } : {}),
+            ...grant.fields,
+            credits: FieldValue.increment(grant.includedCredits),
           });
         }
       });
@@ -124,20 +108,15 @@ export async function POST(req: Request) {
         itemId,
         amountCents: paymentIntent.amount,
         currency: paymentIntent.currency,
-        isOnboarding: isOnboardingPurchaseRef.value,
+        isOnboarding: planOutcome === "first_paid",
         source: "webhook",
       });
-      if (isOnboardingPurchaseRef.value && purchaseType === "plan") {
-        await recordOnboardingTransition({ userId, from: "checkout", to: "post_purchase", flow: "post_purchase", step: 6, reason: "payment_succeeded", metadata: { plan: itemId, payment_id: paymentIntent.id }, updateStage: false });
+      if (purchaseType === "plan" && planOutcome) {
+        await recordPlanPurchaseTransition({ outcome: planOutcome, userId, itemId, userData: userSnapData, paymentId: paymentIntent.id });
       }
 
-      if (purchaseType === "plan" && !isOnboardingPurchaseRef.value) {
-        try {
-          await startServer(userId);
-        } catch (serverErr) {
-          console.error("Failed to start server:", serverErr);
-        }
-      }
+      // No startServer at payment time: the buyer launches explicitly from the
+      // post-purchase flow (idempotent generation).
 
       // Send purchase confirmation email (non-blocking)
       try {
