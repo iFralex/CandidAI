@@ -108,7 +108,10 @@ export async function jumpToStep(targetStep: number) {
     revalidatePath('/dashboard');
 }
 
-export async function startServer(userId: string | null = null, options: { throwOnError?: boolean } = {}) {
+export async function startServer(
+    userId: string | null = null,
+    options: { throwOnError?: boolean; runId?: string } = {},
+) {
     if (!userId)
         userId = await checkAuth()
 
@@ -118,7 +121,7 @@ export async function startServer(userId: string | null = null, options: { throw
             "Content-Type": "application/json",
             "X-API-Key": process.env.SESSION_API_KEY ?? "",
         },
-        body: JSON.stringify({ user_id: userId })
+        body: JSON.stringify({ user_id: userId, ...(options.runId ? { run_id: options.runId } : {}) })
     })
     if (!res.ok) {
         const detail = await res.text().catch(() => "");
@@ -771,11 +774,47 @@ export async function launchPostPurchaseCampaign() {
     const account = accountSnap.data() || {};
     if (!user.plan || user.plan === "free_trial") throw new Error("A paid plan is required");
     if (!account.companies?.length || !account.customizations?.position_description) throw new Error("Complete your campaign setup before launching");
+    // Freeze the campaign inputs at launch time. The queued worker reads this
+    // immutable snapshot, so edits made for a later campaign can never alter
+    // work that is already running or waiting in the queue.
+    const perCompanyEntries = await Promise.all((account.companies || []).map(async (company: any) => {
+        const name = String(company?.name || "");
+        if (!name) return null;
+        const idSnap = await adminDb.collection("ids").doc(`${name}-${userId}`).get();
+        const resultId = idSnap.data()?.id;
+        if (!resultId) return [name, { queries: [], instructions: "", recruiter_linkedin_urls: [] }] as const;
+        const customizationSnap = await userRef.collection("data").doc("results")
+            .collection(resultId).doc("customizations").get();
+        return [name, customizationSnap.data() || { queries: [], instructions: "", recruiter_linkedin_urls: [] }] as const;
+    }));
+    const perCompanyCustomizations = Object.fromEntries(perCompanyEntries.filter(Boolean) as Array<readonly [string, unknown]>);
+    const runRef = userRef.collection("campaign_runs").doc();
+    await runRef.set({
+        status: "queued",
+        plan: user.plan,
+        createdAt: FieldValue.serverTimestamp(),
+        configuration: {
+            companies: account.companies,
+            profileSummary: account.profileSummary,
+            cvUrl: account.cvUrl || "",
+            queries: account.queries || [],
+            customizations: account.customizations || {},
+            perCompanyCustomizations,
+        },
+    });
     // Do not mark onboarding complete until the worker has accepted the job.
     // Otherwise a transient runner/auth failure strands the account in a
     // completed state with no campaign running.
-    await startServer(userId, { throwOnError: true });
-    await userRef.update({ activated_at: user.activated_at || FieldValue.serverTimestamp() });
+    try {
+        await startServer(userId, { throwOnError: true, runId: runRef.id });
+    } catch (error) {
+        await runRef.update({ status: "enqueue_failed", failedAt: FieldValue.serverTimestamp() });
+        throw error;
+    }
+    await userRef.update({
+        activated_at: user.activated_at || FieldValue.serverTimestamp(),
+        campaignSetupPending: FieldValue.delete(),
+    });
     await recordOnboardingTransition({ userId, from: user.onboardingStage || "post_purchase_review", to: "completed", flow: "post_purchase", step: 50, reason: "campaign_launched", metadata: { plan: user.plan, company_count: account.companies.length } });
     await recordOnboardingSignal({ event: "campaign_launched", userId, stage: "completed", params: { plan: user.plan, company_count: account.companies.length } });
     await recordOnboardingSignal({ event: "onboarding_complete", userId, stage: "completed", params: { plan: user.plan, flow: "post_purchase" } });
@@ -795,6 +834,37 @@ export async function launchPostPurchaseCampaign() {
     } catch (error) {
         console.error("Failed to send campaign launch email:", error);
     }
+    revalidatePath("/dashboard");
+    redirect("/dashboard");
+}
+
+export async function beginPendingCampaignSetup() {
+    const userId = await checkAuth();
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+    const user = userSnap.data() || {};
+    const pending = user.campaignSetupPending;
+    if (!pending || typeof pending.step !== "number" || typeof pending.stage !== "string") {
+        throw new Error("There is no pending campaign setup");
+    }
+    if (!["post_purchase_companies", "post_purchase_review"].includes(pending.stage)) {
+        throw new Error("Invalid pending campaign setup");
+    }
+    await userRef.update({
+        onboardingStep: pending.step,
+        onboardingStage: pending.stage,
+        campaignSetupPending: FieldValue.delete(),
+    });
+    await recordOnboardingTransition({
+        userId,
+        from: user.onboardingStage || "completed",
+        to: pending.stage,
+        flow: "post_purchase",
+        step: pending.step,
+        reason: "deferred_campaign_setup_started",
+        metadata: { plan: user.plan },
+        updateStage: false,
+    });
     revalidatePath("/dashboard");
     redirect("/dashboard");
 }

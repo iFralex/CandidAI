@@ -64,6 +64,13 @@ export async function GET(request) {
     const companiesUsed = Object.entries(resultsData).filter(
       ([k, v]: any) => k !== 'companies_to_confirm' && typeof v === 'object' && v?.company
     ).length;
+    const generationsInProgress = Object.entries(resultsData).filter(
+      ([k, v]: any) =>
+        k !== 'companies_to_confirm' &&
+        typeof v === 'object' &&
+        v?.company &&
+        !Object.prototype.hasOwnProperty.call(v, 'email_sent')
+    ).length;
 
     // maxCompanies stored in Firestore accumulates across plan re-purchases;
     // fall back to the plan config for users who haven't gone through a paid purchase.
@@ -91,6 +98,8 @@ export async function GET(request) {
         credits: userData.credits,
         maxCompanies,
         companiesUsed,
+        generationsInProgress,
+        campaignSetupPending: userData.campaignSetupPending ?? null,
         picture: decodedToken.picture,
       }
     });

@@ -65,9 +65,10 @@ def start_emails_generation():
         return jsonify({"error": "Unauthorized"}), 401
     data = request.json or {}
     user_id = data.get("user_id")
+    run_id = data.get("run_id")
     if not user_id:
         return jsonify({"error": "user_id mancante o vuoto"}), 400
-    return emails_generation_service.start(str(user_id))
+    return emails_generation_service.start(str(user_id), str(run_id) if run_id else None)
 
 
 @app.route("/start_onboarding_recruiter", methods=["POST"])

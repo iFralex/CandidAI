@@ -41,7 +41,7 @@ const ALLOWED: Record<OnboardingLifecycleStage, Set<OnboardingLifecycleStage>> =
   post_purchase_review: new Set(["post_purchase_profile", "post_purchase_companies", "post_purchase_filters", "post_purchase_instructions", "completed"]),
   // An already-completed paid user who buys another plan re-enters the review
   // hub to configure newly-unlocked features and add companies before relaunch.
-  completed: new Set(["post_purchase_review"]),
+  completed: new Set(["post_purchase_companies", "post_purchase_review"]),
 };
 
 export function isOnboardingStage(value: unknown): value is OnboardingLifecycleStage {

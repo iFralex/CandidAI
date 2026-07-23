@@ -5,7 +5,7 @@ import { plansInfo, CREDIT_PACKAGES } from "@/config";
 import { FieldValue } from "firebase-admin/firestore";
 import { recordPaymentSuccess } from "@/lib/server-track";
 import { incrementDiscountUsage } from "@/lib/discount-codes";
-import { computePlanGrant, recordPlanPurchaseTransition, type PlanGrantOutcome } from "@/lib/plan-purchase";
+import { computePlanGrant, recordPlanPurchaseTransition, type PlanGrant } from "@/lib/plan-purchase";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-11-17.clover" });
 
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       // discount usage. Use a Firestore transaction so the existence check
       // and the side-effecting writes happen atomically; if the doc already
       // exists at commit time, the transaction's other writes never apply.
-      let planOutcome: PlanGrantOutcome | null = null;
+      const planGrantRef: { value: PlanGrant | null } = { value: null };
       let alreadyProcessed = false;
 
       // Pre-fetch out-of-transaction reads that don't need atomicity
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
           const plan = plansInfo.find((p) => p.id === itemId);
           if (!plan) throw new Error("Piano non trovato");
           const grant = computePlanGrant({ itemId, userData: userSnapData, resultsData });
-          planOutcome = grant.outcome;
+          planGrantRef.value = grant;
           tx.update(userRef, {
             ...grant.fields,
             credits: FieldValue.increment(grant.includedCredits),
@@ -108,11 +108,11 @@ export async function POST(req: Request) {
         itemId,
         amountCents: paymentIntent.amount,
         currency: paymentIntent.currency,
-        isOnboarding: planOutcome === "first_paid",
+        isOnboarding: planGrantRef.value?.outcome === "first_paid",
         source: "webhook",
       });
-      if (purchaseType === "plan" && planOutcome) {
-        await recordPlanPurchaseTransition({ outcome: planOutcome, userId, itemId, userData: userSnapData, paymentId: paymentIntent.id });
+      if (purchaseType === "plan" && planGrantRef.value) {
+        await recordPlanPurchaseTransition({ grant: planGrantRef.value, userId, itemId, userData: userSnapData, paymentId: paymentIntent.id });
       }
 
       // No startServer at payment time: the buyer launches explicitly from the

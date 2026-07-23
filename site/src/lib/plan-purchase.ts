@@ -1,23 +1,28 @@
 import "server-only";
 
-import { plansData, isPaidPlan } from "@/config";
-import { recordOnboardingTransition } from "@/lib/onboarding-lifecycle";
+import { plansData, isPaidPlan, planRank } from "@/config";
+import { recordOnboardingTransition, type OnboardingLifecycleStage } from "@/lib/onboarding-lifecycle";
 
 /**
  * How a plan purchase should route the buyer afterwards.
  *
- * - `first_paid`  — the user's first paid plan (from free/unset). Runs the full
+ * - `first_paid` — the user's first paid plan (from free/unset). Runs the full
  *   post-purchase onboarding (profile → companies → filters → instructions →
  *   review → launch) so the campaign is configured before anything generates.
- * - `reconfigure` — an already-paid user changed tier or topped up capacity.
- *   Drops them into the review hub to configure any newly-unlocked features and
- *   add companies, then launch explicitly. Capacity carries over (additive).
+ * - `reconfigure` — an already-paid user changed tier or topped up capacity, and
+ *   nothing is currently generating. An upgrade walks the setup from the
+ *   companies step (so newly-unlocked filters/instructions get configured); a
+ *   same-tier top-up goes straight to the review hub. Capacity is additive.
+ * - `reconfigure_deferred` — same as reconfigure, but a previous campaign is
+ *   still generating. We do NOT pull the user into setup (that would hide the
+ *   running campaign); entitlements are granted and the intended setup is
+ *   stashed in `campaignSetupPending` so the dashboard can offer it on demand.
  *
- * Neither outcome starts generation at payment time: the user always launches
- * explicitly from the post-purchase flow. Server-side generation is idempotent
- * (it only processes not-yet-complete companies), so relaunching is safe.
+ * No outcome starts generation at payment time: the user always launches
+ * explicitly. Server generation is idempotent (only not-yet-complete companies
+ * are processed), so relaunching after a previous run is safe.
  */
-export type PlanGrantOutcome = "first_paid" | "reconfigure";
+export type PlanGrantOutcome = "first_paid" | "reconfigure" | "reconfigure_deferred";
 
 export interface PlanGrant {
   outcome: PlanGrantOutcome;
@@ -25,6 +30,8 @@ export interface PlanGrant {
   fields: Record<string, unknown>;
   /** Plan credits to grant via FieldValue.increment on the caller side. */
   includedCredits: number;
+  /** The post-purchase stage this purchase routes to (analytics + deferred CTA). */
+  stage: OnboardingLifecycleStage;
 }
 
 /** Count companies that already occupy a capacity slot (have a saved company). */
@@ -36,9 +43,24 @@ function countUsedCompanies(resultsData: Record<string, unknown> | undefined): n
 }
 
 /**
+ * Whether a previously-launched campaign is still generating: any company that
+ * has been started (has a saved `company`) but has no `email_sent` marker yet.
+ * Mirrors the server's own completion signal.
+ */
+export function isGenerationInProgress(resultsData: Record<string, unknown> | undefined): boolean {
+  return Object.entries(resultsData ?? {}).some(
+    ([k, v]: [string, unknown]) =>
+      k !== "companies_to_confirm" &&
+      typeof v === "object" && v !== null &&
+      (v as { company?: unknown }).company &&
+      !Object.prototype.hasOwnProperty.call(v, "email_sent")
+  );
+}
+
+/**
  * Decide the entitlement update + post-purchase routing for a plan purchase.
  * Pure: no I/O — the caller applies `fields` inside its Firestore transaction
- * and uses `outcome` to drive analytics/onboarding side effects.
+ * and uses `outcome`/`stage` to drive analytics/onboarding side effects.
  */
 export function computePlanGrant(args: {
   itemId: string;
@@ -60,6 +82,7 @@ export function computePlanGrant(args: {
     return {
       outcome: "first_paid",
       includedCredits,
+      stage: "post_purchase",
       fields: {
         plan: args.itemId,
         maxCompanies: newPlanMaxCompanies,
@@ -71,16 +94,42 @@ export function computePlanGrant(args: {
 
   // Already paid → paid: stack any unused capacity onto the new plan's capacity.
   const currentMax = (args.userData?.maxCompanies as number | undefined) ?? 0;
-  const remaining = Math.max(0, currentMax - countUsedCompanies(args.resultsData));
+  const maxCompanies = newPlanMaxCompanies + Math.max(0, currentMax - countUsedCompanies(args.resultsData));
+
+  // An upgrade unlocks new configuration (filters, custom instructions), so walk
+  // the setup from the companies step instead of dropping at the final review —
+  // otherwise newly-available fields are never offered. A same-tier top-up has
+  // nothing new to configure, so go straight to the review hub.
+  const isUpgrade = planRank(args.itemId) > planRank(currentPlan);
+  const stage: OnboardingLifecycleStage = isUpgrade ? "post_purchase_companies" : "post_purchase_review";
+  const step = isUpgrade ? 7 : 9;
+
+  // A previous campaign is still generating: don't yank the user into setup and
+  // hide it. Grant entitlements, keep them on the dashboard, and stash the
+  // intended setup for a dashboard banner to offer on demand.
+  if (isGenerationInProgress(args.resultsData)) {
+    return {
+      outcome: "reconfigure_deferred",
+      includedCredits,
+      stage,
+      fields: {
+        plan: args.itemId,
+        maxCompanies,
+        campaignSetupPending: { stage, step, plan: args.itemId },
+      },
+    };
+  }
 
   return {
     outcome: "reconfigure",
     includedCredits,
+    stage,
     fields: {
       plan: args.itemId,
-      maxCompanies: newPlanMaxCompanies + remaining,
-      onboardingStep: 9,
-      onboardingStage: "post_purchase_review",
+      maxCompanies,
+      onboardingStep: step,
+      onboardingStage: stage,
+      campaignSetupPending: null,
     },
   };
 }
@@ -91,37 +140,35 @@ export function computePlanGrant(args: {
  * wrote it. Mirrors the routing decided by {@link computePlanGrant}.
  */
 export async function recordPlanPurchaseTransition(args: {
-  outcome: PlanGrantOutcome;
+  grant: PlanGrant;
   userId: string;
   itemId: string;
   userData: Record<string, unknown> | undefined;
   paymentId: string;
 }): Promise<void> {
+  const { grant } = args;
   const previousStage = args.userData?.onboardingStage as string | undefined;
-  if (args.outcome === "first_paid") {
-    await recordOnboardingTransition({
-      userId: args.userId,
-      from: previousStage ?? "checkout",
-      to: "post_purchase",
-      flow: "post_purchase",
-      step: 6,
-      reason: "payment_succeeded",
-      metadata: { plan: args.itemId, payment_id: args.paymentId },
-      updateStage: false,
-    });
-    return;
-  }
+  const reason =
+    grant.outcome === "first_paid" ? "payment_succeeded"
+    : grant.outcome === "reconfigure_deferred" ? "plan_reconfigure_deferred"
+    : "plan_reconfigure";
+  const step =
+    grant.outcome === "first_paid" ? 6
+    : ((grant.fields.onboardingStep as number | undefined)
+       ?? ((grant.fields.campaignSetupPending as { step?: number } | null | undefined)?.step)
+       ?? 9);
   await recordOnboardingTransition({
     userId: args.userId,
-    from: previousStage ?? "completed",
-    to: "post_purchase_review",
+    from: previousStage ?? (grant.outcome === "first_paid" ? "checkout" : "completed"),
+    to: grant.stage,
     flow: "post_purchase",
-    step: 9,
-    reason: "plan_reconfigure",
+    step,
+    reason,
     metadata: {
       plan: args.itemId,
       previous_plan: (args.userData?.plan as string | undefined) ?? null,
       payment_id: args.paymentId,
+      deferred: grant.outcome === "reconfigure_deferred",
     },
     updateStage: false,
   });

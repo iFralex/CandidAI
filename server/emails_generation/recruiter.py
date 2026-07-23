@@ -714,7 +714,7 @@ def find_recruiter_by_linkedin_urls(linkedin_urls: List[str], api_key: Optional[
     return {}
 
 
-def find_recruiters_for_user(user_id, ids, companies, defaultQueries, priority="normal", progress_callback=None, query_progress_callback=None):
+def find_recruiters_for_user(user_id, ids, companies, defaultQueries, priority="normal", progress_callback=None, query_progress_callback=None, per_company_customizations=None):
     results = {}
     user_instructions = {}
 
@@ -729,7 +729,13 @@ def find_recruiters_for_user(user_id, ids, companies, defaultQueries, priority="
         print("⚠️ Nessuna chiave PDL configurata (PEOPLE_DATA_API_KEY / PEOPLE_DATA_API_KEY_FREE)")
 
     for company in companies:
-        _queries, user_instruction, recruiter_linkedin_urls = get_custom_queries(user_id, ids[f'{company["name"]}-{user_id}'])
+        frozen = (per_company_customizations or {}).get(company["name"])
+        if frozen is not None:
+            _queries = frozen.get("queries", [])
+            user_instruction = frozen.get("instructions", "")
+            recruiter_linkedin_urls = frozen.get("recruiter_linkedin_urls", [])
+        else:
+            _queries, user_instruction, recruiter_linkedin_urls = get_custom_queries(user_id, ids[f'{company["name"]}-{user_id}'])
         queries = _queries or defaultQueries
         user_instructions[ids[f'{company["name"]}-{user_id}']] = user_instruction
 

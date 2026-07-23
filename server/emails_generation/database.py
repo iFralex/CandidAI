@@ -51,6 +51,19 @@ def get_account_data(user_id):
     else:
         return doc.to_dict()
 
+def get_campaign_run(user_id, run_id):
+    if not run_id:
+        return None
+    doc = db.collection("users").document(user_id)\
+        .collection("campaign_runs").document(run_id).get()
+    return doc.to_dict() if doc.exists else None
+
+def update_campaign_run(user_id, run_id, data):
+    if not run_id:
+        return
+    db.collection("users").document(user_id)\
+        .collection("campaign_runs").document(run_id).set(data, merge=True)
+
 def get_changed_companies(user_id):
     """
     Recupera i dati dell'account per un determinato utente.

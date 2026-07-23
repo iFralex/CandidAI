@@ -17,6 +17,7 @@ import Link from "next/link";
 import { TutorialTrigger } from "@/components/TutorialTrigger";
 import { AmbassadorPromo } from "@/components/AmbassadorPromo";
 import { plansData } from "@/config";
+import { beginPendingCampaignSetup } from "@/actions/onboarding-actions";
 
 const DASHBOARD_STEPS = [
     {
@@ -442,7 +443,32 @@ const Page = async () => {
                 </Card>
             )}
 
-            {!showFreePreviewUpgrade && <PaidCapacityBanner plan={user.plan} maxCompanies={user.maxCompanies} companiesUsed={user.companiesUsed} credits={user.credits ?? 0} />}
+            {user.campaignSetupPending && (
+                <Card hover={false} className="relative overflow-hidden border-emerald-400/35 bg-gradient-to-br from-emerald-500/15 via-violet-500/10 to-transparent p-6 sm:p-8">
+                    <div className="pointer-events-none absolute -right-12 -top-20 h-52 w-52 rounded-full bg-emerald-500/15 blur-3xl" />
+                    <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex items-start gap-4 sm:gap-5">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/25 bg-emerald-400/10 text-emerald-300">
+                                <CheckCircle className="h-7 w-7" />
+                            </div>
+                            <div>
+                                <Badge className="border-emerald-300/20 bg-emerald-400/10 text-emerald-300">Plan upgraded</Badge>
+                                <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl">Your current campaign keeps moving.</h2>
+                                <p className="mt-2 max-w-2xl leading-7 text-gray-300">
+                                    {user.generationsInProgress || "Your"} {user.generationsInProgress === 1 ? "company is" : "companies are"} still being generated with the settings used at launch. Your new profile, recruiter filters, and custom instructions will apply only to the next companies you launch.
+                                </p>
+                            </div>
+                        </div>
+                        <form action={beginPendingCampaignSetup} className="shrink-0">
+                            <Button type="submit" size="lg" variant="primary" icon={<ArrowRight className="h-4 w-4" />}>
+                                Configure new companies
+                            </Button>
+                        </form>
+                    </div>
+                </Card>
+            )}
+
+            {!showFreePreviewUpgrade && !user.campaignSetupPending && <PaidCapacityBanner plan={user.plan} maxCompanies={user.maxCompanies} companiesUsed={user.companiesUsed} credits={user.credits ?? 0} />}
 
             <Suspense fallback={<DashboardSkeleton />}>
                 <ResultsWrapper userId={user.uid} plan={user.plan ?? "unknown"} maxCompanies={user.maxCompanies} companiesUsed={user.companiesUsed} />

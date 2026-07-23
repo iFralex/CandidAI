@@ -3,6 +3,7 @@ from server.emails_generation.blog_posts import get_blog_posts, extract_articles
 from server.emails_generation.email_generator import generate_email
 from server.emails_generation.database import (
     get_account_data,
+    get_campaign_run,
     get_changed_companies,
     save_companies_to_results,
     get_results_status,
@@ -12,6 +13,7 @@ from server.emails_generation.database import (
     get_user_data,
     valid_account,
     update_pending_articles_content,
+    update_campaign_run,
 )
 import logging
 import os
@@ -20,7 +22,7 @@ import requests
 import hashlib
 from server.analytics import track
 
-def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
+def main(user_id, mode="auto", manual_tasks=None, target_companies=None, run_id=None):
     """
     Esegue i task per generare blog, recruiter ed email in modalità automatica o manuale.
 
@@ -33,7 +35,9 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
         print("❌ Account non valido. Completa il profilo prima di eseguire lo script.")
         return
        
-    account = get_account_data(user_id)
+    live_account = get_account_data(user_id)
+    campaign_run = get_campaign_run(user_id, run_id) if run_id else None
+    account = (campaign_run or {}).get("configuration") or live_account
     changed_companies = get_changed_companies(user_id)
 
     if not account:
@@ -45,9 +49,11 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
     cv_url = account["cvUrl"]
     position_description = account.get("customizations", {}).get("position_description", "")
     user_instructions = account.get("customizations", {}).get("instructions", "")
+    per_company_customizations = account.get("perCompanyCustomizations", {})
     
     user_data = get_user_data(user_id) or {}
-    requires_company_confirmation = user_data.get("plan") == "ultra"
+    run_plan = (campaign_run or {}).get("plan")
+    requires_company_confirmation = (run_plan or user_data.get("plan")) == "ultra"
 
     # Crea o recupera ID univoci per ogni azienda
     companies, ids, new_companies = save_companies_to_results(user_id, companies, changed_companies)
@@ -129,7 +135,8 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
             try:
                 start = time.time()
                 result_recruiters, custom_user_inscructions = find_recruiters_for_user(
-                    user_id, single_id, single_company_list, account.get("queries", [])
+                    user_id, single_id, single_company_list, account.get("queries", []),
+                    per_company_customizations=per_company_customizations,
                 )
                 logging.info(f"✅ Recruiter completato per {name} ({time.time() - start:.2f}s)")
                 # Detect "recruiter not found" — risultato vuoto, non eccezione.
@@ -182,7 +189,11 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None):
                 result_recruiters = {name: [row.get("recruiter", None), row.get("query", None)]}
                 result_company_info = {name: row.get("company_info", None)}
                 if not ids[company_key] in custom_user_inscructions:
-                    queries, custom_user_inscructions[ids[company_key]], _ = get_custom_queries(user_id, ids[f'{company["name"]}-{user_id}'])
+                    frozen = per_company_customizations.get(name)
+                    if frozen is not None:
+                        custom_user_inscructions[ids[company_key]] = frozen.get("instructions", "")
+                    else:
+                        queries, custom_user_inscructions[ids[company_key]], _ = get_custom_queries(user_id, ids[f'{company["name"]}-{user_id}'])
 
                 email_result = generate_email(
                     user_id,
@@ -343,5 +354,19 @@ def _send_notification_email(user_id, generated_email_data):
         logging.error(f"❌ Errore invio notifica email: {e}")
 
 
-def run(user_id):
-    return main(user_id=user_id, mode="auto")
+def run(user_id, run_id=None):
+    if run_id:
+        update_campaign_run(user_id, run_id, {"status": "running", "started_at": time.time()})
+    try:
+        result = main(user_id=user_id, mode="auto", run_id=run_id)
+        if run_id:
+            update_campaign_run(user_id, run_id, {"status": "completed", "completed_at": time.time()})
+        return result
+    except Exception as exc:
+        if run_id:
+            update_campaign_run(user_id, run_id, {
+                "status": "failed",
+                "failed_at": time.time(),
+                "error": str(exc)[:500],
+            })
+        raise

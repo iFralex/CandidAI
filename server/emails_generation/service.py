@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 from flask import jsonify
 from server.worker import enqueue
 import server.emails_generation.main as main_module
@@ -7,15 +8,15 @@ import server.emails_generation.onboarding_preview as preview_module
 logger = logging.getLogger(__name__)
 
 
-def _run(user_id: str) -> None:
-    logger.info(f"Avvio generazione email per user {user_id}")
-    result = main_module.run(user_id)
-    logger.info(f"Generazione completata per user {user_id}: {result}")
+def _run(user_id: str, run_id: Optional[str] = None) -> None:
+    logger.info(f"Avvio generazione email per user {user_id}, run {run_id or 'legacy'}")
+    result = main_module.run(user_id, run_id=run_id)
+    logger.info(f"Generazione completata per user {user_id}, run {run_id or 'legacy'}: {result}")
 
 
-def start(user_id: str):
+def start(user_id: str, run_id: Optional[str] = None):
     try:
-        enqueue(_run, args=(user_id,), queue="emails_generation")
+        enqueue(_run, args=(user_id, run_id), queue="emails_generation")
     except Exception as e:
         logger.error(f"Errore enqueue start_emails_generation: {e}")
         return jsonify({"error": "Errore interno del server"}), 500
