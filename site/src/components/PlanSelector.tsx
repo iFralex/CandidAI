@@ -63,12 +63,20 @@ export function PlanSelector({
         const container = carouselRef.current;
         if (!container || window.matchMedia("(min-width: 768px)").matches) return;
         const popularIndex = plans.findIndex((p) => p.popular);
-        if (popularIndex < 1) return;
-        const card = container.children[popularIndex] as HTMLElement | undefined;
-        if (!card) return;
-        const delta = (card.getBoundingClientRect().left - container.getBoundingClientRect().left)
-            - (container.clientWidth - card.clientWidth) / 2;
-        container.scrollBy({ left: delta, behavior: "auto" });
+        if (popularIndex < 0) return;
+        // Defer one frame so the carousel is laid out before we measure. Measuring
+        // too early (container.clientWidth still 0) makes the centering offset
+        // negative, which over-scrolls to the last card (Ultra) instead of Pro.
+        const raf = requestAnimationFrame(() => {
+            const card = container.children[popularIndex] as HTMLElement | undefined;
+            if (!card || !container.clientWidth) return;
+            const target = container.scrollLeft
+                + card.getBoundingClientRect().left
+                - container.getBoundingClientRect().left
+                - (container.clientWidth - card.clientWidth) / 2;
+            container.scrollTo({ left: Math.max(0, target), behavior: "auto" });
+        });
+        return () => cancelAnimationFrame(raf);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mobileCarousel]);
 
