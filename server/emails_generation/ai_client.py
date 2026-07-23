@@ -24,7 +24,18 @@ def parse_json(response: str) -> Any:
     response = re.sub(r"```[^\n]*\n?", "", response)
     response = response.replace("```", "").replace("`", "")
     response = re.sub(r"[​-‍﻿]", "", response)
-    match = re.search(r"(\{.*?\}|\[.*?\])", response, re.DOTALL)
+    stripped = response.strip()
+    # Fast path: the response is already a bare JSON value. DeepSeek's
+    # json_object mode returns exactly this, and it must be tried before any
+    # regex extraction — a lazy {...} match truncates at the first nested "}"
+    # (e.g. the profile's "location" object), producing invalid JSON.
+    try:
+        return json.loads(stripped)
+    except json.JSONDecodeError:
+        pass
+    # Fallback: pull the outermost {...} or [...] out of surrounding prose.
+    # Greedy (not lazy) so a nested "}" cannot cut the object short.
+    match = re.search(r"(\{.*\}|\[.*\])", stripped, re.DOTALL)
     if not match:
         raise ValueError("Nessun oggetto JSON trovato nella stringa")
     fragment = match.group(0).strip()
