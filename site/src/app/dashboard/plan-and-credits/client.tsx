@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowDown, ArrowRight, Building2, Check, Crown, Database, Mail, Search, ShieldCheck, SlidersHorizontal, Sparkles, Target, Zap } from "lucide-react";
 import { track } from "@/lib/analytics";
 import { plansInfo } from "@/config";
@@ -125,6 +126,7 @@ export default function PlanAndCreditsClient({ email, plan = "free_trial", credi
                     ctaLabel="Choose this plan"
                     excludeFree={true}
                     currentPlan={plan}
+                    mobileCarousel
                 />
             </section>
 
@@ -145,20 +147,22 @@ export default function PlanAndCreditsClient({ email, plan = "free_trial", credi
             </section>
 
             <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-                <DialogContent className="max-h-[92vh] w-[calc(100vw-2rem)] max-w-5xl overflow-y-auto p-5 sm:max-w-5xl sm:p-7">
+                <DialogContent className="max-h-[92vh] w-[calc(100vw-2rem)] max-w-5xl p-5 sm:max-w-5xl sm:p-7">
                     <DialogHeader className="pr-8 text-left">
                         <DialogTitle>{checkoutTitle}</DialogTitle>
                         <DialogDescription>Secure one-time payment. Your new capacity is added as soon as Stripe confirms the purchase.</DialogDescription>
                     </DialogHeader>
                     <Separator />
-                    {itemId && (
-                        <UnifiedCheckout
-                            purchaseType={purchaseType}
-                            itemId={itemId}
-                            email={email}
-                            onSuccess={handleSuccess}
-                        />
-                    )}
+                    <ScrollArea className="no-scrollbar overflow-y-auto max-h-[calc(92vh-140px)]">
+                        {itemId && (
+                            <UnifiedCheckout
+                                purchaseType={purchaseType}
+                                itemId={itemId}
+                                email={email}
+                                onSuccess={handleSuccess}
+                            />
+                        )}
+                    </ScrollArea>
                 </DialogContent>
             </Dialog>
         </motion.div>

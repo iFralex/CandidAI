@@ -186,7 +186,10 @@ export function PlanSelector({
                                         (f) => splitFeature(f).base === base
                                     );
                                     const included = Boolean(includedVariant);
-                                    const displayText = includedVariant ?? variants[0].replace(/(\d[\d.,]*)/, "X");
+                                    // For a feature this plan lacks, show the label without the
+                                    // plan-specific number (which would be meaningless here) rather
+                                    // than a bare "X" placeholder — e.g. "credits included", struck.
+                                    const displayText = includedVariant ?? variants[0].replace(/\d[\d.,]*\s*/, "").replace(/\s{2,}/g, " ").trim();
 
                                     return (
                                         <li key={fIndex} className="flex items-start gap-2">
