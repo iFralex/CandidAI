@@ -47,6 +47,10 @@ export const creditsInfo = {
     cost: 75,
     description: "Search for new blog articles for this company"
   },
+  "follow-up": {
+    cost: 50,
+    description: "Generate another personalized follow-up version with new instructions"
+  },
 }
 
 export const plansData = {
@@ -124,7 +128,7 @@ function buildFeatures(data) {
     );
 
   if (data.followUpAutomation)
-    features.push("Follow-up email automation");
+    features.push("Personalized follow-ups and timing reminders");
 
   if (data.companyConfirmationCalls)
     features.push("Company confirmation calls");

@@ -74,11 +74,23 @@ export async function GET(request, { params }) {
             .collection(resultId)
             .doc("unlocked")
 
+        const followUpRef = adminDb
+            .collection("users")
+            .doc(userId)
+            .collection("data")
+            .doc("results")
+            .collection(resultId)
+            .doc("follow_up")
+
+        const userRef = adminDb.collection("users").doc(userId)
+
         // 🔹 Fetch parallelo
-        const [detailsDoc, customizationsDoc, unlockedDoc] = await Promise.all([
+        const [detailsDoc, customizationsDoc, unlockedDoc, followUpDoc, userDoc] = await Promise.all([
             detailsRef.get(),
             customizationsRef.get(),
             unlockedRef.get(),
+            followUpRef.get(),
+            userRef.get(),
         ]);
 
         // 🔹 Dati estratti
@@ -105,6 +117,9 @@ export async function GET(request, { params }) {
             success: true,
             details: detailsData,
             customizations: customizationsData,
+            follow_up: followUpDoc.exists ? followUpDoc.data() : null,
+            plan: userDoc.data()?.plan || "free_trial",
+            user_email: userDoc.data()?.email || "",
         });
 
     } catch (error) {

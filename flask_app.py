@@ -107,6 +107,26 @@ def start_onboarding_profile():
     return emails_generation_service.start_onboarding_profile(str(user_id), str(job_id))
 
 
+@app.route("/generate_follow_up", methods=["POST"])
+def generate_follow_up():
+    if not _api_key_valid():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json or {}
+    context = data.get("context")
+    if not isinstance(context, dict):
+        return jsonify({"error": "context is required"}), 400
+
+    try:
+        from server.emails_generation.follow_up_generator import generate_follow_up as generate
+
+        follow_up = generate(context, data.get("instructions"))
+        return jsonify({"success": True, "follow_up": follow_up})
+    except Exception:
+        logging.getLogger(__name__).exception("Follow-up generation failed")
+        return jsonify({"error": "Follow-up generation failed"}), 500
+
+
 @app.route("/save_session", methods=["POST"])
 def save_session():
     data = request.json or {}

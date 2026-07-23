@@ -17,4 +17,8 @@ describe("creditsInfo Constants Structure", () => {
   it('creditsInfo["change-company"].cost === 70', () => {
     expect(creditsInfo["change-company"].cost).toBe(70);
   });
+
+  it('creditsInfo["follow-up"].cost === 50', () => {
+    expect(creditsInfo["follow-up"].cost).toBe(50);
+  });
 });

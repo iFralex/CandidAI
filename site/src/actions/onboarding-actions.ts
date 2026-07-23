@@ -1882,7 +1882,7 @@ const deleteCreditsPaid = async (userId: string, companyId: string, contentKey: 
     });
 };
 
-const checkAuth = async (needVerified = true) => {
+export const checkAuth = async (needVerified = true) => {
     // Test bypass for non-production environments
     if (process.env.NODE_ENV !== 'production') {
         const cookieStore = await cookies();
