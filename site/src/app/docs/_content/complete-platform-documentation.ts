@@ -145,61 +145,44 @@ Gli utenti possono creare un account attraverso due modalità:
 
 ## Processo di Onboarding
 
-Il processo di onboarding è strutturato in fasi sequenziali che guidano l'utente nella configurazione completa del proprio profilo e delle preferenze di ricerca.
+Dopo la registrazione, CandidAI guida l'utente prima attraverso un'**anteprima gratuita** e, una volta acquistato un piano, attraverso la configurazione completa della campagna. Il pagamento avviene **dopo** aver visto un primo risultato, non prima.
 
-### 1. Scelta del Piano
+### 1. Anteprima Gratuita (nessun pagamento)
 
-L'utente seleziona uno dei quattro piani disponibili:
+Prima di qualsiasi acquisto l'utente ottiene gratuitamente un primo risultato completo:
 
-- **Free**: piano base gratuito
-- **Base**: funzionalità intermedie
-- **Pro**: funzionalità avanzate
-- **Ultra**: accesso completo a tutte le funzionalità
+1. **Sorgente del profilo**: inserimento dell'URL del profilo LinkedIn e/o caricamento del CV.
+2. **Revisione del profilo**: il sistema estrae automaticamente nome e cognome, nazionalità, job title attuale, CV completo, skill chiave, esperienze lavorative, formazione, progetti e certificazioni. **Tutte le informazioni sono completamente modificabili**: l'utente può aggiungere, modificare o eliminare qualsiasi elemento.
+3. **Azienda target**: l'utente indica una singola azienda per cui desidera ottenere un colloquio.
+4. **Ricerca del recruiter**: il sistema individua automaticamente il recruiter più rilevante in quell'azienda.
+5. **Email di anteprima**: viene generata una email personalizzata di esempio, così da valutare il risultato prima di pagare.
 
-Ogni piano differisce per:
-- Numero massimo di aziende target selezionabili
-- Accesso alle funzionalità di personalizzazione avanzate
-- Disponibilità di informazioni aziendali dettagliate
-- Numero di criteri personalizzabili nella strategia di ricerca
+### 2. Scelta del Piano e Pagamento
 
-### 2. Selezione delle Aziende Target
+Per sbloccare una campagna completa (più aziende, email dei recruiter verificate, personalizzazioni avanzate) l'utente sceglie un piano e completa il pagamento. I piani sono **acquisti una tantum**, non abbonamenti ricorrenti:
 
-L'utente può aggiungere le aziende per cui desidera ottenere un colloquio attraverso:
+- **Free Trial** (€0): una sola azienda, con l'email di anteprima
+- **Base** (€24): fino a 20 aziende, con email dei recruiter verificate
+- **Pro** (€49): fino a 50 aziende, fino a 30 strategie di ricerca recruiter, istruzioni custom, follow-up automatico e 1.000 crediti inclusi
+- **Ultra** (€109): fino a 100 aziende, fino a 50 strategie, conferma/strategia/istruzioni per singola azienda, dossier aziendali approfonditi, raccomandazioni AI, generazione prioritaria e 2.500 crediti inclusi
 
-- **Campo di testo con autocompletamento**: digitando il nome dell'azienda, il sistema suggerisce automaticamente i risultati
-- **Limite di selezione**: determinato dal piano sottoscritto
+La capacità di aziende non utilizzata e i crediti residui si **sommano** a ogni nuovo acquisto. È possibile riacquistare lo stesso livello o passare a uno superiore; **non** è possibile scendere a un livello inferiore a quello già posseduto.
 
-Le aziende selezionate costituiranno il target per la generazione delle email personalizzate.
+### 3. Configurazione della Campagna (post-acquisto)
 
-### 3. Inserimento delle Informazioni Personali
+Subito dopo il pagamento, un percorso guidato prepara la campagna prima che venga generato qualsiasi contenuto. La generazione parte **solo** con l'avvio esplicito: nulla viene generato o addebitato finché l'utente non lancia la campagna.
 
-Questa fase è suddivisa in due step:
+#### 3.1 Profilo
 
-#### Step 3.1: Caricamento Dati Iniziali
+Rifinitura del profilo già estratto durante l'anteprima. Le nuove informazioni possono opzionalmente rigenerare le strategie di ricerca recruiter prima della revisione.
 
-L'utente fornisce:
-- **URL del profilo LinkedIn**
-- **Curriculum Vitae** (file)
+#### 3.2 Aziende Target
 
-#### Step 3.2: Compilazione Automatica e Modifica
+L'utente aggiunge le aziende per cui desidera un colloquio, con autocompletamento del nome, fino al limite previsto dal piano.
 
-Il sistema elabora automaticamente le informazioni da LinkedIn e dal CV, compilando i seguenti campi:
+#### 3.3 Strategia di Ricerca Recruiter
 
-- Nome e cognome
-- Nazionalità
-- Job title attuale
-- CV completo
-- Skills chiave
-- Lista delle esperienze lavorative
-- Lista delle esperienze universitarie/formative
-- Lista dei progetti
-- Lista delle certificazioni
-
-**Tutte le informazioni sono completamente modificabili**: l'utente può aggiungere, modificare o eliminare qualsiasi elemento per garantire la massima precisione del proprio profilo.
-
-### 4. Personalizzazione della Strategia di Ricerca Recruiter
-
-*Disponibile solo per i piani che lo prevedono.*
+*Disponibile solo per i piani Pro e Ultra.*
 
 #### Come Funziona la Strategia
 
@@ -250,7 +233,7 @@ Gli utenti con piani idonei possono:
 
 Se il piano non prevede questa funzionalità, viene utilizzata automaticamente la strategia di default.
 
-### 5. Definizione della Job Position e Istruzioni Custom
+#### 3.4 Job Position e Istruzioni Custom
 
 L'utente specifica:
 
@@ -261,9 +244,9 @@ L'utente specifica:
   - Elementi da includere o evitare
   - Qualsiasi altra preferenza comunicativa
 
-### 6. Pagamento
+#### 3.5 Revisione e Avvio
 
-Completamento del pagamento per il piano selezionato.
+Verifica finale della configurazione — profilo, aziende, strategia di ricerca e istruzioni — e avvio esplicito della campagna, che dà il via alla generazione delle email per tutte le aziende.
 
 ---
 
@@ -482,34 +465,32 @@ I crediti possono essere acquistati separatamente o sono inclusi in determinati 
 ## Workflow Completo: Sintesi
 
 \`\`\`
-Registrazione → Scelta Piano → Selezione Aziende → Caricamento Profilo
-                                                    ↓
-                                        Personalizzazione Strategia
-                                                    ↓
-                                        Job Position + Istruzioni
-                                                    ↓
-                                                Pagamento
-                                                    ↓
-                    Raccolta Info Aziendali (se previsto dal piano)
-                                                    ↓
-                            Conferma/Correzione Aziende
-                                                    ↓
-            Personalizzazione per Azienda (strategia + istruzioni)
-                                                    ↓
-                                    Generazione Automatica:
-                        1. Ricerca Recruiter per ogni azienda
-                        2. Ricerca e analisi articoli aziendali
-                        3. Generazione email personalizzata
-                                                    ↓
-                            Revisione Risultati in Dashboard
-                                                    ↓
-                    Opzioni: Rigenerare / Cambiare Recruiter / Esportare Prompt
-                                                    ↓
-                            Invio Email (singolo o blocco)
-                                                    ↓
-                            Conferma Invio sulla Piattaforma
-                                                    ↓
-                        Follow-Up Intelligente (in arrivo)
+Registrazione
+     ↓
+Anteprima Gratuita (nessun pagamento):
+  Profilo (LinkedIn/CV) → Azienda target → Ricerca recruiter → Email di anteprima
+     ↓
+Scelta Piano + Pagamento (acquisto una tantum)
+     ↓
+Configurazione Campagna (post-acquisto):
+  Profilo → Aziende → Strategia (Pro/Ultra) → Job Position + Istruzioni → Revisione
+     ↓
+Avvio esplicito della campagna
+     ↓
+Raccolta Info Aziendali (Ultra: conferma per singola azienda)
+     ↓
+Generazione Automatica:
+  1. Ricerca Recruiter per ogni azienda
+  2. Ricerca e analisi articoli aziendali
+  3. Generazione email personalizzata
+     ↓
+Revisione Risultati in Dashboard
+     ↓
+Opzioni: Rigenerare / Cambiare Recruiter / Esportare Prompt
+     ↓
+Invio Email (singolo o blocco) → Conferma Invio sulla Piattaforma
+     ↓
+Follow-Up automatico (Pro/Ultra)
 \`\`\`
 
 ---
@@ -664,61 +645,44 @@ Users can create an account through two methods:
 
 ## Onboarding Process
 
-The onboarding process is structured in sequential phases that guide the user in the complete configuration of their profile and search preferences.
+After registration, CandidAI guides the user first through a **free preview** and, once a plan is purchased, through the full campaign setup. Payment happens **after** seeing a first result, not before.
 
-### 1. Plan Selection
+### 1. Free Preview (no payment)
 
-The user selects one of the four available plans:
+Before any purchase, the user gets a first complete result for free:
 
-- **Free**: basic free plan
-- **Base**: intermediate features
-- **Pro**: advanced features
-- **Ultra**: complete access to all features
+1. **Profile source**: entering the LinkedIn profile URL and/or uploading the CV.
+2. **Profile review**: the system automatically extracts first and last name, nationality, current job title, complete CV, key skills, work experiences, education, projects and certifications. **All information is completely editable**: the user can add, modify, or delete any element.
+3. **Target company**: the user names a single company they want to get an interview with.
+4. **Recruiter search**: the system automatically identifies the most relevant recruiter at that company.
+5. **Preview email**: a sample personalized email is generated, so the user can judge the result before paying.
 
-Each plan differs in:
-- Maximum number of selectable target companies
-- Access to advanced customization features
-- Availability of detailed company information
-- Number of customizable criteria in the search strategy
+### 2. Plan Selection and Payment
 
-### 2. Target Company Selection
+To unlock a full campaign (more companies, verified recruiter emails, advanced customization) the user chooses a plan and completes payment. Plans are **one-time purchases**, not recurring subscriptions:
 
-The user can add the companies they want to get interviews for through:
+- **Free Trial** (€0): a single company, with the preview email
+- **Base** (€24): up to 20 companies, with verified recruiter emails
+- **Pro** (€49): up to 50 companies, up to 30 recruiter search strategies, custom instructions, automated follow-up and 1,000 credits included
+- **Ultra** (€109): up to 100 companies, up to 50 strategies, per-company confirmation/strategy/instructions, in-depth company dossiers, AI recommendations, priority generation and 2,500 credits included
 
-- **Autocomplete text field**: typing the company name, the system automatically suggests results
-- **Selection limit**: determined by the subscribed plan
+Any unused company capacity and leftover credits **carry over and are added** with each new purchase. You can re-buy the same tier or upgrade to a higher one; you **cannot** move to a tier lower than the one you already own.
 
-The selected companies will constitute the target for generating personalized emails.
+### 3. Campaign Setup (post-purchase)
 
-### 3. Personal Information Input
+Right after payment, a guided flow prepares the campaign before anything is generated. Generation starts **only** on explicit launch: nothing is generated or charged until the user launches the campaign.
 
-This phase is divided into two steps:
+#### 3.1 Profile
 
-#### Step 3.1: Initial Data Upload
+Refining the profile already extracted during the preview. New information can optionally rebuild the recruiter search strategies before review.
 
-The user provides:
-- **LinkedIn profile URL**
-- **Curriculum Vitae** (file)
+#### 3.2 Target Companies
 
-#### Step 3.2: Automatic Completion and Editing
+The user adds the companies they want an interview with, with name autocomplete, up to the plan's limit.
 
-The system automatically processes information from LinkedIn and the CV, filling in the following fields:
+#### 3.3 Recruiter Search Strategy
 
-- First and last name
-- Nationality
-- Current job title
-- Complete CV
-- Key skills
-- List of work experiences
-- List of university/educational experiences
-- List of projects
-- List of certifications
-
-**All information is completely editable**: the user can add, modify, or delete any element to ensure maximum accuracy of their profile.
-
-### 4. Recruiter Search Strategy Personalization
-
-*Available only for plans that include it.*
+*Available only for the Pro and Ultra plans.*
 
 #### How the Strategy Works
 
@@ -769,7 +733,7 @@ Users with eligible plans can:
 
 If the plan doesn't include this functionality, the default strategy is automatically used.
 
-### 5. Job Position Definition and Custom Instructions
+#### 3.4 Job Position Definition and Custom Instructions
 
 The user specifies:
 
@@ -780,9 +744,9 @@ The user specifies:
   - Elements to include or avoid
   - Any other communication preference
 
-### 6. Payment
+#### 3.5 Review and Launch
 
-Completion of payment for the selected plan.
+Final check of the setup — profile, companies, search strategy and instructions — and explicit launch of the campaign, which starts email generation for all companies.
 
 ---
 
@@ -1001,32 +965,32 @@ Credits can be purchased separately or are included in certain plans.
 ## Complete Workflow: Summary
 
 \`\`\`
-Registration → Plan Choice → Company Selection → Profile Upload
-                                                    ↓
-                                        Strategy Personalization
-                                                    ↓
-                                        Job Position + Instructions
-                                                    ↓
-                                                Payment
-                                                    ↓
-                    Company Info Collection (if included in plan)
-                                                    ↓
-                            Company Confirmation/Correction
-                                                    ↓
-            Per-Company Personalization (strategy + instructions)
-                                                    ↓
-                                    Automatic Generation:
-                        1. Recruiter Search for each company
-                        2. Search and analysis of company articles
-                        3. Personalized email generation
-                                                    ↓
-                            Results Review in Dashboard
-                                                    ↓
-                    Options: Regenerate / Change Recruiter / Export Prompt
-                                                    ↓
-                            Email Sending (single or bulk)
-                                                    ↓
-                            Sending Confirmation on Platform
+Registration
+     ↓
+Free Preview (no payment):
+  Profile (LinkedIn/CV) → Target company → Recruiter search → Preview email
+     ↓
+Plan Choice + Payment (one-time purchase)
+     ↓
+Campaign Setup (post-purchase):
+  Profile → Companies → Strategy (Pro/Ultra) → Job Position + Instructions → Review
+     ↓
+Explicit campaign launch
+     ↓
+Company Info Collection (Ultra: per-company confirmation)
+     ↓
+Automatic Generation:
+  1. Recruiter Search for each company
+  2. Search and analysis of company articles
+  3. Personalized email generation
+     ↓
+Results Review in Dashboard
+     ↓
+Options: Regenerate / Change Recruiter / Export Prompt
+     ↓
+Email Sending (single or bulk) → Sending Confirmation on Platform
+     ↓
+Automated Follow-Up (Pro/Ultra)
                                                     ↓
                         Intelligent Follow-Up (coming soon)
 \`\`\`

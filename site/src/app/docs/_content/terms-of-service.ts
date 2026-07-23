@@ -47,7 +47,7 @@ You remain responsible for activity carried out through your account unless it r
 
 CandidAI currently offers one-time purchases rather than recurring subscriptions. The price, included features, company limit and credits shown at checkout form part of your order. Prices displayed to consumers include applicable VAT unless expressly stated otherwise. Invoices are available on request made within seven days of purchase.
 
-Purchasing a new plan replaces the previous plan and its company allowance. Unused credits are added to credits received with the new purchase rather than replaced.
+You may purchase the same plan again or upgrade to a higher tier; you cannot switch to a tier lower than the one you currently hold. A new purchase applies that plan's features and credits; any unused company allowance you already hold carries over and is added to the new plan's allowance, and unused credits are likewise added rather than replaced.
 
 Purchased and included credits:
 
