@@ -120,7 +120,7 @@ function buildFeatures(data) {
 
   if (data.recruiterStrategy)
     features.push(
-      `Custom strategy for recruiter search with ${data.recruiterStrategy} criteria`
+      `Recruiter search strategy with ${data.recruiterStrategy} custom criteria`
     );
 
   if (data.followUpAutomation)
