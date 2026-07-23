@@ -214,6 +214,26 @@ export function isPaidPlan(plan?: string | null): boolean {
   return info ? info.price > 0 : plan !== "free_trial";
 }
 
+/**
+ * Ordinal tier rank of a plan, by price (free_trial = 0, base = 1, pro = 2,
+ * ultra = 3). Unknown/unset plans rank 0. Used to compare tiers for upgrade /
+ * downgrade decisions without hardcoding the plan ids.
+ */
+export function planRank(plan?: string | null): number {
+  if (!plan) return 0;
+  const idx = [...plansInfo].sort((a, b) => a.price - b.price).findIndex((p) => p.id === plan);
+  return idx < 0 ? 0 : idx;
+}
+
+/**
+ * Whether a user on `currentPlan` may purchase `targetPlan`. Buying a strictly
+ * lower tier is not allowed — it would drop paid-for features (see the tier
+ * overwrite discussion). Same tier (capacity top-up) and upgrades are allowed.
+ */
+export function isPlanPurchasable(currentPlan: string | null | undefined, targetPlan: string): boolean {
+  return planRank(targetPlan) >= planRank(currentPlan);
+}
+
 export const CREDIT_PACKAGES = [
   { id: "pkg_1000", credits: 1000, price: 1000 }, // 10€
   { id: "pkg_2500", credits: 2500, price: 2000 }, // 20€

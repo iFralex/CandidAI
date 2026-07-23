@@ -6,7 +6,7 @@ import { Gift, Target, Rocket, Crown, Check, X, CheckCircle } from "lucide-react
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { plansInfo } from "@/config";
+import { plansInfo, planRank } from "@/config";
 import { computePriceInCents, formatPrice } from "@/lib/utils";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -39,6 +39,9 @@ export interface PlanSelectorProps {
     excludeFree?: boolean;
     /** On phones, keep the comparison compact with one swipeable card at a time. */
     mobileCarousel?: boolean;
+    /** The plan the user already owns. Lower tiers become non-purchasable
+     *  ("Included"); the current tier is labelled and offered as a top-up. */
+    currentPlan?: string;
 }
 
 export function PlanSelector({
@@ -48,8 +51,10 @@ export function PlanSelector({
     ctaLabel = "Select Plan",
     excludeFree = true,
     mobileCarousel = false,
+    currentPlan,
 }: PlanSelectorProps) {
     const plans = excludeFree ? plansInfo.filter((p) => p.id !== "free_trial") : plansInfo;
+    const currentRank = planRank(currentPlan);
 
     // On phones, start the carousel centered on the recommended (popular) plan.
     const carouselRef = useRef<HTMLDivElement>(null);
@@ -111,6 +116,9 @@ export function PlanSelector({
                 const Icon = iconMap[plan.icon] || Target;
                 const isSelected = selectedPlanId === plan.id;
                 const amountCents = computePriceInCents("plan", plan.id);
+                const rank = planRank(plan.id);
+                const isOwnedLower = Boolean(currentPlan) && rank < currentRank;
+                const isCurrent = Boolean(currentPlan) && rank === currentRank && currentRank > 0;
 
                 return (
                     <motion.div
@@ -118,22 +126,30 @@ export function PlanSelector({
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: index * 0.1 }}
-                        onClick={() => handlePlanClick(plan as PlanInfo)}
-                        className={mobileCarousel ? "w-[88%] shrink-0 snap-center cursor-pointer first:ml-[6%] last:mr-[6%] md:ml-0 md:mr-0 md:w-auto md:shrink" : "cursor-pointer"}
+                        onClick={() => { if (!isOwnedLower) handlePlanClick(plan as PlanInfo); }}
+                        className={mobileCarousel
+                            ? `w-[88%] shrink-0 snap-center first:ml-[6%] last:mr-[6%] md:ml-0 md:mr-0 md:w-auto md:shrink ${isOwnedLower ? "cursor-default" : "cursor-pointer"}`
+                            : isOwnedLower ? "cursor-default" : "cursor-pointer"}
                     >
                         <Card
                             className={`flex flex-col p-6 relative h-full transition-all duration-200 ${
-                                isSelected
+                                isOwnedLower
+                                    ? "opacity-60"
+                                    : isSelected
                                     ? "ring-2 ring-violet-500 bg-violet-500/10"
+                                    : isCurrent
+                                    ? "ring-2 ring-emerald-500/40"
                                     : plan.popular
                                     ? "ring-2 ring-violet-500/50"
                                     : ""
                             }`}
                         >
-                            {plan.popular && (
+                            {(isOwnedLower || isCurrent || plan.popular) && (
                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                                    <Badge className="bg-violet-500 text-white text-xs px-3 py-1">
-                                        Most Popular
+                                    <Badge className={`text-white text-xs px-3 py-1 ${
+                                        isOwnedLower ? "bg-emerald-600" : isCurrent ? "bg-emerald-500" : "bg-violet-500"
+                                    }`}>
+                                        {isOwnedLower ? "Included" : isCurrent ? "Your plan" : "Most Popular"}
                                     </Badge>
                                 </div>
                             )}
@@ -185,14 +201,25 @@ export function PlanSelector({
                                 })}
                             </ul>
 
-                            <Button
-                                variant={isSelected ? "primary" : plan.popular ? "primary" : "secondary"}
-                                className="w-full"
-                                onClick={(e) => handleCtaClick(e, plan as PlanInfo)}
-                                icon={isSelected ? <CheckCircle className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
-                            >
-                                {isSelected ? "Selected" : ctaLabel}
-                            </Button>
+                            {isOwnedLower ? (
+                                <Button
+                                    variant="secondary"
+                                    className="w-full"
+                                    disabled
+                                    icon={<Check className="w-5 h-5" />}
+                                >
+                                    Included in your plan
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant={isSelected ? "primary" : plan.popular ? "primary" : "secondary"}
+                                    className="w-full"
+                                    onClick={(e) => handleCtaClick(e, plan as PlanInfo)}
+                                    icon={isSelected ? <CheckCircle className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+                                >
+                                    {isSelected ? "Selected" : isCurrent ? "Add more capacity" : ctaLabel}
+                                </Button>
+                            )}
                         </Card>
                     </motion.div>
                 );

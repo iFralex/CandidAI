@@ -124,6 +124,7 @@ export default function PlanAndCreditsClient({ email, plan = "free_trial", credi
                     onCtaClick={handlePlanSelect}
                     ctaLabel="Choose this plan"
                     excludeFree={true}
+                    currentPlan={plan}
                 />
             </section>
 

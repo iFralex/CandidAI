@@ -2,7 +2,7 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { plansInfo, CREDIT_PACKAGES } from "@/config";
+import { plansInfo, CREDIT_PACKAGES, isPlanPurchasable } from "@/config";
 import { applyDiscount } from "@/lib/utils";
 import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
@@ -46,6 +46,12 @@ export async function POST(req: Request) {
         if (purchaseType === "plan") {
             const plan = plansInfo.find((p) => p.id === itemId);
             if (!plan) return NextResponse.json({ error: "Piano non valido" }, { status: 400 });
+            // Never let a user drop to a lower tier than they already own — it
+            // would strip paid-for features. Enforced here, the single entry
+            // point for every purchase (paid PaymentIntent and free < €1 alike).
+            if (!isPlanPurchasable(user.plan, itemId)) {
+                return NextResponse.json({ error: "You already own a plan at this level or higher." }, { status: 400 });
+            }
             amountInCents = Math.round(plan.price * 100);
             if (amountInCents === 0) {
                 return NextResponse.json({ error: "Free plans do not require payment" }, { status: 400 });
