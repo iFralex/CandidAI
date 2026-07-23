@@ -48,6 +48,54 @@ const journey = [
 // to be read without rushing.
 const searchSceneDurations = [4000, 9000, 4000, 10500, 4000]
 
+function WorkingSignal({ mode }: { mode: 'profile' | 'search' | 'email' }) {
+  const reduceMotion = useReducedMotion()
+  const Icon = mode === 'profile' ? Sparkles : mode === 'search' ? Target : Mail
+  const colors = mode === 'profile'
+    ? ['#8b5cf6', '#a855f7', '#d946ef', '#8b5cf6']
+    : mode === 'search'
+      ? ['#7c3aed', '#a855f7', '#22d3ee', '#7c3aed']
+      : ['#a855f7', '#d946ef', '#34d399', '#a855f7']
+
+  return (
+    <div className="relative mx-auto mb-7 h-9 w-40 overflow-hidden" aria-hidden="true">
+      <div className="absolute inset-0 flex items-center justify-center">
+        <motion.div
+          className="flex h-7 w-7 items-center justify-center rounded-full border border-violet-300/20 bg-violet-400/10 text-violet-200 shadow-[0_0_24px_rgba(139,92,246,0.18)]"
+          animate={reduceMotion ? undefined : { scale: [0.92, 1.06, 0.92], opacity: [0.7, 1, 0.7] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <Icon className="h-3.5 w-3.5" />
+        </motion.div>
+      </div>
+      {!reduceMotion && Array.from({ length: 7 }).map((_, index) => (
+        <motion.span
+          key={index}
+          className="absolute left-1/2 top-1/2 block h-2 w-2 rounded-full"
+          style={{
+            marginLeft: -4,
+            marginTop: -4,
+            background: `linear-gradient(135deg, ${colors[index % colors.length]}, ${colors[(index + 1) % colors.length]})`,
+            boxShadow: `0 0 12px ${colors[index % colors.length]}66`,
+          }}
+          initial={{ x: 92, scale: 0.3, opacity: 0 }}
+          animate={{
+            x: [92, 58, 25, 0, -25, -58, -92],
+            scale: [0.3, 0.55, 0.85, 1.15, 0.85, 0.55, 0.3],
+            opacity: [0, 0.65, 0.9, 1, 0.9, 0.65, 0],
+          }}
+          transition={{
+            duration: 3.8,
+            delay: index * 0.42,
+            repeat: Infinity,
+            ease: [0.4, 0, 0.2, 1],
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 function JourneyHeader({ stage }: { stage: OnboardingStage }) {
   const active = stage === 'profile_source' ? 0
     : stage === 'target_company' ? 1
@@ -176,9 +224,12 @@ function SearchExperience({ preview, replay = false, onReplayComplete }: { previ
     {replay && <Button variant="ghost" size="sm" className="absolute right-4 top-0 z-10 text-gray-500" onClick={onReplayComplete}>Back to result</Button>}
     <motion.div className="relative z-10 mx-auto flex w-fit items-center gap-3 rounded-2xl border border-white/10 bg-black/45 px-4 py-3 shadow-xl backdrop-blur-xl sm:absolute sm:left-1/2 sm:top-0 sm:-translate-x-1/2" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.6 }}><CompanyLogo company={preview.company?.domain || company} maxSize={8} minSize={8} /><div className="min-w-0"><p className="text-[10px] uppercase tracking-[0.18em] text-gray-500">Researching</p><p className="max-w-48 truncate text-sm font-medium text-white">{company}</p></div></motion.div>
     <div className="flex min-h-[430px] items-center justify-center px-1 py-8 sm:min-h-0 sm:flex-1 sm:px-4 sm:py-0 sm:pb-64">
-      <AnimatePresence mode="wait">
-        <motion.div key={scene} className="w-full" initial={{ opacity: 0, y: 28, filter: 'blur(8px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -22, filter: 'blur(8px)' }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>{scenes[scene]}</motion.div>
-      </AnimatePresence>
+      <div className="w-full">
+        <WorkingSignal mode="search" />
+        <AnimatePresence mode="wait">
+          <motion.div key={scene} className="w-full" initial={{ opacity: 0, y: 28, filter: 'blur(8px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -22, filter: 'blur(8px)' }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>{scenes[scene]}</motion.div>
+        </AnimatePresence>
+      </div>
     </div>
     <ProgressScene
       title={visibleStrategy || 'Preparing the most precise strategy'}
@@ -207,9 +258,12 @@ function ProfileBuildingExperience({ preview }: { preview: OnboardingPreviewStat
   }, [scene])
   return <div className="relative mx-auto flex max-w-5xl flex-col overflow-visible sm:min-h-[680px] sm:overflow-hidden">
     <div className="flex min-h-[430px] items-center justify-center px-1 py-8 sm:min-h-0 sm:flex-1 sm:px-4 sm:py-0 sm:pb-64">
-      <AnimatePresence mode="wait">
-        <motion.div key={scene} className="w-full" initial={{ opacity: 0, y: 28, filter: 'blur(8px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -22, filter: 'blur(8px)' }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>{scenes[scene]}</motion.div>
-      </AnimatePresence>
+      <div className="w-full">
+        <WorkingSignal mode="profile" />
+        <AnimatePresence mode="wait">
+          <motion.div key={scene} className="w-full" initial={{ opacity: 0, y: 28, filter: 'blur(8px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -22, filter: 'blur(8px)' }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>{scenes[scene]}</motion.div>
+        </AnimatePresence>
+      </div>
     </div>
     <ProgressScene
       title={preview.profileProgress || 'Reading your CV'}
@@ -221,6 +275,7 @@ function ProfileBuildingExperience({ preview }: { preview: OnboardingPreviewStat
 
 function ApplicationAssembly({ preview }: { preview: OnboardingPreviewState }) {
   return <motion.div className="mx-auto flex min-h-[590px] max-w-3xl flex-col items-center justify-center text-center" initial={{ opacity: 0, y: 40, filter: 'blur(12px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} exit={{ opacity: 0, y: -32, filter: 'blur(10px)' }} transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}>
+    <WorkingSignal mode="email" />
     <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.6 }}><div className="mx-auto mb-5 w-fit rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-2 shadow-2xl shadow-emerald-500/10"><CompanyLogo company={preview.company?.domain || preview.company?.name} maxSize={14} minSize={14} /></div><p className="text-sm uppercase tracking-[0.2em] text-emerald-300">Match found at {preview.company?.name}</p><h2 className="mt-4 text-3xl font-bold text-white sm:text-5xl">The best recruiter for you is</h2></motion.div>
     <motion.div layout layoutId="onboarding-recruiter-card" className="mt-8 w-full" initial={{ opacity: 0, scale: 0.92, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}><Card hover={false} className="mx-auto max-w-xl border-emerald-400/20 p-7 sm:p-9"><ProfileAvatar name={preview.recruiter?.name} imageUrl={preview.recruiterProfile?.avatarUrl} size="lg" className="mx-auto" /><p className="mt-5 text-2xl font-semibold text-white">{preview.recruiter?.name}</p><p className="mt-1 text-violet-300">{preview.recruiter?.jobTitle}</p><Separator className="my-6" /><p className="text-sm leading-7 text-gray-300">{preview.recruiterInsight?.reason || `This person emerged from the strongest match between your background and ${preview.company?.name}’s team, using “${preview.matchedQuery?.name || 'the best available strategy'}”.`}</p></Card></motion.div>
     <motion.div className="mt-7 flex items-center gap-2 text-sm text-gray-500" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.15, duration: 0.5 }}><Loader2 className="h-4 w-4 animate-spin text-violet-400" />Generating your personalized email…</motion.div>
