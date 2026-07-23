@@ -14,6 +14,7 @@ from server.emails_generation.database import (
     valid_account,
     update_pending_articles_content,
     update_campaign_run,
+    save_generation_failure,
 )
 import logging
 import os
@@ -165,6 +166,20 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None, run_id=
             try:
                 start = time.time()
                 row = get_results_row(user_id, ids[company_key])
+                recruiter = row.get("recruiter")
+                recruiter_name = recruiter.get("full_name") if isinstance(recruiter, dict) else None
+                if not recruiter_name:
+                    error = "Email generation skipped: no valid recruiter is available"
+                    logging.error(f"❌ {error} for {name}")
+                    failed_steps_by_company.setdefault(name, []).append("email")
+                    save_generation_failure(user_id, ids[company_key], "email", error)
+                    track("server_company_step_failed", {
+                        "company": name,
+                        "step": "email",
+                        "error": error,
+                        "skipped": True,
+                    }, user_id=user_id)
+                    continue
 
                 articles = row.get("blog_articles", {}).get("content") or []
                 pending = [a for a in articles if a.get("pending_content")]
@@ -225,6 +240,7 @@ def main(user_id, mode="auto", manual_tasks=None, target_companies=None, run_id=
             except Exception as e:
                 logging.error(f"❌ Errore nello step 'email' per {name}: {e}", exc_info=True)
                 failed_steps_by_company.setdefault(name, []).append("email")
+                save_generation_failure(user_id, ids[company_key], "email", str(e))
                 track("server_company_step_failed", {
                     "company": name, "step": "email", "error": str(e)[:300],
                 }, user_id=user_id)

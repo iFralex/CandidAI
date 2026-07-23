@@ -325,11 +325,16 @@ def save_recruiter_and_query(user_id: str, unique_id, recruiter: dict, query: di
 
     summaryProfile = parse(recruiter) if recruiter else {}
 
-    details_ref.update({
-        "company.linkedin_url": linkedin_url,
+    # The blog step normally creates `details` first, but recruiter discovery
+    # must remain independent when browsing fails. `set(..., merge=True)`
+    # creates the document when absent and preserves blog data when present.
+    details_ref.set({
+        "company": {
+            "linkedin_url": linkedin_url,
+        },
         "recruiter_summary": summaryProfile,
         "query": query
-    })
+    }, merge=True)
 
     row_ref = db.collection("users").document(user_id)\
         .collection("data").document("results")\
@@ -341,6 +346,21 @@ def save_recruiter_and_query(user_id: str, unique_id, recruiter: dict, query: di
     }, merge=True)
 
     print(f"✅ Dati salvati per utente {user_id} con ID {unique_id}")
+
+def save_generation_failure(user_id: str, unique_id: str, step: str, error: str):
+    """Persist a terminal step failure on the campaign summary for UI/retries."""
+    results_ref = db.collection("users").document(user_id)\
+        .collection("data").document("results")
+    results_ref.set({
+        unique_id: {
+            "generation_status": "failed",
+            "generation_failure": {
+                "step": step,
+                "error": str(error)[:500],
+                "occurred_at": datetime.now(timezone.utc),
+            },
+        }
+    }, merge=True)
 
 def save_articles(user_id: str, unique_id: str, articles_content: list, articles_list: list, n_blogs):
     """
@@ -464,7 +484,9 @@ def save_email(user_id: str, unique_id: str, email, prompt, email_address, cv_ur
 
     results_ref.set({
         unique_id: {
-            "email_sent": datetime(1970, 1, 1, tzinfo=timezone.utc)
+            "email_sent": datetime(1970, 1, 1, tzinfo=timezone.utc),
+            "generation_status": "completed",
+            "generation_failure": firestore.DELETE_FIELD,
         }
     }, merge=True)
 
