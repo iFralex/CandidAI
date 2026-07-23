@@ -21,6 +21,7 @@ import type { OnboardingPreviewState, OnboardingStage } from '@/types/onboarding
 import { isProfileJobStale } from '@/types/onboarding'
 import { plansData, plansInfo } from '@/config'
 import { track } from '@/lib/analytics'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 type Props = {
   user: { uid: string; email?: string; plan?: string }
@@ -396,6 +397,7 @@ function PostPurchaseExperience({ props, preview, onNavigate }: { props: Props; 
 export function OnboardingExperience(props: Props) {
   const router = useRouter()
   const reduceMotion = useReducedMotion()
+  const isMobile = useIsMobile()
   const [replayPhase, setReplayPhase] = useState<'idle' | 'search' | 'email' | 'reveal'>(() => props.stage === 'preview_ready' ? 'reveal' : 'idle')
   const [optimisticPostStage, setOptimisticPostStage] = useState<OnboardingStage | null>(null)
   const [optimisticReturnToReview, setOptimisticReturnToReview] = useState(false)
@@ -446,9 +448,15 @@ export function OnboardingExperience(props: Props) {
   const previousStage = useRef<OnboardingStage>(effectiveStage)
   useEffect(() => { if (effectiveStage !== props.stage && ['target_company', 'recruiter_search'].includes(props.stage)) router.refresh() }, [effectiveStage, props.stage, router])
   useEffect(() => {
-    if (effectiveStage === 'preview_ready' && previousStage.current !== 'preview_ready' && replayPhase === 'idle') setReplayPhase('reveal')
+    if (effectiveStage === 'preview_ready' && previousStage.current !== 'preview_ready' && replayPhase === 'idle' && !isMobile) setReplayPhase('reveal')
     previousStage.current = effectiveStage
-  }, [effectiveStage, replayPhase])
+  }, [effectiveStage, isMobile, replayPhase])
+  useEffect(() => {
+    // The recruiter-to-email composition is designed for a wide canvas. On
+    // mobile it adds several seconds without communicating the layout clearly,
+    // so reveal the complete result as soon as the generated email is ready.
+    if (isMobile && replayPhase === 'reveal') setReplayPhase('idle')
+  }, [isMobile, replayPhase])
   useEffect(() => {
     if (effectiveStage === 'preview_ready' && typeof window !== 'undefined' && localStorage.getItem('candidai-preview-notification') === '1' && 'Notification' in window && Notification.permission === 'granted') {
       new Notification('Your first application is ready', { body: `Your email to ${preview.recruiter?.name || 'the selected recruiter'} is ready to review.` })
